@@ -1520,7 +1520,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
     /**
      * Take a unit off a student. Deliberately the slowest control on the record: it needs a
-     * written reason and a ticked confirmation, and it is audited.
+     * written reason and a ticked confirmation, and it is audited. The student's marks on that
+     * unit go with it, so the confirmation has to say that out loud.
      */
     public function removeStudentUnit(Request $request, Department $department, AcademicProgram $program, Student $student): RedirectResponse
     {
@@ -1551,9 +1552,73 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             $validated['reason'],
         );
 
+        $marks = $this->clearedMarks($result['cleared']);
+
+        $status = $result['unit_code'].' removed from '.$student->registration_number.'. '
+            .($result['marks_kept']
+                ? 'They hold this unit on another registration too, so their marks stayed. '
+                : ($marks === ''
+                    ? 'Their record held no marks on it. '
+                    : 'Deleted '.$marks.' from their SIS record as well. '))
+            .$result['unit_count'].' unit '.str('place')->plural($result['unit_count']).' remain on that registration.';
+
         return redirect()
             ->to($this->studentRecordUrl($request, $program, $intake, $student))
-            ->with('status', $result['unit_code'].' removed from '.$student->registration_number.'. '.$result['unit_count'].' unit '.str('place')->plural($result['unit_count']).' remain on that registration.');
+            ->with('status', $status);
+    }
+
+    /**
+     * Delete marks a student has on a unit they are not registered for - a grade or CAT typed
+     * onto the wrong student or unit, which no un-assign can reach.
+     */
+    public function removeStudentMarks(Request $request, Department $department, AcademicProgram $program, Student $student): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $student->program_id === (int) $program->id, 404);
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'unit_id' => ['required', 'integer'],
+            'reason' => ['required', 'string', 'min:8', 'max:500'],
+            'confirm_marks_removal' => ['accepted'],
+        ], [
+            'reason.required' => 'Say why these marks are being deleted - the correction is auditable and cannot be left blank.',
+            'reason.min' => 'Say why these marks are being deleted (at least 8 characters) so the correction is auditable.',
+            'confirm_marks_removal.accepted' => 'Tick "I confirm" - deleted marks cannot be recovered.',
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+
+        $result = $this->studentRegistrations->removeMarks(
+            $request->user(),
+            $student,
+            (int) $validated['unit_id'],
+            $validated['reason'],
+        );
+
+        return redirect()
+            ->to($this->studentRecordUrl($request, $program, $intake, $student))
+            ->with('status', $result['unit_code'].' cleared from '.$student->registration_number.'. Deleted '.$this->clearedMarks($result['cleared']).'.');
+    }
+
+    /**
+     * Names the marks a deletion removed, for the confirmation banner.
+     *
+     * @param  array<string, int|string|null>  $cleared
+     */
+    private function clearedMarks(array $cleared): string
+    {
+        $parts = array_filter([
+            ($cleared['cat'] ?? 0) > 0 ? $cleared['cat'].' CAT '.str('entry')->plural((int) $cleared['cat']) : null,
+            ($cleared['exam'] ?? 0) > 0 ? $cleared['exam'].' exam '.str('result')->plural((int) $cleared['exam']) : null,
+            ($cleared['grades'] ?? 0) > 0 ? $cleared['grades'].' grade '.str('record')->plural((int) $cleared['grades']) : null,
+        ]);
+
+        return implode(', ', $parts);
     }
 
     /**

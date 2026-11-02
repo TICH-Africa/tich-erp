@@ -31,6 +31,12 @@
         @endif
     </div>
 
+    @foreach (['unit', 'reason', 'confirm_removal', 'confirm_marks_removal'] as $correctionError)
+        @if ($errors->has($correctionError))
+            <p class="tich-field-error tich-mt-2">{{ $errors->first($correctionError) }}</p>
+        @endif
+    @endforeach
+
     @if ($corrections['hold']['held'] ?? false)
         <div class="tich-mt-4">
             <h4 class="tich-h4">Held back until the repeat is passed</h4>
@@ -96,40 +102,50 @@
                             </td>
                             <td>{{ $row['semester_label'] }}</td>
                             <td>
-                                @if ($row['grade'])
-                                    <span class="tich-badge">graded {{ $row['grade'] }}</span>
-                                @elseif ($row['has_marks'])
-                                    <span class="tich-badge">CAT entered</span>
+                                @php
+                                    $onRecord = collect([
+                                        $row['cat_count'] > 0 ? $row['cat_count'].' CAT '.str('entry')->plural($row['cat_count']) : null,
+                                        $row['exam_count'] > 0 ? $row['exam_count'].' exam '.str('result')->plural($row['exam_count']) : null,
+                                        $row['grade'] ? 'grade '.$row['grade'] : null,
+                                    ])->filter()->implode(', ');
+                                @endphp
+                                @if ($onRecord !== '')
+                                    <span class="tich-badge">{{ $onRecord }}</span>
                                 @else
                                     <span class="tich-caption">none yet</span>
                                 @endif
                             </td>
                             <td class="tich-text-right">
-                                @if ($row['has_marks'])
-                                    <span class="tich-caption">clear the marks first</span>
-                                @else
-                                    <details>
-                                        <summary class="tich-link" style="cursor:pointer;">Un-assign</summary>
-                                        <form method="POST" action="{{ route('departments.academics.programs.student-units.remove', $actionBase) }}" class="tich-mt-2" style="min-width:18rem; text-align:left;">
-                                            @csrf
-                                            @foreach ($keepFilters as $key => $value)
-                                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-                                            @endforeach
-                                            <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
-                                            <input type="hidden" name="registered_unit_id" value="{{ $row['id'] }}">
-                                            <div class="tich-form-group" style="margin:0;">
-                                                <label class="tich-label">Why is {{ $row['unit_code'] }} being removed?</label>
-                                                <input type="text" name="reason" class="tich-input" required minlength="8" maxlength="500"
-                                                    placeholder="e.g. registered on the wrong intake">
-                                            </div>
-                                            <label class="tich-label tich-mt-2">
-                                                <input type="checkbox" name="confirm_removal" value="1" class="tich-checkbox" required>
-                                                I confirm this student should no longer be registered on the unit.
-                                            </label>
-                                            <button type="submit" class="tich-btn tich-btn-danger tich-mt-2">Remove unit</button>
-                                        </form>
-                                    </details>
-                                @endif
+                                <details>
+                                    <summary class="tich-link" style="cursor:pointer;">Un-assign</summary>
+                                    <form method="POST" action="{{ route('departments.academics.programs.student-units.remove', $actionBase) }}" class="tich-mt-2" style="min-width:18rem; text-align:left;">
+                                        @csrf
+                                        @foreach ($keepFilters as $key => $value)
+                                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                        @endforeach
+                                        <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                                        <input type="hidden" name="registered_unit_id" value="{{ $row['id'] }}">
+                                        <div class="tich-form-group" style="margin:0;">
+                                            <label class="tich-label">Why is {{ $row['unit_code'] }} being removed?</label>
+                                            <input type="text" name="reason" class="tich-input" required minlength="8" maxlength="500"
+                                                placeholder="e.g. registered on the wrong intake">
+                                        </div>
+                                        <p class="tich-caption tich-mt-2">
+                                            @if ($row['marks_kept'])
+                                                They hold {{ $row['unit_code'] }} on another registration too, so their marks stay on the record.
+                                            @elseif ($onRecord !== '')
+                                                This takes the unit off and deletes {{ $onRecord }} as well. It cannot be recovered.
+                                            @else
+                                                Nothing has been marked on {{ $row['unit_code'] }} yet, so only the registration goes.
+                                            @endif
+                                        </p>
+                                        <label class="tich-label tich-mt-2">
+                                            <input type="checkbox" name="confirm_removal" value="1" class="tich-checkbox" required>
+                                            I confirm this student should no longer be registered on the unit.
+                                        </label>
+                                        <button type="submit" class="tich-btn tich-btn-danger tich-mt-2">Remove unit</button>
+                                    </form>
+                                </details>
                             </td>
                         </tr>
                     @endforeach
@@ -137,6 +153,71 @@
             </table>
         @endif
     </div>
+
+    @if ($corrections['strayMarks']->isNotEmpty())
+        <div class="tich-mt-6">
+            <h4 class="tich-h4">Marks on units this student is not registered for</h4>
+            <p class="tich-caption">
+                These were entered against the wrong student or the wrong unit, so no un-assign can reach them.
+                Deleting one takes the CAT entries, exam results and the grade off the SIS record and off the transcript.
+            </p>
+            <table class="tich-admin-table">
+                <thead>
+                    <tr>
+                        <th>Unit</th>
+                        <th>Marks</th>
+                        <th class="tich-text-right">Delete the marks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($corrections['strayMarks'] as $stray)
+                        <tr>
+                            <td>
+                                <strong>{{ $stray['unit_code'] }}</strong> · {{ $stray['unit_name'] }}
+                                <span class="tich-badge" style="margin-left:0.35rem;">not registered to this student</span>
+                            </td>
+                            <td>
+                                @php
+                                    $strayOnRecord = collect([
+                                        $stray['cat_count'] > 0 ? $stray['cat_count'].' CAT '.str('entry')->plural($stray['cat_count']) : null,
+                                        $stray['exam_count'] > 0 ? $stray['exam_count'].' exam '.str('result')->plural($stray['exam_count']) : null,
+                                        $stray['grade'] ? 'grade '.$stray['grade'] : null,
+                                    ])->filter()->implode(', ');
+                                @endphp
+                                <span class="tich-badge">{{ $strayOnRecord }}</span>
+                            </td>
+                            <td class="tich-text-right">
+                                <details>
+                                    <summary class="tich-link" style="cursor:pointer;">Delete</summary>
+                                    <form method="POST" action="{{ route('departments.academics.programs.student-units.marks-remove', $actionBase) }}" class="tich-mt-2" style="min-width:18rem; text-align:left;">
+                                        @csrf
+                                        @foreach ($keepFilters as $key => $value)
+                                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                        @endforeach
+                                        <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                                        <input type="hidden" name="unit_id" value="{{ $stray['unit_id'] }}">
+                                        <div class="tich-form-group" style="margin:0;">
+                                            <label class="tich-label">Why are these marks on {{ $stray['unit_code'] }} deleted?</label>
+                                            <input type="text" name="reason" class="tich-input" required minlength="8" maxlength="500"
+                                                placeholder="e.g. graded on the wrong student">
+                                        </div>
+                                        <p class="tich-caption tich-mt-2">
+                                            Deletes {{ $strayOnRecord }}. This cannot be recovered.
+                                        </p>
+                                        <label class="tich-label tich-mt-2">
+                                            <input type="checkbox" name="confirm_marks_removal" value="1" class="tich-checkbox" required>
+                                            I confirm {{ $stray['unit_code'] }} is not a unit this student takes.
+                                        </label>
+                                        <button type="submit" class="tich-btn tich-btn-danger tich-mt-2">Delete marks</button>
+                                    </form>
+                                </details>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 
     @if ($corrections['year'] && $corrections['semesterId'])
         <div class="tich-mt-6">

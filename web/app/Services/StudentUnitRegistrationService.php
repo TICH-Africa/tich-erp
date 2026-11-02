@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -821,20 +822,8 @@ class StudentUnitRegistrationService
                 'u.unit_name',
             ]);
 
-        $unitIds = $rows->pluck('unit_id')->filter()->unique()->all();
-        $graded = $unitIds === []
-            ? collect()
-            : DB::table('grade_records')
-                ->where('student_id', $student->id)
-                ->whereIn('unit_id', $unitIds)
-                ->pluck('grade_letter', 'unit_id');
-        $assessed = $unitIds === []
-            ? collect()
-            : DB::table('cat_scores')
-                ->where('student_id', $student->id)
-                ->whereIn('unit_id', $unitIds)
-                ->pluck('score_obtained', 'unit_id');
-
+        $marks = $this->marksByUnit($student);
+        $holdsByUnit = $rows->groupBy(fn ($row) => (int) $row->unit_id)->map->count();
         $duePeriod = $year['period'] ?? null;
         $dueUnits = $duePeriod
             ? $this->mappingsForPeriod($mappings, (int) $duePeriod, null)
@@ -844,8 +833,9 @@ class StudentUnitRegistrationService
         return [
             'year' => $year,
             'semesterId' => $duePeriod ? $this->schedule->resolveSemesterId($intake, (int) $duePeriod) : null,
-            'registered' => $rows->map(function ($row) use ($graded, $assessed, $duePeriod) {
+            'registered' => $rows->map(function ($row) use ($marks, $holdsByUnit, $duePeriod) {
                 $unitId = (int) $row->unit_id;
+                $entry = $marks[$unitId] ?? ['cat' => 0, 'exam' => 0, 'grade' => null, 'grades' => 0];
 
                 return [
                     'id' => (int) $row->id,
@@ -855,8 +845,10 @@ class StudentUnitRegistrationService
                     'semester_id' => (int) $row->semester_id,
                     'semester_label' => (string) $row->semester_label,
                     'outside_their_year' => $duePeriod !== null && (int) $row->semester_number !== (int) $duePeriod,
-                    'grade' => $graded[$unitId] ?? null,
-                    'has_marks' => $graded->has($unitId) || $assessed->has($unitId),
+                    'grade' => $entry['grade'],
+                    'cat_count' => $entry['cat'],
+                    'exam_count' => $entry['exam'],
+                    'marks_kept' => $holdsByUnit[$unitId] > 1,
                 ];
             }),
             'missing' => $dueUnits
@@ -873,8 +865,98 @@ class StudentUnitRegistrationService
                 ->values(),
             'dueUnits' => $dueUnits,
             'maxYear' => $program->studyYears(),
+            'strayMarks' => $this->strayMarks($marks, $heldUnitIds),
             'hold' => $this->holdNote($student, $year),
         ];
+    }
+
+    /**
+     * Marks keyed against a unit this student is not registered for.
+     *
+     * A mark typed on the wrong row keeps showing on the transcript even though the student
+     * never held the unit, so the corrections panel lists them and lets Academics delete each
+     * one. Nothing here touches a unit the student still holds - that is an un-assign.
+     *
+     * @param  array<int, array{cat: int, exam: int, grade: string|null, grades: int}>  $marks
+     * @param  array<int, int>  $heldUnitIds
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function strayMarks(array $marks, array $heldUnitIds): Collection
+    {
+        $stray = collect($marks)
+            ->reject(fn (array $entry, int $unitId) => in_array($unitId, $heldUnitIds, true))
+            ->filter(fn (array $entry) => $entry['cat'] > 0 || $entry['exam'] > 0 || $entry['grades'] > 0)
+            ->keys();
+
+        if ($stray->isEmpty()) {
+            return collect();
+        }
+
+        $units = DB::table('units')
+            ->whereIn('id', $stray->all())
+            ->orderBy('unit_code')
+            ->get(['id', 'unit_code', 'unit_name'])
+            ->keyBy('id');
+
+        return $stray
+            ->map(function (int $unitId) use ($marks, $units) {
+                $unit = $units[$unitId] ?? null;
+
+                return [
+                    'unit_id' => $unitId,
+                    'unit_code' => (string) ($unit?->unit_code ?? 'Unit '.$unitId),
+                    'unit_name' => (string) ($unit?->unit_name ?? 'no longer in the catalogue'),
+                    'cat_count' => $marks[$unitId]['cat'] ?? 0,
+                    'exam_count' => $marks[$unitId]['exam'] ?? 0,
+                    'grade' => $marks[$unitId]['grade'] ?? null,
+                ];
+            })
+            ->values();
+    }
+
+    /**
+     * CAT entries, exam results and grades this student holds on each unit, across every
+     * semester. Un-assigning a unit clears all of it at once, so the panel has to quote the
+     * same numbers the deletion removes.
+     *
+     * @return array<int, array{cat: int, exam: int, grade: string|null, grades: int}>
+     */
+    private function marksByUnit(Student $student): array
+    {
+        $tally = [];
+
+        $count = fn (string $table) => DB::table($table)
+            ->where('student_id', $student->id)
+            ->selectRaw('unit_id, COUNT(*) as total')
+            ->groupBy('unit_id')
+            ->pluck('total', 'unit_id');
+
+        foreach (['cat' => $count('cat_scores'), 'exam' => $count('exam_results'), 'grades' => $count('grade_records')] as $field => $rows) {
+            foreach ($rows as $unitId => $total) {
+                $tally[(int) $unitId][$field] = (int) $total;
+            }
+        }
+
+        $letters = DB::table('grade_records')
+            ->where('student_id', $student->id)
+            ->whereNotNull('grade_letter')
+            ->orderBy('id')
+            ->pluck('grade_letter', 'unit_id');
+
+        foreach ($letters as $unitId => $letter) {
+            $tally[(int) $unitId]['grade'] = (string) $letter;
+        }
+
+        foreach ($tally as $unitId => $entry) {
+            $tally[$unitId] = [
+                'cat' => $entry['cat'] ?? 0,
+                'exam' => $entry['exam'] ?? 0,
+                'grade' => $entry['grade'] ?? null,
+                'grades' => $entry['grades'] ?? 0,
+            ];
+        }
+
+        return $tally;
     }
 
     /**
@@ -917,11 +999,11 @@ class StudentUnitRegistrationService
     }
 
     /**
-     * Take a unit off a student.
+     * Take a unit off a student and delete every trace of it from their SIS record.
      *
-     * This is deliberately the slowest action on the panel: it needs a written reason, it
-     * refuses while marks exist for the unit, and it is audited, so a registered student
-     * cannot be un-assigned on a casual click.
+     * A unit handed out by mistake should leave nothing behind, so this clears the student's
+     * CAT entries, exam results, grade, attendance and exam-eligibility row for that unit
+     * before removing the registration. The counts it deleted go into the audit trail.
      */
     public function removeUnit(User $officer, Student $student, int $registeredUnitId, string $reason): array
     {
@@ -939,55 +1021,128 @@ class StudentUnitRegistrationService
             ]);
         }
 
-        $grade = DB::table('grade_records')
-            ->where('student_id', $student->id)
-            ->where('unit_id', $row->unit_id)
-            ->value('grade_letter');
+        // The marks belong to the unit, so they only go when this was the student's last hold on it.
+        $stillHeld = DB::table('registered_units as ru')
+            ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
+            ->where('ssr.student_id', $student->id)
+            ->where('ru.unit_id', $row->unit_id)
+            ->where('ru.id', '!=', $row->id)
+            ->count();
 
-        if ($grade) {
+        $result = DB::transaction(function () use ($student, $row, $officer, $reason, $stillHeld) {
+            $cleared = $stillHeld > 0
+                ? ['cat' => 0, 'exam' => 0, 'grade' => null, 'grades' => 0, 'attendance' => 0, 'eligibility' => 0]
+                : $this->clearUnitRecords($student, (int) $row->unit_id);
+
+            DB::table('registered_units')->where('id', $row->id)->delete();
+
+            $remaining = DB::table('registered_units')
+                ->where('semester_registration_id', $row->registration_id)
+                ->count();
+
+            DB::table('student_semester_registrations')
+                ->where('id', $row->registration_id)
+                ->update(['unit_count' => $remaining]);
+
+            $this->audits->log(
+                action: 'academics.student_unit_removed',
+                entityType: 'students',
+                entityId: $student->id,
+                oldValue: [
+                    'unit_code' => $row->unit_code,
+                    'unit_name' => $row->unit_name,
+                    'semester_label' => $row->semester_label,
+                    'cleared' => $cleared,
+                ],
+                newValue: ['unit_count' => $remaining],
+                reason: $reason,
+                userId: $officer->id,
+            );
+
+            return ['remaining' => $remaining, 'cleared' => $cleared];
+        });
+
+        return [
+            'unit_code' => (string) $row->unit_code,
+            'unit_count' => $result['remaining'],
+            'cleared' => $result['cleared'],
+            'marks_kept' => $stillHeld > 0,
+        ];
+    }
+
+    /**
+     * Clear marks that were keyed against a unit this student does not hold at all - the
+     * result of a grade entered on the wrong student or the wrong unit.
+     */
+    public function removeMarks(User $officer, Student $student, int $unitId, string $reason): array
+    {
+        $unit = DB::table('units')->where('id', $unitId)->first(['id', 'unit_code', 'unit_name']);
+
+        if (! $unit) {
             throw ValidationException::withMessages([
-                'unit' => $row->unit_code.' already carries a grade ('.$grade.'). Amend or clear the result before removing the unit.',
+                'unit' => 'That unit is no longer in the catalogue. Reload the page.',
             ]);
         }
 
-        $catCount = DB::table('cat_scores')
-            ->where('student_id', $student->id)
-            ->where('unit_id', $row->unit_id)
+        $held = DB::table('registered_units as ru')
+            ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
+            ->where('ssr.student_id', $student->id)
+            ->where('ru.unit_id', $unit->id)
             ->count();
 
-        if ($catCount > 0) {
+        if ($held > 0) {
             throw ValidationException::withMessages([
-                'unit' => $row->unit_code.' has '.$catCount.' CAT '.str('entry')->plural($catCount).' recorded. Clear those marks before removing the unit.',
+                'unit' => $unit->unit_code.' is still registered to this student. Un-assign the unit instead of clearing only its marks.',
             ]);
         }
 
-        DB::table('registered_units')->where('id', $row->id)->delete();
+        $cleared = $this->clearUnitRecords($student, (int) $unit->id);
 
-        $remaining = DB::table('registered_units')
-            ->where('semester_registration_id', $row->registration_id)
-            ->count();
-
-        DB::table('student_semester_registrations')
-            ->where('id', $row->registration_id)
-            ->update(['unit_count' => $remaining]);
+        if ($cleared['cat'] + $cleared['exam'] + $cleared['grades'] + $cleared['attendance'] + $cleared['eligibility'] === 0) {
+            throw ValidationException::withMessages([
+                'unit' => 'There is nothing to clear on '.$unit->unit_code.' - this student holds no marks on it.',
+            ]);
+        }
 
         $this->audits->log(
-            action: 'academics.student_unit_removed',
+            action: 'academics.student_unit_marks_removed',
             entityType: 'students',
             entityId: $student->id,
-            oldValue: [
-                'unit_code' => $row->unit_code,
-                'unit_name' => $row->unit_name,
-                'semester_label' => $row->semester_label,
-            ],
-            newValue: ['unit_count' => $remaining],
+            oldValue: ['unit_code' => $unit->unit_code, 'unit_name' => $unit->unit_name, 'cleared' => $cleared],
+            newValue: null,
             reason: $reason,
             userId: $officer->id,
         );
 
+        return ['unit_code' => (string) $unit->unit_code, 'cleared' => $cleared];
+    }
+
+    /**
+     * Everything the SIS holds for one student on one unit: CAT entries, exam results, the
+     * grade, their attendance and their exam-eligibility row.
+     *
+     * @return array{cat: int, exam: int, grade: string|null, attendance: int, eligibility: int}
+     */
+    private function clearUnitRecords(Student $student, int $unitId): array
+    {
+        $forget = fn (string $table): int => Schema::hasTable($table)
+            ? DB::table($table)->where('student_id', $student->id)->where('unit_id', $unitId)->delete()
+            : 0;
+
+        $grade = DB::table('grade_records')
+            ->where('student_id', $student->id)
+            ->where('unit_id', $unitId)
+            ->pluck('grade_letter')
+            ->filter()
+            ->first();
+
         return [
-            'unit_code' => (string) $row->unit_code,
-            'unit_count' => $remaining,
+            'cat' => $forget('cat_scores'),
+            'exam' => $forget('exam_results'),
+            'grade' => $grade,
+            'attendance' => $forget('attendance_summaries'),
+            'eligibility' => $forget('exam_eligibility_matrix'),
+            'grades' => $forget('grade_records'),
         ];
     }
 

@@ -119,6 +119,7 @@ return function (bool $named = true): void {
         $register('post', '/programs/{program}/student-unit-registrations/by-year', [ProgramCurriculumController::class, 'registerUnitsByYear'], 'departments.academics.programs.student-registrations.by-year');
         $register('post', '/programs/{program}/students/{student}/units', [ProgramCurriculumController::class, 'addStudentUnit'], 'departments.academics.programs.student-units.add');
         $register('post', '/programs/{program}/students/{student}/units/remove', [ProgramCurriculumController::class, 'removeStudentUnit'], 'departments.academics.programs.student-units.remove');
+        $register('post', '/programs/{program}/students/{student}/marks/remove', [ProgramCurriculumController::class, 'removeStudentMarks'], 'departments.academics.programs.student-units.marks-remove');
         $register('post', '/programs/{program}/students/{student}/year', [ProgramCurriculumController::class, 'pinStudentYear'], 'departments.academics.programs.student-units.year');
         $register('post', '/programs/{program}/students/{student}/year/release', [ProgramCurriculumController::class, 'releaseStudentYear'], 'departments.academics.programs.student-units.year-release');
         $register('post', '/programs/{program}/students/{student}/hold', [ProgramCurriculumController::class, 'clearCohortHold'], 'departments.academics.programs.student-units.hold');
