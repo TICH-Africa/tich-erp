@@ -1,3 +1,4 @@
+import '../sync/tich_upload_optimizer.dart';
 import 'api_client.dart';
 
 class StudentApi {
@@ -117,18 +118,26 @@ class StudentApi {
     required int defermentMonths,
     required String reason,
     required List<({String path, String name})> attachments,
-  }) =>
-      _client.multipartFiles(
-        '/student/requests/lifecycle',
-        fields: {
-          'deferment_months': '$defermentMonths',
-          'reason': reason,
-        },
-        files: [
-          for (final f in attachments)
-            (field: 'attachments[]', path: f.path, name: f.name, mimeType: null),
-        ],
-      );
+  }) async {
+    final files = <({String field, String path, String name, String? mimeType})>[];
+    for (final f in attachments) {
+      final path = await TichUploadOptimizer.prepareUploadPath(f.path);
+      files.add((
+        field: 'attachments[]',
+        path: path,
+        name: f.name,
+        mimeType: 'image/jpeg',
+      ));
+    }
+    return _client.multipartFiles(
+      '/student/requests/lifecycle',
+      fields: {
+        'deferment_months': '$defermentMonths',
+        'reason': reason,
+      },
+      files: files,
+    );
+  }
 
   Future<Map<String, dynamic>> submitExamSitting({
     required String requestType,
@@ -136,18 +145,26 @@ class StudentApi {
     required int semesterId,
     String? reason,
     List<({String path, String name})> attachments = const [],
-  }) =>
-      _client.multipartFiles(
-        '/student/requests/exam-sitting',
-        fields: {
-          'request_type': requestType,
-          'unit_id': '$unitId',
-          'semester_id': '$semesterId',
-          if (reason != null) 'reason': reason,
-        },
-        files: [
-          for (final f in attachments)
-            (field: 'attachments[]', path: f.path, name: f.name, mimeType: null),
-        ],
-      );
+  }) async {
+    final files = <({String field, String path, String name, String? mimeType})>[];
+    for (final f in attachments) {
+      final path = await TichUploadOptimizer.prepareUploadPath(f.path);
+      files.add((
+        field: 'attachments[]',
+        path: path,
+        name: f.name,
+        mimeType: 'image/jpeg',
+      ));
+    }
+    return _client.multipartFiles(
+      '/student/requests/exam-sitting',
+      fields: {
+        'request_type': requestType,
+        'unit_id': '$unitId',
+        'semester_id': '$semesterId',
+        if (reason != null) 'reason': reason,
+      },
+      files: files,
+    );
+  }
 }

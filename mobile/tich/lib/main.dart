@@ -14,6 +14,7 @@ import 'data/auth_token_store.dart';
 import 'data/tich_api_scope.dart';
 import 'data/tich_portal_warmup.dart';
 import 'data/tich_power_policy.dart';
+import 'sync/tich_background_sync.dart';
 import 'data/tich_realtime.dart';
 import 'models/auth_user.dart';
 import 'notifications/tich_notification_router.dart';
@@ -127,6 +128,13 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
               isStudent: false,
             ),
           );
+        }
+        if (auth.user.canAccessStaffPortal &&
+            TichRefreshThrottle.allow(
+              'app.field_sync',
+              TichPowerPolicy.resumeMaintenanceMinGap,
+            )) {
+          unawaited(TichBackgroundSync.instance.tryFlush(_apiClient));
         }
       }
     }

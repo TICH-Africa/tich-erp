@@ -21,6 +21,16 @@ class StaffApi {
   Future<Map<String, dynamic>> syncAttendance() =>
       _client.post('/staff/attendance/sync');
 
+  Future<Map<String, dynamic>> syncFieldOperations(
+    List<Map<String, dynamic>> operations,
+  ) =>
+      _client.post(
+        '/staff/field-sync',
+        body: {'operations': operations},
+        gzipBody: true,
+        timeoutOverride: ApiClient.uploadTimeout,
+      );
+
   Future<Map<String, dynamic>> attendanceSession(int id) =>
       _client.get('/staff/attendance/$id');
 

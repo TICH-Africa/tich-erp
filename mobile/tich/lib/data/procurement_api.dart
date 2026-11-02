@@ -1,3 +1,4 @@
+import '../sync/tich_upload_optimizer.dart';
 import 'api_client.dart';
 
 class ProcurementApi {
@@ -36,7 +37,7 @@ class ProcurementApi {
     String? budgetCode,
     required List<Map<String, dynamic>> lines,
     List<({String path, String name, String? mimeType})> attachments = const [],
-  }) {
+  }) async {
     if (attachments.isEmpty) {
       return _client.post('/procurement/requisitions', body: {
         'requesting_department_id': requestingDepartmentId,
@@ -65,18 +66,20 @@ class ProcurementApi {
       }
     }
 
+    final files = <({String field, String path, String name, String? mimeType})>[];
+    for (final file in attachments) {
+      final path = await TichUploadOptimizer.prepareUploadPath(file.path);
+      files.add((
+        field: 'attachments[]',
+        path: path,
+        name: file.name,
+        mimeType: file.mimeType ?? 'image/jpeg',
+      ));
+    }
     return _client.multipartFiles(
       '/procurement/requisitions',
       fields: fields,
-      files: [
-        for (final file in attachments)
-          (
-            field: 'attachments[]',
-            path: file.path,
-            name: file.name,
-            mimeType: file.mimeType,
-          ),
-      ],
+      files: files,
     );
   }
 
@@ -175,14 +178,24 @@ class ProcurementApi {
     required Map<String, String> fields,
     List<({String field, String path, String name, String? mimeType})> files =
         const [],
-  }) {
+  }) async {
     if (files.isEmpty) {
       return _client.post('/procurement/suppliers', body: fields);
+    }
+    final optimized = <({String field, String path, String name, String? mimeType})>[];
+    for (final file in files) {
+      final path = await TichUploadOptimizer.prepareUploadPath(file.path);
+      optimized.add((
+        field: file.field,
+        path: path,
+        name: file.name,
+        mimeType: file.mimeType ?? 'image/jpeg',
+      ));
     }
     return _client.multipartFiles(
       '/procurement/suppliers',
       fields: fields,
-      files: files,
+      files: optimized,
     );
   }
 
