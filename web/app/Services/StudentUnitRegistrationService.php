@@ -823,7 +823,6 @@ class StudentUnitRegistrationService
             ]);
 
         $marks = $this->marksByUnit($student);
-        $holdsByUnit = $rows->groupBy(fn ($row) => (int) $row->unit_id)->map->count();
         $duePeriod = $year['period'] ?? null;
         $dueUnits = $duePeriod
             ? $this->mappingsForPeriod($mappings, (int) $duePeriod, null)
@@ -833,24 +832,27 @@ class StudentUnitRegistrationService
         return [
             'year' => $year,
             'semesterId' => $duePeriod ? $this->schedule->resolveSemesterId($intake, (int) $duePeriod) : null,
-            'registered' => $rows->map(function ($row) use ($marks, $holdsByUnit, $duePeriod) {
-                $unitId = (int) $row->unit_id;
-                $entry = $marks[$unitId] ?? ['cat' => 0, 'exam' => 0, 'grade' => null, 'grades' => 0];
+            // One row per unit, not per registration: a unit the student holds on two
+            // semesters is one thing to remove, and showing it twice reads as a removal
+            // that did not take.
+            'registered' => $rows->groupBy(fn ($row) => (int) $row->unit_id)
+                ->map(function (Collection $held, int $unitId) use ($marks, $duePeriod) {
+                    $entry = $marks[$unitId] ?? ['cat' => 0, 'exam' => 0, 'grade' => null, 'grades' => 0];
 
-                return [
-                    'id' => (int) $row->id,
-                    'unit_id' => $unitId,
-                    'unit_code' => (string) $row->unit_code,
-                    'unit_name' => (string) $row->unit_name,
-                    'semester_id' => (int) $row->semester_id,
-                    'semester_label' => (string) $row->semester_label,
-                    'outside_their_year' => $duePeriod !== null && (int) $row->semester_number !== (int) $duePeriod,
-                    'grade' => $entry['grade'],
-                    'cat_count' => $entry['cat'],
-                    'exam_count' => $entry['exam'],
-                    'marks_kept' => $holdsByUnit[$unitId] > 1,
-                ];
-            }),
+                    return [
+                        'unit_id' => $unitId,
+                        'unit_code' => (string) $held->first()->unit_code,
+                        'unit_name' => (string) $held->first()->unit_name,
+                        'semesters' => $held->pluck('semester_label')->unique()->values()->all(),
+                        'outside_their_year' => $duePeriod !== null
+                            && $held->every(fn ($row) => (int) $row->semester_number !== (int) $duePeriod),
+                        'grade' => $entry['grade'],
+                        'cat_count' => $entry['cat'],
+                        'exam_count' => $entry['exam'],
+                        'registrations' => $held->count(),
+                    ];
+                })
+                ->values(),
             'missing' => $dueUnits
                 ->reject(fn (CurriculumVersionUnit $mapping) => in_array((int) $mapping->unit_id, $heldUnitIds, true))
                 ->map(function (CurriculumVersionUnit $mapping) {
@@ -1003,70 +1005,91 @@ class StudentUnitRegistrationService
      *
      * A unit handed out by mistake should leave nothing behind, so this clears the student's
      * CAT entries, exam results, grade, attendance and exam-eligibility row for that unit
-     * before removing the registration. The counts it deleted go into the audit trail.
+     * before removing the registrations. The counts it deleted go into the audit trail.
+     *
+     * The officer means "this student must not hold this unit", so every semester registration
+     * that carries it goes in the same step - one row left behind looks exactly like a removal
+     * that did not take. A unit that is already off the record is reported, not refused.
      */
-    public function removeUnit(User $officer, Student $student, int $registeredUnitId, string $reason): array
+    public function removeUnit(User $officer, Student $student, int $unitId, string $reason): array
     {
-        $row = DB::table('registered_units as ru')
-            ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
-            ->join('units as u', 'u.id', '=', 'ru.unit_id')
-            ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
-            ->where('ru.id', $registeredUnitId)
-            ->where('ssr.student_id', $student->id)
-            ->first(['ru.id', 'ru.unit_id', 'ssr.id as registration_id', 's.semester_label', 'u.unit_code', 'u.unit_name']);
+        $unit = DB::table('units')->where('id', $unitId)->first(['id', 'unit_code', 'unit_name']);
 
-        if (! $row) {
+        if (! $unit) {
             throw ValidationException::withMessages([
-                'unit' => 'That unit is not on this student\'s registration any more. Reload the page.',
+                'unit' => 'That unit is no longer in the catalogue. Reload the page.',
             ]);
         }
 
-        // The marks belong to the unit, so they only go when this was the student's last hold on it.
-        $stillHeld = DB::table('registered_units as ru')
+        $rows = DB::table('registered_units as ru')
             ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
+            ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
             ->where('ssr.student_id', $student->id)
-            ->where('ru.unit_id', $row->unit_id)
-            ->where('ru.id', '!=', $row->id)
-            ->count();
+            ->where('ru.unit_id', $unitId)
+            ->get(['ru.id', 'ssr.id as registration_id', 's.semester_label']);
 
-        $result = DB::transaction(function () use ($student, $row, $officer, $reason, $stillHeld) {
-            $cleared = $stillHeld > 0
-                ? ['cat' => 0, 'exam' => 0, 'grade' => null, 'grades' => 0, 'attendance' => 0, 'eligibility' => 0]
-                : $this->clearUnitRecords($student, (int) $row->unit_id);
+        if ($rows->isEmpty()) {
+            return [
+                'unit_code' => (string) $unit->unit_code,
+                'removed' => 0,
+                'unit_count' => DB::table('registered_units as ru')
+                    ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
+                    ->where('ssr.student_id', $student->id)
+                    ->count(),
+                'cleared' => ['cat' => 0, 'exam' => 0, 'grade' => null, 'grades' => 0, 'attendance' => 0, 'eligibility' => 0],
+            ];
+        }
 
-            DB::table('registered_units')->where('id', $row->id)->delete();
+        $rowIds = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
 
-            $remaining = DB::table('registered_units')
-                ->where('semester_registration_id', $row->registration_id)
-                ->count();
+        $cleared = DB::transaction(function () use ($student, $unit, $rows, $rowIds, $officer, $reason) {
+            $cleared = $this->clearUnitRecords($student, (int) $unit->id);
 
-            DB::table('student_semester_registrations')
-                ->where('id', $row->registration_id)
-                ->update(['unit_count' => $remaining]);
+            DB::table('registered_units')->whereIn('id', $rowIds)->delete();
+
+            foreach ($rows->pluck('registration_id')->unique() as $registrationId) {
+                DB::table('student_semester_registrations')
+                    ->where('id', $registrationId)
+                    ->update([
+                        'unit_count' => DB::table('registered_units')
+                            ->where('semester_registration_id', $registrationId)
+                            ->count(),
+                    ]);
+            }
 
             $this->audits->log(
                 action: 'academics.student_unit_removed',
                 entityType: 'students',
                 entityId: $student->id,
                 oldValue: [
-                    'unit_code' => $row->unit_code,
-                    'unit_name' => $row->unit_name,
-                    'semester_label' => $row->semester_label,
+                    'unit_code' => $unit->unit_code,
+                    'unit_name' => $unit->unit_name,
+                    'semesters' => $rows->pluck('semester_label')->all(),
+                    'rows_removed' => count($rowIds),
                     'cleared' => $cleared,
                 ],
-                newValue: ['unit_count' => $remaining],
+                newValue: [
+                    'unit_counts' => $rows->pluck('registration_id')->unique()
+                        ->mapWithKeys(fn ($id) => [(int) $id => DB::table('registered_units')
+                            ->where('semester_registration_id', $id)
+                            ->count()])
+                        ->all(),
+                ],
                 reason: $reason,
                 userId: $officer->id,
             );
 
-            return ['remaining' => $remaining, 'cleared' => $cleared];
+            return $cleared;
         });
 
         return [
-            'unit_code' => (string) $row->unit_code,
-            'unit_count' => $result['remaining'],
-            'cleared' => $result['cleared'],
-            'marks_kept' => $stillHeld > 0,
+            'unit_code' => (string) $unit->unit_code,
+            'removed' => count($rowIds),
+            'unit_count' => DB::table('registered_units as ru')
+                ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
+                ->where('ssr.student_id', $student->id)
+                ->count(),
+            'cleared' => $cleared,
         ];
     }
 

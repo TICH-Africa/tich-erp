@@ -1522,6 +1522,10 @@ class ProgramCurriculumController extends DepartmentAcademicsController
      * Take a unit off a student. Deliberately the slowest control on the record: it needs a
      * written reason and a ticked confirmation, and it is audited. The student's marks on that
      * unit go with it, so the confirmation has to say that out loud.
+     *
+     * The officer means "this student must not hold this unit", so every semester registration
+     * carrying it goes in one step. A unit that is already off the record is reported as done
+     * rather than thrown back as an error - the screen the officer is looking at is simply stale.
      */
     public function removeStudentUnit(Request $request, Department $department, AcademicProgram $program, Student $student): RedirectResponse
     {
@@ -1532,7 +1536,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $validated = $request->validate([
             'intake' => ['required', 'integer'],
-            'registered_unit_id' => ['required', 'integer'],
+            'unit_id' => ['required', 'integer'],
             'reason' => ['required', 'string', 'min:8', 'max:500'],
             'confirm_removal' => ['accepted'],
         ], [
@@ -1548,19 +1552,26 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $result = $this->studentRegistrations->removeUnit(
             $request->user(),
             $student,
-            (int) $validated['registered_unit_id'],
+            (int) $validated['unit_id'],
             $validated['reason'],
         );
+
+        if ($result['removed'] === 0) {
+            return redirect()
+                ->to($this->studentRecordUrl($request, $program, $intake, $student))
+                ->with('status', $result['unit_code'].' is not on '.$student->registration_number."'s registration - it had already been removed.");
+        }
 
         $marks = $this->clearedMarks($result['cleared']);
 
         $status = $result['unit_code'].' removed from '.$student->registration_number.'. '
-            .($result['marks_kept']
-                ? 'They hold this unit on another registration too, so their marks stayed. '
-                : ($marks === ''
-                    ? 'Their record held no marks on it. '
-                    : 'Deleted '.$marks.' from their SIS record as well. '))
-            .$result['unit_count'].' unit '.str('place')->plural($result['unit_count']).' remain on that registration.';
+            .($result['removed'] > 1
+                ? 'It was on '.$result['removed'].' of their registrations, so all of them went. '
+                : '')
+            .($marks === ''
+                ? 'Their record held no marks on it. '
+                : 'Deleted '.$marks.' from their SIS record as well. ')
+            .$result['unit_count'].' unit '.str('place')->plural($result['unit_count']).' still registered on their record.';
 
         return redirect()
             ->to($this->studentRecordUrl($request, $program, $intake, $student))

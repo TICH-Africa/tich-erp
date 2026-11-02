@@ -100,7 +100,7 @@
                                     <span class="tich-badge" style="margin-left:0.35rem;">not their {{ $corrections['year']['period_label'] ?? 'period' }}</span>
                                 @endif
                             </td>
-                            <td>{{ $row['semester_label'] }}</td>
+                            <td>{{ implode(' · ', $row['semesters']) }}@if ($row['registrations'] > 1) <span class="tich-caption">(on {{ $row['registrations'] }} registrations)</span>@endif</td>
                             <td>
                                 @php
                                     $onRecord = collect([
@@ -124,15 +124,20 @@
                                             <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                                         @endforeach
                                         <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
-                                        <input type="hidden" name="registered_unit_id" value="{{ $row['id'] }}">
+                                        <input type="hidden" name="unit_id" value="{{ $row['unit_id'] }}">
                                         <div class="tich-form-group" style="margin:0;">
                                             <label class="tich-label">Why is {{ $row['unit_code'] }} being removed?</label>
                                             <input type="text" name="reason" class="tich-input" required minlength="8" maxlength="500"
                                                 placeholder="e.g. registered on the wrong intake">
                                         </div>
                                         <p class="tich-caption tich-mt-2">
-                                            @if ($row['marks_kept'])
-                                                They hold {{ $row['unit_code'] }} on another registration too, so their marks stay on the record.
+                                            @if ($row['registrations'] > 1)
+                                                {{ $row['unit_code'] }} is on {{ $row['registrations'] }} of their registrations. This takes every one of them off
+                                                @if ($onRecord !== '')
+                                                    and deletes {{ $onRecord }} as well. It cannot be recovered.
+                                                @else
+                                                    , and they had nothing marked on it.
+                                                @endif
                                             @elseif ($onRecord !== '')
                                                 This takes the unit off and deletes {{ $onRecord }} as well. It cannot be recovered.
                                             @else
