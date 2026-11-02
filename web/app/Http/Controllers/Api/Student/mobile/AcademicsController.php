@@ -12,6 +12,7 @@ use App\Services\StudentPortalDashboardService;
 use App\Services\StudentRecordService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use App\Support\SchemaProbe;
 
 class AcademicsController extends Controller
@@ -27,8 +28,12 @@ class AcademicsController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $student = $this->portalStudent($request);
-        $biodata = $this->studentRecords->biodata360($student);
-        $portalData = $this->dashboard->forStudent($student, $biodata);
+        $biodata = $this->mobileBiodata($student);
+        $portalData = Cache::remember(
+            'student.mobile.academics.'.$student->id.'.v1',
+            20,
+            fn () => $this->dashboard->academicsForMobile($student),
+        );
 
         $transcriptRequests = [];
         $specialExamRequests = [];
@@ -90,7 +95,10 @@ class AcademicsController extends Controller
 
         return response()->json([
             'student' => $this->serializeStudent($student, $biodata),
-            'academics' => $this->serializeAcademics($portalData),
+            'academics' => $this->serializeAcademics([
+                'academics' => $portalData['academics'],
+                'transcript' => $portalData['transcript'] ?? [],
+            ]),
             'transcript_requests' => $transcriptRequests,
             'special_exam_requests' => $specialExamRequests,
             'supplementary_exam_requests' => $supplementaryExamRequests,

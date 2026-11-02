@@ -26,7 +26,7 @@ class StudentSidebarNotificationService
 
     public const CACHE_KEY_PREFIX = 'student.sidebar.counts.';
 
-    public const CACHE_TTL_SECONDS = 30;
+    public const CACHE_TTL_SECONDS = 60;
 
     /** @var array<string, string> */
     public const MENU_KEYS = [
@@ -84,7 +84,13 @@ class StudentSidebarNotificationService
 
     public function forget(Student $student): void
     {
-        Cache::forget(self::CACHE_KEY_PREFIX.$student->id);
+        $id = $student->id;
+        Cache::forget(self::CACHE_KEY_PREFIX.$id);
+        Cache::forget('student.mobile.dashboard.'.$id.'.v1');
+        Cache::forget('student.mobile.academics.'.$id.'.v1');
+        Cache::forget('student.mobile.timetable.'.$id.'.v1');
+        Cache::forget('student.mobile.finance.'.$id.'.v1');
+        Cache::forget('student.mobile.biodata.'.$id.'.v1');
     }
 
     public function badgeKeyForSection(string $section): ?string

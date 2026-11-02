@@ -105,7 +105,7 @@ trait SerializesStudentPortal
                     'status' => $assessment->status,
                     'unit_code' => $assessment->allocation?->unit?->unit_code,
                     'unit_name' => $assessment->allocation?->unit?->unit_name,
-                    'question_count' => $assessment->questions?->count() ?? 0,
+                    'question_count' => (int) ($assessment->questions_count ?? $assessment->questions?->count() ?? 0),
                     'submission' => $submission ? [
                         'id' => $submission->id,
                         'score' => $submission->score,

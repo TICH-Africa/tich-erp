@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\Student\mobile\Concerns;
 
 use App\Models\Student;
 use App\Services\StudentPortalService;
+use App\Services\StudentRecordService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 trait ResolvesPortalStudent
 {
@@ -25,5 +27,17 @@ trait ResolvesPortalStudent
         $request->attributes->set('portal_student', $student);
 
         return $student;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function mobileBiodata(Student $student): array
+    {
+        return Cache::remember(
+            'student.mobile.biodata.'.$student->id.'.v1',
+            45,
+            fn () => app(StudentRecordService::class)->biodataForMobilePortal($student),
+        );
     }
 }

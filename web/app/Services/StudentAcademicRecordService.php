@@ -25,8 +25,11 @@ class StudentAcademicRecordService
     /**
      * @return array<string, mixed>
      */
-    public function forStudent(Student $student, bool $allowProvisionalCurriculum = true): array
-    {
+    public function forStudent(
+        Student $student,
+        bool $allowProvisionalCurriculum = true,
+        bool $includeAssessmentsAndContent = true,
+    ): array {
         $student->loadMissing(['applicant', 'program', 'campus']);
 
         $curriculum = $this->resolveCurriculum($student, $allowProvisionalCurriculum);
@@ -77,7 +80,7 @@ class StudentAcademicRecordService
         $assessments = collect();
         $mySubmissions = collect();
         $unitContent = collect();
-        if ($student->program_id) {
+        if ($includeAssessmentsAndContent && $student->program_id) {
             $allocationIds = UnitAllocation::query()
                 ->whereHas('unit', fn ($q) => $q->where('department_id', $student->program->department_id))
                 ->where('is_active', 1)
@@ -135,6 +138,128 @@ class StudentAcademicRecordService
             'assessments' => $assessments,
             'my_submissions' => $mySubmissions,
             'unit_content' => $unitContent,
+        ];
+    }
+
+    /**
+     * Mobile portal academics payload: capped lists and lighter assessment/content queries.
+     *
+     * @return array<string, mixed>
+     */
+    public function forStudentMobile(Student $student, bool $allowProvisionalCurriculum = true): array
+    {
+        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
+
+        $registeredUnits = $data['registered_units'];
+        $registeredUnitIds = $registeredUnits->pluck('unit_id')->filter()->unique()->values()->all();
+
+        $assessments = collect();
+        $mySubmissions = collect();
+        if ($registeredUnitIds !== []) {
+            $allocationIds = UnitAllocation::query()
+                ->whereIn('unit_id', $registeredUnitIds)
+                ->where('is_active', 1)
+                ->pluck('id');
+
+            if ($allocationIds->isNotEmpty()) {
+                $assessments = ObjectiveAssessment::query()
+                    ->with(['allocation.unit:id,unit_code,unit_name'])
+                    ->withCount('questions')
+                    ->whereIn('unit_allocation_id', $allocationIds)
+                    ->whereIn('status', ['ready', 'graded'])
+                    ->orderByDesc('created_at')
+                    ->limit(30)
+                    ->get();
+
+                $mySubmissions = ObjectiveSubmission::query()
+                    ->where('student_id', $student->id)
+                    ->whereIn('objective_assessment_id', $assessments->pluck('id'))
+                    ->get()
+                    ->keyBy('objective_assessment_id');
+            }
+        }
+
+        $unitIds = collect($data['curriculum_units'])->pluck('unit_id')->filter()->unique()
+            ->merge($registeredUnitIds)
+            ->unique()
+            ->values()
+            ->all();
+
+        $unitContent = collect();
+        if ($unitIds !== []) {
+            $unitContent = UnitContent::query()
+                ->select([
+                    'id', 'unit_id', 'unit_allocation_id', 'title', 'content_type',
+                    'file_path', 'original_filename', 'status', 'published_at', 'created_at', 'display_order',
+                ])
+                ->with(['unit:id,unit_code,unit_name', 'unitAllocation'])
+                ->whereIn('unit_id', $unitIds)
+                ->where('status', 'published')
+                ->orderByDesc('display_order')
+                ->orderByDesc('created_at')
+                ->limit(40)
+                ->get();
+        }
+
+        $data['assessments'] = $assessments;
+        $data['my_submissions'] = $mySubmissions;
+        $data['unit_content'] = $unitContent;
+        $data['registrations'] = collect($data['registrations'])->take(20)->values();
+        $data['grades'] = collect($data['grades'])->take(40)->values();
+        $data['cat_scores'] = collect($data['cat_scores'])->take(40)->values();
+        $data['exam_results'] = collect($data['exam_results'])->take(40)->values();
+        $data['attendance'] = collect($data['attendance'])->take(40)->values();
+
+        return $data;
+    }
+
+    /**
+     * Minimal academics context for resolving the student timetable only.
+     *
+     * @return array<string, mixed>
+     */
+    public function timetableContextForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
+    {
+        $student->loadMissing(['applicant', 'program', 'campus']);
+
+        $curriculum = $this->resolveCurriculum($student, $allowProvisionalCurriculum);
+        $curriculumUnits = $curriculum
+            ? $curriculum->items->sortBy(['semester', 'display_order', 'priority'])->values()
+            : collect();
+
+        $periods = $curriculum
+            ? $curriculum->periods->sortBy('semester')->values()
+            : collect();
+
+        $currentPeriod = $this->resolveCurrentPeriod($periods, $curriculumUnits);
+
+        $registrations = DB::table('student_semester_registrations as ssr')
+            ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
+            ->leftJoin('academic_years as ay', 'ay.id', '=', 's.academic_year_id')
+            ->where('ssr.student_id', $student->id)
+            ->orderByDesc('ssr.registration_date')
+            ->limit(10)
+            ->select([
+                'ssr.*',
+                's.semester_label',
+                's.semester_number',
+                'ay.year_label',
+            ])
+            ->get();
+
+        $currentSemester = $student->current_semester_id
+            ? Semester::query()->with('academicYear')->find($student->current_semester_id)
+            : Semester::query()->with('academicYear')->where('is_current', 1)->first();
+
+        return [
+            'curriculum' => $curriculum,
+            'curriculum_units' => $curriculumUnits,
+            'periods' => $periods,
+            'current_period' => $currentPeriod,
+            'current_semester' => $currentSemester,
+            'registrations' => $registrations,
+            'registered_units' => collect(),
+            'registered_unit_count' => 0,
         ];
     }
 

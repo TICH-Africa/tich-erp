@@ -71,7 +71,12 @@ abstract final class TichPortalWarmup {
   }
 
   /// More drawer links - warm only when the user opens the menu.
-  static void studentMoreOpened(StudentApi api) {}
+  static void studentMoreOpened(StudentApi api) {
+    _runDeferred([
+      () => TichScreenCache.warm('student.notifications', () => api.notifications()),
+      () => TichScreenCache.warm('student.documents', () => api.documents()),
+    ]);
+  }
 
   static void staffShellOpened(StaffApi api) {
     _cancelDeferred();
