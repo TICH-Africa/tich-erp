@@ -6612,8 +6612,20 @@ a.tich-notification-badge:hover {
 
 .tich-doc-card__actions {
     display: flex;
+    align-items: center;
     gap: 0.375rem;
     flex-shrink: 0;
+    width: 100%;
+}
+
+.tich-doc-card__actions-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.tich-doc-card__delete-form {
+    margin-left: auto;
 }
 
 .tich-badge--sm {
