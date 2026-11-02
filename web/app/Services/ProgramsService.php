@@ -52,7 +52,7 @@ class ProgramsService
     {
         if ($this->tableExists('academic_programs')) {
             $program = AcademicProgram::query()
-                ->with(['department:id,dept_name,dept_code', 'feeStructure'])
+                ->with(['department:id,dept_name,dept_code', 'feeStructure', 'tiers'])
                 ->where('status', 'active')
                 ->whereRaw('LOWER(program_code) = ?', [strtolower($code)])
                 ->first();
@@ -78,7 +78,7 @@ class ProgramsService
     {
         if ($this->tableExists('academic_programs')) {
             $query = AcademicProgram::query()
-                ->with(['department:id,dept_name,dept_code', 'feeStructure'])
+                ->with(['department:id,dept_name,dept_code', 'feeStructure', 'tiers'])
                 ->where('status', 'active');
 
             if ($search) {
@@ -121,11 +121,27 @@ class ProgramsService
     {
         $feeDisplay = $this->resolveProgramFee($program);
 
+        $tierSummaries = [];
+        if ($program->is_tiered && $program->relationLoaded('tiers')) {
+            $labels = config('tich-program-tiers.tier_labels', []);
+            foreach ($program->tiers->sortBy('tier_order') as $tier) {
+                $tierSummaries[] = (object) [
+                    'tier_key' => $tier->tier_key,
+                    'label' => $labels[$tier->tier_key] ?? $tier->label(),
+                    'cumulative_months' => $tier->cumulative_months,
+                    'marketing_summary' => $tier->marketing_summary,
+                    'learning_outcomes' => $tier->learning_outcomes,
+                ];
+            }
+        }
+
         return (object) [
             'id' => $program->id,
             'program_code' => $program->program_code,
             'program_name' => $program->program_name,
             'program_type' => $program->program_type,
+            'is_tiered' => (bool) $program->is_tiered,
+            'tiers' => $tierSummaries,
             'regulatory_body' => $program->regulatory_body,
             'department_name' => $program->department?->dept_name,
             'department_code' => $program->department?->dept_code,
@@ -144,6 +160,25 @@ class ProgramsService
     {
         if (! $this->tableExists('fee_structures')) {
             return 'Contact admissions for current fee structure';
+        }
+
+        if ($program->is_tiered && $program->relationLoaded('tiers') && $program->tiers->isNotEmpty()) {
+            $parts = [];
+            foreach ($program->tiers->sortBy('tier_order') as $tier) {
+                $fee = \App\Models\FeeStructure::query()
+                    ->where('program_id', $program->id)
+                    ->where('program_tier', $tier->tier_key)
+                    ->where('is_active', 1)
+                    ->orderByDesc('effective_from')
+                    ->value('total_semester_fee');
+                if ($fee) {
+                    $label = config('tich-program-tiers.tier_labels.'.$tier->tier_key, $tier->tier_key);
+                    $parts[] = $label.': KES '.number_format((float) $fee, 0);
+                }
+            }
+            if ($parts !== []) {
+                return implode(' · ', $parts);
+            }
         }
 
         $fee = $program->feeStructure?->total_semester_fee;

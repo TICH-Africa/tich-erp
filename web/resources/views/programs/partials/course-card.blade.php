@@ -37,6 +37,20 @@
             <p class="tich-course-card__excerpt">{{ \Illuminate\Support\Str::limit(strip_tags($program->homepage_tagline), $excerptLimit) }}</p>
         @endif
 
+        @if (! empty($program->is_tiered) && ! empty($program->tiers))
+            <div class="tich-course-card__tiers tich-mt-2">
+                <p class="tich-caption">Institutional tiers (one programme code)</p>
+                @foreach ($program->tiers as $tier)
+                    <details class="tich-mt-1" @if($loop->first) open @endif>
+                        <summary>{{ $tier->label ?? $tier['label'] ?? '' }} · {{ $tier->cumulative_months ?? $tier['cumulative_months'] ?? '?' }} months</summary>
+                        @if (! empty($tier->marketing_summary ?? $tier['marketing_summary'] ?? null))
+                            <p class="tich-caption tich-mt-1">{{ $tier->marketing_summary ?? $tier['marketing_summary'] }}</p>
+                        @endif
+                    </details>
+                @endforeach
+            </div>
+        @endif
+
         @if (! empty($program->duration_months) || ! empty($program->regulatory_body) || ! empty($program->entry_requirements) || ! empty($program->fee_display))
             <dl class="tich-course-card__details">
                 @if (! empty($program->duration_months))

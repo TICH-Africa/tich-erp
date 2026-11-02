@@ -12,6 +12,7 @@ use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use App\Services\Academics\ProgramTierCurriculumValidator;
 use Illuminate\Validation\ValidationException;
 
 class CurriculumVersionService
@@ -19,6 +20,7 @@ class CurriculumVersionService
     public function __construct(
         protected AcademicsAccessService $access,
         protected AuditService $auditService,
+        protected ProgramTierCurriculumValidator $tierCurriculumValidator,
     ) {}
 
     /**
@@ -659,6 +661,8 @@ class CurriculumVersionService
         }
 
         $previousStatus = $version->status;
+
+        $this->tierCurriculumValidator->assertIntakeVersionReady($version);
 
         $version->update([
             'status' => 'published',

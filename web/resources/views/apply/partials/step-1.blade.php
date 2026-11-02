@@ -11,6 +11,18 @@
     $selectedCounty = old('community_college_county', $draft['community_college_county'] ?? ($selectedCampus?->county ?? ''));
     $selectedSiteId = old('community_college_site_id', $draft['community_college_site_id'] ?? ($selectedCampus?->campus_type === 'community_college' ? $selectedCampusId : ''));
     $campusSelectionType = old('campus_selection_type', $draft['campus_selection_type'] ?? ($selectedCampus?->campus_type === 'community_college' ? 'community_college' : ($selectedCampusId ? 'campus' : '')));
+    $selectedProgramTier = old('program_tier', $draft['program_tier'] ?? '');
+    $tierLabels = config('tich-program-tiers.tier_labels', []);
+    $programsTierMeta = $programs->mapWithKeys(fn ($p) => [
+        (string) ($p->id ?? '') => [
+            'is_tiered' => (bool) ($p->is_tiered ?? false),
+            'tiers' => collect($p->tiers ?? [])->map(fn ($t) => [
+                'tier_key' => $t->tier_key ?? $t['tier_key'] ?? '',
+                'label' => $tierLabels[$t->tier_key ?? $t['tier_key'] ?? ''] ?? '',
+                'summary' => $t->marketing_summary ?? $t['marketing_summary'] ?? '',
+            ])->values()->all(),
+        ],
+    ])->all();
 @endphp
 
 @if ($programs->isEmpty())
@@ -38,6 +50,16 @@
         @endforeach
     </select>
     @error('program_id')<p class="tich-field-error">{{ $message }}</p>@enderror
+</div>
+
+<div class="tich-form-group" id="program-tier-field" hidden>
+    <label for="program_tier" class="tich-label">Exit level (tier)</label>
+    <select id="program_tier" name="program_tier" class="tich-input">
+        <option value="">Select tier</option>
+    </select>
+    <p id="program-tier-summary" class="tich-caption tich-mt-2"></p>
+    @error('program_tier')<p class="tich-field-error">{{ $message }}</p>@enderror
+    <p class="tich-caption tich-mt-2">You must complete lower tiers before advancing. Entry requirements are the same for all tiers.</p>
 </div>
 
 <div class="tich-form-group" id="intake-field" style="display:none;">
@@ -115,7 +137,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const intakesByProgram = @json($intakeOptions);
+    const tierMetaByProgram = @json($programsTierMeta);
+    const selectedTier = @json((string) $selectedProgramTier);
     const programSelect = document.getElementById('program_id');
+    const tierField = document.getElementById('program-tier-field');
+    const tierSelect = document.getElementById('program_tier');
+    const tierSummary = document.getElementById('program-tier-summary');
     const intakeField = document.getElementById('intake-field');
     const intakeSelect = document.getElementById('intake_selection');
     const intakeYearInput = document.getElementById('intake_year');
@@ -157,12 +184,43 @@ document.addEventListener('DOMContentLoaded', function () {
         intakeMonthInput.value = parts[1] || '';
     });
 
+    function renderTiers(programId) {
+        tierSelect.innerHTML = '<option value="">Select tier</option>';
+        tierSummary.textContent = '';
+        const meta = tierMetaByProgram[programId];
+        if (!meta || !meta.is_tiered || !meta.tiers.length) {
+            tierField.hidden = true;
+            tierSelect.removeAttribute('required');
+            return;
+        }
+        tierField.hidden = false;
+        tierSelect.setAttribute('required', 'required');
+        meta.tiers.forEach(function (tier) {
+            const option = document.createElement('option');
+            option.value = tier.tier_key;
+            option.textContent = tier.label || tier.tier_key;
+            if (tier.tier_key === selectedTier) {
+                option.selected = true;
+                tierSummary.textContent = tier.summary || '';
+            }
+            tierSelect.appendChild(option);
+        });
+    }
+
+    tierSelect.addEventListener('change', function () {
+        const meta = tierMetaByProgram[programSelect.value];
+        const tier = (meta?.tiers || []).find(function (t) { return t.tier_key === tierSelect.value; });
+        tierSummary.textContent = tier?.summary || '';
+    });
+
     programSelect.addEventListener('change', function () {
         renderIntakes(programSelect.value);
+        renderTiers(programSelect.value);
     });
 
     if (programSelect.value) {
         renderIntakes(programSelect.value);
+        renderTiers(programSelect.value);
     }
 
     const campusSelectionType = document.getElementById('campus_selection_type');

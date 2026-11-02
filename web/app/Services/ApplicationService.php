@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AcademicProgram;
 use App\Models\Applicant;
 use App\Models\ApplicationDocument;
 use App\Models\Campus;
@@ -189,9 +190,16 @@ class ApplicationService
         }
 
         $programId = (int) $program->id;
+        $dbProgram = AcademicProgram::query()->with('tiers')->find($programId);
+        $tierKeys = config('tich-program-tiers.tier_keys', []);
         $intakes = $this->intakesForProgram($programId);
         $rules = [
             'program_id' => ['required', 'integer'],
+            'program_tier' => [
+                $dbProgram?->isTieredProgram() ? 'required' : 'nullable',
+                'string',
+                'in:'.implode(',', $tierKeys),
+            ],
             'campus_selection_type' => ['nullable', 'in:campus,community_college,online'],
             'preferred_campus_id' => ['nullable', 'integer', 'exists:campuses,id'],
             'community_college_county' => ['nullable', 'string', 'max:100'],
@@ -207,6 +215,11 @@ class ApplicationService
         }
 
         $validated = Validator::make($request->all(), $rules)->validate();
+
+        if ($dbProgram && ! $dbProgram->isTieredProgram()) {
+            $validated['program_tier'] = null;
+        }
+
         $selectionType = $validated['campus_selection_type'] ?? null;
         $normalCampusId = $validated['preferred_campus_id'] ?? null;
         $siteId = $validated['community_college_site_id'] ?? null;
@@ -432,6 +445,7 @@ class ApplicationService
         $attributes = [
             'application_number' => $this->generateApplicationNumber(),
             'program_id' => $programId,
+            'program_tier' => $data['program_tier'] ?? null,
             'intake_year' => $data['intake_year'] ?? null,
             'intake_month' => $data['intake_month'] ?? null,
             'handling_department_id' => $this->resolveProgramDepartmentId($programId),

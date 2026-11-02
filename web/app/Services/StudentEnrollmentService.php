@@ -33,7 +33,7 @@ class StudentEnrollmentService
                 return $existing;
             }
 
-            $student = Student::create([
+            $student = Student::create(array_merge([
                 'registration_number' => $this->generateRegistrationNumber($applicant),
                 'application_id' => $applicant->id,
                 'program_id' => $applicant->program_id,
@@ -48,7 +48,7 @@ class StudentEnrollmentService
                 'created_at' => now(),
                 'updated_at' => now(),
                 'created_by' => $createdBy,
-            ]);
+            ], $this->tierFieldsFromApplicant($applicant)));
 
             $this->carryNextOfKin($applicant, $student, $createdBy);
 
@@ -93,7 +93,7 @@ class StudentEnrollmentService
             $token = Str::random(48);
             $expiresAt = now()->addDays((int) config('tich-sis.portal_invite_days', 14));
 
-            $student = Student::create([
+            $student = Student::create(array_merge([
                 'registration_number' => $this->generateRegistrationNumber($applicant),
                 'application_id' => $applicant->id,
                 'program_id' => $applicant->program_id,
@@ -110,7 +110,7 @@ class StudentEnrollmentService
                 'created_at' => now(),
                 'updated_at' => now(),
                 'created_by' => $createdBy,
-            ]);
+            ], $this->tierFieldsFromApplicant($applicant)));
 
             $this->carryNextOfKin($applicant, $student, $createdBy);
 
@@ -264,5 +264,32 @@ class StudentEnrollmentService
                 'created_by' => $createdBy,
             ]);
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function tierFieldsFromApplicant(Applicant $applicant): array
+    {
+        $tier = $applicant->program_tier ?? null;
+        if (! $tier || ! Schema::hasColumn('students', 'program_tier')) {
+            return [];
+        }
+
+        $fields = ['program_tier' => $tier];
+
+        if (Schema::hasColumn('students', 'paid_program_tiers')) {
+            $fields['paid_program_tiers'] = [$tier];
+        }
+
+        if (Schema::hasColumn('students', 'program_tier_history')) {
+            $fields['program_tier_history'] = [[
+                'tier' => $tier,
+                'source' => 'application',
+                'recorded_at' => now()->toIso8601String(),
+            ]];
+        }
+
+        return $fields;
     }
 }

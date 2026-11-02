@@ -102,6 +102,8 @@
         placeholder="NITA, CDACC, TVET…"
     >
 </div>
+@include('admin.partials.program-tier-fields', ['program' => $program, 'fieldIdPrefix' => $fieldIdPrefix])
+
 <div class="tich-form-group">
     <label class="tich-label" @if ($fieldIdPrefix) for="{{ $fieldIdPrefix }}duration_months" @endif>Duration (months)</label>
     <input

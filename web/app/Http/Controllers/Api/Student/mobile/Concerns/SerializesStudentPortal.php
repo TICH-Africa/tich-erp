@@ -23,6 +23,11 @@ trait SerializesStudentPortal
             'full_name' => $identity['full_name'] ?? $student->applicant?->fullName(),
             'photo_url' => $identity['photo_url'] ?? $student->photoUrl(),
             'program' => $academic['program'] ?? $student->program?->program_name,
+            'program_tier' => $student->program_tier,
+            'program_tier_label' => $student->program_tier
+                ? config('tich-program-tiers.tier_labels.'.$student->program_tier, $student->program_tier)
+                : null,
+            'paid_program_tiers' => $student->paid_program_tiers ?? [],
             'department' => $academic['department'] ?? $student->program?->department?->dept_name,
             'campus' => $enrollment['campus'] ?? $student->campus?->campus_name,
             'enrollment_status' => $enrollment['enrollment_status'] ?? $student->enrollment_status,

@@ -24,6 +24,7 @@ class AcademicProgram extends Model
 
     protected $fillable = [
         'program_code', 'program_name', 'program_type', 'regulatory_body', 'curriculum_format',
+        'is_tiered', 'tier_semester_months',
         'department_id', 'duration_months', 'semester_count', 'block_count',
         'is_nursing_track', 'min_attendance_pct', 'theory_pass_mark', 'clinical_pass_mark',
         'status', 'approved_by_ceo_at', 'approved_by_ceo_id',
@@ -33,6 +34,7 @@ class AcademicProgram extends Model
 
     protected $casts = [
         'is_featured_on_homepage' => 'boolean',
+        'is_tiered' => 'boolean',
         'is_nursing_track' => 'boolean',
         'min_attendance_pct' => 'decimal:2',
         'theory_pass_mark' => 'decimal:2',
@@ -66,6 +68,16 @@ class AcademicProgram extends Model
     public function curriculumVersions(): HasMany
     {
         return $this->hasMany(CurriculumVersion::class, 'program_id')->orderByDesc('version_number');
+    }
+
+    public function tiers(): HasMany
+    {
+        return $this->hasMany(ProgramTier::class, 'program_id')->orderBy('tier_order');
+    }
+
+    public function isTieredProgram(): bool
+    {
+        return (bool) $this->is_tiered;
     }
 
     public function nursingBlocks(): HasMany

@@ -9,6 +9,8 @@ use App\Models\Campus;
 use App\Models\Department;
 use App\Models\FeeStructure;
 use App\Services\AuditService;
+use App\Services\Academics\ProgramTierFeeService;
+use App\Services\Academics\ProgramTierService;
 use App\Services\ProgramCarouselSyncService;
 use App\Services\StoredFileService;
 use Illuminate\Http\RedirectResponse;
@@ -22,12 +24,14 @@ class ProgramController extends Controller
         protected AuditService $auditService,
         protected ProgramCarouselSyncService $programCarousel,
         protected StoredFileService $files,
+        protected ProgramTierService $programTiers,
+        protected ProgramTierFeeService $programTierFees,
     ) {}
 
     public function index(): View
     {
         $programs = AcademicProgram::query()
-            ->with('department:id,dept_name,dept_code')
+            ->with(['department:id,dept_name,dept_code', 'tiers'])
             ->orderBy('homepage_display_order')
             ->orderBy('program_name')
             ->get();
@@ -41,7 +45,7 @@ class ProgramController extends Controller
         return view('admin.programs.index', [
             'programs' => $programs,
             'learningDepartments' => $learningDepartments,
-            'programTypes' => ['certificate', 'diploma', 'degree', 'artisan', 'short_course'],
+            'programTypes' => ['certificate', 'diploma', 'advanced_diploma', 'artisan', 'short_course', 'tiered'],
             'programStatuses' => ['active', 'pending_ceo', 'inactive', 'archived'],
         ]);
     }
@@ -71,20 +75,36 @@ class ProgramController extends Controller
             ]);
         }
 
+        $isTiered = $request->boolean('is_tiered');
+        $tierPayload = $this->programTiers->validateTierPayload($request, $isTiered);
+
         $program = AcademicProgram::create([
             ...$validated,
             'duration_months' => $validated['duration_months'] ?? 12,
             'homepage_display_order' => $validated['homepage_display_order'] ?? 0,
             'is_featured_on_homepage' => $request->boolean('is_featured_on_homepage'),
+            'is_tiered' => $isTiered,
+            'tier_semester_months' => $tierPayload['tier_semester_months'],
+            'program_type' => $isTiered ? 'tiered' : $validated['program_type'],
+            'curriculum_format' => $isTiered ? 'semester' : ($validated['curriculum_format'] ?? 'semester'),
             'cover_image_path' => $this->files->replace(null, $request->file('cover_image'), 'programs', 'public', null, true),
             'created_by' => $request->user()->id,
             'created_at' => now(),
         ]);
 
+        try {
+            $this->programTiers->syncTiers($program, $tierPayload);
+        } catch (\InvalidArgumentException $e) {
+            $program->delete();
+
+            return back()->withInput()->withErrors(['is_tiered' => $e->getMessage()]);
+        }
+
         // Create fee structure if fee provided
         if (! empty($validated['total_semester_fee'])) {
             $this->createOrUpdateFeeStructure($program, $validated['total_semester_fee']);
         }
+        $this->syncTierFeeStructures($program, $request, $isTiered);
 
         $this->auditService->log(
             'core.program.created',
@@ -135,12 +155,22 @@ class ProgramController extends Controller
         }
 
         $old = $program->only(['program_code', 'program_name', 'department_id', 'status']);
+        $isTiered = $request->boolean('is_tiered');
+        $tierPayload = $this->programTiers->validateTierPayload($request, $isTiered);
+
         $updates = [
             ...$validated,
             'duration_months' => $validated['duration_months'] ?? $program->duration_months,
             'homepage_display_order' => $validated['homepage_display_order'] ?? 0,
             'is_featured_on_homepage' => $request->boolean('is_featured_on_homepage'),
+            'is_tiered' => $isTiered,
+            'tier_semester_months' => $tierPayload['tier_semester_months'],
+            'program_type' => $isTiered ? 'tiered' : $validated['program_type'],
         ];
+
+        if ($isTiered) {
+            $updates['curriculum_format'] = 'semester';
+        }
 
         if ($request->hasFile('cover_image')) {
             $updates['cover_image_path'] = $this->files->replace(
@@ -155,10 +185,17 @@ class ProgramController extends Controller
 
         $program->update($updates);
 
+        try {
+            $this->programTiers->syncTiers($program->fresh(), $tierPayload);
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->withErrors(['is_tiered' => $e->getMessage()]);
+        }
+
         // Update fee structure if fee provided
-        if (! empty($validated['total_semester_fee'])) {
+        if (! empty($validated['total_semester_fee']) && ! $isTiered) {
             $this->createOrUpdateFeeStructure($program, $validated['total_semester_fee']);
         }
+        $this->syncTierFeeStructures($program->fresh(), $request, $isTiered);
 
         $this->auditService->log(
             'core.program.updated',
@@ -177,7 +214,26 @@ class ProgramController extends Controller
         return back()->with('status', 'Program updated successfully.');
     }
 
-    private function createOrUpdateFeeStructure(AcademicProgram $program, float $totalSemesterFee): void
+    private function syncTierFeeStructures(AcademicProgram $program, Request $request, bool $isTiered): void
+    {
+        if (! $isTiered) {
+            return;
+        }
+
+        $tierFees = $request->input('tier_fees', []);
+        if (! is_array($tierFees)) {
+            return;
+        }
+
+        foreach ($tierFees as $tierKey => $amount) {
+            if ($amount === null || $amount === '') {
+                continue;
+            }
+            $this->createOrUpdateFeeStructure($program, (float) $amount, (string) $tierKey);
+        }
+    }
+
+    private function createOrUpdateFeeStructure(AcademicProgram $program, float $totalSemesterFee, ?string $programTier = null): void
     {
         $currentYear = AcademicYear::query()->where('is_current', 1)->first();
         if (! $currentYear) {
@@ -187,6 +243,11 @@ class ProgramController extends Controller
         $feeStructure = FeeStructure::query()
             ->where('program_id', $program->id)
             ->where('academic_year_id', $currentYear->id)
+            ->when(
+                $programTier,
+                fn ($q) => $q->where('program_tier', $programTier),
+                fn ($q) => $q->whereNull('program_tier'),
+            )
             ->first();
 
         $tuitionFee = round($totalSemesterFee * 0.8, 2); // 80% tuition
@@ -194,6 +255,7 @@ class ProgramController extends Controller
 
         $data = [
             'program_id' => $program->id,
+            'program_tier' => $programTier,
             'academic_year_id' => $currentYear->id,
             'effective_from' => now()->toDateString(),
             'is_active' => true,
