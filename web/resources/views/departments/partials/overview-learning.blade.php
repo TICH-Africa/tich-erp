@@ -43,7 +43,7 @@
                         <th>Code</th>
                         <th>Programme</th>
                         <th>Duration</th>
-                        <th>Terms / year</th>
+                        <th>Teaching periods</th>
                         <th>Format</th>
                         @if ($curriculumScope)
                             <th></th>
@@ -54,9 +54,14 @@
                     @foreach ($programs as $program)
                         <tr>
                             <td>{{ $program->program_code }}</td>
-                            <td>{{ $program->program_name }}</td>
-                            <td>{{ $program->duration_months ? $program->duration_months.' months' : '-' }}</td>
-                            <td>{{ $program->semester_count ?: $program->termsPerYear() }}</td>
+                            <td>
+                                {{ $program->program_name }}
+                                @if ($program->isTieredProgram())
+                                    <br><span class="tich-caption">Tiered programme</span>
+                                @endif
+                            </td>
+                            <td>{{ $program->listDurationLabel() }}</td>
+                            <td>{{ $program->listTeachingPeriodsLabel() }}</td>
                             <td>{{ $curriculumFormats[$program->curriculum_format ?? 'trimester'] ?? ucfirst($program->curriculum_format ?? 'trimester') }}</td>
                             @if ($curriculumScope)
                                 <td>

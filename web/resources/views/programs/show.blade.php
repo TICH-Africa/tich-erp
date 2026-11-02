@@ -18,7 +18,15 @@
                 <p class="tich-program-show__back">
                     <a href="{{ route('programs.index') }}" class="tich-program-show__back-link"><i class="tich-icon-arrow-left"></i> All programmes</a>
                 </p>
-                <p class="tich-program-show__eyebrow">{{ strtoupper($program->program_code) }} · {{ strtoupper(str_replace('_', ' ', $program->program_type ?? 'PROGRAMME')) }}</p>
+                <p class="tich-program-show__eyebrow">
+                    {{ strtoupper($program->program_code) }}
+                    ·
+                    @if (! empty($program->is_tiered))
+                        Institutional tiered programme
+                    @else
+                        {{ strtoupper(str_replace('_', ' ', $program->program_type ?? 'PROGRAMME')) }}
+                    @endif
+                </p>
                 <h1 class="tich-program-show__title" itemprop="name">{{ $program->program_name }}</h1>
                 @if (!empty($program->homepage_tagline))
                     <p class="tich-program-show__lead" itemprop="description">{{ \Illuminate\Support\Str::limit(strip_tags($program->homepage_tagline), 180) }}</p>
@@ -42,6 +50,60 @@
                     <h2 class="tich-h3">About this programme</h2>
                     @if (!empty($program->homepage_tagline))
                         <div class="tich-text tich-mt-4 tich-prose">{!! $program->homepage_tagline !!}</div>
+                    @endif
+
+                    @if (! empty($program->is_tiered) && ! empty($program->tiers))
+                        @php
+                            $showTiers = collect($program->tiers);
+                            $maxTierMonths = max(1, (int) $showTiers->max(fn ($t) => data_get($t, 'cumulative_months', 0)));
+                        @endphp
+                        <section class="tich-program-show__tiers tich-mt-8" aria-labelledby="program-tiers-heading">
+                            <h2 id="program-tiers-heading" class="tich-h3">Programme tiers</h2>
+                            <p class="tich-text tich-mt-2">
+                                One programme code (<strong>{{ $program->program_code }}</strong>) with three exit levels.
+                                You apply for one tier; complete lower tiers before advancing. Entry requirements are the same for all tiers.
+                            </p>
+                            <ol class="tich-program-show__tier-list tich-mt-6">
+                                @foreach ($showTiers as $tier)
+                                    @php
+                                        $tierLabel = data_get($tier, 'label', '');
+                                        $tierKey = data_get($tier, 'tier_key', '');
+                                        $cumulative = (int) data_get($tier, 'cumulative_months', 0);
+                                        $incremental = (int) data_get($tier, 'incremental_months', 0);
+                                        $barWidth = min(100, (int) round(($cumulative / $maxTierMonths) * 100));
+                                    @endphp
+                                    <li class="tich-program-show__tier-item">
+                                        <div class="tich-program-show__tier-head">
+                                            <h3 class="tich-h4">{{ $tierLabel }}</h3>
+                                            <p class="tich-caption">
+                                                @if ($incremental > 0 && $incremental < $cumulative)
+                                                    {{ $incremental }} months at this level · {{ $cumulative }} months cumulative
+                                                @else
+                                                    {{ $cumulative }} months total
+                                                @endif
+                                            </p>
+                                        </div>
+                                        <div class="tich-program-show__tier-track" aria-hidden="true">
+                                            <div class="tich-program-show__tier-track-fill" style="width: {{ $barWidth }}%;"></div>
+                                        </div>
+                                        @if (filled(data_get($tier, 'marketing_summary')))
+                                            <p class="tich-text tich-mt-3">{{ data_get($tier, 'marketing_summary') }}</p>
+                                        @endif
+                                        @if (filled(data_get($tier, 'learning_outcomes')))
+                                            <div class="tich-text tich-mt-3 tich-prose">{!! data_get($tier, 'learning_outcomes') !!}</div>
+                                        @endif
+                                        @if (filled(data_get($tier, 'fee_display')))
+                                            <p class="tich-caption tich-mt-3"><strong>Fees:</strong> {{ data_get($tier, 'fee_display') }}</p>
+                                        @endif
+                                        <a
+                                            href="{{ route('apply.index', ['program' => $program->program_code, 'tier' => $tierKey]) }}"
+                                            class="tich-link tich-mt-3"
+                                            style="display: inline-block;"
+                                        >Apply for {{ $tierLabel }} →</a>
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </section>
                     @endif
 
                     @if (!empty($program->entry_requirements))
@@ -71,7 +133,21 @@
                         @if (!empty($program->duration_months))
                             <div>
                                 <dt>Duration</dt>
-                                <dd>{{ $program->duration_months }} months</dd>
+                                <dd>
+                                    @if (! empty($program->is_tiered))
+                                        Up to {{ $program->duration_months }} months (Advanced Diploma)
+                                    @else
+                                        {{ $program->duration_months }} months
+                                    @endif
+                                </dd>
+                            </div>
+                        @endif
+                        @if (! empty($program->is_tiered) && ! empty($program->tiers))
+                            <div>
+                                <dt>Exit levels</dt>
+                                <dd>
+                                    {{ collect($program->tiers)->map(fn ($t) => data_get($t, 'label'))->filter()->join(' → ') }}
+                                </dd>
                             </div>
                         @endif
                         @if (!empty($program->regulatory_body))

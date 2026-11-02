@@ -56,6 +56,10 @@ class ProgramCurriculumService
         $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
         abort_unless(in_array((int) $program->department_id, $scopeIds, true), 403);
 
+        if ($program->isTieredProgram()) {
+            abort(422, 'Tiered programmes are configured in ICT Programmes. Use that screen to change tier months and semester length.');
+        }
+
         $old = $program->only(['curriculum_format', 'semester_count', 'block_count', 'is_nursing_track', 'duration_months']);
 
         $blockCount = (int) ($data['block_count'] ?? $program->block_count ?? 0);
@@ -289,6 +293,14 @@ class ProgramCurriculumService
             ],
             ['type' => 'heading', 'label' => $program->program_code],
         ];
+
+        if ($program->isTieredProgram()) {
+            $program->loadMissing('tiers');
+            $ladder = $program->tierLadderSummary();
+            if ($ladder) {
+                $items[] = ['type' => 'heading', 'label' => 'Tiered · '.$ladder];
+            }
+        }
 
         $canViewApplications = $this->rbacService->hasPermission($user, 'academics.read');
         $canViewStudents = $this->rbacService->hasPermission($user, 'students.read');

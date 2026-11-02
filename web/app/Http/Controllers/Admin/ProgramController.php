@@ -12,9 +12,11 @@ use App\Services\AuditService;
 use App\Services\Academics\ProgramTierFeeService;
 use App\Services\Academics\ProgramTierService;
 use App\Services\ProgramCarouselSyncService;
+use App\Services\ProgramFormCoverDraftService;
 use App\Services\StoredFileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -26,7 +28,22 @@ class ProgramController extends Controller
         protected StoredFileService $files,
         protected ProgramTierService $programTiers,
         protected ProgramTierFeeService $programTierFees,
+        protected ProgramFormCoverDraftService $coverDrafts,
     ) {}
+
+    public function formCoverDraft(Request $request): Response
+    {
+        $scope = (string) $request->query('scope', 'create');
+        abort_unless(in_array($scope, ['create', 'edit'], true), 404);
+
+        $token = (string) $request->query('token', '');
+        $absolute = $this->coverDrafts->previewAbsolutePath($scope, $token);
+        abort_unless($absolute && is_readable($absolute), 404);
+
+        return response()->file($absolute, [
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
 
     public function index(): View
     {
@@ -52,21 +69,13 @@ class ProgramController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'program_code' => ['required', 'string', 'max:30', 'unique:academic_programs,program_code'],
-            'program_name' => ['required', 'string', 'max:300'],
-            'program_type' => ['required', 'string', 'max:50'],
-            'regulatory_body' => ['nullable', 'string', 'max:100'],
-            'department_id' => ['required', 'exists:departments,id'],
-            'duration_months' => ['nullable', 'integer', 'min:1', 'max:120'],
-            'status' => ['required', 'in:active,pending_ceo,inactive,archived'],
-            'homepage_tagline' => ['nullable', 'string', 'max:2000'],
-            'entry_requirements' => ['nullable', 'string', 'max:2000'],
-            'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
-            'is_featured_on_homepage' => ['nullable', 'boolean'],
-            'cover_image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
-            'total_semester_fee' => ['nullable', 'numeric', 'min:0'],
-        ]);
+        $this->coverDrafts->rememberUpload($request);
+        $isTiered = $request->boolean('is_tiered');
+
+        $validated = $request->validate(array_merge(
+            $this->programFormRules($request, requireCoverImage: true),
+            $this->programTiers->validationRules($isTiered),
+        ));
 
         $department = Department::query()->find($validated['department_id']);
         if (! $department?->isValidLearningDepartment()) {
@@ -75,8 +84,7 @@ class ProgramController extends Controller
             ]);
         }
 
-        $isTiered = $request->boolean('is_tiered');
-        $tierPayload = $this->programTiers->validateTierPayload($request, $isTiered);
+        $tierPayload = $this->programTiers->tierPayloadFromValidated($validated, $isTiered);
 
         $program = AcademicProgram::create([
             ...$validated,
@@ -87,7 +95,7 @@ class ProgramController extends Controller
             'tier_semester_months' => $tierPayload['tier_semester_months'],
             'program_type' => $isTiered ? 'tiered' : $validated['program_type'],
             'curriculum_format' => $isTiered ? 'semester' : ($validated['curriculum_format'] ?? 'semester'),
-            'cover_image_path' => $this->files->replace(null, $request->file('cover_image'), 'programs', 'public', null, true),
+            'cover_image_path' => $this->files->replace(null, $this->coverDrafts->resolveUploadedFile($request), 'programs', 'public', null, true),
             'created_by' => $request->user()->id,
             'created_at' => now(),
         ]);
@@ -99,6 +107,8 @@ class ProgramController extends Controller
 
             return back()->withInput()->withErrors(['is_tiered' => $e->getMessage()]);
         }
+
+        $this->coverDrafts->forget($this->coverDrafts->scopeFromRequest($request));
 
         // Create fee structure if fee provided
         if (! empty($validated['total_semester_fee'])) {
@@ -125,27 +135,13 @@ class ProgramController extends Controller
 
     public function update(Request $request, AcademicProgram $program): RedirectResponse
     {
-        $validated = $request->validate([
-            'program_code' => ['required', 'string', 'max:30', 'unique:academic_programs,program_code,'.$program->id],
-            'program_name' => ['required', 'string', 'max:300'],
-            'program_type' => ['required', 'string', 'max:50'],
-            'regulatory_body' => ['nullable', 'string', 'max:100'],
-            'department_id' => ['required', 'exists:departments,id'],
-            'duration_months' => ['nullable', 'integer', 'min:1', 'max:120'],
-            'status' => ['required', 'in:active,pending_ceo,inactive,archived'],
-            'homepage_tagline' => ['nullable', 'string', 'max:2000'],
-            'entry_requirements' => ['nullable', 'string', 'max:2000'],
-            'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
-            'is_featured_on_homepage' => ['nullable', 'boolean'],
-            'cover_image' => [
-                Rule::requiredIf(fn () => ! $program->cover_image_path),
-                'nullable',
-                'file',
-                'image',
-                'mimes:jpeg,jpg,png,gif,webp',
-            ],
-            'total_semester_fee' => ['nullable', 'numeric', 'min:0'],
-        ]);
+        $this->coverDrafts->rememberUpload($request);
+        $isTiered = $request->boolean('is_tiered');
+
+        $validated = $request->validate(array_merge(
+            $this->programFormRules($request, requireCoverImage: ! $program->cover_image_path, program: $program),
+            $this->programTiers->validationRules($isTiered),
+        ));
 
         $department = Department::query()->find($validated['department_id']);
         if (! $department?->isValidLearningDepartment()) {
@@ -155,8 +151,7 @@ class ProgramController extends Controller
         }
 
         $old = $program->only(['program_code', 'program_name', 'department_id', 'status']);
-        $isTiered = $request->boolean('is_tiered');
-        $tierPayload = $this->programTiers->validateTierPayload($request, $isTiered);
+        $tierPayload = $this->programTiers->tierPayloadFromValidated($validated, $isTiered);
 
         $updates = [
             ...$validated,
@@ -172,15 +167,19 @@ class ProgramController extends Controller
             $updates['curriculum_format'] = 'semester';
         }
 
-        if ($request->hasFile('cover_image')) {
+        if ($request->hasFile('cover_image') || $this->coverDrafts->hasRetainedCover(
+            $this->coverDrafts->scopeFromRequest($request),
+            $request->input('cover_image_draft'),
+        )) {
             $updates['cover_image_path'] = $this->files->replace(
                 $program->cover_image_path,
-                $request->file('cover_image'),
+                $this->coverDrafts->resolveUploadedFile($request),
                 'programs',
                 'public',
                 null,
                 true,
             );
+            $this->coverDrafts->forget($this->coverDrafts->scopeFromRequest($request));
         }
 
         $program->update($updates);
@@ -212,6 +211,45 @@ class ProgramController extends Controller
         $this->programCarousel->sync($program->fresh());
 
         return back()->with('status', 'Program updated successfully.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function programFormRules(Request $request, bool $requireCoverImage, ?AcademicProgram $program = null): array
+    {
+        $scope = $this->coverDrafts->scopeFromRequest($request);
+        $hasRetainedCover = $this->coverDrafts->hasRetainedCover($scope, $request->input('cover_image_draft'));
+
+        $codeRule = ['required', 'string', 'max:30', 'unique:academic_programs,program_code'];
+        if ($program) {
+            $codeRule[3] = 'unique:academic_programs,program_code,'.$program->id;
+        }
+
+        $coverRules = ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'];
+        if ($requireCoverImage && ! $hasRetainedCover) {
+            array_unshift($coverRules, 'required');
+        }
+
+        return [
+            '_form' => ['nullable', 'string', 'in:create,edit'],
+            'program_code' => $codeRule,
+            'program_name' => ['required', 'string', 'max:300'],
+            'program_type' => ['required', 'string', 'max:50'],
+            'regulatory_body' => ['nullable', 'string', 'max:100'],
+            'department_id' => ['required', 'exists:departments,id'],
+            'duration_months' => ['nullable', 'integer', 'min:1', 'max:120'],
+            'status' => ['required', 'in:active,pending_ceo,inactive,archived'],
+            'homepage_tagline' => ['nullable', 'string', 'max:2000'],
+            'entry_requirements' => ['nullable', 'string', 'max:2000'],
+            'homepage_display_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'is_featured_on_homepage' => ['nullable', 'boolean'],
+            'cover_image' => $coverRules,
+            'cover_image_draft' => ['nullable', 'string', 'max:80'],
+            'total_semester_fee' => ['nullable', 'numeric', 'min:0'],
+            'tier_fees' => ['nullable', 'array'],
+            'tier_fees.*' => ['nullable', 'numeric', 'min:0'],
+        ];
     }
 
     private function syncTierFeeStructures(AcademicProgram $program, Request $request, bool $isTiered): void

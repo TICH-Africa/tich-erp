@@ -13,9 +13,31 @@ class ProgramTierService
     public function __construct(protected ProgramTierPlannerService $planner) {}
 
     /**
+     * @return array<string, array<int, string|\Illuminate\Contracts\Validation\ValidationRule>>
+     */
+    public function validationRules(bool $isTiered): array
+    {
+        if (! $isTiered) {
+            return [];
+        }
+
+        $keys = config('tich-program-tiers.tier_keys', []);
+
+        return [
+            'tier_semester_months' => ['required', 'integer', 'min:1', 'max:12'],
+            'tiers' => ['required', 'array', 'size:'.count($keys)],
+            'tiers.*.tier_key' => ['required', 'string', 'in:'.implode(',', $keys)],
+            'tiers.*.cumulative_months' => ['required', 'integer', 'min:1', 'max:120'],
+            'tiers.*.learning_outcomes' => ['nullable', 'string', 'max:50000'],
+            'tiers.*.marketing_summary' => ['nullable', 'string', 'max:5000'],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
      * @return array<string, mixed>
      */
-    public function validateTierPayload(Request $request, bool $isTiered): array
+    public function tierPayloadFromValidated(array $validated, bool $isTiered): array
     {
         if (! $isTiered) {
             return [
@@ -26,14 +48,6 @@ class ProgramTierService
         }
 
         $keys = config('tich-program-tiers.tier_keys', []);
-        $validated = $request->validate([
-            'tier_semester_months' => ['required', 'integer', 'min:1', 'max:12'],
-            'tiers' => ['required', 'array', 'size:'.count($keys)],
-            'tiers.*.tier_key' => ['required', 'string', 'in:'.implode(',', $keys)],
-            'tiers.*.cumulative_months' => ['required', 'integer', 'min:1', 'max:120'],
-            'tiers.*.learning_outcomes' => ['nullable', 'string', 'max:50000'],
-            'tiers.*.marketing_summary' => ['nullable', 'string', 'max:5000'],
-        ]);
 
         $ordered = [];
         foreach ($keys as $index => $key) {
@@ -55,6 +69,20 @@ class ProgramTierService
             'tier_semester_months' => (int) $validated['tier_semester_months'],
             'tiers' => $ordered,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function validateTierPayload(Request $request, bool $isTiered): array
+    {
+        if (! $isTiered) {
+            return $this->tierPayloadFromValidated([], false);
+        }
+
+        $validated = $request->validate($this->validationRules(true));
+
+        return $this->tierPayloadFromValidated($validated, true);
     }
 
     public function syncTiers(AcademicProgram $program, array $tierPayload): void

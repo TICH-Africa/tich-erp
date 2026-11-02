@@ -275,6 +275,9 @@
                                                                 · {{ $student->studyModeLabel() }} mode
                                                                 · {{ $student->cohort_intake ?: 'no cohort' }}
                                                                 · {{ str_replace('_', ' ', $student->entry_pathway ?: 'regular') }}
+                                                                @if ($program->isTieredProgram() && $student->program_tier)
+                                                                    · @include('partials.program-tier-exit-level', ['tierKey' => $student->program_tier])
+                                                                @endif
                                                                 · admitted {{ $student->date_of_admission ? \Illuminate\Support\Carbon::parse($student->date_of_admission)->format('M Y') : 'not set' }}
                                                                 @if ($yearInfo)
                                                                     · {{ $yearInfo['basis'] }}

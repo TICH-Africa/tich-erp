@@ -4,9 +4,27 @@
 ])
 
 @php
+    if (! isset($pfOld)) {
+        $fieldIdPrefix = $fieldIdPrefix ?? '';
+        $programFormScope = str_starts_with((string) $fieldIdPrefix, 'program-create-') || str_starts_with((string) $fieldIdPrefix, 'create_')
+            ? 'create'
+            : 'edit';
+        $failedFormScope = old('_form');
+        $useFlashedInput = $failedFormScope === null || $failedFormScope === $programFormScope;
+        $pfOld = static fn (string $key, mixed $default = '') => $useFlashedInput ? old($key, $default) : $default;
+        $pfOldChecked = static function (string $key, mixed $default = false) use ($useFlashedInput): bool {
+            if ($useFlashedInput && old($key) !== null) {
+                return filter_var(old($key), FILTER_VALIDATE_BOOLEAN);
+            }
+
+            return (bool) $default;
+        };
+    }
+
     $tierKeys = config('tich-program-tiers.tier_keys', []);
     $tierLabels = config('tich-program-tiers.tier_labels', []);
-    $isTiered = (bool) old('is_tiered', $program->is_tiered ?? false);
+    $isTiered = $pfOldChecked('is_tiered', $program->is_tiered ?? false);
+    $oldTiersList = $useFlashedInput ? old('tiers', []) : [];
     if ($program && ! $program->relationLoaded('tiers')) {
         $program->load('tiers');
     }
@@ -31,7 +49,7 @@
 
     <div class="tich-tier-config" data-tier-panel @if(! $isTiered) hidden @endif>
         <div class="tich-form-group">
-            <label class="tich-label">Semester length (months)</label>
+            <label class="tich-label">Semester length (months) <x-required-mark /></label>
             <input
                 type="number"
                 name="tier_semester_months"
@@ -39,23 +57,25 @@
                 min="1"
                 max="12"
                 data-tier-semester-months
-                value="{{ old('tier_semester_months', $program->tier_semester_months ?? '') }}"
+                data-tier-required
+                value="{{ $pfOld('tier_semester_months', $program->tier_semester_months ?? '') }}"
                 placeholder="e.g. 3 or 6"
             >
-            <p class="tich-caption tich-mt-2">Used to split each tier’s incremental months into semesters (not a fixed default).</p>
-        </div>
+        <p class="tich-caption tich-mt-2">Required when tiered programme is enabled. Used to split each tier’s incremental months into semesters.</p>
+    </div>
 
         @foreach ($tierKeys as $index => $tierKey)
             @php
                 $tier = $existingTiers->get($tierKey);
-                $oldTier = old('tiers.'.$index);
+                $oldTier = collect($oldTiersList)->firstWhere('tier_key', $tierKey)
+                    ?? (is_array($oldTiersList[$index] ?? null) ? $oldTiersList[$index] : null);
             @endphp
             <fieldset class="tich-card tich-mb-4" style="padding:1rem;">
                 <legend class="tich-h4">{{ $tierLabels[$tierKey] ?? $tierKey }}</legend>
                 <input type="hidden" name="tiers[{{ $index }}][tier_key]" value="{{ $tierKey }}">
 
                 <div class="tich-form-group">
-                    <label class="tich-label">Cumulative duration (months)</label>
+                    <label class="tich-label">Cumulative duration (months) <x-required-mark /></label>
                     <input
                         type="number"
                         name="tiers[{{ $index }}][cumulative_months]"
@@ -64,6 +84,7 @@
                         max="120"
                         data-tier-cumulative
                         data-tier-index="{{ $index }}"
+                        data-tier-required
                         value="{{ $oldTier['cumulative_months'] ?? $tier?->cumulative_months ?? '' }}"
                         placeholder="{{ $index === 0 ? '6' : ($index === 1 ? '12' : '24') }}"
                     >
@@ -104,7 +125,7 @@
                         class="tich-input"
                         min="0"
                         step="0.01"
-                        value="{{ old('tier_fees.'.$tierKey, '') }}"
+                        value="{{ $pfOld('tier_fees.'.$tierKey, '') }}"
                         placeholder="Full tier fee (used for apply & top-up)"
                     >
                     <p class="tich-caption tich-mt-1">Creates a fee structure row tagged to this tier for the current academic year.</p>
@@ -152,14 +173,27 @@
         }
     }
 
+    function syncTierRequired() {
+        const on = !!toggle?.checked;
+        root.querySelectorAll('[data-tier-required]').forEach(function (el) {
+            if (on) {
+                el.setAttribute('required', 'required');
+            } else {
+                el.removeAttribute('required');
+            }
+        });
+    }
+
     toggle?.addEventListener('change', () => {
         if (panel) panel.hidden = !toggle.checked;
         if (durationField) durationField.readOnly = toggle.checked;
+        syncTierRequired();
         refreshTierUi();
     });
 
     root.querySelectorAll('[data-tier-cumulative]').forEach((el) => el.addEventListener('input', refreshTierUi));
     refreshTierUi();
+    syncTierRequired();
     if (toggle?.checked && durationField) durationField.readOnly = true;
 })();
 </script>

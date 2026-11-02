@@ -41,7 +41,11 @@
                     <h2 class="tich-h3">{{ $applicant->application_number }}</h2>
                     <p class="tich-text tich-mt-2">{{ trim($applicant->first_name.' '.$applicant->surname) }}</p>
                     <ul class="tich-program-card__meta tich-mt-4">
-                        <li><span class="tich-caption">Programme</span> {{ $applicant->program?->program_name ?? '-' }}</li>
+                        <li><span class="tich-caption">Programme</span> {{ $applicant->program?->program_name ?? '-' }}
+                            @if ($applicant->program_tier)
+                                · @include('partials.program-tier-exit-level', ['tierKey' => $applicant->program_tier])
+                            @endif
+                        </li>
                         <li><span class="tich-caption">Workflow stage</span> {{ $stageLabel }}</li>
                         <li><span class="tich-caption">Academic review</span> {{ ucfirst(str_replace('_', ' ', $applicant->academic_review_status)) }}</li>
                         <li><span class="tich-caption">Submitted</span> {{ $applicant->created_at?->format('M j, Y g:i A') ?? '-' }}</li>

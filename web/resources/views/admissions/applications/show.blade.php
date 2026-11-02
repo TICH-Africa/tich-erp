@@ -40,7 +40,12 @@
                 <dd class="tich-text" style="margin: 0;"><strong>{{ $handlingDepartment }}</strong></dd>
 
                 <dt class="tich-caption">Programme</dt>
-                <dd class="tich-text" style="margin: 0;">{{ $applicant->program?->program_name ?? '-' }} ({{ $applicant->program?->program_code }})</dd>
+                <dd class="tich-text" style="margin: 0;">
+                    {{ $applicant->program?->program_name ?? '-' }} ({{ $applicant->program?->program_code }})
+                    @if ($applicant->program_tier)
+                        · @include('partials.program-tier-exit-level', ['tierKey' => $applicant->program_tier, 'as' => 'badge'])
+                    @endif
+                </dd>
 
                 <dt class="tich-caption">Preferred campus</dt>
                 <dd class="tich-text" style="margin: 0;">{{ $applicant->preferredCampus?->campus_name ?? '-' }}</dd>

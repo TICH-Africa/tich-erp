@@ -131,13 +131,22 @@ class ProgramTierPlannerService
             return $program->scheduledPeriods();
         }
 
-        $top = $program->tiers()->orderByDesc('tier_order')->first();
-        if (! $top) {
+        $tiers = $program->relationLoaded('tiers')
+            ? $program->tiers
+            : $program->tiers()->orderBy('tier_order')->get();
+
+        if ($tiers->isEmpty()) {
             return 0;
         }
 
-        $range = $this->semesterRangeForTier($program, $top->tier_key);
+        $plan = $this->buildPlan($program, $tiers->map(fn ($t) => [
+            'tier_key' => $t->tier_key,
+            'tier_order' => $t->tier_order,
+            'cumulative_months' => $t->cumulative_months,
+        ])->all());
 
-        return $range['semester_to'] ?? 0;
+        $last = $plan[array_key_last($plan)] ?? null;
+
+        return (int) ($last['semester_to'] ?? 0);
     }
 }

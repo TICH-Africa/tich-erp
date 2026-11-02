@@ -441,6 +441,7 @@ class DepartmentDashboardService
         }
 
         return AcademicProgram::query()
+            ->with('tiers')
             ->where('department_id', $department->id)
             ->orderBy('program_name')
             ->get();

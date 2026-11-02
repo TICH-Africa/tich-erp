@@ -15,6 +15,8 @@ use App\Models\Staff;
 use App\Models\Student;
 use App\Models\Unit;
 use App\Models\UnitAllocation;
+use App\Services\Academics\ProgramTierPlannerService;
+use App\Services\Academics\ProgramTierService;
 use App\Services\AcademicsAccessService;
 use App\Services\CurriculumVersionService;
 use App\Services\DepartmentDashboardService;
@@ -79,7 +81,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ? Department::query()->find($learningDepartmentId)
             : null;
 
-        $programs = $programsQuery->get();
+        $programs = $programsQuery->with('tiers')->get();
 
         return view('academics.programs.index', [
             'department' => $hub,
@@ -97,7 +99,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
     {
         $hub = $this->authorizeHub($request, $department);
         $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
-        $program->load(['department', 'nursingBlocks']);
+        $program->load(['department', 'nursingBlocks', 'tiers']);
 
         $blocks = NursingBlock::query()->where('program_id', $program->id)->orderBy('block_order')->get();
         $availableUnits = $this->access->unitsInScope($hub, $program->department_id)
@@ -134,19 +136,41 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ? $this->versions->periodsKeyed($selectedIntake)
             : collect();
 
+        $tierLabels = config('tich-program-tiers.tier_labels', []);
+        $tierPlan = $program->isTieredProgram()
+            ? app(ProgramTierService::class)->planForProgram($program)
+            : [];
+        $unitsCountByTier = $program->isTieredProgram()
+            ? $program->programUnits()
+                ->selectRaw('program_tier, COUNT(*) as unit_count')
+                ->whereNotNull('program_tier')
+                ->groupBy('program_tier')
+                ->pluck('unit_count', 'program_tier')
+            : collect();
+
         $periods = $program->usesBlocks()
             ? $blocks->map(fn (NursingBlock $block) => [
                 'key' => 'block-'.$block->id,
                 'label' => $block->block_label,
                 'semester' => $block->block_order,
                 'block_id' => $block->id,
+                'tier_key' => null,
+                'tier_label' => null,
             ])
-            : collect(range(1, $program->scheduledPeriods()))->map(fn (int $number) => [
-                'key' => 'sem-'.$number,
-                'label' => $program->periodLabel($number),
-                'semester' => $number,
-                'block_id' => null,
-            ]);
+            : collect(range(1, $program->scheduledPeriods()))->map(function (int $number) use ($program, $tierLabels) {
+                $tierKey = $program->isTieredProgram()
+                    ? app(ProgramTierPlannerService::class)->tierForSemester($program, $number)
+                    : null;
+
+                return [
+                    'key' => 'sem-'.$number,
+                    'label' => $program->periodLabel($number),
+                    'semester' => $number,
+                    'block_id' => null,
+                    'tier_key' => $tierKey,
+                    'tier_label' => $tierKey ? ($tierLabels[$tierKey] ?? $tierKey) : null,
+                ];
+            });
 
         $enrolledStudents = ['matched' => collect(), 'other' => collect()];
         $enrolledSummaries = collect();
@@ -246,6 +270,12 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'formats' => ProgramCurriculumService::curriculumFormats(),
             'intakeMonths' => CurriculumVersion::intakeMonths(),
             'blocks' => $blocks,
+            'tierPlan' => $tierPlan,
+            'tierLabels' => $tierLabels,
+            'unitsCountByTier' => $unitsCountByTier,
+            'programUnitTierByUnitId' => $program->isTieredProgram()
+                ? $program->programUnits()->pluck('program_tier', 'unit_id')
+                : collect(),
             'publishedVersion' => $this->versions->publishedVersionForProgram($program->id),
             'academicYears' => AcademicYear::query()->orderByDesc('start_date')->get(),
             'canApproveRegistry' => $this->access->canApproveRegistry($request->user()),

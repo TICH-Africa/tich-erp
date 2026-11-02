@@ -70,8 +70,21 @@
                 <dd>{{ $student->program?->program_name ?? '-' }}</dd>
                 <dt class="tich-caption">Campus</dt>
                 <dd>{{ $student->campus?->campus_name ?? '-' }}</dd>
-                <dt class="tich-caption">Duration</dt>
-                <dd>{{ $student->program?->duration_months ?? '-' }} months</dd>
+                @if ($student->program?->isTieredProgram())
+                    <dt class="tich-caption">Exit tier</dt>
+                    <dd>
+                        @if ($student->program_tier)
+                            @include('partials.program-tier-exit-level', ['tierKey' => $student->program_tier])
+                        @else
+                            -
+                        @endif
+                    </dd>
+                    <dt class="tich-caption">Ladder duration</dt>
+                    <dd>{{ $student->program->listDurationLabel() }}</dd>
+                @else
+                    <dt class="tich-caption">Duration</dt>
+                    <dd>{{ $student->program?->duration_months ?? '-' }} months</dd>
+                @endif
                 <dt class="tich-caption">Program Type</dt>
                 <dd>{{ $student->entry_pathway ?? '-' }}</dd>
             </dl>

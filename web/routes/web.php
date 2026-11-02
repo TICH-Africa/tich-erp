@@ -294,6 +294,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
         Route::middleware(['permission:programs.manage'])->group(function () {
             Route::get('/programs', [ProgramController::class, 'index'])->name('admin.programs.index');
+            Route::get('/programs/form-cover-draft', [ProgramController::class, 'formCoverDraft'])->name('admin.programs.form-cover-draft');
             Route::post('/programs', [ProgramController::class, 'store'])->name('admin.programs.store');
             Route::put('/programs/{program}', [ProgramController::class, 'update'])->name('admin.programs.update');
         });

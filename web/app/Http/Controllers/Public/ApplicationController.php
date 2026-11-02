@@ -18,21 +18,33 @@ class ApplicationController extends Controller
 
     public function index(Request $request): View|RedirectResponse
     {
+        $payload = [];
         $programCode = $request->query('program');
+        $tierKey = $this->normalizeProgramTierKey($request->query('tier'));
+
         if ($programCode) {
-            $program = $this->programsService->findProgramByCode($programCode);
+            $program = $this->programsService->findActiveProgramByCode((string) $programCode);
             if ($program) {
-                $payload = [
-                    'program_code' => strtoupper($program->program_code ?? $programCode),
-                ];
+                $payload['program_code'] = strtoupper($program->program_code ?? $programCode);
                 if (! empty($program->id)) {
                     $payload['program_id'] = (int) $program->id;
                 }
-                $this->applicationService->saveDraft($payload, 1);
             }
         }
 
-        $step = max(1, min(7, (int) $request->query('step', $this->applicationService->currentStep())));
+        if ($tierKey !== null) {
+            $payload['program_tier'] = $tierKey;
+        }
+
+        $deepLinkStep = 1;
+        if ($payload !== []) {
+            $this->applicationService->saveDraft($payload, $deepLinkStep);
+        }
+
+        $defaultStep = ($programCode || $tierKey !== null)
+            ? $deepLinkStep
+            : $this->applicationService->currentStep();
+        $step = max(1, min(7, (int) $request->query('step', $defaultStep)));
 
         return view('apply.portal', $this->portalPayload($step));
     }
@@ -131,5 +143,16 @@ class ApplicationController extends Controller
             'programIntakes' => $this->applicationService->intakesByProgram(),
             'review' => $step === 7 ? $this->applicationService->reviewSummary() : null,
         ];
+    }
+
+    private function normalizeProgramTierKey(mixed $raw): ?string
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        $key = strtolower(str_replace(['-', ' '], '_', trim((string) $raw)));
+
+        return in_array($key, config('tich-program-tiers.tier_keys', []), true) ? $key : null;
     }
 }

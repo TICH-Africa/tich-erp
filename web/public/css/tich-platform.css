@@ -10824,6 +10824,48 @@ a.tich-tabs__btn {
     margin-top: 1.5rem;
 }
 
+.tich-program-show__tier-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.tich-program-show__tier-item {
+    padding: 1.25rem;
+    border: 1px solid var(--tich-border, #e2e4e5);
+    border-radius: var(--radius-md, 0.5rem);
+    background: var(--tich-surface, #fff);
+}
+
+.tich-program-show__tier-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.tich-program-show__tier-head .tich-h4 {
+    margin: 0;
+}
+
+.tich-program-show__tier-track {
+    height: 8px;
+    margin-top: 0.75rem;
+    border-radius: 4px;
+    background: var(--tich-border, #e5e7eb);
+    overflow: hidden;
+}
+
+.tich-program-show__tier-track-fill {
+    height: 100%;
+    background: var(--tich-primary, #1669a6);
+    border-radius: 4px;
+}
+
 
 /* Public page entrance animations */
 .tich-animate {

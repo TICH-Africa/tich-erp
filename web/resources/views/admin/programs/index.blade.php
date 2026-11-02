@@ -4,8 +4,8 @@
 
 @section('admin-content')
     @php
-        $openCreateModal = $errors->any() && old('_method') !== 'PUT';
-        $openEditProgramId = old('_method') === 'PUT' ? (int) old('edit_program_id') : null;
+        $openCreateModal = $errors->any() && old('_form') === 'create';
+        $openEditProgramId = old('_form') === 'edit' ? (int) old('edit_program_id') : null;
         $editProgram = $openEditProgramId ? $programs->firstWhere('id', $openEditProgramId) : null;
     @endphp
 
@@ -48,7 +48,16 @@
                             <td><strong>{{ $program->program_code }}</strong></td>
                             <td>{{ $program->program_name }}</td>
                             <td>{{ $program->department?->dept_name ?? '-' }}</td>
-                            <td>{{ ucfirst(str_replace('_', ' ', $program->program_type)) }}</td>
+                            <td>
+                                @if ($program->isTieredProgram())
+                                    <span class="tich-badge">Tiered</span>
+                                    @if ($program->tierLadderSummary())
+                                        <br><span class="tich-caption">{{ $program->tierLadderSummary() }}</span>
+                                    @endif
+                                @else
+                                    {{ ucfirst(str_replace('_', ' ', $program->program_type)) }}
+                                @endif
+                            </td>
                             <td>
                                 @php
                                     $status = strtolower((string) $program->status);
@@ -82,6 +91,14 @@
                                     data-homepage-display-order="{{ $program->homepage_display_order ?? 0 }}"
                                     data-is-featured="{{ $program->is_featured_on_homepage ? '1' : '0' }}"
                                     data-cover-image-url="{{ $program->coverImageUrl() ?? '' }}"
+                                    data-is-tiered="{{ $program->is_tiered ? '1' : '0' }}"
+                                    data-tier-semester-months="{{ $program->tier_semester_months ?? '' }}"
+                                    data-tiers-json="{{ e(json_encode($program->tiers->sortBy('tier_order')->map(fn ($t) => [
+                                        'tier_key' => $t->tier_key,
+                                        'cumulative_months' => $t->cumulative_months,
+                                        'learning_outcomes' => $t->learning_outcomes,
+                                        'marketing_summary' => $t->marketing_summary,
+                                    ])->values()->all())) }}"
                                 >
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <path d="M12 20h9"/>
@@ -121,7 +138,8 @@
             </header>
             <form method="POST" action="{{ route('admin.programs.store') }}" class="tich-modal__body" enctype="multipart/form-data">
                 @csrf
-                @if ($errors->any() && old('_method') !== 'PUT')
+                <input type="hidden" name="_form" value="create">
+                @if ($errors->any() && old('_form') === 'create')
                     <div class="tich-modal__errors">
                         <ul style="margin: 0; padding-left: 1.25rem;">
                             @foreach ($errors->all() as $error)
@@ -169,8 +187,9 @@
             >
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="_form" value="edit">
                 <input type="hidden" name="edit_program_id" id="program-edit-id" value="{{ old('edit_program_id') }}">
-                @if ($errors->any() && old('_method') === 'PUT')
+                @if ($errors->any() && old('_form') === 'edit')
                     <div class="tich-modal__errors">
                         <ul style="margin: 0; padding-left: 1.25rem;">
                             @foreach ($errors->all() as $error)
@@ -231,6 +250,44 @@
             setFieldValue('program-edit-status', trigger.getAttribute('data-status') || 'active');
             setFieldValue('program-edit-homepage_display_order', trigger.getAttribute('data-homepage-display-order') || '0');
             setFieldValue('program-edit-is_featured_on_homepage', trigger.getAttribute('data-is-featured'));
+            setFieldValue('program-edit-is_tiered', trigger.getAttribute('data-is-tiered'));
+            setFieldValue('program-edit-tier_semester_months', trigger.getAttribute('data-tier-semester-months') || '');
+
+            var tierRoot = form.querySelector('[data-program-tier-root]');
+            if (tierRoot) {
+                var tierToggle = tierRoot.querySelector('[data-tier-toggle]');
+                var tierPanel = tierRoot.querySelector('[data-tier-panel]');
+                var isTiered = trigger.getAttribute('data-is-tiered') === '1';
+                if (tierToggle) {
+                    tierToggle.checked = isTiered;
+                }
+                if (tierPanel) {
+                    tierPanel.hidden = !isTiered;
+                }
+                var tiersJson = trigger.getAttribute('data-tiers-json') || '[]';
+                try {
+                    var tiers = JSON.parse(tiersJson);
+                    tiers.forEach(function (row, index) {
+                        var cum = tierRoot.querySelector('[name="tiers[' + index + '][cumulative_months]"]');
+                        if (cum && row.cumulative_months != null) {
+                            cum.value = row.cumulative_months;
+                            cum.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                        if (window.tichCmsEditor) {
+                            window.tichCmsEditor.setHtml('program-edit-tiers_' + index + '_learning_outcomes', row.learning_outcomes || '');
+                            window.tichCmsEditor.setHtml('program-edit-tiers_' + index + '_marketing_summary', row.marketing_summary || '');
+                        } else {
+                            var lo = tierRoot.querySelector('[name="tiers[' + index + '][learning_outcomes]"]');
+                            var ms = tierRoot.querySelector('[name="tiers[' + index + '][marketing_summary]"]');
+                            if (lo) lo.value = row.learning_outcomes || '';
+                            if (ms) ms.value = row.marketing_summary || '';
+                        }
+                    });
+                } catch (e) {
+                    /* ignore malformed tier json */
+                }
+            }
+
             if (window.tichCmsEditor) {
                 window.tichCmsEditor.setHtml('program-edit-homepage_tagline', trigger.getAttribute('data-homepage-tagline') || '');
                 window.tichCmsEditor.setHtml('program-edit-entry_requirements', trigger.getAttribute('data-entry-requirements') || '');
@@ -280,6 +337,24 @@
 
         if (document.querySelector('.tich-modal.is-open')) {
             document.body.style.overflow = 'hidden';
+        }
+
+        var createModal = document.getElementById('program-create-modal');
+        if (createModal && createModal.classList.contains('is-open')) {
+            var errBox = createModal.querySelector('.tich-modal__errors');
+            if (errBox) {
+                errBox.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+            createModal.querySelectorAll('[data-program-tier-root]').forEach(function (root) {
+                var toggle = root.querySelector('[data-tier-toggle]');
+                var panel = root.querySelector('[data-tier-panel]');
+                if (toggle && panel && toggle.checked) {
+                    panel.hidden = false;
+                }
+                root.querySelectorAll('[data-tier-cumulative]').forEach(function (input) {
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+            });
         }
     })();
     </script>

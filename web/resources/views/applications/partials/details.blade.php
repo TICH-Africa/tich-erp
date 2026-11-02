@@ -19,6 +19,9 @@
         <dl class="tich-mt-4 tich-review-list">
             <div><dt>Application number</dt><dd><strong>{{ $applicant->application_number }}</strong></dd></div>
             <div><dt>Programme</dt><dd>{{ $applicant->program?->program_name ?? '-' }} ({{ $applicant->program?->program_code ?? '-' }})</dd></div>
+            @if ($applicant->program_tier)
+                <div><dt>Exit level (tier)</dt><dd>@include('partials.program-tier-exit-level', ['tierKey' => $applicant->program_tier, 'as' => 'badge'])</dd></div>
+            @endif
             <div><dt>Target intake</dt><dd>{{ $applicant->intakeLabel() }}</dd></div>
             <div><dt>Preferred campus</dt><dd>{{ $applicant->preferredCampus?->campus_name ?? 'No preference' }}</dd></div>
             <div><dt>Handling department</dt><dd><strong>{{ $handlingDepartment }}</strong></dd></div>

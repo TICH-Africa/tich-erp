@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-11-02 13:16:45 EAT
+-- Generated: 2026-11-02 15:04:50 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -4218,7 +4218,7 @@ CREATE TABLE IF NOT EXISTS `fee_structures` (
   `version` varchar(20) DEFAULT NULL,
   `notes` text DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `fee_struct_program_year_unique` (`program_id`,`academic_year_id`),
+  UNIQUE KEY `fee_struct_program_year_tier_unique` (`program_id`,`academic_year_id`,`program_tier`),
   KEY `fee_structures_academic_year_id_foreign` (`academic_year_id`),
   KEY `fee_structures_approved_by_foreign` (`approved_by`),
   KEY `fee_structures_program_id_index` (`program_id`),
@@ -4267,7 +4267,7 @@ CALL `tich_ensure_column`('fee_structures', 'notes', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_index`('fee_structures', 'fee_structures_academic_year_id_foreign', '`academic_year_id`');
 CALL `tich_ensure_index`('fee_structures', 'fee_structures_approved_by_foreign', '`approved_by`');
 CALL `tich_ensure_index`('fee_structures', 'fee_structures_program_id_index', '`program_id`');
-CALL `tich_ensure_unique`('fee_structures', 'fee_struct_program_year_unique', '`program_id`, `academic_year_id`');
+CALL `tich_ensure_unique`('fee_structures', 'fee_struct_program_year_tier_unique', '`program_id`, `academic_year_id`, `program_tier`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `finance_budgets`
