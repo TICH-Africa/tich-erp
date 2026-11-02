@@ -13,6 +13,7 @@ use App\Services\Procurement\RequisitionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class RequisitionsController extends Controller
@@ -26,10 +27,21 @@ class RequisitionsController extends Controller
 
     public function formOptions(): JsonResponse
     {
+        return response()->json(Cache::remember('procurement.mobile.requisition_form_options.v1', 45, function () {
+            return $this->buildRequisitionFormOptions();
+        }));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildRequisitionFormOptions(): array
+    {
         $financeBudgets = FinanceBudget::query()
             ->where('status', 'active')
             ->orderByDesc('fiscal_year')
             ->orderBy('budget_name')
+            ->limit(120)
             ->get(['id', 'budget_code', 'budget_name', 'allocated_amount', 'spent_amount', 'committed_amount', 'fiscal_year', 'department_id', 'notes']);
 
         $budgetRequests = Schema::hasTable('admin_budget_requests')
@@ -39,6 +51,7 @@ class RequisitionsController extends Controller
                 ->whereNotIn('status', ['draft', 'rejected', 'returned', 'cancelled'])
                 ->orderByDesc('submitted_at')
                 ->orderByDesc('id')
+                ->limit(80)
                 ->get(['id', 'request_code', 'title', 'department_id', 'requested_amount', 'status', 'standard_line_items'])
             : collect();
 
@@ -88,10 +101,10 @@ class RequisitionsController extends Controller
             ->map(fn (Department $d) => ['id' => $d->id, 'name' => $d->dept_name])
             ->values();
 
-        return response()->json([
+        return [
             'departments' => $departments,
             'budgets' => $budgetOptions->values(),
-        ]);
+        ];
     }
 
     public function budgetLines(Request $request): JsonResponse
@@ -225,7 +238,7 @@ class RequisitionsController extends Controller
         $status = $request->string('status')->toString();
 
         $query = ProcurementRequisition::query()
-            ->with(['department', 'requester'])
+            ->with(['department:id,dept_name'])
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('requisition_number', 'like', "%{$search}%")
@@ -236,10 +249,10 @@ class RequisitionsController extends Controller
             })
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->orderByDesc('created_at')
-            ->limit(50);
+            ->limit(40);
 
         $items = $query->get()->map(
-            fn (ProcurementRequisition $r) => $this->portal->serializeRequisition($r, $request->user())
+            fn (ProcurementRequisition $r) => $this->portal->serializeRequisitionListItem($r)
         )->values();
 
         return response()->json(['items' => $items]);

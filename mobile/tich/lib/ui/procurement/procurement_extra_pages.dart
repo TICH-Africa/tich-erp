@@ -739,24 +739,29 @@ class ProcurementDisposalsPage extends StatefulWidget {
 }
 
 class _ProcurementDisposalsPageState extends State<ProcurementDisposalsPage> {
+  static const _cacheKey = 'procurement.disposals';
+
   late Future<Map<String, dynamic>> _future;
   Object? _cache;
 
   @override
   void initState() {
     super.initState();
-    _reload();
+    procurementPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.assetDisposals(),
+    );
   }
 
-  void _reload() => procurementUpdateFuture(
-        setState,
-        (f) {
-        _future = f;
-      },
-        () => widget.api.assetDisposals(),
-      mounted: () => mounted,
-      onData: (d) => _cache = d,
-    );
+  void _reload() => procurementCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.assetDisposals(),
+        onData: (d) => _cache = d,
+        persistKey: _cacheKey,
+      );
 
   Future<void> _openRequest() async {
     final id = await Navigator.of(context).push<int>(
@@ -798,8 +803,18 @@ class _ProcurementDisposalsPageState extends State<ProcurementDisposalsPage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return procurementLoadingBody();
-          final items = snap.data?['items'] as List? ?? [];
+          final merged = tichMergeSnapshot(
+            snap,
+            _cache as dynamic,
+            persistKey: _cacheKey,
+          );
+          if (tichShowLoadingSpinner(snap, merged)) {
+            return procurementLoadingBody(onRefresh: () async => _reload());
+          }
+          if (merged == null && snap.hasError) {
+            return Center(child: Text(tichDescribeError(snap.error)));
+          }
+          final items = (merged as Map<String, dynamic>)['items'] as List? ?? [];
           if (items.isEmpty) {
             return Center(
               child: Text(

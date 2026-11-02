@@ -10,6 +10,7 @@ use App\Services\Procurement\AssetDisposalService;
 use App\Services\Procurement\ProcurementMobilePortalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use RuntimeException;
 
 class AssetDisposalsController extends Controller
@@ -21,31 +22,44 @@ class AssetDisposalsController extends Controller
         protected AssetDisposalService $service,
     ) {}
 
-    public function formOptions(): JsonResponse
+    public function formOptions(Request $request): JsonResponse
     {
-        $assets = Asset::query()
-            ->select(['id', 'asset_number', 'asset_name', 'current_value'])
-            ->where('asset_status', '!=', 'disposed')
-            ->orderBy('asset_name')
-            ->limit(200)
-            ->get()
-            ->map(fn (Asset $asset) => [
-                'id' => $asset->id,
-                'asset_number' => $asset->asset_number,
-                'asset_name' => $asset->asset_name,
-                'current_value' => (float) $asset->current_value,
-                'label' => "{$asset->asset_number} - {$asset->asset_name}",
-            ])
-            ->values();
+        $search = trim($request->string('search')->toString());
+        $cacheKey = $search === ''
+            ? 'procurement.mobile.asset_disposal_form_options.v1'
+            : 'procurement.mobile.asset_disposal_form_options.search.'.md5($search);
 
-        return response()->json([
-            'assets' => $assets,
-            'disposal_types' => [
-                ['value' => 'write_off', 'label' => 'Write-off'],
-                ['value' => 'donation', 'label' => 'Donation'],
-                ['value' => 'auction', 'label' => 'Auction'],
-            ],
-        ]);
+        return response()->json(Cache::remember($cacheKey, 45, function () use ($search) {
+            $assets = Asset::query()
+                ->select(['id', 'asset_number', 'asset_name', 'current_value'])
+                ->where('asset_status', '!=', 'disposed')
+                ->when($search !== '', function ($q) use ($search) {
+                    $q->where(function ($inner) use ($search) {
+                        $inner->where('asset_number', 'like', "%{$search}%")
+                            ->orWhere('asset_name', 'like', "%{$search}%");
+                    });
+                })
+                ->orderBy('asset_name')
+                ->limit($search === '' ? 80 : 60)
+                ->get()
+                ->map(fn (Asset $asset) => [
+                    'id' => $asset->id,
+                    'asset_number' => $asset->asset_number,
+                    'asset_name' => $asset->asset_name,
+                    'current_value' => (float) $asset->current_value,
+                    'label' => "{$asset->asset_number} - {$asset->asset_name}",
+                ])
+                ->values();
+
+            return [
+                'assets' => $assets,
+                'disposal_types' => [
+                    ['value' => 'write_off', 'label' => 'Write-off'],
+                    ['value' => 'donation', 'label' => 'Donation'],
+                    ['value' => 'auction', 'label' => 'Auction'],
+                ],
+            ];
+        }));
     }
 
     public function store(Request $request): JsonResponse
@@ -81,12 +95,13 @@ class AssetDisposalsController extends Controller
         $status = $request->string('status')->toString();
 
         $items = AssetDisposal::query()
-            ->with(['asset', 'requestedBy'])
+            ->select(['id', 'asset_id', 'disposal_type', 'approval_status', 'created_at'])
+            ->with(['asset:id,asset_number,asset_name'])
             ->when($status !== '', fn ($q) => $q->where('approval_status', $status))
             ->orderByDesc('created_at')
-            ->limit(50)
+            ->limit(40)
             ->get()
-            ->map(fn (AssetDisposal $r) => $this->portal->serializeAssetDisposal($r))
+            ->map(fn (AssetDisposal $r) => $this->portal->serializeAssetDisposalListItem($r))
             ->values();
 
         return response()->json(['items' => $items]);

@@ -21,7 +21,7 @@ class ProcurementSidebarNotificationService
 
     public const CACHE_KEY = 'procurement.sidebar.counts';
 
-    public const CACHE_TTL_SECONDS = 30;
+    public const CACHE_TTL_SECONDS = 60;
 
     /** @var array<string, string> */
     public const MENU_KEYS = [
@@ -63,6 +63,11 @@ class ProcurementSidebarNotificationService
     public function broadcastCounts(): void
     {
         Cache::forget(self::CACHE_KEY);
+        Cache::forget('procurement.mobile.payment_verification.v1');
+        Cache::forget('procurement.mobile.requisition_form_options.v1');
+        Cache::forget('procurement.mobile.asset_disposal_form_options.v1');
+        Cache::forget('procurement.mobile.stock_issue_form_options.v1');
+        Cache::forget('procurement.mobile.dashboard.v1');
 
         $counts = $this->counts(true);
         $labels = collect($counts)

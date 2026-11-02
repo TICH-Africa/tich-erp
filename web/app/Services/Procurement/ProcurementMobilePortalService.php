@@ -33,7 +33,7 @@ class ProcurementMobilePortalService
      */
     public function dashboard(User $user): array
     {
-        $counts = $this->sidebarCounts->counts(true);
+        $counts = $this->sidebarCounts->counts(false);
 
         return [
             'metrics' => [
@@ -44,7 +44,6 @@ class ProcurementMobilePortalService
                 'actionable_rfqs' => $counts['rfqs.actionable'] ?? 0,
                 'pending_suppliers' => $counts['suppliers.pending'] ?? 0,
             ],
-            'badge_counts' => $counts,
             'action_inbox' => $this->actionInbox($user, 15),
             'quick_modules' => $this->moduleDefinitions(),
         ];
@@ -59,7 +58,11 @@ class ProcurementMobilePortalService
 
         if (Schema::hasTable('procurement_requisitions')) {
             ProcurementRequisition::query()
-                ->with(['department', 'requester'])
+                ->select([
+                    'id', 'requisition_number', 'requested_item', 'status',
+                    'created_at', 'department_id', 'requesting_department_id',
+                ])
+                ->with(['department:id,dept_name'])
                 ->whereIn('status', ['submitted', 'hod_approved', 'finance_approved'])
                 ->orderByDesc('created_at')
                 ->limit(8)
@@ -82,7 +85,8 @@ class ProcurementMobilePortalService
 
         if (Schema::hasTable('goods_received_notes')) {
             GoodsReceivedNote::query()
-                ->with(['purchaseOrder'])
+                ->select(['id', 'grn_number', 'inspection_status', 'created_at', 'purchase_order_id'])
+                ->with(['purchaseOrder:id,po_number'])
                 ->where('inspection_status', 'pending')
                 ->orderByDesc('created_at')
                 ->limit(6)
@@ -104,7 +108,11 @@ class ProcurementMobilePortalService
 
         if (Schema::hasTable('stock_issues')) {
             StockIssue::query()
-                ->with(['item', 'department'])
+                ->select([
+                    'id', 'inventory_item_id', 'department_id', 'quantity',
+                    'approval_status', 'status', 'created_at',
+                ])
+                ->with(['item:id,item_name', 'department:id,dept_name'])
                 ->where(function ($q) {
                     $q->where('approval_status', 'pending')->orWhere('status', 'pending');
                 })
@@ -178,6 +186,27 @@ class ProcurementMobilePortalService
     }
 
     /**
+     * Lightweight row for mobile list screens (no budget verification queries).
+     *
+     * @return array<string, mixed>
+     */
+    public function serializeRequisitionListItem(ProcurementRequisition $requisition): array
+    {
+        $requisition->loadMissing(['department:id,dept_name']);
+
+        return [
+            'id' => $requisition->id,
+            'requisition_number' => $requisition->requisition_number,
+            'requested_item' => $requisition->requested_item,
+            'department' => $requisition->department?->dept_name,
+            'estimated_cost' => (float) $requisition->estimated_cost,
+            'status' => $requisition->status,
+            'status_label' => $requisition->statusLabel(),
+            'request_date' => optional($requisition->request_date)?->format('Y-m-d'),
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function serializeRequisition(ProcurementRequisition $requisition, ?User $user = null): array
@@ -187,6 +216,7 @@ class ProcurementMobilePortalService
         $level = $requisition->currentApprovalLevel();
         $budget = $this->requisitionService->verifyBudget($requisition);
         $budgetPassed = (bool) ($budget['passed'] ?? false);
+        $canAct = $user ? $this->canApproveRequisition($user, $requisition, $budget) : false;
 
         return [
             'id' => $requisition->id,
@@ -211,14 +241,20 @@ class ProcurementMobilePortalService
             ],
             'is_draft' => $requisition->isDraft(),
             'can_submit' => $user && $requisition->isDraft() && $budgetPassed && (bool) $user->staff_id,
-            'can_approve' => $user ? $this->canApproveRequisition($user, $requisition) : false,
-            'can_reject' => $user ? $this->canApproveRequisition($user, $requisition) : false,
+            'can_approve' => $canAct,
+            'can_reject' => $canAct,
             'web_path' => '/procurement/requisitions/'.$requisition->id,
         ];
     }
 
-    public function canApproveRequisition(User $user, ProcurementRequisition $requisition): bool
-    {
+    /**
+     * @param  array<string, mixed>|null  $budgetCheck  Result from [verifyBudget] when already computed.
+     */
+    public function canApproveRequisition(
+        User $user,
+        ProcurementRequisition $requisition,
+        ?array $budgetCheck = null,
+    ): bool {
         if ($requisition->isRejected() || $requisition->isCompleted()) {
             return false;
         }
@@ -236,9 +272,27 @@ class ProcurementMobilePortalService
             return false;
         }
 
-        $budget = $this->requisitionService->verifyBudget($requisition);
+        $budget = $budgetCheck ?? $this->requisitionService->verifyBudget($requisition);
 
         return (bool) ($budget['passed'] ?? false);
+    }
+
+    /**
+     * Lightweight row for mobile list screens.
+     *
+     * @return array<string, mixed>
+     */
+    public function serializeStockIssueListItem(StockIssue $issue): array
+    {
+        $issue->loadMissing(['item:id,item_name', 'department:id,dept_name']);
+
+        return [
+            'id' => $issue->id,
+            'item_name' => $issue->item?->item_name,
+            'department' => $issue->department?->dept_name,
+            'quantity' => (float) $issue->quantity,
+            'approval_status' => $issue->approval_status,
+        ];
     }
 
     /**
@@ -263,6 +317,24 @@ class ProcurementMobilePortalService
             'created_at' => optional($issue->created_at)?->toIso8601String(),
             'can_approve' => $issue->approval_status === 'pending',
             'web_path' => '/procurement/stock-issues/'.$issue->id,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeGrnListItem(GoodsReceivedNote $grn): array
+    {
+        $grn->loadMissing(['purchaseOrder:id,po_number,supplier_id', 'purchaseOrder.supplier:id,supplier_name']);
+
+        return [
+            'id' => $grn->id,
+            'grn_number' => $grn->grn_number,
+            'po_number' => $grn->purchaseOrder?->po_number,
+            'supplier' => $grn->purchaseOrder?->supplier?->supplier_name,
+            'received_date' => optional($grn->received_date)?->format('Y-m-d'),
+            'inspection_status' => $grn->inspection_status,
+            'is_complete' => (bool) $grn->is_complete,
         ];
     }
 
@@ -299,6 +371,21 @@ class ProcurementMobilePortalService
     /**
      * @return array<string, mixed>
      */
+    public function serializeStockAlertListItem(StockAlert $alert): array
+    {
+        $alert->loadMissing('inventoryItem:id,item_name,current_stock,reorder_level');
+
+        return [
+            'id' => $alert->id,
+            'item_name' => $alert->inventoryItem?->item_name,
+            'current_stock' => $alert->current_stock ?? $alert->inventoryItem?->current_stock,
+            'reorder_level' => $alert->reorder_level ?? $alert->inventoryItem?->reorder_level,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function serializeStockAlert(StockAlert $alert): array
     {
         $alert->loadMissing('inventoryItem');
@@ -318,6 +405,19 @@ class ProcurementMobilePortalService
             'can_auto_reorder' => $alert->status === 'active',
             'requisition_id' => $alert->requisition_id,
             'web_path' => '/procurement/stock-alerts/'.$alert->id,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeAssetListItem(Asset $asset): array
+    {
+        return [
+            'id' => $asset->id,
+            'asset_number' => $asset->asset_number,
+            'asset_name' => $asset->asset_name,
+            'location' => $asset->location_name,
         ];
     }
 
@@ -355,6 +455,20 @@ class ProcurementMobilePortalService
     /**
      * @return array<string, mixed>
      */
+    public function serializeSupplierListItem(Supplier $supplier): array
+    {
+        return [
+            'id' => $supplier->id,
+            'supplier_code' => $supplier->supplier_code,
+            'supplier_name' => $supplier->supplier_name,
+            'email' => $supplier->email,
+            'compliance_status' => $supplier->compliance_status,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function serializeSupplier(Supplier $supplier): array
     {
         return [
@@ -370,6 +484,20 @@ class ProcurementMobilePortalService
             'is_active' => (bool) $supplier->is_active,
             'blacklist_status' => $supplier->blacklist_status,
             'can_verify' => in_array($supplier->compliance_status, ['pending', 'under_review'], true),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeRfqListItem(Rfq $rfq): array
+    {
+        return [
+            'id' => $rfq->id,
+            'rfq_number' => $rfq->rfq_number,
+            'status' => $rfq->status,
+            'item_description' => $rfq->item_description,
+            'approval_status' => $rfq->approval_status,
         ];
     }
 
@@ -393,6 +521,22 @@ class ProcurementMobilePortalService
             'approval_status' => $rfq->approval_status,
             'can_approve_award' => $rfq->status === 'awarded' && $rfq->approval_status === 'pending',
             'can_reject_award' => $rfq->status === 'awarded' && $rfq->approval_status === 'pending',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeInventoryItemListItem(InventoryItem $item): array
+    {
+        $lowStock = $item->current_stock <= $item->reorder_level;
+
+        return [
+            'id' => $item->id,
+            'item_code' => $item->item_code,
+            'item_name' => $item->item_name,
+            'current_stock' => (int) $item->current_stock,
+            'low_stock' => $lowStock,
         ];
     }
 
@@ -423,6 +567,22 @@ class ProcurementMobilePortalService
     /**
      * @return array<string, mixed>
      */
+    public function serializeAssetDisposalListItem(AssetDisposal $record): array
+    {
+        $record->loadMissing(['asset:id,asset_number,asset_name']);
+
+        return [
+            'id' => $record->id,
+            'disposal_type' => $record->disposal_type,
+            'approval_status' => $record->approval_status,
+            'asset_number' => $record->asset?->asset_number,
+            'asset_name' => $record->asset?->asset_name,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function serializeAssetDisposal(AssetDisposal $record): array
     {
         $record->loadMissing(['asset', 'requestedBy']);
@@ -439,6 +599,22 @@ class ProcurementMobilePortalService
             'asset_name' => $record->asset?->asset_name,
             'requested_by' => $record->requestedBy?->fullName(),
             'can_approve' => $record->approval_status === 'pending',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeAssetAuditListItem(AssetAudit $record): array
+    {
+        $record->loadMissing(['asset:id,asset_number,asset_name', 'auditor:id,first_name,surname']);
+
+        return [
+            'id' => $record->id,
+            'status' => $record->status,
+            'asset_number' => $record->asset?->asset_number,
+            'asset_name' => $record->asset?->asset_name,
+            'auditor' => $record->auditor?->fullName(),
         ];
     }
 

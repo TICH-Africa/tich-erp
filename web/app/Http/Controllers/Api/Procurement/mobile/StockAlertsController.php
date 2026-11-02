@@ -25,12 +25,16 @@ class StockAlertsController extends Controller
         $status = $request->string('status')->toString() ?: 'active';
 
         $alerts = StockAlert::query()
-            ->with('inventoryItem')
+            ->select([
+                'id', 'inventory_item_id', 'status', 'current_stock',
+                'reorder_level', 'created_at',
+            ])
+            ->with('inventoryItem:id,item_name,current_stock,reorder_level')
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->orderByDesc('created_at')
-            ->limit(50)
+            ->limit(40)
             ->get()
-            ->map(fn (StockAlert $a) => $this->portal->serializeStockAlert($a))
+            ->map(fn (StockAlert $a) => $this->portal->serializeStockAlertListItem($a))
             ->values();
 
         return response()->json(['items' => $alerts]);

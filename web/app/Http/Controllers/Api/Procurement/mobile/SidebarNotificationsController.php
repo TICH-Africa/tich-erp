@@ -14,8 +14,8 @@ class SidebarNotificationsController extends Controller
         Request $request,
         ProcurementSidebarNotificationService $notifications,
     ): JsonResponse {
-        $counts = $notifications->counts(true);
-        $labels = $notifications->formattedCounts(true);
+        $counts = $notifications->counts(false);
+        $labels = $notifications->formattedCounts(false);
         [$counts, $labels] = QaTaskSidebarBadge::merge($counts, $labels, $request->user(), 'procurement');
 
         return response()->json([

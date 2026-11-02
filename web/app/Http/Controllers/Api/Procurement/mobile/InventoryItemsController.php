@@ -19,7 +19,7 @@ class InventoryItemsController extends Controller
         $search = $request->string('search')->toString();
 
         $items = InventoryItem::query()
-            ->with('supplier')
+            ->select(['id', 'item_code', 'item_name', 'current_stock', 'reorder_level'])
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('item_name', 'like', "%{$search}%")
@@ -27,9 +27,9 @@ class InventoryItemsController extends Controller
                 });
             })
             ->orderBy('item_name')
-            ->limit(50)
+            ->limit(40)
             ->get()
-            ->map(fn (InventoryItem $i) => $this->portal->serializeInventoryItem($i))
+            ->map(fn (InventoryItem $i) => $this->portal->serializeInventoryItemListItem($i))
             ->values();
 
         return response()->json(['items' => $items]);

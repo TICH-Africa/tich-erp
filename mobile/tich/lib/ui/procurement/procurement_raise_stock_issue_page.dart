@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/procurement_api.dart';
+import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
@@ -32,10 +33,15 @@ class _ProcurementRaiseStockIssuePageState
   int? _staffId;
   bool _busy = false;
 
+  static const _optionsCacheKey = 'procurement.stock_issue_form_options';
+
   @override
   void initState() {
     super.initState();
-    _optionsFuture = widget.api.stockIssueFormOptions();
+    _optionsFuture = TichScreenCache.ensure(
+      _optionsCacheKey,
+      () => widget.api.stockIssueFormOptions(),
+    );
   }
 
   @override

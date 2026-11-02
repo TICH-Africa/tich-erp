@@ -133,6 +133,32 @@ abstract final class TichPortalWarmup {
     TichScreenCache.warm('procurement.home', () => api.dashboard());
   }
 
+  static void procurementTabSelected(ProcurementApi api, int index) {
+    switch (index) {
+      case 0:
+        TichScreenCache.warm('procurement.home', () => api.dashboard());
+      case 1:
+        TichScreenCache.warm('procurement.requisitions', () => api.requisitions());
+      case 2:
+        TichScreenCache.warm('procurement.stock_issues', () => api.stockIssues());
+      case 3:
+        TichScreenCache.warm('procurement.suppliers', () => api.suppliers());
+      default:
+        break;
+    }
+  }
+
+  /// Warm common More-menu lists after the drawer opens (idle, staggered).
+  static void procurementMoreOpened(ProcurementApi api) {
+    _runDeferred([
+      () => TichScreenCache.warm('procurement.grns', () => api.grns()),
+      () => TichScreenCache.warm(
+            'procurement.payment_verification',
+            () => api.paymentVerification(),
+          ),
+    ]);
+  }
+
   static void _cancelDeferred() {
     _deferredTimer?.cancel();
     _deferredTimer = null;

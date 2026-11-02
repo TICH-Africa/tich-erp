@@ -13,6 +13,7 @@ use App\Services\Procurement\InventoryService;
 use App\Services\Procurement\ProcurementMobilePortalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class StockIssuesController extends Controller
 {
@@ -24,12 +25,25 @@ class StockIssuesController extends Controller
 
     public function formOptions(Request $request): JsonResponse
     {
-        $staffSearch = $request->string('staff_search')->toString();
+        $staffSearch = trim($request->string('staff_search')->toString());
+        $cacheKey = $staffSearch === ''
+            ? 'procurement.mobile.stock_issue_form_options.v1'
+            : 'procurement.mobile.stock_issue_form_options.search.'.md5($staffSearch);
 
+        return response()->json(Cache::remember($cacheKey, 45, function () use ($staffSearch) {
+            return $this->buildStockIssueFormOptions($staffSearch);
+        }));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildStockIssueFormOptions(string $staffSearch): array
+    {
         $items = InventoryItem::query()
             ->where('current_stock', '>', 0)
             ->orderBy('item_name')
-            ->limit(200)
+            ->limit(100)
             ->get(['id', 'item_code', 'item_name', 'current_stock', 'unit_of_measure', 'unit_cost'])
             ->map(fn (InventoryItem $item) => [
                 'id' => $item->id,
@@ -43,9 +57,10 @@ class StockIssuesController extends Controller
             ->values();
 
         $departments = Department::query()
+            ->main()
             ->where('is_active', 1)
             ->orderBy('dept_name')
-            ->limit(200)
+            ->limit(120)
             ->get(['id', 'dept_name'])
             ->map(fn (Department $dept) => [
                 'id' => $dept->id,
@@ -53,6 +68,7 @@ class StockIssuesController extends Controller
             ])
             ->values();
 
+        $staffLimit = $staffSearch === '' ? 40 : 80;
         $staff = Staff::query()
             ->when($staffSearch !== '', function ($q) use ($staffSearch) {
                 $q->where(function ($inner) use ($staffSearch) {
@@ -62,7 +78,7 @@ class StockIssuesController extends Controller
                 });
             })
             ->orderBy('first_name')
-            ->limit(200)
+            ->limit($staffLimit)
             ->get(['id', 'first_name', 'surname'])
             ->map(fn (Staff $s) => [
                 'id' => $s->id,
@@ -70,11 +86,11 @@ class StockIssuesController extends Controller
             ])
             ->values();
 
-        return response()->json([
+        return [
             'items' => $items,
             'departments' => $departments,
             'staff' => $staff,
-        ]);
+        ];
     }
 
     public function store(Request $request): JsonResponse
@@ -120,11 +136,15 @@ class StockIssuesController extends Controller
     public function index(): JsonResponse
     {
         $issues = StockIssue::query()
-            ->with(['item', 'department', 'requestedBy'])
+            ->select([
+                'id', 'inventory_item_id', 'department_id', 'quantity',
+                'approval_status', 'created_at',
+            ])
+            ->with(['item:id,item_name', 'department:id,dept_name'])
             ->orderByDesc('created_at')
-            ->limit(50)
+            ->limit(40)
             ->get()
-            ->map(fn (StockIssue $i) => $this->portal->serializeStockIssue($i))
+            ->map(fn (StockIssue $i) => $this->portal->serializeStockIssueListItem($i))
             ->values();
 
         return response()->json(['items' => $issues]);

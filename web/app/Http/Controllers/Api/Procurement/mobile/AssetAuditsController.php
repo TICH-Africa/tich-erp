@@ -24,12 +24,13 @@ class AssetAuditsController extends Controller
         $status = $request->string('status')->toString();
 
         $items = AssetAudit::query()
-            ->with(['asset', 'auditor'])
+            ->select(['id', 'asset_id', 'auditor_id', 'status', 'created_at'])
+            ->with(['asset:id,asset_number,asset_name', 'auditor:id,first_name,surname'])
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->orderByDesc('created_at')
-            ->limit(50)
+            ->limit(40)
             ->get()
-            ->map(fn (AssetAudit $r) => $this->portal->serializeAssetAudit($r))
+            ->map(fn (AssetAudit $r) => $this->portal->serializeAssetAuditListItem($r))
             ->values();
 
         return response()->json(['items' => $items]);
