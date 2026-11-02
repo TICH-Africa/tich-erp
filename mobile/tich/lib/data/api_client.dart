@@ -91,6 +91,9 @@ class ApiClient {
   /// handles one request at a time queues them behind each other. Anything tighter
   /// than this gave up on requests the server was still going to answer.
   static const Duration timeout = Duration(seconds: 30);
+
+  /// Large scans / certificate bundles can exceed the default API timeout.
+  static const Duration uploadTimeout = Duration(minutes: 3);
   String? _cachedToken;
 
   Future<String?> _token() async {
@@ -158,14 +161,27 @@ class ApiClient {
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? body,
+    bool gzipBody = false,
+    Duration? timeoutOverride,
   }) async {
+    final headers = await _headers();
+    List<int>? rawBody;
+    if (body != null) {
+      if (gzipBody) {
+        rawBody = gzip.encode(utf8.encode(jsonEncode(body)));
+        headers['Content-Encoding'] = 'gzip';
+        headers['Content-Type'] = 'application/json';
+      } else {
+        rawBody = utf8.encode(jsonEncode(body));
+      }
+    }
     final response = await _client
         .post(
           ApiConfig.uri(path),
-          headers: await _headers(),
-          body: body == null ? null : jsonEncode(body),
+          headers: headers,
+          body: rawBody,
         )
-        .timeout(timeout);
+        .timeout(timeoutOverride ?? timeout);
     return _decode(response);
   }
 
@@ -224,7 +240,7 @@ class ApiClient {
         ),
       );
     }
-    final streamed = await request.send().timeout(timeout);
+    final streamed = await request.send().timeout(uploadTimeout);
     final response = await http.Response.fromStream(streamed);
     return _decode(response);
   }

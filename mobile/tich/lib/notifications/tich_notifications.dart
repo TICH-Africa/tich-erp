@@ -13,6 +13,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../data/api_client.dart';
 import '../data/tich_power_policy.dart';
+import '../sync/tich_background_sync.dart';
 import '../ui/widgets/tich_brand_logo.dart';
 import 'tich_notification_router.dart';
 
@@ -20,6 +21,7 @@ const _channelId = 'tich_alerts';
 const _channelName = 'TICH Alerts';
 const _syncTask = 'tich.notification.sync';
 const _clockInRefreshTask = 'tich.clockin.refresh';
+const _fieldSyncTask = tichFieldSyncTask;
 const _deviceIdKey = 'tich_push_device_id';
 const _shownIdsKey = 'tich_shown_notification_ids';
 const _lastClockInNudgeKey = 'tich_last_clockin_nudge_ms';
@@ -31,6 +33,10 @@ void tichNotificationDispatcherCallback() {
   Workmanager().executeTask((task, inputData) async {
     if (task == _syncTask || task == _clockInRefreshTask) {
       await TichNotifications.instance.runBackgroundMaintenance();
+    }
+    if (task == _fieldSyncTask) {
+      final client = ApiClient();
+      await TichBackgroundSync.instance.tryFlush(client, force: true);
     }
     return true;
   });
@@ -173,6 +179,16 @@ class TichNotifications {
         'tich-clockin-refresh',
         _clockInRefreshTask,
         frequency: TichPowerPolicy.workmanagerClockInterval,
+        existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+        constraints: Constraints(
+          networkType: NetworkType.connected,
+          requiresBatteryNotLow: true,
+        ),
+      );
+      await Workmanager().registerPeriodicTask(
+        'tich-field-sync',
+        _fieldSyncTask,
+        frequency: TichPowerPolicy.workmanagerSyncInterval,
         existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
         constraints: Constraints(
           networkType: NetworkType.connected,

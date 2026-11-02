@@ -238,6 +238,8 @@ Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(func
     Route::post('/attendance/{session}/sheet', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'uploadSheet']);
     Route::post('/attendance/{session}/class-photo', [\App\Http\Controllers\Api\Staff\mobile\AttendanceController::class, 'uploadClassPhoto']);
 
+    Route::post('/field-sync', [\App\Http\Controllers\Api\Staff\mobile\FieldSyncController::class, 'store']);
+
     Route::get('/grading', [\App\Http\Controllers\Api\Staff\mobile\GradingController::class, 'index']);
     Route::post('/grading/cat', [\App\Http\Controllers\Api\Staff\mobile\GradingController::class, 'storeCat']);
 

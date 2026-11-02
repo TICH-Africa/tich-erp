@@ -270,11 +270,28 @@
                             </span>
                         </div>
                         <div class="tich-doc-card__actions">
-                            <a href="{{ route('hr.staff.documents.download', [$staff, $doc]) }}" class="tich-btn tich-btn-ghost tich-btn--sm">Download</a>
-                            <form method="POST" action="{{ route('hr.staff.documents.destroy', [$staff, $doc]) }}" onsubmit="return confirm('Delete this document?')">
+                            <div class="tich-doc-card__actions-group">
+                                <a href="{{ route('hr.staff.documents.read', [$staff, $doc]) }}" class="tich-btn tich-btn-ghost tich-btn--sm">View</a>
+                                <a href="{{ route('hr.staff.documents.download', [$staff, $doc]) }}" class="tich-btn tich-btn-ghost tich-btn--sm" download>Download</a>
+                            </div>
+                            <form
+                                method="POST"
+                                action="{{ route('hr.staff.documents.destroy', [$staff, $doc]) }}"
+                                class="tich-doc-card__delete-form"
+                                onsubmit="return confirm('Delete this document? This cannot be undone.')"
+                            >
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="tich-btn tich-btn--sm tich-btn--danger">Delete</button>
+                                <button
+                                    type="submit"
+                                    class="tich-squircle-btn tich-squircle-btn--danger"
+                                    title="Delete document"
+                                    aria-label="Delete {{ $doc->document_name }}"
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>
+                                    </svg>
+                                </button>
                             </form>
                         </div>
                     </div>

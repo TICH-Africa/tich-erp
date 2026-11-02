@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../data/api_client.dart';
 import '../../data/staff_api.dart';
+import '../../sync/tich_background_sync.dart';
+import '../../sync/tich_offline_outbox.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
@@ -23,10 +27,13 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
   late Future<Map<String, dynamic>> _future;
   Object? _dataCache;
   bool _syncing = false;
+  bool _flushing = false;
+  int _pendingField = 0;
 
   @override
   void initState() {
     super.initState();
+    _refreshPending();
     staffPrimeScreen(
       persistKey: 'staff.attendance',
       setCache: (c) => _dataCache = c,
@@ -51,6 +58,34 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
       onData: (data) => _dataCache = data,
       persistKey: 'staff.attendance',
     );
+  }
+
+  Future<void> _refreshPending() async {
+    final count = await TichOfflineOutbox.instance.pendingCount();
+    if (mounted) setState(() => _pendingField = count);
+  }
+
+  Future<void> _flushOffline() async {
+    final client = context.read<ApiClient>();
+    setState(() => _flushing = true);
+    try {
+      await TichBackgroundSync.instance.tryFlush(client, force: true);
+      if (!mounted) return;
+      await _refreshPending();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _pendingField == 0
+                ? 'Offline field data uploaded.'
+                : 'Some items are still waiting to upload.',
+          ),
+        ),
+      );
+      _reload();
+    } finally {
+      if (mounted) setState(() => _flushing = false);
+    }
   }
 
   Future<void> _sync() async {
@@ -80,6 +115,21 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
       child: AdaptiveScaffold(
       title: 'Class attendance',
       actions: [
+        if (_pendingField > 0)
+          IconButton(
+            tooltip: 'Upload offline attendance & marks',
+            onPressed: _flushing ? null : _flushOffline,
+            icon: _flushing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Badge(
+                    label: Text('$_pendingField'),
+                    child: const Icon(Icons.cloud_upload_outlined),
+                  ),
+          ),
         IconButton(
           tooltip: 'Sync from timetable',
           onPressed: _syncing ? null : _sync,
@@ -110,6 +160,32 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
               padding: const EdgeInsets.all(16),
               children: [
                 const SizedBox(height: 12),
+                if (_pendingField > 0)
+                  TichCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Offline queue',
+                          style: tichUi(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '$_pendingField item(s) waiting to upload (attendance, marks, or photos).',
+                          style: tichUi(
+                            fontSize: 12,
+                            color: TichColors.neutralMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        FilledButton.icon(
+                          onPressed: _flushing ? null : _flushOffline,
+                          icon: const Icon(Icons.cloud_upload_outlined),
+                          label: const Text('Upload now'),
+                        ),
+                      ],
+                    ),
+                  ),
                 if (upcoming.isNotEmpty) ...[
                   const TichSectionHeader('Upcoming / recent'),
                   ...upcoming.take(6).map((raw) {

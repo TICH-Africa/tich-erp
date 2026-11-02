@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../data/api_client.dart';
 import '../../data/staff_api.dart';
+import '../../sync/tich_background_sync.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_widgets.dart';
 import '../widgets/tich_form_dialog.dart';
@@ -129,21 +132,33 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
     );
 
     if (ok != true || allocationId == null) return;
+    if (!mounted) return;
 
     try {
-      await widget.api.recordCat({
+      final body = {
         'allocation_id': allocationId,
         'student_id': int.parse(studentId.text.trim()),
         'assessment_name': name.text.trim(),
         'assessment_type': 'cat',
         'max_score': double.parse(max.text.trim()),
         'score_obtained': double.parse(obtained.text.trim()),
-      });
+      };
+      final client = context.read<ApiClient>();
+      await TichBackgroundSync.instance.enqueueOrRunCat(
+        widget.api,
+        client,
+        body: body,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Score recorded.')),
       );
       _reload();
+    } on TichQueuedOfflineException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tichQueuedOfflineMessage())),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)

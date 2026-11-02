@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../data/api_client.dart';
 import '../../data/staff_api.dart';
+import '../../sync/tich_background_sync.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_document_capture.dart';
@@ -86,12 +89,23 @@ class _StaffAttendanceSessionPageState
     if (path == null || !mounted) return;
     setState(() => _busy = true);
     try {
-      await widget.api.uploadSignedSheet(widget.sessionId, path);
+      final client = context.read<ApiClient>();
+      await TichBackgroundSync.instance.enqueueOrRunSheetUpload(
+        widget.api,
+        client,
+        sessionId: widget.sessionId,
+        filePath: path,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Signed attendance sheet uploaded.')),
       );
       _reload();
+    } on TichQueuedOfflineException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tichQueuedOfflineMessage())),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -106,12 +120,23 @@ class _StaffAttendanceSessionPageState
     if (path == null || !mounted) return;
     setState(() => _busy = true);
     try {
-      await widget.api.uploadClassPhoto(widget.sessionId, path);
+      final client = context.read<ApiClient>();
+      await TichBackgroundSync.instance.enqueueOrRunPhotoUpload(
+        widget.api,
+        client,
+        sessionId: widget.sessionId,
+        filePath: path,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Class photo uploaded.')),
       );
       _reload();
+    } on TichQueuedOfflineException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tichQueuedOfflineMessage())),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -124,8 +149,11 @@ class _StaffAttendanceSessionPageState
   Future<void> _save({bool lock = false}) async {
     setState(() => _busy = true);
     try {
-      await widget.api.saveAttendance(
-        widget.sessionId,
+      final client = context.read<ApiClient>();
+      await TichBackgroundSync.instance.enqueueOrRunAttendanceSave(
+        widget.api,
+        client,
+        sessionId: widget.sessionId,
         presentStudentIds: _present.toList(),
         lock: lock,
       );
@@ -136,6 +164,11 @@ class _StaffAttendanceSessionPageState
         ),
       );
       _reload();
+    } on TichQueuedOfflineException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tichQueuedOfflineMessage())),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
