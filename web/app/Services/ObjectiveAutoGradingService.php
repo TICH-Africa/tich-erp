@@ -57,11 +57,7 @@ class ObjectiveAutoGradingService
      */
     public function createAssessment(Staff $staff, UnitAllocation $allocation, array $data, array $questions): ObjectiveAssessment
     {
-        abort_unless(
-            (int) $allocation->staff_id === (int) $staff->id
-            || ($staff->user && $staff->user->hasPermission('academics.write')),
-            403
-        );
+        abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
         abort_unless($questions !== [], 422, 'Add at least one objective question.');
 
         $assessment = ObjectiveAssessment::query()->create([

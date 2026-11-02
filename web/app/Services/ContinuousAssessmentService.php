@@ -33,11 +33,7 @@ class ContinuousAssessmentService
      */
     public function terminalData(UnitAllocation $allocation, Staff $staff): array
     {
-        abort_unless(
-            (int) $allocation->staff_id === (int) $staff->id
-            || ($staff->user && $staff->user->hasPermission('academics.write')),
-            403
-        );
+        abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
 
         $allocation->load(['unit', 'semester.academicYear', 'campus']);
         $programId = $allocation->unit?->program_id;
@@ -69,10 +65,11 @@ class ContinuousAssessmentService
         $existing = DB::table('cat_scores')
             ->where('unit_id', $allocation->unit_id)
             ->where('semester_id', $allocation->semester_id)
-            ->select(['assessment_name', 'assessment_type', 'max_score'])
-            ->distinct()
-            ->orderBy('assessment_name')
-            ->get();
+            ->orderByDesc('id')
+            ->get(['assessment_name', 'assessment_type', 'max_score'])
+            ->unique('assessment_name')
+            ->sortBy('assessment_name')
+            ->values();
 
         if ($existing->isEmpty()) {
             return $this->defaultAssessmentColumns();
@@ -100,6 +97,7 @@ class ContinuousAssessmentService
         $records = CatScore::query()
             ->where('unit_id', $allocation->unit_id)
             ->where('semester_id', $allocation->semester_id)
+            ->orderByDesc('id')
             ->get()
             ->groupBy('student_id');
 
@@ -124,11 +122,7 @@ class ContinuousAssessmentService
      */
     public function saveGrid(UnitAllocation $allocation, Staff $staff, array $columns, array $gridScores): void
     {
-        abort_unless(
-            (int) $allocation->staff_id === (int) $staff->id
-            || ($staff->user && $staff->user->hasPermission('academics.write')),
-            403
-        );
+        abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
 
         app(StaffPortalDashboardService::class)->assertStudentsAreOnRoll(
             $allocation,
@@ -149,22 +143,24 @@ class ContinuousAssessmentService
                     continue;
                 }
 
-                $score = (float) $raw;
+                $obtained = (float) $raw;
                 $max = (float) $column['max'];
-                $percentage = $max > 0 ? round(($score / $max) * 100, 2) : 0;
+                $percentage = $max > 0 ? round(($obtained / $max) * 100, 2) : 0;
                 $weight = $this->defaultWeightForType($column['type'], $allocation->unit);
 
-                CatScore::query()->updateOrCreate(
-                    [
-                        'student_id' => (int) $studentId,
-                        'unit_id' => $allocation->unit_id,
-                        'semester_id' => $allocation->semester_id,
-                        'assessment_name' => $column['name'],
-                    ],
+                $entry = [
+                    'student_id' => (int) $studentId,
+                    'unit_id' => $allocation->unit_id,
+                    'semester_id' => $allocation->semester_id,
+                    'assessment_name' => $column['name'],
+                ];
+
+                $saved = CatScore::query()->updateOrCreate(
+                    $entry,
                     [
                         'assessment_type' => $column['type'],
                         'max_score' => $max,
-                        'score_obtained' => min($score, $max),
+                        'score_obtained' => min($obtained, $max),
                         'percentage_score' => $percentage,
                         'weight_in_final' => $weight,
                         'recorded_by' => $staff->id,
@@ -172,6 +168,10 @@ class ContinuousAssessmentService
                         'updated_at' => now(),
                     ]
                 );
+
+                // A correction replaces the earlier entry instead of stacking beside it, so the
+                // score the school reads is the one last typed.
+                CatScore::query()->where($entry)->where('id', '!=', $saved->id)->delete();
             }
         }
 
@@ -441,6 +441,9 @@ class ContinuousAssessmentService
      */
     private function buildWeightedBreakdown(Collection $scores, float $attendancePct, array $weights): array
     {
+        // One entry counts per assessment: the last mark typed stands, the one it replaced does not.
+        $scores = $scores->sortByDesc('id')->unique('assessment_name')->values();
+
         $catTypes = ['cat', 'theoretical_review', 'assignment'];
         $practicalTypes = ['practical', 'skills_lab', 'field_log', 'project'];
 

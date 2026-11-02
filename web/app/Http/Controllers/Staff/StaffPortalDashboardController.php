@@ -149,12 +149,10 @@ class StaffPortalDashboardController extends Controller
         $examMarksSheet = null;
         $objectiveTerminal = null;
         if ($section === 'grading') {
+            $portalData['marking_allocations'] = $this->dashboard->markingAllocations($staff);
             $allocationId = $request->integer('allocation');
             if ($allocationId) {
-                $allocation = UnitAllocation::query()
-                    ->with(['unit', 'semester', 'campus'])
-                    ->where('staff_id', $staff->id)
-                    ->find($allocationId);
+                $allocation = $this->dashboard->findMarkingAllocation($staff, $allocationId);
                 if ($allocation) {
                     $gradingTerminal = $this->assessments->terminalData($allocation, $staff);
                     $examMarksSheet = $this->examMarks->sheet($allocation, $staff);

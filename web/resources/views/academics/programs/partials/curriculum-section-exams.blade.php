@@ -25,7 +25,7 @@
         $unitAssessmentUpdateBase = route('departments.academics.programs.units.assessment-weights.update', array_merge($hub, ['program' => $program->id, 'unit' => '__ID__']));
     @endphp
 
-    <x-page-toolbar title="Exams &amp; grading - {{ $selectedIntake->intakeLabel() }}" meta="Semester exams, schedules, and results" class="tich-mb-6">
+    <x-page-toolbar title="Exams & grading - {{ $selectedIntake->intakeLabel() }}" meta="Semester exams, schedules, and results" class="tich-mb-6">
         <x-slot:filters>
             <form method="GET" action="{{ route('departments.academics.programs.curriculum', array_merge($curriculumParams, ['section' => 'exams', 'exam_tab' => $examTab ?? 'overview'])) }}" class="tich-page-toolbar__filters-form">
                 <input type="hidden" name="section" value="exams">
@@ -112,7 +112,7 @@
                 <ul class="tich-mt-4" style="list-style:none; padding:0; display:grid; gap:0.65rem;">
                     <li><a href="{{ route('departments.academics.performance.index', $deptHub) }}" class="tich-link">Performance mapping terminal (HOD analytics)</a></li>
                     <li><a href="{{ route('departments.academics.attendance-ledger.index', $deptHub) }}" class="tich-link">Attendance ledger (exam eligibility)</a></li>
-                    <li><a href="{{ route('staff.dashboard', ['section' => 'grading']) }}" class="tich-link">Staff grading portal (lecturers)</a></li>
+                    <li><a href="{{ route('staff.dashboard', ['section' => 'grading']) }}" class="tich-link">Marks &amp; assessments desk (lecturers and academics)</a></li>
                     <li><a href="{{ route('departments.academics.programs.curriculum', $timetableExamParams) }}" class="tich-link">Exam timetable builder</a></li>
                     <li><a href="{{ route('sis.students.index', ['program_id' => $program->id]) }}" class="tich-link">Student records &amp; transcripts (SIS)</a></li>
                 </ul>
@@ -166,7 +166,7 @@
     @elseif ($examTab === 'grading')
         <article class="tich-card tich-mb-6">
             <h2 class="tich-h3">Continuous assessment &amp; objective auto-grading</h2>
-            <p class="tich-text tich-mt-2">Lecturers enter competency spreadsheet marks and run objective auto-grading in the staff portal. Cumulative scores compile automatically into grade records used on transcripts.</p>
+            <p class="tich-text tich-mt-2">Lecturers and this department's academics desk enter CAT, exam and objective marks on the same grid in the staff portal - a mark can be entered whether or not the tutor has entered theirs. Cumulative scores compile automatically into grade records used on transcripts.</p>
             <div class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:1rem;">
                 <a href="{{ route('staff.dashboard', ['section' => 'grading']) }}" class="tich-btn tich-btn-primary">Open marks &amp; assessments</a>
                 <a href="{{ route('departments.academics.performance.index', $deptHub) }}" class="tich-btn tich-btn-secondary">HOD performance terminal</a>

@@ -455,9 +455,9 @@ class StaffPortalActionController extends Controller
             'feedback' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        // A paper belongs to the unit the lecturer teaches, and the student to that unit's roll.
+        // A paper belongs to the unit being marked, and the student to that unit's roll.
         abort_unless($staff, 403);
-        abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
+        abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
         abort_unless((int) $assessment->unit_id === (int) $allocation->unit_id, 403);
         app(StaffPortalDashboardService::class)->assertStudentsAreOnRoll($allocation, [(int) $validated['student_id']]);
 

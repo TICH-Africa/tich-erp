@@ -1,4 +1,10 @@
-<x-page-toolbar title="Marks &amp; assessments" meta="CAT, assignment, practical, and exam marks" />
+<x-page-toolbar title="Marks & assessments" meta="CAT, assignment, practical, and exam marks" />
+
+@php
+    // The academics desk marks the same grid the lecturers do, so it can enter a mark whether or
+    // not the tutor has entered theirs.
+    $markingAllocations = $portalData['marking_allocations'] ?? $portalData['allocations'];
+@endphp
 
 <article class="tich-card tich-mt-6">
     <form method="GET" action="{{ route('staff.dashboard') }}" class="tich-grid tich-grid--3" style="gap:1rem; align-items:end;">
@@ -7,17 +13,17 @@
             <label class="tich-label">Unit</label>
             <select name="allocation" class="tich-input" onchange="if (this.value) this.form.submit()">
                 <option value="">Select a unit…</option>
-                @foreach ($portalData['allocations']->groupBy(fn ($row) => $row->year_of_study ? 'Year '.$row->year_of_study : 'Year not set') as $yearLabel => $yearAllocations)
+                @foreach ($markingAllocations->groupBy(fn ($row) => $row->year_of_study ? 'Year '.$row->year_of_study : 'Year not set') as $yearLabel => $yearAllocations)
                     <optgroup label="{{ $yearLabel }}">
                         @foreach ($yearAllocations as $allocation)
                             <option value="{{ $allocation->id }}" @selected(request('allocation') == $allocation->id)>
-                                {{ $allocation->unit?->unit_code }} · {{ $allocation->period_label }} · {{ $allocation->intake_label ?? $allocation->semester?->semester_label }}
+                                {{ $allocation->unit?->unit_code }} · {{ $allocation->period_label }} · {{ $allocation->intake_label ?? $allocation->semester?->semester_label }}@if ((int) $allocation->staff_id !== (int) $staff->id && $allocation->staff) · {{ trim($allocation->staff->first_name.' '.$allocation->staff->surname) }}@endif
                             </option>
                         @endforeach
                     </optgroup>
                 @endforeach
             </select>
-            <p class="tich-caption" style="margin:0.35rem 0 0;">Pick the year and semester you are marking - the grid then lists only the students registered on that unit.</p>
+            <p class="tich-caption" style="margin:0.35rem 0 0;">Pick the year and semester you are marking - the grid then lists only the students registered on that unit. Every mark you enter replaces the one it stored, whoever typed it.</p>
         </div>
     </form>
 </article>
@@ -133,7 +139,7 @@
             <article class="tich-card">
                 <h2 class="tich-h3">{{ $allocation->unit?->unit_code }} - exam marks</h2>
                 <div class="tich-form-toolbar tich-mt-2">
-                    <p class="tich-caption">Enter final exam scores (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). CAT, practical, and attendance averages are pulled from marks you have already entered. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
+                    <p class="tich-caption">Enter final exam scores (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). CAT, practical, and attendance averages are pulled from the marks already entered - an exam mark can be recorded here whether or not the tutor has entered theirs. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
                     <span class="tich-autosave-status" data-autosave-status="grading-exams" data-state="idle" aria-live="polite">Changes save automatically</span>
                 </div>
 
@@ -245,9 +251,9 @@
     </script>
 
     <script src="{{ asset('js/tich-staff-grading-autosave.js') }}"></script>
-@elseif ($portalData['allocations']->isEmpty())
+@elseif ($markingAllocations->isEmpty())
     <article class="tich-card tich-mt-6">
-        <p class="tich-text">You need a unit allocation before entering marks.</p>
+        <p class="tich-text">No unit is marked to you or to your department yet, so there is nothing to enter marks against.</p>
     </article>
 @else
     <article class="tich-card tich-mt-6">

@@ -19,7 +19,9 @@ class StaffPortalNavigationService
     {
         $sections = [];
 
-        if ($this->userIsTeachingStaff()) {
+        $teaching = $this->userIsTeachingStaff();
+
+        if ($teaching) {
             $sections['overview'] = 'Overview';
             $sections['units'] = 'My units';
             $sections['timetable'] = 'Timetable';
@@ -28,6 +30,12 @@ class StaffPortalNavigationService
             $sections['lesson-plans'] = 'Lesson plans';
             $sections['content'] = 'Learning content';
             $sections['exam-papers'] = 'Exam papers';
+        }
+
+        // A department academics officer who never lectures still marks: the desk needs the same
+        // CAT and exam grid the lecturers use, for the units of their department.
+        if (! $teaching && $this->userCanEnterMarks()) {
+            $sections['grading'] = 'Marks & assessments';
         }
 
         if ($this->userIsHod()) {
@@ -46,9 +54,15 @@ class StaffPortalNavigationService
 
     public function resolveSection(Request $request): string
     {
-        $section = $request->string('section')->toString() ?: 'overview';
+        $sections = $this->sections();
 
-        return array_key_exists($section, $this->sections()) ? $section : 'overview';
+        if ($sections === []) {
+            return 'overview';
+        }
+
+        $section = $request->string('section')->toString();
+
+        return array_key_exists($section, $sections) ? $section : (string) array_key_first($sections);
     }
 
     /**
@@ -71,6 +85,9 @@ class StaffPortalNavigationService
             $items[] = ['type' => 'link', 'label' => 'Learning content', 'section' => 'content', 'icon' => 'layers'];
             $items[] = ['type' => 'link', 'label' => 'Exam papers', 'section' => 'exam-papers', 'icon' => 'file-text'];
             $items = array_merge($items, $this->planningNavigation($isHod, withTechnicalPlans: true));
+        } elseif ($this->userCanEnterMarks()) {
+            $items[] = ['type' => 'heading', 'label' => 'Department marks'];
+            $items[] = ['type' => 'link', 'label' => 'Marks & assessments', 'section' => 'grading', 'icon' => 'award'];
         }
 
         if ($isHod) {
@@ -190,5 +207,12 @@ class StaffPortalNavigationService
         $staff = app(StaffPortalService::class)->staffForUser($user);
 
         return $staff && $staff->is_teaching_staff;
+    }
+
+    private function userCanEnterMarks(): bool
+    {
+        $user = Auth::user();
+
+        return $user !== null && $user->hasPermission('academics.write');
     }
 }

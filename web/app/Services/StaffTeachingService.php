@@ -282,26 +282,36 @@ class StaffTeachingService
 
     public function recordCatScore(Staff $staff, UnitAllocation $allocation, array $data): CatScore
     {
-        abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
+        abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
 
         app(StaffPortalDashboardService::class)->assertStudentsAreOnRoll($allocation, [(int) $data['student_id']]);
 
         $max = (float) $data['max_score'];
         $obtained = (float) $data['score_obtained'];
 
-        $score = CatScore::query()->create([
+        $entry = [
             'student_id' => (int) $data['student_id'],
             'unit_id' => $allocation->unit_id,
             'semester_id' => $allocation->semester_id,
-            'assessment_type' => $data['assessment_type'] ?? 'cat',
             'assessment_name' => $data['assessment_name'],
-            'max_score' => $max,
-            'score_obtained' => $obtained,
-            'percentage_score' => $max > 0 ? round(($obtained / $max) * 100, 2) : 0,
-            'weight_in_final' => (float) ($data['weight_in_final'] ?? 0),
-            'recorded_by' => $staff->id,
-            'recorded_at' => now(),
-        ]);
+        ];
+
+        $score = CatScore::query()->updateOrCreate(
+            $entry,
+            [
+                'assessment_type' => $data['assessment_type'] ?? 'cat',
+                'max_score' => $max,
+                'score_obtained' => $obtained,
+                'percentage_score' => $max > 0 ? round(($obtained / $max) * 100, 2) : 0,
+                'weight_in_final' => (float) ($data['weight_in_final'] ?? 0),
+                'recorded_by' => $staff->id,
+                'recorded_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        // Re-recording an assessment overwrites the mark instead of leaving the old one beside it.
+        CatScore::query()->where($entry)->where('id', '!=', $score->id)->delete();
 
         app(ContinuousAssessmentService::class)->recalculateCumulativeScores($allocation);
 

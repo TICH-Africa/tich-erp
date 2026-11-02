@@ -14490,3 +14490,85 @@ input[type="time"]::-moz-calendar-picker-indicator {
     border-color: #5c6370;
 }
 
+
+/* ------------------------------------------------------------------
+   Small screens: a table that will not fit is scrolled inside its own
+   card instead of pushing the whole page wider than the phone.
+   ------------------------------------------------------------------ */
+@media (max-width: 767px) {
+    .tich-table-panel,
+    .tich-table-wrap,
+    .tich-card:has(.tich-admin-table),
+    .tich-card:has(.tich-competency-grid) {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+    }
+
+    .tich-admin-table,
+    .tich-competency-grid {
+        font-size: 0.8125rem;
+    }
+
+    .tich-admin-table th,
+    .tich-admin-table td,
+    .tich-competency-grid th,
+    .tich-competency-grid td {
+        padding: 0.45rem 0.55rem;
+    }
+
+    /* A sticky head inside a sideways scroller only pins to that scroller. */
+    .tich-admin-table th,
+    .tich-competency-grid thead th {
+        position: static;
+    }
+
+    .tich-admin-table td:has(.tich-caption),
+    .tich-admin-table td:has(p),
+    .tich-admin-table td:has(.tich-text) {
+        min-width: 8.5rem;
+    }
+
+    .tich-competency-grid__sticky {
+        min-width: 5.5rem;
+    }
+
+    .tich-competency-grid__input {
+        width: 3.75rem;
+    }
+
+    .tich-admin-table input[type="number"],
+    .tich-table-panel input[type="number"] {
+        min-width: 3.75rem;
+    }
+
+    /* A grid or flex item refuses to shrink below its own content, so one long value,
+       picker or caption inside a card set the width of the whole page instead of just
+       the card. Releasing them keeps the page at the phone width. */
+    .tich-grid > *,
+    .tich-card,
+    .tich-table-panel,
+    .tich-table-wrap,
+    .tich-form-group,
+    .tich-dropdown,
+    .tich-dropdown__trigger,
+    .tich-dropdown__label {
+        min-width: 0;
+    }
+
+    /* A detail list is label beside value; the value column has to be able to break up.
+       Several record pages write their columns inline as "9rem 1fr", where an auto minimum
+       lets one long email or phone number widen the entire page. */
+    .tich-dl:not(:has(.tich-dl__row)),
+    dl[style*="grid-template-columns"] {
+        grid-template-columns: minmax(0, 7rem) minmax(0, 1fr) !important;
+    }
+
+    dt,
+    dd,
+    .tich-caption,
+    .tich-form-group .tich-label,
+    .tich-dropdown__label {
+        overflow-wrap: anywhere;
+    }
+}

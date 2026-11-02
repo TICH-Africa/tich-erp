@@ -8,13 +8,17 @@ use App\Models\Semester;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
 use App\Models\UnitContent;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class StaffPortalDashboardService
 {
     public function __construct(
         protected TimetableTemplateService $timetableTemplates,
+        protected AcademicsAccessService $academicsAccess,
     ) {}
 
     /**
@@ -22,21 +26,7 @@ class StaffPortalDashboardService
      */
     public function forStaff(Staff $staff): array
     {
-        $allocations = $this->allocations($staff);
-        $allocations->each(function (UnitAllocation $allocation): void {
-            $allocation->setAttribute('intake_label', $this->intakeLabelForSemester($allocation->semester));
-
-            // A calendar semester carries the teaching period number, which is what places the
-            // unit on a year of study - Year 2 means the second year the cohort is sitting.
-            $program = $allocation->program ?? $allocation->unit?->program;
-            $period = (int) ($allocation->semester?->semester_number ?? 0);
-            $allocation->setAttribute('teaching_period', $period > 0 ? $period : null);
-            $allocation->setAttribute('year_of_study', $program && $period > 0 ? $program->yearOfPeriod($period) : null);
-            $allocation->setAttribute(
-                'period_label',
-                $program && $period > 0 ? $program->periodLabel($period) : ($allocation->semester?->semester_label ?? '-'),
-            );
-        });
+        $allocations = $this->labelUnits($this->allocations($staff));
         $allocationIds = $allocations->pluck('id')->all();
         $unitIds = $allocations->pluck('unit_id')->unique()->all();
         $semesterIds = $allocations->pluck('semester_id')->unique()->all();
@@ -68,6 +58,116 @@ class StaffPortalDashboardService
             ->where('is_active', 1)
             ->orderBy('semester_id')
             ->get();
+    }
+
+    /**
+     * The units a person may write marks on.
+     *
+     * A lecturer keeps his own allocations even after one is withdrawn or handed to another tutor,
+     * because the marks he entered stay on the sheet and he has to be able to correct them. A
+     * department academics officer adds every live unit of their department, so a mark can be entered
+     * whether or not the lecturer has done theirs; the roles that act institution-wide reach every
+     * live unit in the school.
+     */
+    public function markingAllocations(Staff $staff): Collection
+    {
+        return $this->labelUnits(
+            $this->markingQuery($staff)
+                ->orderByRaw('CASE WHEN unit_allocations.staff_id = ? THEN 0 ELSE 1 END', [$staff->id])
+                ->orderBy('unit_allocations.semester_id')
+                ->get()
+        );
+    }
+
+    /**
+     * Which year of study and intake a unit sits in, for the unit pickers.
+     *
+     * @param  Collection<int, UnitAllocation>  $allocations
+     * @return Collection<int, UnitAllocation>
+     */
+    private function labelUnits(Collection $allocations): Collection
+    {
+        return $allocations->each(function (UnitAllocation $allocation): void {
+            $allocation->setAttribute('intake_label', $this->intakeLabelForSemester($allocation->semester));
+
+            // A calendar semester carries the teaching period number, which is what places the
+            // unit on a year of study - Year 2 means the second year the cohort is sitting.
+            $program = $allocation->program ?? $allocation->unit?->program;
+            $period = (int) ($allocation->semester?->semester_number ?? 0);
+            $allocation->setAttribute('teaching_period', $period > 0 ? $period : null);
+            $allocation->setAttribute('year_of_study', $program && $period > 0 ? $program->yearOfPeriod($period) : null);
+            $allocation->setAttribute(
+                'period_label',
+                $program && $period > 0 ? $program->periodLabel($period) : ($allocation->semester?->semester_label ?? '-'),
+            );
+        });
+    }
+
+    public function findMarkingAllocation(Staff $staff, int $allocationId): ?UnitAllocation
+    {
+        return $this->markingQuery($staff)
+            ->where('unit_allocations.id', $allocationId)
+            ->first();
+    }
+
+    /**
+     * Who may write marks on this unit: the lecturer it is allocated to, or the department
+     * academics desk. The acting user counts as well as the staff row's own link, because a profile
+     * can be attached to a user account from either side.
+     */
+    public function canMarkUnit(Staff $staff, UnitAllocation $allocation): bool
+    {
+        if ((int) $allocation->staff_id === (int) $staff->id) {
+            return true;
+        }
+
+        return $this->markingQuery($staff, withRelations: false)
+            ->where('unit_allocations.id', $allocation->id)
+            ->exists();
+    }
+
+    /**
+     * Whether this person marks beyond their own units - the department academics desk.
+     */
+    public function isMarkingDesk(Staff $staff): bool
+    {
+        $user = $this->markingUser($staff);
+
+        return $user !== null && $user->hasPermission('academics.write');
+    }
+
+    private function markingUser(Staff $staff): ?User
+    {
+        return $staff->user ?? Auth::user();
+    }
+
+    private function markingQuery(Staff $staff, bool $withRelations = true): Builder
+    {
+        $query = UnitAllocation::query();
+
+        if ($withRelations) {
+            $query->with(['unit.program', 'semester.academicYear', 'campus', 'program', 'staff']);
+        }
+
+        $user = $this->markingUser($staff);
+        $desk = $user !== null && $user->hasPermission('academics.write');
+
+        if ($desk && $this->academicsAccess->actsInstitutionWide($user)) {
+            return $query->where('unit_allocations.is_active', 1);
+        }
+
+        $departmentId = $desk ? (int) ($staff->department_id ?? 0) : 0;
+
+        return $query->where(function (Builder $scope) use ($staff, $departmentId): void {
+            $scope->where('unit_allocations.staff_id', $staff->id);
+
+            if ($departmentId > 0) {
+                $scope->orWhere(function (Builder $department) use ($departmentId): void {
+                    $department->where('unit_allocations.is_active', 1)
+                        ->whereHas('unit', fn (Builder $unit) => $unit->where('department_id', $departmentId));
+                });
+            }
+        });
     }
 
     /**
