@@ -48,15 +48,23 @@ class BudgetAggregationController extends Controller
             'lines.*.item' => ['required', 'string', 'max:255'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'lines.*.description' => ['nullable', 'string', 'max:2000'],
+            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
             'lines.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
             'justification' => ['nullable', 'string', 'max:3000'],
         ], [
             'lines.required' => 'Add at least one budget line item.',
             'lines.*.item.required' => 'Each line needs an item name.',
             'lines.*.quantity.required' => 'Each line needs a quantity.',
+            'lines.*.unit_price.required' => 'Each line needs a price per item.',
         ]);
 
         [$lineItems, $requestedAmount] = $this->normalizeLines($data['lines']);
+
+        if ($requestedAmount <= 0) {
+            return back()->withInput()->withErrors([
+                'lines' => 'The budget total must be greater than zero.',
+            ]);
+        }
 
         $framework = $data['framework'] ?? 'standard';
 
@@ -82,20 +90,25 @@ class BudgetAggregationController extends Controller
 
     private function normalizeLines(array $lines): array
     {
-        // Departments and Administration list what is needed; only Procurement puts a price on it.
         $lineItems = [];
+        $requestedAmount = 0.0;
 
         foreach ($lines as $line) {
+            $quantity = round((float) $line['quantity'], 4);
+            $unitPrice = round((float) $line['unit_price'], 2);
+            $total = round($quantity * $unitPrice, 2);
+            $requestedAmount += $total;
+
             $lineItems[] = [
                 'item' => trim((string) $line['item']),
-                'quantity' => round((float) $line['quantity'], 4),
+                'quantity' => $quantity,
                 'description' => trim((string) ($line['description'] ?? '')),
-                'unit_price' => null,
+                'unit_price' => $unitPrice,
                 'unit_of_measure' => trim((string) ($line['unit_of_measure'] ?? '')) ?: null,
-                'total' => null,
+                'total' => $total,
             ];
         }
 
-        return [$lineItems, 0.0];
+        return [$lineItems, $requestedAmount];
     }
 }

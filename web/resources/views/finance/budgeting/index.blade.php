@@ -36,7 +36,7 @@
                                     <p class="tich-caption">{{ $item->title }}</p>
                                 </td>
                                 <td>{{ $item->department?->dept_name }}</td>
-                                <td>{{ $item->requestedAmountLabel(0) }}</td>
+                                <td>KES {{ number_format($item->requested_amount, 0) }}</td>
                                 <td><x-status-badge :status="$item->status" /></td>
                                 <td>
                                     <a href="{{ route('finance.budgeting.requests.show', [$item->id]) }}" class="tich-btn tich-btn-primary">Review</a>

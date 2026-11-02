@@ -179,6 +179,7 @@ class BudgetingController extends Controller
                 'quarters.*.expenditure.*.item' => ['nullable', 'string', 'max:255'],
                 'quarters.*.expenditure.*.quantity' => ['nullable', 'numeric', 'min:0'],
                 'quarters.*.expenditure.*.description' => ['nullable', 'string', 'max:2000'],
+                'quarters.*.expenditure.*.unit_price' => ['nullable', 'numeric', 'min:0'],
                 'quarters.*.expenditure.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
             ]);
         } else {
@@ -187,6 +188,7 @@ class BudgetingController extends Controller
                 'lines.*.item' => ['required', 'string', 'max:255'],
                 'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
                 'lines.*.description' => ['nullable', 'string', 'max:2000'],
+                'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
                 'lines.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
             ]);
         }
@@ -201,6 +203,12 @@ class BudgetingController extends Controller
             [$lineItems, $requestedAmount] = $this->normalizeAnnualQuarters($data['quarters']);
         } else {
             [$lineItems, $requestedAmount] = $this->normalizeFlatLines($data['lines']);
+        }
+
+        if ($requestedAmount <= 0) {
+            return back()->withInput()->withErrors([
+                'budget' => 'Expenditure total must be greater than zero.',
+            ]);
         }
 
         $payload = [
@@ -276,24 +284,30 @@ class BudgetingController extends Controller
                     continue;
                 }
                 $item = trim((string) ($row['item'] ?? ''));
+                $quantity = round((float) ($row['quantity'] ?? 0), 4);
+                $unitPrice = round((float) ($row['unit_price'] ?? 0), 2);
+                if ($item === '' && $quantity <= 0 && $unitPrice <= 0) {
+                    continue;
+                }
                 if ($item === '') {
                     continue;
                 }
-                $quantity = round((float) ($row['quantity'] ?? 0), 4);
                 if ($quantity <= 0) {
                     $quantity = 1.0;
                 }
+                $total = round($quantity * $unitPrice, 2);
                 $normalized = [
                     'item' => $item,
                     'quantity' => $quantity,
                     'description' => trim((string) ($row['description'] ?? '')),
-                    'unit_price' => null,
+                    'unit_price' => $unitPrice,
                     'unit_of_measure' => trim((string) ($row['unit_of_measure'] ?? '')) ?: null,
-                    'total' => null,
+                    'total' => $total,
                     'quarter' => $key,
                 ];
                 $expenditureRows[] = $normalized;
                 $flatLines[] = $normalized;
+                $expenditureTotal += $total;
             }
 
             if ($expenditureRows === []) {
@@ -301,9 +315,9 @@ class BudgetingController extends Controller
                     'item' => '',
                     'quantity' => 1.0,
                     'description' => '',
-                    'unit_price' => null,
+                    'unit_price' => 0.0,
                     'unit_of_measure' => null,
-                    'total' => null,
+                    'total' => 0.0,
                     'quarter' => $key,
                 ];
             }
@@ -333,21 +347,26 @@ class BudgetingController extends Controller
      */
     private function normalizeFlatLines(array $lines): array
     {
-        // A department says what it needs and how much of it. Procurement puts the money on it.
         $lineItems = [];
+        $requestedAmount = 0.0;
 
         foreach ($lines as $line) {
+            $quantity = round((float) $line['quantity'], 4);
+            $unitPrice = round((float) $line['unit_price'], 2);
+            $total = round($quantity * $unitPrice, 2);
+            $requestedAmount += $total;
+
             $lineItems[] = [
                 'item' => trim((string) $line['item']),
-                'quantity' => round((float) $line['quantity'], 4),
+                'quantity' => $quantity,
                 'description' => trim((string) ($line['description'] ?? '')),
-                'unit_price' => null,
+                'unit_price' => $unitPrice,
                 'unit_of_measure' => trim((string) ($line['unit_of_measure'] ?? '')) ?: null,
-                'total' => null,
+                'total' => $total,
             ];
         }
 
-        return [$lineItems, 0.0];
+        return [$lineItems, $requestedAmount];
     }
 
     /**

@@ -187,6 +187,7 @@ class RequisitionController extends Controller
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'lines.*.description' => ['nullable', 'string', 'max:2000'],
             'lines.*.unit_of_measure' => ['nullable', 'string', 'max:50'],
+            'lines.*.unit_price' => ['nullable', 'numeric', 'min:0', 'max:999999999'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:5120'],
         ], [
@@ -197,16 +198,16 @@ class RequisitionController extends Controller
             'lines.*.item.required' => 'Each line needs an item name.',
         ]);
 
-        // Departments request; only Procurement prices. Any price sent with the form is discarded.
-        $lineItems = $this->requisitionService->unpricedLines($validated['lines']);
+        // The department files its own estimate; Procurement may regulate the prices later.
+        $lineItems = $this->requisitionService->estimatedLines($validated['lines']);
 
         $itemNames = collect($lineItems)->pluck('item')->filter()->values();
         $validated['requested_item'] = ($validated['requested_item'] ?? null)
             ?: ($itemNames->count() === 1
                 ? $itemNames->first()
                 : $itemNames->take(2)->implode(', ').($itemNames->count() > 2 ? ' +'.($itemNames->count() - 2).' more' : ''));
-        $validated['estimated_cost'] = 0;
-        $validated['estimated_unit_cost'] = null;
+        $validated['estimated_cost'] = $this->requisitionService->estimatedCost($lineItems);
+        $validated['estimated_unit_cost'] = $lineItems[0]['unit_price'] ?? null;
         $validated['quantity'] = collect($lineItems)->sum('quantity');
         $validated['budget_line'] = ($validated['budget_line'] ?? null) ?: ($lineItems[0]['item'] ?? null);
         $validated['line_items'] = $lineItems;

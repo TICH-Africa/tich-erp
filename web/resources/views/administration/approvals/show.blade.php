@@ -76,7 +76,7 @@
             @else
                 <div class="budrev-stat budrev-stat--exp">
                     <span class="budrev-stat__label">Requested amount</span>
-                    <span class="budrev-stat__value">{{ $budgetRequest->requestedAmountLabel() }}</span>
+                    <span class="budrev-stat__value">KES {{ number_format((float) $budgetRequest->requested_amount, 2) }}</span>
                 </div>
             @endif
         </div>
