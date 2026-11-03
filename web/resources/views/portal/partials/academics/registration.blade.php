@@ -53,7 +53,9 @@
 
     @if ($curriculumUnits->isNotEmpty())
         <p class="tich-caption tich-mt-4">
-            Programme plan lists {{ $curriculumUnits->count() }} curriculum unit(s). See <a class="tich-link" href="{{ route('portal.dashboard', ['section' => 'academics', 'tab' => 'units']) }}">My Units</a> for the full plan.
+            {{ $curriculumUnits->count() }} of your programme's units are registered to you so far. See
+            <a class="tich-link" href="{{ route('portal.dashboard', ['section' => 'academics', 'tab' => 'units']) }}">My Units</a>
+            for the semester each one is taught in.
         </p>
     @endif
 </section>

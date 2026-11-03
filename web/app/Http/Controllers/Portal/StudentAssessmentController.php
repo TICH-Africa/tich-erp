@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\ObjectiveAssessment;
 use App\Models\ObjectiveSubmission;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -16,9 +17,12 @@ class StudentAssessmentController extends Controller
         $student = auth()->user()->student;
         abort_if(! $student, 404);
 
+        // Only the units this student is registered on, so another year's assessment never
+        // appears on their list.
         $allocations = \App\Models\UnitAllocation::query()
             ->with(['unit', 'semester.academicYear'])
             ->whereHas('unit', fn ($q) => $q->where('department_id', $student->program->department_id ?? null))
+            ->whereIn('unit_id', app(\App\Services\StudentAcademicRecordService::class)->registeredUnitIds($student))
             ->where('is_active', 1)
             ->get();
 
@@ -54,6 +58,7 @@ class StudentAssessmentController extends Controller
     {
         $student = auth()->user()->student;
         abort_if(! $student, 404);
+        $this->assertRegistered($student, $assessment);
         abort_if($assessment->status !== 'ready', 403);
 
         $submission = ObjectiveSubmission::query()
@@ -91,6 +96,7 @@ class StudentAssessmentController extends Controller
     {
         $student = auth()->user()->student;
         abort_if(! $student, 404);
+        $this->assertRegistered($student, $assessment);
         abort_if($assessment->status !== 'ready', 403);
 
         $submission = ObjectiveSubmission::query()
@@ -163,5 +169,25 @@ class StudentAssessmentController extends Controller
             'tab' => 'assessments',
             'portalTitle' => 'Assessment Result',
         ]);
+    }
+
+    /**
+     * An assessment belongs to a unit, and a student only works on units they are registered for.
+     * Anyone who has already answered keeps access, even if Academics later un-assigns the unit.
+     */
+    private function assertRegistered(Student $student, ObjectiveAssessment $assessment): void
+    {
+        $held = app(\App\Services\StudentAcademicRecordService::class)->registeredUnitIds($student);
+
+        if (in_array((int) ($assessment->allocation?->unit_id ?? 0), $held, true)) {
+            return;
+        }
+
+        $answered = ObjectiveSubmission::query()
+            ->where('objective_assessment_id', $assessment->id)
+            ->where('student_id', $student->id)
+            ->exists();
+
+        abort_unless($answered, 403, 'You are not registered on this unit yet. Contact your HOD.');
     }
 }

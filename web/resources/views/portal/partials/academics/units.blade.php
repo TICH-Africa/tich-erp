@@ -1,4 +1,11 @@
-@if ($academics['current_period'])
+@php
+    // An empty semester block under a populated registered-units table reads as a lie,
+    // so show it only when it holds their units or they have no registrations at all.
+    $showCurrentPeriod = $academics['current_period']
+        && ($academics['current_period_units']->isNotEmpty() || $academics['registered_units']->isEmpty());
+@endphp
+
+@if ($showCurrentPeriod)
     <section class="tich-dept-panel tich-mt-8">
         <div class="tich-dept-panel__head">
             <h2 class="tich-h2 tich-dept-panel__title">
@@ -34,7 +41,7 @@
                     <tbody>
                         @foreach ($academics['current_period_units'] as $mapping)
                             <tr>
-                                <td>{{ $mapping->unit?->unit_code }} - {{ $mapping->unit?->unit_name }}</td>
+                                <td>{{ $mapping->unit?->unit_code ?? ($mapping->unit_code ?? '-') }} - {{ $mapping->unit?->unit_name ?? ($mapping->unit_name ?? '-') }}</td>
                                 <td>{{ $mapping->contact_hours ?? 0 }}</td>
                                 <td>{{ $mapping->total_learning_hours ?? 0 }}</td>
                                 <td>{{ $mapping->is_compulsory ? 'Yes' : 'No' }}</td>
@@ -44,7 +51,7 @@
                 </table>
             </div>
         @else
-            @include('partials.states.empty', ['title' => 'No units are mapped to this semester yet', 'icon' => 'inbox', 'inline' => true])
+            @include('partials.states.empty', ['title' => 'You have no units registered for this semester yet', 'icon' => 'inbox', 'inline' => true])
         @endif
     </section>
 @endif
@@ -82,12 +89,12 @@
 @if ($otherSemesters->isNotEmpty())
     <section class="tich-dept-panel tich-mt-8">
         <div class="tich-dept-panel__head">
-            <h2 class="tich-h2 tich-dept-panel__title">Other semesters</h2>
+            <h2 class="tich-h2 tich-dept-panel__title">Other semesters you are registered on</h2>
             <p class="tich-text">
                 @if ($academics['curriculum'])
-                    Full programme plan for {{ $academics['curriculum']->intakeLabel() }}.
+                    Your units on each semester of the {{ $academics['curriculum']->intakeLabel() }} plan.
                 @else
-                    All semesters in your programme.
+                    The semesters your registered units fall in.
                 @endif
             </p>
         </div>
@@ -144,7 +151,7 @@
                         <tbody>
                             @foreach ($units as $mapping)
                                 <tr>
-                                    <td>{{ $mapping->unit?->unit_code }} - {{ $mapping->unit?->unit_name }}</td>
+                                    <td>{{ $mapping->unit?->unit_code ?? ($mapping->unit_code ?? '-') }} - {{ $mapping->unit?->unit_name ?? ($mapping->unit_name ?? '-') }}</td>
                                     <td>{{ $mapping->contact_hours ?? 0 }}</td>
                                     <td>{{ $mapping->total_learning_hours ?? 0 }}</td>
                                     <td>{{ $mapping->is_compulsory ? 'Yes' : 'No' }}</td>
