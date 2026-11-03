@@ -162,6 +162,8 @@ trait SerializesStudentPortal
                         'room' => $s->room?->room_name ?? $s->room?->name,
                         'session_type' => $s->session_type,
                         'session_date' => $s->session_date?->format('Y-m-d'),
+                        'session_date_to' => $s->session_date_to?->format('Y-m-d'),
+                        'date_span' => $s->dateLabel(),
                         'week_no' => $s->week_no,
                         'week_to' => $s->week_to,
                         'recurrence' => $s->recurrence,

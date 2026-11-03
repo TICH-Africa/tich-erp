@@ -11,11 +11,17 @@
             $templateService->ensureKindSegments($timetableTemplate, $timetableKind);
             $timetableTemplate->load('segments');
         }
+        $audienceKeys = array_keys(\App\Models\ProgramTimetable::deliveryModes());
+        $requestedAudience = request()->string('delivery_mode')->toString();
+        $currentAudience = in_array($requestedAudience, $audienceKeys, true)
+            ? $requestedAudience
+            : ($timetableDraft?->delivery_mode ?? null);
         $timetableParams = fn (string $kind = null, ?int $period = null) => array_merge($curriculumParams, array_filter([
             'section' => 'timetable',
             'teaching_period' => $period ?? $timetableTeachingPeriod,
             'timetable_kind' => $kind ?? $timetableKind,
             'timetable' => $timetableDraft?->id,
+            'delivery_mode' => $currentAudience,
         ]));
         $slotsForKind = $schedulingService->scheduleSegmentsForKind($timetableTemplate, $timetableKind);
         $kindSlotRows = $slotsForKind->map(fn ($s) => [
@@ -202,6 +208,9 @@
                 <input type="hidden" name="section" value="timetable">
                 <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
                 <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
+                @if ($currentAudience)
+                    <input type="hidden" name="delivery_mode" value="{{ $currentAudience }}">
+                @endif
                 @if ($learningDepartment)
                     <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
                 @endif
@@ -231,6 +240,9 @@
                 <input type="hidden" name="section" value="timetable">
                 <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
                 <input type="hidden" name="timetable_kind" value="{{ $timetableKind }}">
+                @if ($currentAudience)
+                    <input type="hidden" name="delivery_mode" value="{{ $currentAudience }}">
+                @endif
                 @if ($learningDepartment)
                     <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
                 @endif
@@ -463,7 +475,7 @@
                             <label class="tich-label">Which students it is for</label>
                             <select name="delivery_mode" class="tich-input">
                                 @foreach (\App\Models\ProgramTimetable::deliveryModes() as $modeKey => $modeLabel)
-                                    <option value="{{ $modeKey }}" @selected(old('delivery_mode', 'physical') === $modeKey)>{{ $modeLabel }}</option>
+                                    <option value="{{ $modeKey }}" @selected(old('delivery_mode', $currentAudience ?? 'physical') === $modeKey)>{{ $modeLabel }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -674,6 +686,12 @@
                                     <select id="timetable-session-pick" class="tich-input" data-edit-url="{{ str_replace('__SESSION__', '__ID__', route('departments.academics.programs.timetable.update-session', array_merge($hub, ['program' => $program->id, 'timetable' => $timetableDraft->id, 'session' => '__SESSION__']))) }}" data-remove-url="{{ str_replace('__SESSION__', '__ID__', route('departments.academics.programs.timetable.remove-session', array_merge($hub, ['program' => $program->id, 'timetable' => $timetableDraft->id, 'session' => '__SESSION__']))) }}">
                                         <option value="">- none, I am adding a new class -</option>
                                         @foreach ($panelSessions as $session)
+                                            @php
+                                                $sessionSpan = trim(implode(' · ', array_filter([
+                                                    $session->cycleLabel(),
+                                                    $session->dateLabel(),
+                                                ])));
+                                            @endphp
                                             <option value="{{ $session->id }}"
                                                 data-session="{{ json_encode([
                                                     'id' => $session->id,
@@ -692,9 +710,10 @@
                                                     'start_time' => substr((string) $session->start_time, 0, 5),
                                                     'end_time' => substr((string) $session->end_time, 0, 5),
                                                     'session_date' => $session->session_date?->format('Y-m-d'),
+                                                    'session_date_to' => $session->session_date_to?->format('Y-m-d'),
                                                     'venue' => $session->venue,
                                                 ], JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT) }}"
-                                            >{{ $session->displayTitle() }} - {{ $timetableDayLabels[$session->day_of_week] ?? $session->day_of_week }} {{ substr((string) $session->start_time, 0, 5) }}@if ($session->cycleLabel()) ({{ $session->cycleLabel() }}) @endif</option>
+                                            >{{ $session->displayTitle() }} - {{ $timetableDayLabels[$session->day_of_week] ?? $session->day_of_week }} {{ substr((string) $session->start_time, 0, 5) }}@if ($sessionSpan) ({{ $sessionSpan }}) @endif</option>
                                         @endforeach
                                     </select>
                                     <p class="tich-caption">Pick a class to load it into the form below, then save the change. Nothing else on the timetable moves.</p>
@@ -744,9 +763,14 @@
                                 </div>
                                 @if ($timetableKind === 'lesson')
                                     <div class="tich-form-group">
-                                        <label class="tich-label" for="timetable-session-date">Date of this class</label>
+                                        <label class="tich-label" for="timetable-session-date">From this date</label>
                                         <input type="date" id="timetable-session-date" name="session_date" class="tich-input">
-                                        <p class="tich-caption">Give the exact day this class sits on - useful for a one-off lecture, a make-up class or an orientation. Leave it empty for a class that repeats every week or month.</p>
+                                        <p class="tich-caption">The day the class first sits - a one-off lecture, a make-up class or the first day of the run. Leave both dates empty for a class that repeats with no fixed days.</p>
+                                    </div>
+                                    <div class="tich-form-group">
+                                        <label class="tich-label" for="timetable-session-date-to">To this date</label>
+                                        <input type="date" id="timetable-session-date-to" name="session_date_to" class="tich-input">
+                                        <p class="tich-caption">Fill it when the class runs from one day to another, as an online cohort does - the week or month numbers still say which postings it is posted on, these two say over what days.</p>
                                     </div>
                                 @endif
                                 <div class="tich-form-group">
@@ -888,6 +912,7 @@
                             week_no: 'timetable-session-cycle',
                             week_to: 'timetable-session-cycle-to',
                             session_date: 'timetable-session-date',
+                            session_date_to: 'timetable-session-date-to',
                             contact_hours: 'timetable-session-hours'
                         };
                         var type = document.getElementById(fields.session_type);
@@ -901,7 +926,10 @@
                         var cycleLabel = document.getElementById('timetable-session-cycle-label');
                         var cycleToLabel = document.getElementById('timetable-session-cycle-to-label');
                         var isLesson = @json($timetableKind === 'lesson');
+                        // A class added on the online students' timetable starts as an online class.
+                        var timetableMode = @json($timetableDraft->delivery_mode ?? 'physical');
                         var dateField = document.getElementById('timetable-session-date');
+                        var dateToField = document.getElementById('timetable-session-date-to');
                         var everyDay = document.getElementById('timetable-session-every-day');
                         var everyDayGroup = document.getElementById('timetable-session-every-day-group');
                         var mode = document.getElementById(fields.delivery_mode);
@@ -927,9 +955,10 @@
 
                             everyDay.checked = sharedTypes.indexOf(type ? type.value : '') > -1;
 
-                            // One date cannot cover five days, so the box only counts when the class
-                            // is posted on a single day.
+                            // One date cannot cover five days, so the box comes pre-ticked for them and
+                            // the day fields are set aside while it is.
                             if (dateField) dateField.disabled = !!everyDay.checked;
+                            if (dateToField) dateToField.disabled = !!everyDay.checked;
                         }
 
                         function syncCycle() {
@@ -995,7 +1024,7 @@
                             if (removeForm) removeForm.hidden = true;
                             if (pick) pick.value = '';
                             if (everyDayGroup) everyDayGroup.hidden = false;
-                            if (mode) mode.value = 'physical';
+                            if (mode) mode.value = timetableMode;
                             syncEveryDay();
                             syncDelivery();
                         }

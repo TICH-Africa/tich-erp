@@ -17,13 +17,14 @@ class ProgramTimetableSession extends Model
         'start_time', 'end_time', 'session_type', 'delivery_mode', 'recurrence', 'contact_hours',
         'title', 'venue', 'class_group', 'segment_id',
         'lesson_plan_cleared', 'lesson_plan_id',
-        'session_date', 'week_no', 'week_to', 'source', 'external_ref',
+        'session_date', 'session_date_to', 'week_no', 'week_to', 'source', 'external_ref',
     ];
 
     protected $casts = [
         'start_time' => 'string',
         'end_time' => 'string',
         'session_date' => 'date',
+        'session_date_to' => 'date',
         'contact_hours' => 'float',
     ];
 
@@ -163,5 +164,25 @@ class ProgramTimetableSession extends Model
         $to = (int) $this->week_to;
 
         return $to > $from ? $word.'s '.$from.'-'.$to : $word.' '.$from;
+    }
+
+    /**
+     * The days a class actually runs on, which is how an online cohort books its span: week numbers
+     * say which posting it belongs to, the dates say when. One day prints as one day.
+     */
+    public function dateLabel(string $format = 'd M Y'): ?string
+    {
+        $from = $this->session_date;
+        $to = $this->session_date_to;
+
+        if ($from && $to && $to->lt($from)) {
+            [$from, $to] = [$to, $from];
+        }
+
+        if (! $from) {
+            return $to ? 'until '.$to->format($format) : null;
+        }
+
+        return $to ? $from->format($format).' - '.$to->format($format) : $from->format($format);
     }
 }

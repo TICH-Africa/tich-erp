@@ -337,7 +337,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                             ? $request->string('timetable_kind')->toString()
                             : 'lesson'
                     ),
-                    $request->integer('timetable') ?: null
+                    $request->integer('timetable') ?: null,
+                    $request->string('delivery_mode')->toString() ?: null
                 )
                 : null,
             'timetablesInScope' => ($section === 'timetable' && $selectedIntake)
@@ -771,6 +772,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'week_to' => ['nullable', 'integer', 'min:1', 'max:60', 'after_or_equal:week_no'],
             'every_day' => ['nullable', 'boolean'],
             'session_date' => ['nullable', 'date'],
+            'session_date_to' => ['nullable', 'date'],
             'contact_hours' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
             'start_time' => ['required', 'date_format:H:i'],
@@ -828,6 +830,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'week_no' => ['nullable', 'integer', 'min:1', 'max:60', 'required_with:week_to'],
             'week_to' => ['nullable', 'integer', 'min:1', 'max:60', 'after_or_equal:week_no'],
             'session_date' => ['nullable', 'date'],
+            'session_date_to' => ['nullable', 'date'],
             'contact_hours' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
             'start_time' => ['required', 'date_format:H:i'],
@@ -944,6 +947,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'teaching_period' => $timetable->teaching_period,
                 'timetable_kind' => $timetable->timetable_kind,
                 'timetable' => $timetable->id,
+                'delivery_mode' => $timetable->delivery_mode ?? 'physical',
             ]))
             ->withFragment('timetable-display')
             ->with('status', $status);

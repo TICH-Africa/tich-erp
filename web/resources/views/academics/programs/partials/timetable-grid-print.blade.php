@@ -16,7 +16,7 @@
         ->filter(fn ($session) => ! empty($session->session_date))
         ->groupBy(fn ($session) => substr((string) $session->start_time, 0, 5))
         ->map(fn ($group) => $group
-            ->map(fn ($session) => $session->session_date->format('d M'))
+            ->map(fn ($session) => $session->dateLabel('d M'))
             ->unique()
             ->values());
 
@@ -111,7 +111,7 @@
                                     @endif
                                     <span>{{ $segmentTypes[$session->session_type] ?? ucfirst($session->session_type) }}</span>
                                     @if (! in_array($session->session_type, ['break', 'lunch'], true))
-                                        <span>{{ $session->recurrenceLabel() }}@if ($session->cycleLabel()) · {{ $session->cycleLabel() }} @endif</span>
+                                        <span>{{ $session->recurrenceLabel() }}@if ($session->cycleLabel()) · {{ $session->cycleLabel() }} @endif @if ($session->dateLabel()) · {{ $session->dateLabel() }} @endif</span>
                                     @endif
                                 </div>
                             @empty

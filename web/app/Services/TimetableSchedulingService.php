@@ -178,7 +178,8 @@ class TimetableSchedulingService
         ?int $curriculumVersionId,
         int $teachingPeriod,
         string $timetableKind = 'lesson',
-        ?int $timetableId = null
+        ?int $timetableId = null,
+        ?string $deliveryMode = null
     ): ?ProgramTimetable {
         if ($timetableId) {
             $picked = ProgramTimetable::query()
@@ -194,7 +195,12 @@ class TimetableSchedulingService
             }
         }
 
-        return $this->latestTimetable($programId, $curriculumVersionId, $teachingPeriod, $timetableKind);
+        $mode = in_array($deliveryMode, array_keys(ProgramTimetable::deliveryModes()), true) ? $deliveryMode : null;
+
+        // The audience that was just opened is shown, so an online posting is not swapped for the
+        // campus one of another year. A school running one posting for everybody is unaffected.
+        return $this->latestTimetable($programId, $curriculumVersionId, $teachingPeriod, $timetableKind, $mode)
+            ?? $this->latestTimetable($programId, $curriculumVersionId, $teachingPeriod, $timetableKind);
     }
 
     public function latestTimetable(
@@ -872,6 +878,7 @@ class TimetableSchedulingService
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
             'session_date' => empty($data['session_date']) ? null : $data['session_date'],
+            'session_date_to' => empty($data['session_date_to']) ? null : $data['session_date_to'],
             'session_type' => $data['session_type'] ?? 'lesson',
             'delivery_mode' => $data['delivery_mode'] ?? 'physical',
             'recurrence' => $data['recurrence'] ?? 'weekly',
@@ -892,6 +899,7 @@ class TimetableSchedulingService
         // One date belongs to one day, so a slot posted across the week carries none of them.
         if (count($days) > 1) {
             $payload['session_date'] = null;
+            $payload['session_date_to'] = null;
         }
 
         $sessions = collect($days)->map(
@@ -949,7 +957,7 @@ class TimetableSchedulingService
 
         $original = $session->only([
             'unit_id', 'staff_id', 'room_id', 'day_of_week', 'start_time', 'end_time', 'session_date',
-            'session_type', 'delivery_mode', 'recurrence', 'week_no', 'week_to', 'contact_hours', 'title', 'venue', 'class_group', 'segment_id',
+            'session_date_to', 'session_type', 'delivery_mode', 'recurrence', 'week_no', 'week_to', 'contact_hours', 'title', 'venue', 'class_group', 'segment_id',
         ]);
 
         $payload = [
@@ -962,6 +970,9 @@ class TimetableSchedulingService
             'session_date' => array_key_exists('session_date', $data)
                 ? (empty($data['session_date']) ? null : $data['session_date'])
                 : $session->session_date,
+            'session_date_to' => array_key_exists('session_date_to', $data)
+                ? (empty($data['session_date_to']) ? null : $data['session_date_to'])
+                : $session->session_date_to,
             'session_type' => $data['session_type'] ?? $session->session_type,
             'delivery_mode' => $data['delivery_mode'] ?? $session->delivery_mode ?? 'physical',
             'recurrence' => $data['recurrence'] ?? $session->recurrence ?? 'weekly',
@@ -1945,9 +1956,15 @@ class TimetableSchedulingService
      */
     private function cyclesOverlap(ProgramTimetableSession $session, ProgramTimetableSession $other): bool
     {
-        if ($session->session_date && $other->session_date
-            && $session->session_date->ne($other->session_date)) {
-            return false;
+        if ($session->session_date && $other->session_date) {
+            $thisEnd = ($session->session_date_to ?: $session->session_date);
+            $otherEnd = ($other->session_date_to ?: $other->session_date);
+
+            // Two dated classes only meet when their runs of days touch - a class that ends before
+            // the other starts cannot clash with it, even on the same weekday and hour.
+            if ($thisEnd->lt($other->session_date) || $otherEnd->lt($session->session_date)) {
+                return false;
+            }
         }
 
         $fromA = $this->cycleFrom($session);

@@ -67,7 +67,7 @@
         ->filter(fn ($session) => ! empty($session->session_date))
         ->groupBy(fn ($session) => $placement[(int) $session->id] ?? $rowStart($session))
         ->map(fn ($group) => $group
-            ->map(fn ($session) => $session->session_date->format('d M'))
+            ->map(fn ($session) => $session->dateLabel('d M'))
             ->unique()
             ->values());
     $sessionsByDayAndTime = collect($sessions ?? [])->groupBy(
@@ -254,8 +254,8 @@
                                         @if ($session->room)
                                             <span class="tich-caption">{{ $session->room->room_code }}</span>
                                         @endif
-                                        @if ($session->session_date)
-                                            <span class="tich-caption">{{ $session->session_date->format('d M Y') }}</span>
+                                        @if ($session->dateLabel())
+                                            <span class="tich-caption">{{ $session->dateLabel() }}</span>
                                         @endif
                                         @if ($session->staff)
                                             <span class="tich-caption">{{ $canEditInvigilator ? 'Invigilator: ' : '' }}{{ $session->staff->first_name }} {{ $session->staff->surname }}</span>
