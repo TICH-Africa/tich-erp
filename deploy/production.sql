@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-10-30 13:03:16 EAT
+-- Generated: 2026-11-02 15:04:50 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -175,6 +175,8 @@ CREATE TABLE IF NOT EXISTS `academic_programs` (
   `program_type` varchar(50) NOT NULL,
   `regulatory_body` varchar(50) DEFAULT NULL,
   `curriculum_format` varchar(50) NOT NULL DEFAULT 'trimester',
+  `is_tiered` tinyint(1) NOT NULL DEFAULT 0,
+  `tier_semester_months` tinyint(3) unsigned DEFAULT NULL,
   `department_id` bigint(20) unsigned NOT NULL,
   `duration_months` int(11) DEFAULT NULL,
   `semester_count` int(11) NOT NULL DEFAULT 0,
@@ -210,6 +212,8 @@ CALL `tich_ensure_column`('academic_programs', 'program_name', 'varchar(300) NOT
 CALL `tich_ensure_column`('academic_programs', 'program_type', 'varchar(50) NOT NULL');
 CALL `tich_ensure_column`('academic_programs', 'regulatory_body', 'varchar(50) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('academic_programs', 'curriculum_format', 'varchar(50) NOT NULL DEFAULT \'\\\'trimester\\\'\'');
+CALL `tich_ensure_column`('academic_programs', 'is_tiered', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('academic_programs', 'tier_semester_months', 'tinyint(3) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('academic_programs', 'department_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('academic_programs', 'duration_months', 'int(11) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('academic_programs', 'semester_count', 'int(11) NOT NULL DEFAULT \'0\'');
@@ -1110,6 +1114,7 @@ CREATE TABLE IF NOT EXISTS `applicants` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `application_number` varchar(50) NOT NULL,
   `program_id` bigint(20) unsigned NOT NULL,
+  `program_tier` varchar(32) DEFAULT NULL,
   `intake_year` smallint(5) unsigned DEFAULT NULL,
   `intake_month` tinyint(3) unsigned DEFAULT NULL,
   `handling_department_id` bigint(20) unsigned DEFAULT NULL,
@@ -1181,6 +1186,7 @@ CREATE TABLE IF NOT EXISTS `applicants` (
 CALL `tich_ensure_column`('applicants', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
 CALL `tich_ensure_column`('applicants', 'application_number', 'varchar(50) NOT NULL');
 CALL `tich_ensure_column`('applicants', 'program_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('applicants', 'program_tier', 'varchar(32) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'intake_year', 'smallint(5) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'intake_month', 'tinyint(3) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'handling_department_id', 'bigint(20) unsigned NULL DEFAULT NULL');
@@ -4179,6 +4185,7 @@ CALL `tich_ensure_index`('feedback', 'feedback_staff_id_status_index', '`staff_i
 CREATE TABLE IF NOT EXISTS `fee_structures` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `program_id` bigint(20) unsigned NOT NULL,
+  `program_tier` varchar(32) DEFAULT NULL,
   `academic_year_id` bigint(20) unsigned NOT NULL,
   `application_fee` decimal(12,2) NOT NULL DEFAULT 0.00,
   `tuition_fee` decimal(12,2) NOT NULL DEFAULT 0.00,
@@ -4211,7 +4218,7 @@ CREATE TABLE IF NOT EXISTS `fee_structures` (
   `version` varchar(20) DEFAULT NULL,
   `notes` text DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `fee_struct_program_year_unique` (`program_id`,`academic_year_id`),
+  UNIQUE KEY `fee_struct_program_year_tier_unique` (`program_id`,`academic_year_id`,`program_tier`),
   KEY `fee_structures_academic_year_id_foreign` (`academic_year_id`),
   KEY `fee_structures_approved_by_foreign` (`approved_by`),
   KEY `fee_structures_program_id_index` (`program_id`),
@@ -4223,6 +4230,7 @@ CREATE TABLE IF NOT EXISTS `fee_structures` (
 -- Columns for `fee_structures` (add only if missing)
 CALL `tich_ensure_column`('fee_structures', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
 CALL `tich_ensure_column`('fee_structures', 'program_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('fee_structures', 'program_tier', 'varchar(32) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('fee_structures', 'academic_year_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('fee_structures', 'application_fee', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
 CALL `tich_ensure_column`('fee_structures', 'tuition_fee', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
@@ -4259,7 +4267,7 @@ CALL `tich_ensure_column`('fee_structures', 'notes', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_index`('fee_structures', 'fee_structures_academic_year_id_foreign', '`academic_year_id`');
 CALL `tich_ensure_index`('fee_structures', 'fee_structures_approved_by_foreign', '`approved_by`');
 CALL `tich_ensure_index`('fee_structures', 'fee_structures_program_id_index', '`program_id`');
-CALL `tich_ensure_unique`('fee_structures', 'fee_struct_program_year_unique', '`program_id`, `academic_year_id`');
+CALL `tich_ensure_unique`('fee_structures', 'fee_struct_program_year_tier_unique', '`program_id`, `academic_year_id`, `program_tier`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `finance_budgets`
@@ -8826,6 +8834,40 @@ CALL `tich_ensure_index`('profit_loss_snapshots', 'profit_loss_snapshots_created
 CALL `tich_ensure_index`('profit_loss_snapshots', 'profit_loss_snapshots_period_from_period_to_index', '`period_from`, `period_to`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `program_tiers`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `program_tiers` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `program_id` bigint(20) unsigned NOT NULL,
+  `tier_key` varchar(32) NOT NULL,
+  `tier_order` tinyint(3) unsigned NOT NULL,
+  `cumulative_months` smallint(5) unsigned NOT NULL,
+  `learning_outcomes` text DEFAULT NULL,
+  `marketing_summary` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `program_tiers_program_id_tier_key_unique` (`program_id`,`tier_key`),
+  UNIQUE KEY `program_tiers_program_id_tier_order_unique` (`program_id`,`tier_order`),
+  CONSTRAINT `program_tiers_program_id_foreign` FOREIGN KEY (`program_id`) REFERENCES `academic_programs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `program_tiers` (add only if missing)
+CALL `tich_ensure_column`('program_tiers', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('program_tiers', 'program_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('program_tiers', 'tier_key', 'varchar(32) NOT NULL');
+CALL `tich_ensure_column`('program_tiers', 'tier_order', 'tinyint(3) unsigned NOT NULL');
+CALL `tich_ensure_column`('program_tiers', 'cumulative_months', 'smallint(5) unsigned NOT NULL');
+CALL `tich_ensure_column`('program_tiers', 'learning_outcomes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_tiers', 'marketing_summary', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_tiers', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_tiers', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `program_tiers` (add only if missing)
+CALL `tich_ensure_unique`('program_tiers', 'program_tiers_program_id_tier_key_unique', '`program_id`, `tier_key`');
+CALL `tich_ensure_unique`('program_tiers', 'program_tiers_program_id_tier_order_unique', '`program_id`, `tier_order`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `program_timetables`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `program_timetables` (
@@ -9021,6 +9063,7 @@ CREATE TABLE IF NOT EXISTS `program_units` (
   `program_id` bigint(20) unsigned NOT NULL,
   `unit_id` bigint(20) unsigned NOT NULL,
   `semester` int(11) NOT NULL,
+  `program_tier` varchar(32) DEFAULT NULL,
   `block_id` bigint(20) unsigned DEFAULT NULL,
   `is_compulsory` tinyint(4) NOT NULL DEFAULT 1,
   `display_order` int(11) NOT NULL DEFAULT 0,
@@ -9042,6 +9085,7 @@ CALL `tich_ensure_column`('program_units', 'id', 'bigint(20) unsigned NOT NULL A
 CALL `tich_ensure_column`('program_units', 'program_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('program_units', 'unit_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('program_units', 'semester', 'int(11) NOT NULL');
+CALL `tich_ensure_column`('program_units', 'program_tier', 'varchar(32) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_units', 'block_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_units', 'is_compulsory', 'tinyint(4) NOT NULL DEFAULT \'1\'');
 CALL `tich_ensure_column`('program_units', 'display_order', 'int(11) NOT NULL DEFAULT \'0\'');
@@ -12206,6 +12250,9 @@ CREATE TABLE IF NOT EXISTS `students` (
   `middle_name` varchar(100) DEFAULT NULL,
   `surname` varchar(100) NOT NULL,
   `program_id` bigint(20) unsigned NOT NULL,
+  `program_tier` varchar(32) DEFAULT NULL,
+  `program_tier_history` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`program_tier_history`)),
+  `paid_program_tiers` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`paid_program_tiers`)),
   `cohort_intake` varchar(20) NOT NULL,
   `current_year` tinyint(4) DEFAULT NULL COMMENT 'Current academic year: 1, 2, 3, 4',
   `enrollment_campus_id` bigint(20) unsigned NOT NULL,
@@ -12268,6 +12315,9 @@ CALL `tich_ensure_column`('students', 'first_name', 'varchar(100) NOT NULL');
 CALL `tich_ensure_column`('students', 'middle_name', 'varchar(100) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('students', 'surname', 'varchar(100) NOT NULL');
 CALL `tich_ensure_column`('students', 'program_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('students', 'program_tier', 'varchar(32) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('students', 'program_tier_history', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('students', 'paid_program_tiers', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('students', 'cohort_intake', 'varchar(20) NOT NULL');
 CALL `tich_ensure_column`('students', 'current_year', 'tinyint(4) NULL DEFAULT NULL COMMENT \'Current academic year: 1, 2, 3, 4\'');
 CALL `tich_ensure_column`('students', 'enrollment_campus_id', 'bigint(20) unsigned NOT NULL');
@@ -14331,6 +14381,9 @@ CALL `tich_ensure_fk`('procurement_requisitions', 'procurement_requisitions_requ
 -- Foreign keys for `professional_development`
 CALL `tich_ensure_fk`('professional_development', 'professional_development_approved_by_foreign', '`approved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('professional_development', 'professional_development_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `program_tiers`
+CALL `tich_ensure_fk`('program_tiers', 'program_tiers_program_id_foreign', '`program_id`', 'academic_programs', '`id`', 'RESTRICT', 'CASCADE');
 
 -- Foreign keys for `program_timetables`
 CALL `tich_ensure_fk`('program_timetables', 'program_timetables_campus_id_foreign', '`campus_id`', 'campuses', '`id`', 'RESTRICT', 'SET NULL');

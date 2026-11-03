@@ -214,7 +214,14 @@
                         <span class="tich-semester-accordion__heading">
                             <span class="tich-semester-accordion__title">{{ $period['label'] }}</span>
                             @if (! $program->usesBlocks())
-                                <span class="tich-semester-accordion__meta">{{ $program->periodLabel((int) $period['semester']) }} · semester {{ $period['semester'] }} of {{ $scheduledPeriods }}</span>
+                                <span class="tich-semester-accordion__meta">
+                                    Semester {{ $period['semester'] }} of {{ $scheduledPeriods }}
+                                    @if (! empty($period['tier_label']))
+                                        · <span class="tich-badge">{{ $period['tier_label'] }}</span>
+                                    @elseif (! $program->isTieredProgram())
+                                        · {{ $program->periodLabel((int) $period['semester']) }}
+                                    @endif
+                                </span>
                             @endif
                         </span>
                         <span class="tich-semester-accordion__summary">

@@ -12,6 +12,9 @@
             $recordApplicant = $recordStudent->applicant;
             $profileRows = array_filter([
                 'Programme' => $recordStudent->program?->program_name,
+                'Exit tier' => $recordStudent->program_tier
+                    ? (config('tich-program-tiers.tier_labels.'.$recordStudent->program_tier) ?? $recordStudent->program_tier)
+                    : null,
                 'Campus' => $recordStudent->campus?->campus_name,
                 'Study mode' => $recordStudent->studyModeLabel().' student',
                 'Intake' => $recordStudent->cohort_intake,

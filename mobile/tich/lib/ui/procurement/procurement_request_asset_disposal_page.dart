@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/procurement_api.dart';
+import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
@@ -36,10 +37,15 @@ class _ProcurementRequestAssetDisposalPageState
   static final _dateFormat = DateFormat('yyyy-MM-dd');
   static final _displayDate = DateFormat('MM/dd/yyyy');
 
+  static const _optionsCacheKey = 'procurement.asset_disposal_form_options';
+
   @override
   void initState() {
     super.initState();
-    _optionsFuture = widget.api.assetDisposalFormOptions();
+    _optionsFuture = TichScreenCache.ensure(
+      _optionsCacheKey,
+      () => widget.api.assetDisposalFormOptions(),
+    );
   }
 
   @override

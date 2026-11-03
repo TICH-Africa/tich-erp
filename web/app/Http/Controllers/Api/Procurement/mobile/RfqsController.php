@@ -26,13 +26,16 @@ class RfqsController extends Controller
         $status = $request->string('status')->toString();
 
         $items = Rfq::query()
-            ->with(['requisition', 'awardedSupplier'])
+            ->select([
+                'id', 'rfq_number', 'status', 'item_description',
+                'approval_status', 'created_at',
+            ])
             ->when($search !== '', fn ($q) => $q->where('rfq_number', 'like', "%{$search}%"))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->orderByDesc('created_at')
-            ->limit(50)
+            ->limit(40)
             ->get()
-            ->map(fn (Rfq $r) => $this->portal->serializeRfq($r))
+            ->map(fn (Rfq $r) => $this->portal->serializeRfqListItem($r))
             ->values();
 
         return response()->json(['items' => $items]);

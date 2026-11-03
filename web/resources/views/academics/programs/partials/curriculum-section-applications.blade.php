@@ -32,6 +32,7 @@
                         <th>Application</th>
                         <th>Applicant</th>
                         <th>Intake</th>
+                        <th>Exit tier</th>
                         <th>Campus</th>
                         <th>Submitted</th>
                         <th>Status</th>
@@ -54,6 +55,13 @@
                                     <span class="tich-caption" style="color:#dc2626;">Not specified</span>
                                 @endif
                             </td>
+                            <td>
+                                @if ($application->program_tier)
+                                    @include('partials.program-tier-exit-level', ['tierKey' => $application->program_tier, 'as' => 'badge'])
+                                @else
+                                    <span class="tich-caption">-</span>
+                                @endif
+                            </td>
                             <td>{{ $application->preferredCampus?->campus_name ?? '-' }}</td>
                             <td>{{ $application->created_at?->format('d M Y') ?? '-' }}</td>
                             <td>@include('applications.partials.status-badge', ['applicant' => $application])</td>
@@ -63,7 +71,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="tich-table-empty">
+                            <td colspan="8" class="tich-table-empty">
                                 No applications for this intake yet.
                                 @if ($selectedIntake->intake_year && $selectedIntake->intake_month)
                                     <span class="tich-caption">Applications must specify intake {{ $selectedIntake->intakeLabel() }} when applying online.</span>

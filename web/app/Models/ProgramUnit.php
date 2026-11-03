@@ -12,7 +12,7 @@ class ProgramUnit extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'program_id', 'unit_id', 'semester', 'block_id',
+        'program_id', 'unit_id', 'semester', 'program_tier', 'block_id',
         'is_compulsory', 'display_order', 'priority',
         'contact_hours', 'total_learning_hours', 'is_active',
     ];

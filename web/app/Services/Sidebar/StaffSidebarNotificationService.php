@@ -18,7 +18,7 @@ class StaffSidebarNotificationService
 
     public const CACHE_KEY_PREFIX = 'staff.sidebar.counts.';
 
-    public const CACHE_TTL_SECONDS = 30;
+    public const CACHE_TTL_SECONDS = 60;
 
     /** @var array<string, string> */
     public const MENU_KEYS = [
@@ -65,6 +65,8 @@ class StaffSidebarNotificationService
     public function forget(Staff $staff): void
     {
         Cache::forget(self::CACHE_KEY_PREFIX.$staff->id);
+        Cache::forget('staff.mobile.dashboard.'.$staff->id.'.v1');
+        // Lesson-plan context keys are short-lived; dashboard + sidebar refresh is enough for mobile.
     }
 
     public function badgeKeyForSection(string $section): ?string

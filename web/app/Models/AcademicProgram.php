@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\PrunesStoredFiles;
+use App\Services\Academics\ProgramTierPlannerService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -24,6 +25,7 @@ class AcademicProgram extends Model
 
     protected $fillable = [
         'program_code', 'program_name', 'program_type', 'regulatory_body', 'curriculum_format',
+        'is_tiered', 'tier_semester_months',
         'department_id', 'duration_months', 'semester_count', 'block_count',
         'is_nursing_track', 'min_attendance_pct', 'theory_pass_mark', 'clinical_pass_mark',
         'status', 'approved_by_ceo_at', 'approved_by_ceo_id',
@@ -33,6 +35,7 @@ class AcademicProgram extends Model
 
     protected $casts = [
         'is_featured_on_homepage' => 'boolean',
+        'is_tiered' => 'boolean',
         'is_nursing_track' => 'boolean',
         'min_attendance_pct' => 'decimal:2',
         'theory_pass_mark' => 'decimal:2',
@@ -66,6 +69,82 @@ class AcademicProgram extends Model
     public function curriculumVersions(): HasMany
     {
         return $this->hasMany(CurriculumVersion::class, 'program_id')->orderByDesc('version_number');
+    }
+
+    public function tiers(): HasMany
+    {
+        return $this->hasMany(ProgramTier::class, 'program_id')->orderBy('tier_order');
+    }
+
+    public function isTieredProgram(): bool
+    {
+        return (bool) $this->is_tiered;
+    }
+
+    public function tierExitLabel(?string $tierKey): ?string
+    {
+        if (! filled($tierKey)) {
+            return null;
+        }
+
+        return config('tich-program-tiers.tier_labels.'.$tierKey, $tierKey);
+    }
+
+    /**
+     * Short ladder for tables, e.g. "Certificate → Diploma → Advanced Diploma".
+     */
+    public function tierLadderSummary(): ?string
+    {
+        if (! $this->isTieredProgram()) {
+            return null;
+        }
+
+        if (! $this->relationLoaded('tiers')) {
+            $this->load('tiers');
+        }
+
+        if ($this->tiers->isEmpty()) {
+            return null;
+        }
+
+        return $this->tiers
+            ->sortBy('tier_order')
+            ->map(fn ($tier) => $this->tierExitLabel($tier->tier_key) ?? $tier->tier_key)
+            ->filter()
+            ->implode(' → ');
+    }
+
+    /**
+     * Duration column for academics / department lists.
+     */
+    public function listDurationLabel(): string
+    {
+        if ($this->isTieredProgram()) {
+            if (! $this->relationLoaded('tiers')) {
+                $this->load('tiers');
+            }
+
+            $months = $this->tiers->sortBy('tier_order')->pluck('cumulative_months')->filter()->values();
+            if ($months->isNotEmpty()) {
+                return $months->implode(' / ').' mo ladder';
+            }
+        }
+
+        return $this->duration_months ? ((int) $this->duration_months).' months' : '-';
+    }
+
+    /**
+     * Terms / semesters column for academics lists.
+     */
+    public function listTeachingPeriodsLabel(): string
+    {
+        if ($this->isTieredProgram()) {
+            return $this->scheduledPeriods().' semesters (tiered)';
+        }
+
+        $terms = (int) ($this->semester_count ?: $this->termsPerYear());
+
+        return $terms > 0 ? (string) $terms : '-';
     }
 
     public function nursingBlocks(): HasMany
@@ -133,6 +212,12 @@ class AcademicProgram extends Model
             return $this->totalTeachingPeriods();
         }
 
+        if ($this->isTieredProgram()) {
+            $max = $this->tierPlanner()->maxSemester($this);
+
+            return max(1, $max);
+        }
+
         return $this->studyYears() * $this->termsPerYear();
     }
 
@@ -142,6 +227,17 @@ class AcademicProgram extends Model
             $block = $this->nursingBlocks->firstWhere('block_order', $periodNumber);
 
             return $block?->block_label ?? "Block {$periodNumber}";
+        }
+
+        if ($this->isTieredProgram()) {
+            $tierKey = $this->tierPlanner()->tierForSemester($this, $periodNumber);
+            $tierLabel = $tierKey
+                ? (config('tich-program-tiers.tier_labels.'.$tierKey) ?? $tierKey)
+                : null;
+
+            return $tierLabel
+                ? "Semester {$periodNumber} · {$tierLabel}"
+                : "Semester {$periodNumber}";
         }
 
         $termsPerYear = $this->termsPerYear();
@@ -161,6 +257,11 @@ class AcademicProgram extends Model
         }
 
         return max(1, (int) ceil($periodNumber / $this->termsPerYear()));
+    }
+
+    protected function tierPlanner(): ProgramTierPlannerService
+    {
+        return app(ProgramTierPlannerService::class);
     }
 
     public function coverImageUrl(): ?string

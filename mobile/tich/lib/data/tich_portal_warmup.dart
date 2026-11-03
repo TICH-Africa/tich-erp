@@ -71,7 +71,12 @@ abstract final class TichPortalWarmup {
   }
 
   /// More drawer links - warm only when the user opens the menu.
-  static void studentMoreOpened(StudentApi api) {}
+  static void studentMoreOpened(StudentApi api) {
+    _runDeferred([
+      () => TichScreenCache.warm('student.notifications', () => api.notifications()),
+      () => TichScreenCache.warm('student.documents', () => api.documents()),
+    ]);
+  }
 
   static void staffShellOpened(StaffApi api) {
     _cancelDeferred();
@@ -98,7 +103,13 @@ abstract final class TichPortalWarmup {
     }
   }
 
-  static void staffMoreOpened(StaffApi api) {}
+  static void staffMoreOpened(StaffApi api) {
+    _runDeferred([
+      () => TichScreenCache.warm('staff.lesson_plans', () => api.lessonPlans()),
+      () => TichScreenCache.warm('staff.grading', () => api.grading()),
+      () => TichScreenCache.warm('staff.content', () => api.content()),
+    ]);
+  }
 
   static void employeeShellOpened(EmployeeApi api) {
     _cancelDeferred();
@@ -131,6 +142,32 @@ abstract final class TichPortalWarmup {
 
   static void procurementShellOpened(ProcurementApi api) {
     TichScreenCache.warm('procurement.home', () => api.dashboard());
+  }
+
+  static void procurementTabSelected(ProcurementApi api, int index) {
+    switch (index) {
+      case 0:
+        TichScreenCache.warm('procurement.home', () => api.dashboard());
+      case 1:
+        TichScreenCache.warm('procurement.requisitions', () => api.requisitions());
+      case 2:
+        TichScreenCache.warm('procurement.stock_issues', () => api.stockIssues());
+      case 3:
+        TichScreenCache.warm('procurement.suppliers', () => api.suppliers());
+      default:
+        break;
+    }
+  }
+
+  /// Warm common More-menu lists after the drawer opens (idle, staggered).
+  static void procurementMoreOpened(ProcurementApi api) {
+    _runDeferred([
+      () => TichScreenCache.warm('procurement.grns', () => api.grns()),
+      () => TichScreenCache.warm(
+            'procurement.payment_verification',
+            () => api.paymentVerification(),
+          ),
+    ]);
   }
 
   static void _cancelDeferred() {

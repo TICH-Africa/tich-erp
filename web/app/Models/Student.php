@@ -28,6 +28,9 @@ class Student extends Model
         'middle_name',
         'surname',
         'program_id',
+        'program_tier',
+        'program_tier_history',
+        'paid_program_tiers',
         'cohort_intake',
         'enrollment_campus_id',
         'study_mode',
@@ -69,6 +72,8 @@ class Student extends Model
     ];
 
     protected $casts = [
+        'program_tier_history' => 'array',
+        'paid_program_tiers' => 'array',
         'date_of_admission' => 'date',
         'graduation_date' => 'date',
         'portal_invite_expires_at' => 'datetime',

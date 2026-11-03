@@ -11,10 +11,12 @@ use App\Models\Staff;
 use App\Services\Finance\MpesaSettingsService;
 use App\Services\Finance\MpesaStkCallbackService;
 use App\Services\Finance\PaymentService;
+use App\Services\Sidebar\StudentSidebarNotificationService;
 use App\Services\StudentPortalDashboardService;
 use App\Services\StudentRecordService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class FinanceController extends Controller
 {
@@ -32,8 +34,12 @@ class FinanceController extends Controller
     public function show(Request $request): JsonResponse
     {
         $student = $this->portalStudent($request);
-        $biodata = $this->studentRecords->biodata360($student);
-        $portalData = $this->dashboard->forStudent($student, $biodata);
+        $biodata = $this->mobileBiodata($student);
+        $portalData = Cache::remember(
+            'student.mobile.finance.'.$student->id.'.v1',
+            20,
+            fn () => $this->dashboard->financeForMobile($student),
+        );
 
         return response()->json([
             'student' => $this->serializeStudent($student, $biodata),
@@ -71,6 +77,8 @@ class FinanceController extends Controller
                     'transaction_channel_ref' => 'SIM-'.strtoupper(substr(sha1((string) microtime(true)), 0, 10)),
                 ], $staffId);
 
+                app(StudentSidebarNotificationService::class)->forget($student);
+
                 return response()->json([
                     'message' => 'Payment recorded successfully. Your balance has been updated.',
                     'simulated' => true,
@@ -100,6 +108,8 @@ class FinanceController extends Controller
             'payment_method' => $validated['payment_method'],
             'payment_reference' => $validated['payment_reference'] ?? null,
         ], $staffId);
+
+        app(StudentSidebarNotificationService::class)->forget($student);
 
         return response()->json(['message' => 'Payment submitted successfully.']);
     }

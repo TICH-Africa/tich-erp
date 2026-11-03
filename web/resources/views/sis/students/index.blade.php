@@ -45,7 +45,12 @@
                             {{ $student->displayName() }}<br>
                             <span class="tich-caption">{{ $student->applicant?->email ?: ($student->email ?: $student->user?->email) }}</span>
                         </td>
-                        <td>{{ $student->program?->program_name ?? '-' }}</td>
+                        <td>
+                            {{ $student->program?->program_name ?? '-' }}
+                            @if ($student->program_tier)
+                                <br>@include('partials.program-tier-exit-level', ['tierKey' => $student->program_tier, 'as' => 'badge'])
+                            @endif
+                        </td>
                         <td>{{ $student->campus?->campus_name ?? '-' }}</td>
                         <td>{{ $student->studyModeLabel() }}</td>
                         <td>{{ ucfirst($student->enrollment_status) }}</td>

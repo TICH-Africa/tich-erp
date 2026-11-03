@@ -17,6 +17,9 @@
         <h3 class="tich-h4">Programme</h3>
         <dl class="tich-review-list tich-mt-4">
             <div><dt>Programme</dt><dd>{{ $review['program']->program_name ?? '-' }} ({{ $review['program']->program_code ?? ($reviewData['program_code'] ?? '-') }})</dd></div>
+            @if (! empty($reviewData['program_tier']))
+                <div><dt>Exit level (tier)</dt><dd>@include('partials.program-tier-exit-level', ['tierKey' => $reviewData['program_tier']])</dd></div>
+            @endif
             <div><dt>Target intake</dt><dd>{{ $review['intakeLabel'] ?? 'Not selected' }}</dd></div>
             <div><dt>Preferred location</dt><dd>{{ match($reviewData['campus_selection_type'] ?? '') { 'campus' => ($review['campus']->campus_name ?? 'No preference'), 'community_college' => ($review['campus']->campus_name ?? 'No preference'), 'online' => 'Online', default => ($review['campus']->campus_name ?? 'No preference') } }}</dd></div>
         </dl>

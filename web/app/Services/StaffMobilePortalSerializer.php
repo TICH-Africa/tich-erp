@@ -20,30 +20,35 @@ class StaffMobilePortalSerializer
      */
     public function overview(Staff $staff): array
     {
-        $data = $this->dashboard->forStaff($staff);
-        $allocations = $data['allocations'];
+        $staff->loadMissing('department:id,dept_name');
+        $allocations = $this->dashboard->allocations($staff);
+        $allocationIds = $allocations->pluck('id')->all();
+        $unitIds = $allocations->pluck('unit_id')->unique()->values()->all();
+        $semesterIds = $allocations->pluck('semester_id')->unique()->values()->all();
+        $timetableSessions = $this->dashboard->timetableSessions($staff);
+        $todayIso = (int) now('Africa/Nairobi')->dayOfWeekIso;
 
         return [
             'staff' => $this->staffCard($staff),
             'sections' => array_keys($this->navigation->sections()),
             'stats' => [
-                'allocation_count' => (int) $data['allocation_count'],
-                'lesson_plan_count' => $data['lesson_plans']->count(),
-                'attendance_session_count' => $data['attendance_sessions']->count(),
-                'content_count' => $data['learning_content']->count(),
-                'alert_count' => $data['attendance_alerts']->count(),
+                'allocation_count' => $allocations->count(),
+                'lesson_plan_count' => $this->dashboard->countLessonPlans($allocationIds),
+                'attendance_session_count' => $this->dashboard->countAttendanceSessions($allocationIds),
+                'content_count' => $this->dashboard->countLearningContent($unitIds),
+                'alert_count' => $this->dashboard->attendanceAlertsForUnits($unitIds, $semesterIds, 10)->count(),
             ],
             'units' => $allocations->take(8)->map(fn (UnitAllocation $a) => $this->allocationCard($a))->values(),
             'upcoming_sessions' => $this->dashboard->upcomingAttendanceSessions($staff)
                 ->take(8)
                 ->map(fn ($s) => $this->sessionCard($s))
                 ->values(),
-            'timetable_today' => collect($data['timetable_sessions'])
-                ->filter(fn ($s) => (int) $s->day_of_week === (int) now('Africa/Nairobi')->dayOfWeekIso)
+            'timetable_today' => $timetableSessions
+                ->filter(fn ($s) => (int) $s->day_of_week === $todayIso)
                 ->values()
                 ->map(fn ($s) => $this->timetableSessionCard($s))
                 ->values(),
-            'alerts' => collect($data['attendance_alerts'])->take(10)->map(fn ($a) => [
+            'alerts' => $this->dashboard->attendanceAlertsForUnits($unitIds, $semesterIds, 10)->map(fn ($a) => [
                 'student_name' => trim((string) ($a->student_name ?? '')),
                 'registration_number' => $a->registration_number,
                 'unit_code' => $a->unit_code,
@@ -59,10 +64,10 @@ class StaffMobilePortalSerializer
      */
     public function units(Staff $staff): array
     {
-        $allocations = $this->dashboard->allocations($staff);
-
         return [
-            'items' => $allocations->map(fn (UnitAllocation $a) => $this->allocationCard($a))->values(),
+            'items' => $this->dashboard->allocations($staff)
+                ->map(fn (UnitAllocation $a) => $this->allocationCard($a))
+                ->values(),
         ];
     }
 
@@ -72,7 +77,7 @@ class StaffMobilePortalSerializer
     public function timetable(Staff $staff): array
     {
         $sessions = $this->dashboard->timetableSessions($staff);
-        $block = $this->dashboard->forStaff($staff)['timetable'] ?? [];
+        $block = $this->dashboard->timetableMeta($staff);
         $rows = collect($block['timetables'] ?? []);
 
         return [
@@ -100,10 +105,12 @@ class StaffMobilePortalSerializer
      */
     public function attendanceIndex(Staff $staff): array
     {
-        $data = $this->dashboard->forStaff($staff);
+        $allocations = $this->dashboard->allocations($staff);
+        $allocationIds = $allocations->pluck('id')->all();
+        $sessions = $this->dashboard->attendanceSessionsForAllocations($allocationIds, 40);
 
         return [
-            'sessions' => collect($data['attendance_sessions'])->take(40)->map(fn ($s) => [
+            'sessions' => $sessions->map(fn ($s) => [
                 'id' => (int) $s->id,
                 'session_number' => $s->session_number,
                 'session_date' => $s->session_date,
@@ -119,7 +126,7 @@ class StaffMobilePortalSerializer
             'upcoming' => $this->dashboard->upcomingAttendanceSessions($staff)
                 ->map(fn ($s) => $this->sessionCard($s))
                 ->values(),
-            'allocations' => collect($data['allocations'])->map(fn (UnitAllocation $a) => [
+            'allocations' => $allocations->map(fn (UnitAllocation $a) => [
                 'id' => $a->id,
                 'label' => trim(($a->unit?->unit_code ?? '').' · '.($a->unit?->unit_name ?? '')),
             ])->values(),
@@ -156,11 +163,14 @@ class StaffMobilePortalSerializer
      */
     public function grading(Staff $staff): array
     {
-        $data = $this->dashboard->forStaff($staff);
+        $allocations = $this->dashboard->allocations($staff);
+        $unitIds = $allocations->pluck('unit_id')->unique()->values()->all();
+        $semesterIds = $allocations->pluck('semester_id')->unique()->values()->all();
+        $scores = $this->dashboard->catScoresForStaff($staff->id, $unitIds, $semesterIds, 40);
 
         return [
-            'allocations' => collect($data['allocations'])->map(fn (UnitAllocation $a) => $this->allocationCard($a))->values(),
-            'recent_scores' => collect($data['cat_scores'])->take(40)->map(fn ($s) => [
+            'allocations' => $allocations->map(fn (UnitAllocation $a) => $this->allocationCard($a))->values(),
+            'recent_scores' => $scores->map(fn ($s) => [
                 'id' => (int) $s->id,
                 'assessment_name' => $s->assessment_name,
                 'assessment_type' => $s->assessment_type,
@@ -181,10 +191,12 @@ class StaffMobilePortalSerializer
      */
     public function lessonPlans(Staff $staff): array
     {
-        $data = $this->dashboard->forStaff($staff);
+        $allocations = $this->dashboard->allocations($staff);
+        $allocationIds = $allocations->pluck('id')->all();
+        $plans = $this->dashboard->lessonPlansForAllocations($allocationIds, 40);
 
         return [
-            'allocations' => collect($data['allocations'])->map(fn (UnitAllocation $a) => [
+            'allocations' => $allocations->map(fn (UnitAllocation $a) => [
                 'id' => $a->id,
                 'unit_code' => $a->unit?->unit_code,
                 'unit_name' => $a->unit?->unit_name,
@@ -194,7 +206,7 @@ class StaffMobilePortalSerializer
                     $a->intake_label ?? $a->semester?->semester_label,
                 ])->filter(fn ($v) => filled($v))->implode(' · '),
             ])->values(),
-            'items' => collect($data['lesson_plans'])->take(40)->map(fn ($p) => [
+            'items' => $plans->map(fn ($p) => [
                 'id' => (int) $p->id,
                 'plan_number' => $p->plan_number,
                 'lesson_title' => $p->lesson_title,
@@ -213,10 +225,12 @@ class StaffMobilePortalSerializer
      */
     public function content(Staff $staff): array
     {
-        $data = $this->dashboard->forStaff($staff);
+        $allocations = $this->dashboard->allocations($staff);
+        $unitIds = $allocations->pluck('unit_id')->unique()->values()->all();
+        $items = $this->dashboard->learningContentForUnits($unitIds, 40);
 
         return [
-            'allocations' => collect($data['allocations'])->map(fn (UnitAllocation $a) => [
+            'allocations' => $allocations->map(fn (UnitAllocation $a) => [
                 'unit_id' => $a->unit_id,
                 'label' => collect([
                     $a->unit?->unit_code,
@@ -225,7 +239,7 @@ class StaffMobilePortalSerializer
                 ])->filter(fn ($v) => filled($v))->implode(' · '),
                 'cohort' => $this->dashboard->intakeLabelForSemester($a->semester),
             ])->values(),
-            'items' => collect($data['learning_content'])->take(40)->map(function ($c) {
+            'items' => $items->map(function ($c) {
                 $cohort = $c->unitAllocation
                     ? $this->dashboard->intakeLabelForSemester($c->unitAllocation->semester)
                     : null;
@@ -234,7 +248,6 @@ class StaffMobilePortalSerializer
                     'id' => $c->id,
                     'title' => $c->title ?? $c->content_title ?? 'Content',
                     'content_type' => $c->content_type ?? $c->type ?? null,
-                    'content_text' => $c->content_text,
                     'unit_code' => $c->unit?->unit_code,
                     'unit_name' => $c->unit?->unit_name,
                     'cohort' => $cohort,

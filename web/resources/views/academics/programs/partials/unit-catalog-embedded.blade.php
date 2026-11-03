@@ -89,6 +89,9 @@
             <thead>
                 <tr>
                     <th>Unit</th>
+                    @if ($program->isTieredProgram())
+                        <th>Tier</th>
+                    @endif
                     <th>Hours</th>
                     <th>Status</th>
                     @if ($selectedIntake)
@@ -134,6 +137,16 @@
                                 <div class="tich-caption">{{ Str::limit($unit->description, 90) }}</div>
                             @endif
                         </td>
+                        @if ($program->isTieredProgram())
+                            <td>
+                                @php $unitTier = $programUnitTierByUnitId[$unit->id] ?? null; @endphp
+                                @if ($unitTier)
+                                    @include('partials.program-tier-exit-level', ['tierKey' => $unitTier, 'as' => 'badge'])
+                                @else
+                                    <span class="tich-caption">-</span>
+                                @endif
+                            </td>
+                        @endif
                         <td class="tich-catalog-hours">
                             <div>{{ $unit->contact_hours ?? '-' }} contact</div>
                             <div class="tich-caption">{{ $unit->total_learning_hours ?? '-' }} learning</div>

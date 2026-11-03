@@ -30,16 +30,44 @@
         <p class="tich-course-card__meta">
             {{ strtoupper($program->program_code) }}
             ·
-            <span>{{ strtoupper(str_replace('_', ' ', $program->program_type)) }}</span>
+            @if (! empty($program->is_tiered))
+                <span>Tiered programme</span>
+            @else
+                <span>{{ strtoupper(str_replace('_', ' ', $program->program_type)) }}</span>
+            @endif
         </p>
         <{{ $headingTag }} class="tich-course-card__title">{{ $program->program_name }}</{{ $headingTag }}>
         @if (! empty($program->homepage_tagline))
             <p class="tich-course-card__excerpt">{{ \Illuminate\Support\Str::limit(strip_tags($program->homepage_tagline), $excerptLimit) }}</p>
         @endif
 
+        @if (! empty($program->is_tiered) && ! empty($program->tiers))
+            <div class="tich-course-card__tiers tich-mt-2">
+                <p class="tich-caption">Institutional tiers (one programme code)</p>
+                @foreach ($program->tiers as $tier)
+                    @php
+                        $tierLabel = data_get($tier, 'label', '');
+                        $tierMonths = data_get($tier, 'cumulative_months');
+                        $tierSummary = data_get($tier, 'marketing_summary');
+                    @endphp
+                    <details class="tich-mt-1" @if($loop->first) open @endif>
+                        <summary>{{ $tierLabel }} · {{ $tierMonths ?? '?' }} months</summary>
+                        @if (filled($tierSummary))
+                            <p class="tich-caption tich-mt-1">{{ $tierSummary }}</p>
+                        @endif
+                    </details>
+                @endforeach
+            </div>
+        @endif
+
         @if (! empty($program->duration_months) || ! empty($program->regulatory_body) || ! empty($program->entry_requirements) || ! empty($program->fee_display))
             <dl class="tich-course-card__details">
-                @if (! empty($program->duration_months))
+                @if (! empty($program->is_tiered) && ! empty($program->tiers))
+                    <div>
+                        <dt>Exit levels</dt>
+                        <dd>{{ collect($program->tiers)->map(fn ($t) => data_get($t, 'label'))->filter()->join(' → ') }}</dd>
+                    </div>
+                @elseif (! empty($program->duration_months))
                     <div>
                         <dt>Duration</dt>
                         <dd>{{ $program->duration_months }} months</dd>

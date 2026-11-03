@@ -31,6 +31,7 @@ class FeeStructure extends Model
 
     protected $fillable = [
         'program_id',
+        'program_tier',
         'academic_year_id',
         'application_fee',
         'tuition_fee',

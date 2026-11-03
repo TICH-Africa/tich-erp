@@ -2577,5 +2577,73 @@ CREATE TABLE IF NOT EXISTS `disciplinary_correspondences` (
     CONSTRAINT `disciplinary_correspondences_sent_by_user_id_foreign` FOREIGN KEY (`sent_by_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- 55. Institutional tiered programmes (Certificate → Diploma → Advanced Diploma)
+--     Migration 2026_11_02_120000_add_tiered_program_support
+-- -----------------------------------------------------------------------------
+ALTER TABLE `academic_programs`
+    ADD COLUMN IF NOT EXISTS `is_tiered` tinyint(1) NOT NULL DEFAULT 0 AFTER `curriculum_format`,
+    ADD COLUMN IF NOT EXISTS `tier_semester_months` tinyint unsigned NULL AFTER `is_tiered`;
+
+CREATE TABLE IF NOT EXISTS `program_tiers` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `program_id` bigint unsigned NOT NULL,
+    `tier_key` varchar(32) NOT NULL,
+    `tier_order` tinyint unsigned NOT NULL,
+    `cumulative_months` smallint unsigned NOT NULL,
+    `learning_outcomes` text NULL,
+    `marketing_summary` text NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `program_tiers_program_id_tier_key_unique` (`program_id`, `tier_key`),
+    UNIQUE KEY `program_tiers_program_id_tier_order_unique` (`program_id`, `tier_order`),
+    CONSTRAINT `program_tiers_program_id_foreign` FOREIGN KEY (`program_id`) REFERENCES `academic_programs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `program_units`
+    ADD COLUMN IF NOT EXISTS `program_tier` varchar(32) NULL AFTER `semester`;
+
+ALTER TABLE `applicants`
+    ADD COLUMN IF NOT EXISTS `program_tier` varchar(32) NULL AFTER `program_id`;
+
+ALTER TABLE `students`
+    ADD COLUMN IF NOT EXISTS `program_tier` varchar(32) NULL AFTER `program_id`,
+    ADD COLUMN IF NOT EXISTS `program_tier_history` json NULL AFTER `program_tier`,
+    ADD COLUMN IF NOT EXISTS `paid_program_tiers` json NULL AFTER `program_tier_history`;
+
+ALTER TABLE `fee_structures`
+    ADD COLUMN IF NOT EXISTS `program_tier` varchar(32) NULL AFTER `program_id`;
+
+-- Allow one fee row per programme tier per academic year (tiered programmes).
+SET @fee_unique_old := (
+    SELECT COUNT(*) FROM information_schema.statistics
+    WHERE table_schema = DATABASE() AND table_name = 'fee_structures'
+      AND index_name = 'fee_struct_program_year_unique'
+);
+SET @sql_fee_drop := IF(@fee_unique_old > 0,
+    'ALTER TABLE `fee_structures` DROP INDEX `fee_struct_program_year_unique`',
+    'SELECT 1');
+PREPARE stmt_fee_drop FROM @sql_fee_drop;
+EXECUTE stmt_fee_drop;
+DEALLOCATE PREPARE stmt_fee_drop;
+
+SET @fee_unique_new := (
+    SELECT COUNT(*) FROM information_schema.statistics
+    WHERE table_schema = DATABASE() AND table_name = 'fee_structures'
+      AND index_name = 'fee_struct_program_year_tier_unique'
+);
+SET @sql_fee_add := IF(@fee_unique_new = 0,
+    'ALTER TABLE `fee_structures` ADD UNIQUE KEY `fee_struct_program_year_tier_unique` (`program_id`, `academic_year_id`, `program_tier`)',
+    'SELECT 1');
+PREPARE stmt_fee_add FROM @sql_fee_add;
+EXECUTE stmt_fee_add;
+DEALLOCATE PREPARE stmt_fee_add;
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

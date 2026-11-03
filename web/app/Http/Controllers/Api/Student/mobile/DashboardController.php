@@ -10,6 +10,7 @@ use App\Services\StudentPortalDashboardService;
 use App\Services\StudentRecordService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use App\Support\SchemaProbe;
 
 class DashboardController extends Controller
@@ -25,8 +26,13 @@ class DashboardController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $student = $this->portalStudent($request);
-        $biodata = $this->studentRecords->biodata360($student);
-        $portalData = $this->dashboard->forStudent($student, $biodata);
+        $biodata = $this->mobileBiodata($student);
+        $cacheKey = 'student.mobile.dashboard.'.$student->id.'.v1';
+        $overview = Cache::remember(
+            $cacheKey,
+            20,
+            fn () => $this->dashboard->overviewForMobile($student, $biodata),
+        );
 
         $notifications = [];
         $unread = 0;
@@ -54,9 +60,9 @@ class DashboardController extends Controller
 
         return response()->json([
             'student' => $this->serializeStudent($student, $biodata),
-            'overview_stats' => $portalData['overview_stats'],
-            'finance_summary' => $portalData['finance']['summary'] ?? [],
-            'transcript' => $portalData['transcript'] ?? [],
+            'overview_stats' => $overview['overview_stats'],
+            'finance_summary' => $overview['finance_summary'],
+            'transcript' => $overview['transcript'] ?? [],
             'notifications_preview' => $notifications,
             'unread_notifications' => $unread,
         ]);

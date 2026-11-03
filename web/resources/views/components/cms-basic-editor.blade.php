@@ -7,11 +7,12 @@
     'minHeight' => '8rem',
     'maxHeight' => '16rem',
     'withHeadings' => false,
+    'useFormOld' => true,
 ])
 
 @php
     $inputId = $id ?: $name;
-    $content = old($name, $value ?? '');
+    $content = ($useFormOld ?? true) ? old($name, $value ?? '') : ($value ?? '');
 @endphp
 
 @if ($label)

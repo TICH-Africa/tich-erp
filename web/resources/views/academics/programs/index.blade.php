@@ -25,7 +25,7 @@
                     <th>Programme</th>
                     <th>Department</th>
                     <th>Duration</th>
-                    <th>Terms / year</th>
+                    <th>Teaching periods</th>
                     <th>Format</th>
                     @if ($canViewApplications)
                         <th>Pending</th>
@@ -38,10 +38,15 @@
                     @php($pendingApplications = $pendingApplicationsByProgram[$program->id] ?? 0)
                     <tr>
                         <td>{{ $program->program_code }}</td>
-                        <td>{{ $program->program_name }}</td>
+                        <td>
+                            {{ $program->program_name }}
+                            @if ($program->isTieredProgram())
+                                <br><span class="tich-badge tich-mt-1">Tiered</span>
+                            @endif
+                        </td>
                         <td>{{ $program->department?->dept_name ?? '-' }}</td>
-                        <td>{{ $program->duration_months ? $program->duration_months.' months' : '-' }}</td>
-                        <td>{{ $program->semester_count ?: $program->termsPerYear() }}</td>
+                        <td>{{ $program->listDurationLabel() }}</td>
+                        <td>{{ $program->listTeachingPeriodsLabel() }}</td>
                         <td>{{ $formats[$program->curriculum_format ?? 'trimester'] ?? ucfirst($program->curriculum_format ?? 'trimester') }}</td>
                         @if ($canViewApplications)
                             <td>

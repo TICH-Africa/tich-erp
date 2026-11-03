@@ -19,7 +19,7 @@ class AssetsController extends Controller
         $search = $request->string('search')->toString();
 
         $assets = Asset::query()
-            ->with('custodian')
+            ->select(['id', 'asset_number', 'asset_name', 'location_name'])
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('asset_number', 'like', "%{$search}%")
@@ -28,9 +28,9 @@ class AssetsController extends Controller
                 });
             })
             ->orderBy('asset_number')
-            ->limit(50)
+            ->limit(40)
             ->get()
-            ->map(fn (Asset $a) => $this->portal->serializeAsset($a))
+            ->map(fn (Asset $a) => $this->portal->serializeAssetListItem($a))
             ->values();
 
         return response()->json(['items' => $assets]);

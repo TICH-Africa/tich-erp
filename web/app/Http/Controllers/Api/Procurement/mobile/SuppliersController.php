@@ -34,9 +34,11 @@ class SuppliersController extends Controller
                 });
             })
             ->orderByDesc('created_at')
-            ->limit(50)
-            ->get()
-            ->map(fn (Supplier $s) => $this->portal->serializeSupplier($s))
+            ->limit(40)
+            ->get([
+                'id', 'supplier_code', 'supplier_name', 'email', 'compliance_status',
+            ])
+            ->map(fn (Supplier $s) => $this->portal->serializeSupplierListItem($s))
             ->values();
 
         return response()->json(['items' => $items]);

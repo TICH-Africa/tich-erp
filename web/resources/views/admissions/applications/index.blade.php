@@ -34,6 +34,7 @@
                     <th>Application</th>
                     <th>Applicant</th>
                     <th>Programme</th>
+                    <th>Exit tier</th>
                     <th>Handling department</th>
                     <th>Campus</th>
                     <th>Submitted</th>
@@ -54,6 +55,13 @@
                             <span class="tich-caption">{{ $application->program?->program_code }}</span>
                         </td>
                         <td>
+                            @if ($application->program_tier)
+                                @include('partials.program-tier-exit-level', ['tierKey' => $application->program_tier, 'as' => 'badge'])
+                            @else
+                                <span class="tich-caption">-</span>
+                            @endif
+                        </td>
+                        <td>
                             <strong>{{ $application->program?->department?->dept_name ?? $application->handlingDepartment?->dept_name ?? 'Unassigned' }}</strong>
                         </td>
                         <td>{{ $application->preferredCampus?->campus_name ?? '-' }}</td>
@@ -64,7 +72,7 @@
                         </td>
                     </tr>
                 @empty
-                    @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No applications match your filters', 'icon' => 'inbox'])
+                    @include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No applications match your filters', 'icon' => 'inbox'])
                 @endforelse
             </tbody>
         </table>

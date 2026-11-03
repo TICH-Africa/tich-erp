@@ -72,8 +72,11 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
       portalName: 'Procurement',
       onSignOut: tichLogout(context),
       moreIndex: 4,
+      onMoreOpen: () => TichPortalWarmup.procurementMoreOpened(api),
       onTabSelected: (i) {
-        if (i <= 3) refreshNavBadges();
+        if (i <= 3) {
+          TichPortalWarmup.procurementTabSelected(api, i);
+        }
       },
       moreDrawer: (context) => TichMoreDrawer(
         portalName: 'Procurement',

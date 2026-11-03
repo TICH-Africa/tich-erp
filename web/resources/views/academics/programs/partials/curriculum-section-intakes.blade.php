@@ -4,6 +4,9 @@
         <p class="tich-text">
             All intakes for {{ $program->program_name }}, including drafts and intakes not yet published.
             Select one as your working intake above, or open its semester units to begin mapping.
+            @if ($program->isTieredProgram())
+                This tiered programme uses <strong>{{ $scheduledPeriods }}</strong> semesters across the full ladder.
+            @endif
         </p>
     </div>
 

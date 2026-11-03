@@ -10,8 +10,10 @@ use App\Models\NursingBlock;
 use App\Models\ProgramUnit;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\Academics\ProgramTierPlannerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 class ProgramCurriculumService
 {
@@ -19,6 +21,7 @@ class ProgramCurriculumService
         protected AcademicsAccessService $access,
         protected AuditService $auditService,
         protected RBACService $rbacService,
+        protected ProgramTierPlannerService $tierPlanner,
     ) {}
 
     /**
@@ -52,6 +55,10 @@ class ProgramCurriculumService
     {
         $scopeIds = $this->access->accessibleLearningDepartmentIds($user, $hub);
         abort_unless(in_array((int) $program->department_id, $scopeIds, true), 403);
+
+        if ($program->isTieredProgram()) {
+            abort(422, 'Tiered programmes are configured in ICT Programmes. Use that screen to change tier months and semester length.');
+        }
 
         $old = $program->only(['curriculum_format', 'semester_count', 'block_count', 'is_nursing_track', 'duration_months']);
 
@@ -102,6 +109,7 @@ class ProgramCurriculumService
         ProgramUnit::query()->where('program_id', $program->id)->delete();
 
         $included = [];
+        $seenUnitIds = [];
 
         foreach ($mappings as $index => $row) {
             if (empty($row['include'])) {
@@ -112,6 +120,15 @@ class ProgramCurriculumService
 
             if ($unitId === 0) {
                 continue;
+            }
+
+            if ($program->isTieredProgram()) {
+                if (isset($seenUnitIds[$unitId])) {
+                    throw ValidationException::withMessages([
+                        'units' => 'Each unit may only appear once on a tiered programme.',
+                    ]);
+                }
+                $seenUnitIds[$unitId] = true;
             }
 
             $included[$unitId] = array_merge($row, [
@@ -126,11 +143,17 @@ class ProgramCurriculumService
             }
 
             $unit = Unit::query()->find($unitId);
+            $semester = (int) ($row['semester'] ?? 1);
+            $programTier = null;
+            if ($program->isTieredProgram()) {
+                $programTier = $this->tierPlanner->tierForSemester($program, $semester);
+            }
 
             ProgramUnit::create([
                 'program_id' => $program->id,
                 'unit_id' => $unitId,
-                'semester' => (int) ($row['semester'] ?? 1),
+                'semester' => $semester,
+                'program_tier' => $programTier,
                 'block_id' => $row['block_id'] ?? null,
                 'is_compulsory' => ! empty($row['is_compulsory']) ? 1 : 0,
                 'display_order' => (int) ($row['display_order'] ?? 1),
@@ -270,6 +293,14 @@ class ProgramCurriculumService
             ],
             ['type' => 'heading', 'label' => $program->program_code],
         ];
+
+        if ($program->isTieredProgram()) {
+            $program->loadMissing('tiers');
+            $ladder = $program->tierLadderSummary();
+            if ($ladder) {
+                $items[] = ['type' => 'heading', 'label' => 'Tiered · '.$ladder];
+            }
+        }
 
         $canViewApplications = $this->rbacService->hasPermission($user, 'academics.read');
         $canViewStudents = $this->rbacService->hasPermission($user, 'students.read');

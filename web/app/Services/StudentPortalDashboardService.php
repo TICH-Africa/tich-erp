@@ -104,6 +104,112 @@ class StudentPortalDashboardService
 
     /**
      * @param  array<string, mixed>  $biodata
+     * @return array<string, mixed>
+     */
+    public function overviewForMobile(Student $student, array $biodata): array
+    {
+        $summaries = $this->academicRecords->rosterSummaries([$student->id])->get($student->id, [
+            'registered_units' => 0,
+            'grades' => 0,
+            'cat_scores' => 0,
+            'exam_results' => 0,
+        ]);
+        $financeSummary = $this->financeSummaryForMobile($student);
+
+        return [
+            'overview_stats' => [
+                'enrollment_status' => ucfirst($student->enrollment_status ?? 'unknown'),
+                'application_status' => ucwords(str_replace('_', ' ', (string) ($biodata['application']['status'] ?? ''))),
+                'fee_clearance' => ucfirst($student->fee_clearance_status ?? 'pending'),
+                'outstanding_balance' => (float) ($financeSummary['outstanding_balance'] ?? $student->overall_balance ?? 0),
+                'document_count' => (int) ($biodata['document_count'] ?? $biodata['documents']->count()),
+                'registered_unit_count' => (int) ($summaries['registered_units'] ?? 0),
+                'grade_count' => (int) ($summaries['grades'] ?? 0),
+                'curriculum_unit_count' => (int) ($summaries['registered_units'] ?? 0),
+            ],
+            'finance_summary' => $financeSummary,
+            'transcript' => $this->transcript($student),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function academicsForMobile(Student $student): array
+    {
+        return [
+            'academics' => $this->academicRecords->forStudentMobile(
+                $student,
+                $this->mayViewProvisionalCurriculum($student),
+            ),
+            'transcript' => $this->transcript($student),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function timetableForMobile(Student $student): array
+    {
+        $academics = $this->academicRecords->timetableContextForStudent(
+            $student,
+            $this->mayViewProvisionalCurriculum($student),
+        );
+
+        return [
+            'timetable' => $this->timetable($student, $academics),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function financeForMobile(Student $student): array
+    {
+        return [
+            'finance' => $this->finance($student, mobile: true),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function financeSummaryForMobile(Student $student): array
+    {
+        $student->loadMissing('applicant');
+
+        $accountBalance = (float) DB::table('student_accounts')
+            ->where('student_id', $student->id)
+            ->sum('outstanding_balance');
+
+        $invoiceBalance = (float) DB::table('invoices')
+            ->where('student_id', $student->id)
+            ->sum('balance');
+
+        $studentBalance = (float) ($student->overall_balance ?? 0);
+
+        $isCleared = DB::table('student_accounts')
+            ->where('student_id', $student->id)
+            ->where('is_cleared', 1)
+            ->exists()
+            || ($student->fee_clearance_status === 'cleared');
+
+        $payableCount = (int) DB::table('invoices')
+            ->where('student_id', $student->id)
+            ->where('balance', '>', 0)
+            ->whereIn('status', ['issued', 'partial', 'overdue'])
+            ->count();
+
+        return [
+            'outstanding_balance' => $accountBalance > 0 ? $accountBalance : ($invoiceBalance > 0 ? $invoiceBalance : $studentBalance),
+            'fee_clearance_status' => $student->fee_clearance_status ?? 'pending',
+            'is_cleared' => $isCleared,
+            'payable_invoice_count' => $payableCount,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $biodata
      * @param  array<string, mixed>  $academics
      * @param  array<string, mixed>  $finance
      * @return array<string, mixed>
@@ -125,9 +231,11 @@ class StudentPortalDashboardService
     /**
      * @return array<string, mixed>
      */
-    private function finance(Student $student): array
+    private function finance(Student $student, bool $mobile = false): array
     {
         $student->loadMissing('applicant');
+
+        $rowLimit = $mobile ? 40 : 50;
 
         $accounts = DB::table('student_accounts as sa')
             ->join('academic_years as ay', 'ay.id', '=', 'sa.academic_year_id')
@@ -142,13 +250,13 @@ class StudentPortalDashboardService
         $invoices = DB::table('invoices')
             ->where('student_id', $student->id)
             ->orderByDesc('issue_date')
-            ->limit(50)
+            ->limit($rowLimit)
             ->get();
 
         $payments = DB::table('payments')
             ->where('student_id', $student->id)
             ->orderByDesc('payment_date')
-            ->limit(50)
+            ->limit($rowLimit)
             ->get();
 
         $payableInvoices = $invoices->filter(function ($invoice) {
@@ -175,7 +283,7 @@ class StudentPortalDashboardService
             'payments' => $payments,
             'payable_invoices' => $payableInvoices,
             'pending_stk_requests' => $pendingStkRequests,
-            'statement' => $this->buildFinanceStatement($invoices, $payments),
+            'statement' => $this->buildFinanceStatement($invoices, $payments, $mobile ? 40 : null),
             'credits' => $this->accountCredits($currentAccount),
             'default_phone' => (string) ($student->applicant?->phone_number ?? ''),
             'mpesa_enabled' => $this->mpesaSettings->isEnabled(),
@@ -198,7 +306,7 @@ class StudentPortalDashboardService
      * @param  \Illuminate\Support\Collection<int, object>  $payments
      * @return list<array<string, mixed>>
      */
-    private function buildFinanceStatement(Collection $invoices, Collection $payments): array
+    private function buildFinanceStatement(Collection $invoices, Collection $payments, ?int $limit = null): array
     {
         $entries = collect();
 
@@ -228,7 +336,7 @@ class StudentPortalDashboardService
 
         $running = 0.0;
 
-        return $entries
+        $statement = $entries
             ->sortBy('sort_at')
             ->values()
             ->map(function (array $entry) use (&$running) {
@@ -238,8 +346,13 @@ class StudentPortalDashboardService
                 return $entry;
             })
             ->reverse()
-            ->values()
-            ->all();
+            ->values();
+
+        if ($limit !== null) {
+            $statement = $statement->take($limit);
+        }
+
+        return $statement->all();
     }
 
     /**
@@ -340,7 +453,7 @@ class StudentPortalDashboardService
         }
 
         $primary = $this->currentPosting($timetables, $period, $teachingPeriod);
-        $template = $primary?->template?->load(['segments', 'days']);
+        $template = $primary?->template?->load(['days']);
 
         return [
             'timetables' => $timetables,
@@ -444,7 +557,7 @@ class StudentPortalDashboardService
     private function resolveLatestPublishedTimetables(int $programId, ?int $curriculumId, ?int $campusId, ?array $yearPeriods = null): Collection
     {
         $query = \App\Models\ProgramTimetable::query()
-            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days'])
+            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.days'])
             ->where('program_id', $programId)
             ->where('status', 'published')
             ->when($yearPeriods, fn ($q) => $q->whereBetween('teaching_period', [$yearPeriods['first'], $yearPeriods['last']]))
@@ -479,7 +592,7 @@ class StudentPortalDashboardService
     private function resolveDraftTimetables(int $programId, ?int $curriculumId, int $teachingPeriod, ?int $campusId): Collection
     {
         $query = \App\Models\ProgramTimetable::query()
-            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days'])
+            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.days'])
             ->where('program_id', $programId)
             ->whereIn('status', ['draft'])
             ->where('teaching_period', $teachingPeriod)

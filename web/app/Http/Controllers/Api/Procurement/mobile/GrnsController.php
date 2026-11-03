@@ -23,12 +23,12 @@ class GrnsController extends Controller
         $status = $request->string('status')->toString();
 
         $grns = GoodsReceivedNote::query()
-            ->with(['purchaseOrder.supplier', 'receivedBy'])
+            ->with(['purchaseOrder:id,po_number,supplier_id', 'purchaseOrder.supplier:id,supplier_name'])
             ->when($status !== '', fn ($q) => $q->where('inspection_status', $status))
             ->orderByDesc('created_at')
-            ->limit(50)
+            ->limit(40)
             ->get()
-            ->map(fn (GoodsReceivedNote $g) => $this->portal->serializeGrn($g))
+            ->map(fn (GoodsReceivedNote $g) => $this->portal->serializeGrnListItem($g))
             ->values();
 
         return response()->json(['items' => $grns]);
