@@ -1,5 +1,14 @@
 @php
-    $activeDayList = $activeDays ?? range(1, 5);
+    // The printed page carries the same columns the screen does, so a day holding a class is
+    // printed even when the template does not teach it.
+    $activeDayList = collect($activeDays ?? range(1, 5))
+        ->merge(collect($sessions ?? [])->pluck('day_of_week'))
+        ->map(fn ($day): int => (int) $day)
+        ->filter()
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
     $sessionsByDayAndTime = collect($sessions ?? [])->groupBy(
         fn ($session) => $session->day_of_week.'|'.substr((string) $session->start_time, 0, 5)
     );

@@ -719,11 +719,10 @@
                                     <label class="tich-label" for="timetable-session-day">Day</label>
                                     <select name="day_of_week" id="timetable-session-day" class="tich-input" required>
                                         @foreach ($timetableDayLabels as $dayNum => $dayLabel)
-                                            @if (in_array($dayNum, $activeDays, true))
-                                                <option value="{{ $dayNum }}">{{ $dayLabel }}</option>
-                                            @endif
+                                            <option value="{{ $dayNum }}">{{ $dayLabel }}</option>
                                         @endforeach
                                     </select>
+                                    <p class="tich-caption">All seven days are here, so a Saturday or Sunday class can be posted. The timetable gains that column as soon as it carries a class.</p>
                                 </div>
                                 <div class="tich-form-group">
                                     <label class="tich-label" for="timetable-session-start">Start</label>

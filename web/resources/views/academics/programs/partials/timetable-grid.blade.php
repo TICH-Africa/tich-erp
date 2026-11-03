@@ -1,5 +1,15 @@
 @php
-    $activeDayList = $activeDays ?? range(1, 5);
+    // A class posted on a day the template does not teach - a Saturday make-up class, a Sunday
+    // orientation - still has to be seen, so the columns are the teaching days plus every day that
+    // actually carries a class.
+    $activeDayList = collect($activeDays ?? range(1, 5))
+        ->merge(collect($sessions ?? [])->pluck('day_of_week'))
+        ->map(fn ($day): int => (int) $day)
+        ->filter()
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
     $editable = $editable ?? false;
     $canEditInvigilator = $canEditInvigilator ?? false;
     $moveSessionUrl = $moveSessionUrl ?? null;
