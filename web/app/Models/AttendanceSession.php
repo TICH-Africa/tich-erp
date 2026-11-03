@@ -6,6 +6,7 @@ use App\Models\Concerns\PrunesStoredFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class AttendanceSession extends Model
 {
@@ -82,6 +83,22 @@ class AttendanceSession extends Model
     public function records(): HasMany
     {
         return $this->hasMany(AttendanceRecord::class, 'session_id');
+    }
+
+    /**
+     * Every class this unit has on this date. One signed register covers the whole day, so
+     * marks and submission are written to all of them and none is left sitting as pending.
+     *
+     * @return Collection<int, self>
+     */
+    public function sameDaySessions(): Collection
+    {
+        return static::query()
+            ->where('unit_allocation_id', $this->unit_allocation_id)
+            ->whereDate('session_date', $this->session_date)
+            ->where('is_locked', 0)
+            ->orderBy('start_time')
+            ->get();
     }
 
     public function recordedByStaff(): BelongsTo

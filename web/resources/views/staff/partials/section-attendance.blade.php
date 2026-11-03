@@ -38,7 +38,12 @@
                         <td>{{ $session->session_date?->format('d M Y') }}</td>
                         <td>{{ $session->allocation?->unit?->unit_code }}</td>
                         <td>{{ $session->allocation?->intake_label ?? $session->allocation?->semester?->semester_label ?? '-' }}</td>
-                        <td>{{ substr((string) $session->start_time, 0, 5) }} - {{ substr((string) $session->end_time, 0, 5) }}</td>
+                        <td>
+                            {{ substr((string) ($session->day_start_time ?? $session->start_time), 0, 5) }} - {{ substr((string) ($session->day_end_time ?? $session->end_time), 0, 5) }}
+                            @if (($session->day_classes ?? 1) > 1)
+                                <span class="tich-caption">· {{ $session->day_classes }} classes, one register</span>
+                            @endif
+                        </td>
                         <td>{{ $session->total_expected_attendees ?? $session->records_count ?? 0 }}</td>
                         <td>
                             @if ($session->is_locked)

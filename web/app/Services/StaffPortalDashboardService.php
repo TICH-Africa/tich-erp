@@ -365,26 +365,30 @@ class StaffPortalDashboardService
             return collect();
         }
 
-        return DB::table('attendance_sessions as s')
-            ->join('unit_allocations as ua', 'ua.id', '=', 's.unit_allocation_id')
-            ->join('units as u', 'u.id', '=', 'ua.unit_id')
-            ->whereIn('s.unit_allocation_id', $allocationIds)
-            ->orderByDesc('s.session_date')
-            ->limit($limit)
-            ->select([
-                's.id',
-                's.session_number',
-                's.session_date',
-                's.start_time',
-                's.end_time',
-                's.venue',
-                's.verification_status',
-                's.is_locked',
-                's.total_expected_attendees',
-                'u.unit_code',
-                'u.unit_name',
-            ])
-            ->get();
+        return $this->groupSessionsByDay(
+            DB::table('attendance_sessions as s')
+                ->join('unit_allocations as ua', 'ua.id', '=', 's.unit_allocation_id')
+                ->join('units as u', 'u.id', '=', 'ua.unit_id')
+                ->whereIn('s.unit_allocation_id', $allocationIds)
+                ->orderByDesc('s.session_date')
+                ->orderBy('s.start_time')
+                ->limit($limit)
+                ->select([
+                    's.id',
+                    's.unit_allocation_id',
+                    's.session_number',
+                    's.session_date',
+                    's.start_time',
+                    's.end_time',
+                    's.venue',
+                    's.verification_status',
+                    's.is_locked',
+                    's.total_expected_attendees',
+                    'u.unit_code',
+                    'u.unit_name',
+                ])
+                ->get()
+        );
     }
 
     /**
@@ -695,14 +699,17 @@ class StaffPortalDashboardService
             return collect();
         }
 
-        return \App\Models\AttendanceSession::query()
-            ->with(['allocation.unit', 'allocation.semester.academicYear', 'timetableSession.timetable.curriculumVersion'])
-            ->whereIn('unit_allocation_id', $allocationIds)
-            ->whereDate('session_date', '>=', now()->subWeek()->toDateString())
-            ->orderBy('session_date')
-            ->orderBy('start_time')
-            ->limit(12)
-            ->get()
+        return $this->groupSessionsByDay(
+            \App\Models\AttendanceSession::query()
+                ->with(['allocation.unit', 'allocation.semester.academicYear', 'timetableSession.timetable.curriculumVersion'])
+                ->whereIn('unit_allocation_id', $allocationIds)
+                ->whereDate('session_date', '>=', now()->subWeek()->toDateString())
+                ->orderBy('session_date')
+                ->orderBy('start_time')
+                ->limit(60)
+                ->get()
+        )
+            ->take(12)
             ->each(function (\App\Models\AttendanceSession $session) {
                 if (! $session->allocation) {
                     return;
@@ -714,6 +721,31 @@ class StaffPortalDashboardService
                     $fromTimetable ?: $this->intakeLabelForSemester($session->allocation->semester),
                 );
             });
+    }
+
+    /**
+     * A unit taught twice in one day is one thing to mark, not two, so the lecturer's list
+     * carries the date once and shows the hours the class actually spans.
+     *
+     * @param  Collection<int, object>  $sessions
+     * @return Collection<int, object>
+     */
+    private function groupSessionsByDay(Collection $sessions): Collection
+    {
+        return $sessions
+            ->groupBy(fn (object $session) => ((int) $session->unit_allocation_id).'-'.substr((string) $session->session_date, 0, 10))
+            ->map(function (Collection $day) {
+                $first = $day->first();
+                $starts = $day->pluck('start_time')->filter()->values()->sort();
+                $ends = $day->pluck('end_time')->filter()->values()->sort();
+
+                $first->day_classes = $day->count();
+                $first->day_start_time = $starts->first() ?? $first->start_time;
+                $first->day_end_time = $ends->last() ?? $first->end_time;
+
+                return $first;
+            })
+            ->values();
     }
 
     /**

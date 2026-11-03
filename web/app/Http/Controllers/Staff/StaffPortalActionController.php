@@ -254,8 +254,15 @@ class StaffPortalActionController extends Controller
         $staff = $this->portalService->staffForUser($request->user());
 
         $request->validate([
-            'signed_sheet' => ['required', 'file', 'mimes:jpg,jpeg,png,webp'],
+            'signed_sheet' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
         ]);
+
+        if (! $request->hasFile('signed_sheet')) {
+            return redirect()->route('staff.dashboard', [
+                'section' => 'attendance',
+                'attendance_session' => $session->id,
+            ])->with('info', 'No photo chosen. The signed sheet is optional - your marks still stand.');
+        }
 
         $this->teaching->uploadSignedSheet($session, $staff, $request->file('signed_sheet'));
 
@@ -270,8 +277,15 @@ class StaffPortalActionController extends Controller
         $staff = $this->portalService->staffForUser($request->user());
 
         $request->validate([
-            'class_photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp'],
+            'class_photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
         ]);
+
+        if (! $request->hasFile('class_photo')) {
+            return redirect()->route('staff.dashboard', [
+                'section' => 'attendance',
+                'attendance_session' => $session->id,
+            ])->with('info', 'No photo chosen. The class photo is optional - your marks still stand.');
+        }
 
         $this->teaching->uploadClassPhoto($session, $staff, $request->file('class_photo'));
 

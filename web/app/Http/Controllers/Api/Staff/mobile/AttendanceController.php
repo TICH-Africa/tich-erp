@@ -102,10 +102,12 @@ class AttendanceController extends Controller
         $this->assertCanViewSession($session, $staff);
 
         $request->validate([
-            'signed_sheet' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
+            'signed_sheet' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
         ]);
 
-        $this->teaching->uploadSignedSheet($session, $staff, $request->file('signed_sheet'));
+        if ($request->hasFile('signed_sheet')) {
+            $this->teaching->uploadSignedSheet($session, $staff, $request->file('signed_sheet'));
+        }
 
         return response()->json($this->serializer->attendanceShow($session->fresh()));
     }
@@ -116,10 +118,12 @@ class AttendanceController extends Controller
         $this->assertCanViewSession($session, $staff);
 
         $request->validate([
-            'class_photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
+            'class_photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
         ]);
 
-        $this->teaching->uploadClassPhoto($session, $staff, $request->file('class_photo'));
+        if ($request->hasFile('class_photo')) {
+            $this->teaching->uploadClassPhoto($session, $staff, $request->file('class_photo'));
+        }
 
         return response()->json($this->serializer->attendanceShow($session->fresh()));
     }

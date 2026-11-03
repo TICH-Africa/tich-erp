@@ -35,20 +35,24 @@ class AttendanceSessionGenerationService
 
         foreach ($slots as $slot) {
             foreach ($this->datesForSlot($slot, $weeksAhead) as $date) {
-                $exists = AttendanceSession::query()
-                    ->where('program_timetable_session_id', $slot->id)
-                    ->whereDate('session_date', $date)
-                    ->exists();
-
-                if ($exists) {
+                $allocation = $this->allocationForSlot($staff, $slot);
+                if (! $allocation) {
                     $skipped++;
 
                     continue;
                 }
 
-                $allocation = $this->allocationForSlot($staff, $slot);
-                if (! $allocation) {
+                // One session per unit per day: a lecturer signs a single register for the class,
+                // however many timetable slots that unit holds on the date.
+                $existing = AttendanceSession::query()
+                    ->where('unit_allocation_id', $allocation->id)
+                    ->whereDate('session_date', $date)
+                    ->orderBy('start_time')
+                    ->first();
+
+                if ($existing) {
                     $skipped++;
+                    $this->teaching->widenAttendanceSessionTo($existing, $slot);
 
                     continue;
                 }

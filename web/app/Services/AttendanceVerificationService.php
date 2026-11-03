@@ -197,6 +197,16 @@ class AttendanceVerificationService
             'submitted_at' => now(),
         ]);
 
+        // The day's other classes of this unit were marked from the same register, so they
+        // submit with it instead of waiting for a second sign-off.
+        foreach ($session->sameDaySessions() as $sibling) {
+            $sibling->update([
+                'is_locked' => 1,
+                'verification_status' => 'submitted',
+                'submitted_at' => now(),
+            ]);
+        }
+
         $this->auditService->log(
             'staff.attendance.submitted',
             'attendance_sessions',
