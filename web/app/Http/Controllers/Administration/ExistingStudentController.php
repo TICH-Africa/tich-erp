@@ -147,7 +147,7 @@ class ExistingStudentController extends Controller
 
             $validated['campus_id'] = (int) $siteId;
         } elseif ($selectionType === 'online') {
-            $validated['campus_id'] = null;
+            $validated['campus_id'] = $this->homeCampusId();
         } else {
             throw ValidationException::withMessages([
                 'campus_selection_type' => 'Please choose a campus or community college site.',
@@ -304,7 +304,7 @@ class ExistingStudentController extends Controller
 
             $validated['campus_id'] = (int) $siteId;
         } elseif ($selectionType === 'online') {
-            $validated['campus_id'] = null;
+            $validated['campus_id'] = $this->homeCampusId();
         } else {
             throw ValidationException::withMessages([
                 'campus_selection_type' => 'Please choose a campus or community college site.',
@@ -360,6 +360,23 @@ class ExistingStudentController extends Controller
         return redirect()
             ->route('administration.applications.existing-student.show', $student->id)
             ->with('success', "Student {$student->registration_number} updated successfully.");
+    }
+
+    /**
+     * students.enrollment_campus_id is NOT NULL, so an online student is filed under the
+     * main campus while study_mode carries the truth. Same rule as admitting an applicant.
+     */
+    private function homeCampusId(): int
+    {
+        $campusId = Campus::query()->where('is_active', 1)->orderBy('id')->value('id');
+
+        if (! $campusId) {
+            throw ValidationException::withMessages([
+                'campus_selection_type' => 'No campus is set up yet, so an online student cannot be saved. Add a campus first.',
+            ]);
+        }
+
+        return (int) $campusId;
     }
 
     /**
