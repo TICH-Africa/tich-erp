@@ -59,7 +59,7 @@
                             <span class="tich-badge tich-badge--success" style="font-size:0.72rem;">Applies now</span>
                         @endif
                     </h2>
-                    <p class="tich-caption tich-mt-2">{{ $timetableData['period_label'] ?? ('Semester '.$timetableData['teaching_period']) }} · {{ ucfirst($timetable->status) }}</p>
+                    <p class="tich-caption tich-mt-2">{{ $timetableData['period_label'] ?? ('Semester '.$timetableData['teaching_period']) }} · {{ $timetable->deliveryModeLabel() }} · {{ ucfirst($timetable->status) }}</p>
                 </div>
                 @if ($timetable->sessions->isNotEmpty())
                     <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">

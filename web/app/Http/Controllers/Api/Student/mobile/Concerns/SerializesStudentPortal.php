@@ -147,6 +147,8 @@ trait SerializesStudentPortal
                     'cycle_type' => $tt->cycle_type,
                     'cycle_no' => $tt->cycle_no,
                     'cycle_label' => $tt->cycleLabel(),
+                    'delivery_mode' => $tt->delivery_mode ?? 'physical',
+                    'audience' => $tt->deliveryModeLabel(),
                     'is_current' => (int) $tt->id === (int) ($t['timetable']?->id ?? 0),
                     'teaching_period' => $tt->teaching_period,
                     'sessions' => collect($tt->sessions ?? [])->map(fn ($s) => [

@@ -452,6 +452,18 @@ class StudentPortalDashboardService
             }
         }
 
+        // The campus class and the remote class are posted on separate timetables for the same year
+        // and semester, so each student is shown the one their study mode has. A school that keeps
+        // a single posting is unaffected - nothing of theirs gets filtered away.
+        $wantedMode = $student->isOnlineStudent() ? 'online' : 'physical';
+        $modeMatched = $timetables->filter(
+            fn ($timetable) => ($timetable->delivery_mode ?? 'physical') === $wantedMode
+        );
+
+        if ($modeMatched->isNotEmpty()) {
+            $timetables = $modeMatched->values();
+        }
+
         $primary = $this->currentPosting($timetables, $period, $teachingPeriod);
         $template = $primary?->template?->load(['days']);
 

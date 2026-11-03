@@ -303,7 +303,7 @@
                                     'timetable' => $choice->id,
                                 ]))) }}" @selected((int) $timetableDraft?->id === (int) $choice->id)>
                                     {{ $choice->displayTitle() }}
-                                    ({{ $choice->sessions_count }} class{{ $choice->sessions_count === 1 ? '' : 'es' }}, {{ $choice->status }}, {{ $choice->created_at?->format('d M Y') ?: 'no date' }})
+                                    ({{ $choice->sessions_count }} class{{ $choice->sessions_count === 1 ? '' : 'es' }}, {{ $choice->status }}, {{ $choice->deliveryModeLabel() }}, {{ $choice->created_at?->format('d M Y') ?: 'no date' }})
                                 </option>
                             @endforeach
                         </optgroup>
@@ -416,7 +416,7 @@
                             style="font-size:0.8125rem;">
                             {{ $scopedTimetable->displayTitle() }}
                             <span class="tich-caption" style="display:block; font-size:0.72rem; opacity:0.85;">
-                                {{ $scopedTimetable->sessions->count() }} class(es) · {{ ucfirst($scopedTimetable->status) }}
+                                {{ $scopedTimetable->sessions->count() }} class(es) · {{ $scopedTimetable->deliveryModeLabel() }} · {{ ucfirst($scopedTimetable->status) }}
                             </span>
                         </a>
                     @endforeach
@@ -436,6 +436,7 @@
                         <input type="hidden" name="learning_department" value="{{ $learningDepartment?->id }}">
                         <input type="hidden" name="cycle_type" value="{{ $timetableDraft->cycle_type }}">
                         <input type="hidden" name="cycle_no" value="{{ $timetableDraft->nextCycleNo() }}">
+                        <input type="hidden" name="delivery_mode" value="{{ $timetableDraft->delivery_mode ?? 'physical' }}">
                         <input type="hidden" name="copy_from" value="{{ $timetableDraft->id }}">
                         <button type="submit" class="tich-btn tich-btn-primary">Add {{ ucfirst($timetableDraft->cycleWord()) }} {{ $timetableDraft->nextCycleNo() }} timetable</button>
                         <p class="tich-caption tich-mt-2">
@@ -459,6 +460,14 @@
                             <input type="text" name="title" class="tich-input" value="{{ old('title') }}" placeholder="{{ $timetableKinds[$timetableKind] ?? 'Timetable' }} - {{ $program->periodLabel($timetableTeachingPeriod) }}" maxlength="200">
                         </div>
                         <div class="tich-form-group" style="margin:0; max-width:20rem; flex:1 1 14rem;">
+                            <label class="tich-label">Which students it is for</label>
+                            <select name="delivery_mode" class="tich-input">
+                                @foreach (\App\Models\ProgramTimetable::deliveryModes() as $modeKey => $modeLabel)
+                                    <option value="{{ $modeKey }}" @selected(old('delivery_mode', 'physical') === $modeKey)>{{ $modeLabel }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="tich-form-group" style="margin:0; max-width:20rem; flex:1 1 14rem;">
                             <label class="tich-label">How often it is posted</label>
                             <select name="cycle_type" class="tich-input">
                                 <option value="">Whole {{ $program->usesBlocks() ? 'block' : 'semester' }} - one timetable covers it all</option>
@@ -479,6 +488,7 @@
                     <p class="tich-caption tich-mt-2">
                         Choose weekly or monthly to run one timetable per {{ $program->usesBlocks() ? 'block' : 'semester' }} week or month - each posting stays separate, so classes added to
                         week 2 never appear on week 1. Leave it as the whole {{ $program->usesBlocks() ? 'block' : 'semester' }} for a single timetable. Nothing is filled in for you.
+                        Pick online students to run a second timetable for the remote class on the same year and semester; an online student is then shown that one, and the campus student the physical one.
                     </p>
                 </form>
             @endcan
@@ -493,7 +503,7 @@
                     <h2 class="tich-h3">3. {{ $timetableKinds[$timetableKind] ?? 'Timetable' }} display</h2>
                     <p class="tich-text tich-mt-2">
                         <strong>{{ $timetableDraft->displayTitle() }}</strong><br>
-                        {{ $program->periodLabel((int) $timetableDraft->teaching_period) }} · {{ ucfirst($timetableDraft->status) }}
+                        {{ $program->periodLabel((int) $timetableDraft->teaching_period) }} · {{ $timetableDraft->deliveryModeLabel() }} · {{ ucfirst($timetableDraft->status) }}
                         @if ($timetableDraft->generation_notes)
                             · {{ $timetableDraft->generation_notes }}
                         @endif
@@ -781,7 +791,7 @@
                                     <label class="tich-label" for="timetable-session-mode">Which students is this class for?</label>
                                     <select name="delivery_mode" id="timetable-session-mode" class="tich-input" required>
                                         @foreach (\App\Models\ProgramTimetableSession::deliveryModes() as $modeKey => $modeLabel)
-                                            <option value="{{ $modeKey }}" @selected($modeKey === 'physical')>{{ $modeLabel }}</option>
+                                            <option value="{{ $modeKey }}" @selected($modeKey === ($timetableDraft->delivery_mode ?? 'physical'))>{{ $modeLabel }}</option>
                                         @endforeach
                                     </select>
                                     <p class="tich-caption">Pick physical students for a class the campus cohort sits in person, or online students for the remote class. Online classes take a meeting link instead of a classroom.</p>

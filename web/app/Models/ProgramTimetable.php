@@ -15,12 +15,31 @@ class ProgramTimetable extends Model
 
     protected $fillable = [
         'program_id', 'curriculum_version_id', 'teaching_period', 'title', 'timetable_kind',
+        'delivery_mode',
         'cycle_type', 'cycle_no',
         'template_id', 'campus_id', 'status', 'generation_notes', 'progress_note', 'week_span',
         'published_at', 'published_by',
         'created_at', 'updated_at',
         'source', 'source_file', 'source_name', 'source_uploaded_at', 'source_uploaded_by',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    public static function deliveryModes(): array
+    {
+        return ['physical' => 'Physical students', 'online' => 'Online students'];
+    }
+
+    public function isOnlineMode(): bool
+    {
+        return $this->delivery_mode === 'online';
+    }
+
+    public function deliveryModeLabel(): string
+    {
+        return self::deliveryModes()[$this->delivery_mode] ?? 'Physical students';
+    }
 
     /**
      * @return array<string, string>

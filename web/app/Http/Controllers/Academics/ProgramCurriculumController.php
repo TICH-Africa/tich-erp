@@ -640,6 +640,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'max:60',
             ],
             'copy_from' => ['nullable', 'integer'],
+            'delivery_mode' => ['nullable', 'in:'.implode(',', array_keys(ProgramTimetable::deliveryModes()))],
         ], [
             'cycle_no.required_with' => 'Say which week or month this timetable covers.',
         ]);
@@ -657,17 +658,19 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             $request,
             $validated['cycle_type'] ?? null,
             isset($validated['cycle_no']) ? (int) $validated['cycle_no'] : null,
-            isset($validated['copy_from']) ? (int) $validated['copy_from'] : null
+            isset($validated['copy_from']) ? (int) $validated['copy_from'] : null,
+            $validated['delivery_mode'] ?? 'physical'
         );
 
         $cycle = $timetable->cycleLabel();
+        $audience = $timetable->isOnlineMode() ? ' for online students' : '';
 
         return $this->timetableRedirect(
             $request,
             $timetable,
             $cycle
-                ? 'Opened the '.$cycle.' timetable - its classes are stamped with it, so nothing lands on another week.'
-                : 'Timetable opened empty - add the classes as the school runs them.'
+                ? 'Opened the '.$cycle.' timetable'.$audience.' - its classes are stamped with it, so nothing lands on another week.'
+                : 'Timetable opened empty'.$audience.' - add the classes as the school runs them.'
         );
     }
 
