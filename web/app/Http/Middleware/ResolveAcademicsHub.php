@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Department;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Symfony\Component\HttpFoundation\Response;
 
 class ResolveAcademicsHub
@@ -12,9 +13,12 @@ class ResolveAcademicsHub
     public function handle(Request $request, Closure $next): Response
     {
         $route = $request->route();
-        $department = $route?->parameter('department');
 
-        if (! $department instanceof Department) {
+        if ($route->parameter('department') instanceof Department) {
+            return $next($request);
+        }
+
+        if ($this->actionExpectsHub($route)) {
             $hub = Department::findAcademicsHub();
             abort_unless($hub, 404);
 
@@ -36,5 +40,28 @@ class ResolveAcademicsHub
         }
 
         return $next($request);
+    }
+
+    /**
+     * Only actions that hint Department may receive it: route parameters are
+     * unpacked by position, so a leading Department would land in {plan} or {report}.
+     */
+    private function actionExpectsHub(Route $route): bool
+    {
+        try {
+            foreach ($route->signatureParameters() as $parameter) {
+                $type = $parameter->getType();
+
+                if ($type instanceof \ReflectionNamedType
+                    && ! $type->isBuiltin()
+                    && is_a($type->getName(), Department::class, true)) {
+                    return true;
+                }
+            }
+        } catch (\Throwable) {
+            return true;
+        }
+
+        return false;
     }
 }
