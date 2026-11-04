@@ -91,13 +91,7 @@ class MeQuarter extends Model
 
     public static function titleForQuarter(int $number): string
     {
-        return match ($number) {
-            1 => 'Q1 · Jan-Mar',
-            2 => 'Q2 · Apr-Jun',
-            3 => 'Q3 · Jul-Sep',
-            4 => 'Q4 · Oct-Dec',
-            default => 'Q'.$number,
-        };
+        return 'Q'.$number;
     }
 
     /**

@@ -55,7 +55,6 @@
                             <td class="tich-caption">{{ $item->submitted_at?->format('d M Y') ?? '-' }}</td>
                             <td class="tich-flex-wrap" style="gap:0.5rem;">
                                 <a href="{{ route($showRoute, $item->id) }}" class="tich-btn tich-btn-ghost">View</a>
-                                <a href="{{ route($pdfRoute, ['plan' => $item->id, 'quarter' => 'all']) }}" class="tich-btn tich-btn-secondary">Download PDF</a>
                                 @unless ($item->isBaselineLocked())
                                     <a href="{{ route($editRoute, $item->id) }}" class="tich-btn tich-btn-primary">Revise</a>
                                 @endunless

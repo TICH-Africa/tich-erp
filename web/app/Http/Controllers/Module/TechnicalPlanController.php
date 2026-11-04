@@ -60,7 +60,6 @@ class TechnicalPlanController extends Controller
             'createRoute' => $routes['create'],
             'editRoute' => $routes['edit'],
             'showRoute' => $routes['show'],
-            'pdfRoute' => $routes['pdf'],
         ]);
     }
 
