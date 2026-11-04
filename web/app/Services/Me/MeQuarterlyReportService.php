@@ -52,6 +52,13 @@ class MeQuarterlyReportService
             }
         }
 
+        // The Academics hub is institution-wide and has no HOD of its own, so the
+        // officers who file its technical plan also file its quarterly report.
+        if ($department->isAcademicsHub()
+            && app(\App\Services\AcademicsAccessService::class)->canAccessAll($user)) {
+            return true;
+        }
+
         // Fallback for staff records that are unlinked or stale: a role scoped to
         // the department still makes the holder its M&E respondent.
         return in_array(
