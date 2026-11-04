@@ -36,8 +36,8 @@
                 <tbody>
                     @foreach ($report->lines as $line)
                         <tr @class(['tich-me-row--warning' => $line->isWarning()])>
-                            <td>{{ $line->output }}</td>
-                            <td>{{ $line->activity }}</td>
+                            <td style="white-space:pre-wrap;">{{ $line->output }}</td>
+                            <td style="white-space:pre-wrap;">{{ $line->activity }}</td>
                             <td>{{ $line->costable_item }}</td>
                             <td>{{ number_format((float) $line->planned, 2) }}</td>
                             <td>{{ number_format((float) $line->achieved, 2) }}</td>

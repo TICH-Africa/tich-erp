@@ -94,7 +94,8 @@
                 <div class="uf-form-section js-tp-quarter" data-quarter="{{ $qKey }}">
                     <div class="uf-section-head">{{ $qLabel }}</div>
                     <div class="uf-section-body">
-                        <div class="tich-flex-wrap" style="justify-content:flex-end;margin-bottom:1rem;">
+                        <div class="tich-flex-wrap" style="justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                            <span class="tich-caption">Enter inside Output or Activity starts another point - it does not submit the plan.</span>
                             <button type="button" class="uf-btn uf-btn-secondary js-tp-add-output" data-quarter="{{ $qKey }}">+ Add output</button>
                         </div>
                         <div class="tich-table-wrap">
@@ -112,8 +113,8 @@
                                 <tbody class="js-tp-outputs-body" data-quarter="{{ $qKey }}">
                                     @foreach ($outputs as $oi => $oRow)
                                         <tr class="js-tp-output-row">
-                                            <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][output]" class="tich-input" value="{{ $oRow['output'] ?? '' }}" maxlength="2000" placeholder="Strategic target"></td>
-                                            <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][activity]" class="tich-input" value="{{ $oRow['activity'] ?? '' }}" maxlength="2000" placeholder="Implementation task"></td>
+                                            <td><textarea name="quarters[{{ $qKey }}][outputs][{{ $oi }}][output]" class="tich-input js-tp-points" rows="2" maxlength="2000" style="resize:none;" placeholder="Strategic target">{{ $oRow['output'] ?? '' }}</textarea></td>
+                                            <td><textarea name="quarters[{{ $qKey }}][outputs][{{ $oi }}][activity]" class="tich-input js-tp-points" rows="2" maxlength="2000" style="resize:none;" placeholder="Implementation task">{{ $oRow['activity'] ?? '' }}</textarea></td>
                                             <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][costable_item]" class="tich-input" value="{{ $oRow['costable_item'] ?? '' }}" maxlength="500" placeholder="Budget code / resource"></td>
                                             <td><input type="number" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][planned]" class="tich-input" value="{{ $oRow['planned'] ?? '' }}" min="0" step="0.01" placeholder="0"></td>
                                             <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][planned_unit]" class="tich-input" value="{{ $oRow['planned_unit'] ?? '' }}" maxlength="50" placeholder="e.g. students"></td>
@@ -143,6 +144,20 @@
 
     <script>
     (function () {
+        function grow(box) {
+            // Only stretch the box when the points overflow it, so an empty row
+            // stays at its two-line height instead of the content height.
+            if (box.scrollHeight <= box.clientHeight) {
+                box.style.height = '';
+                return;
+            }
+            box.style.height = Math.min(box.scrollHeight + 2, 320) + 'px';
+        }
+
+        document.addEventListener('input', function (event) {
+            if (event.target.classList.contains('js-tp-points')) grow(event.target);
+        });
+
         document.querySelectorAll('.js-tp-quarter').forEach(function (block) {
             var qKey = block.getAttribute('data-quarter');
             var body = block.querySelector('.js-tp-outputs-body');
@@ -151,7 +166,7 @@
 
             function reindex() {
                 body.querySelectorAll('.js-tp-output-row').forEach(function (row, index) {
-                    row.querySelectorAll('input[name*="[outputs]"]').forEach(function (input) {
+                    row.querySelectorAll('input[name*="[outputs]"],textarea[name*="[outputs]"]').forEach(function (input) {
                         input.name = input.name.replace(
                             /quarters\[\d+\]\[outputs\]\[\d+\]/,
                             'quarters[' + qKey + '][outputs][' + index + ']'
@@ -165,7 +180,7 @@
                 if (!removeBtn) return;
                 removeBtn.addEventListener('click', function () {
                     if (body.querySelectorAll('.js-tp-output-row').length <= 1) {
-                        row.querySelectorAll('input').forEach(function (input) { input.value = ''; });
+                        row.querySelectorAll('input,textarea').forEach(function (input) { input.value = ''; });
                         return;
                     }
                     row.remove();
@@ -173,22 +188,43 @@
                 });
             }
 
-            addBtn.addEventListener('click', function () {
+            function addRow() {
                 var index = body.querySelectorAll('.js-tp-output-row').length;
                 var row = document.createElement('tr');
                 row.className = 'js-tp-output-row';
                 row.innerHTML =
-                    '<td><input type="text" name="quarters[' + qKey + '][outputs][' + index + '][output]" class="tich-input" maxlength="2000" placeholder="Strategic target"></td>' +
-                    '<td><input type="text" name="quarters[' + qKey + '][outputs][' + index + '][activity]" class="tich-input" maxlength="2000" placeholder="Implementation task"></td>' +
+                    '<td><textarea name="quarters[' + qKey + '][outputs][' + index + '][output]" class="tich-input js-tp-points" rows="2" maxlength="2000" style="resize:none;" placeholder="Strategic target"></textarea></td>' +
+                    '<td><textarea name="quarters[' + qKey + '][outputs][' + index + '][activity]" class="tich-input js-tp-points" rows="2" maxlength="2000" style="resize:none;" placeholder="Implementation task"></textarea></td>' +
                     '<td><input type="text" name="quarters[' + qKey + '][outputs][' + index + '][costable_item]" class="tich-input" maxlength="500" placeholder="Budget code / resource"></td>' +
                     '<td><input type="number" name="quarters[' + qKey + '][outputs][' + index + '][planned]" class="tich-input" min="0" step="0.01" placeholder="0"></td>' +
                     '<td><input type="text" name="quarters[' + qKey + '][outputs][' + index + '][planned_unit]" class="tich-input" maxlength="50" placeholder="e.g. students"></td>' +
                     '<td><button type="button" class="tich-btn tich-btn-ghost js-tp-remove-output" title="Remove" aria-label="Remove">&times;</button></td>';
                 body.appendChild(row);
                 bindRow(row);
+                row.querySelectorAll('.js-tp-points').forEach(grow);
+                return row;
+            }
+
+            addBtn.addEventListener('click', function () {
+                var row = addRow();
+                var first = row.querySelector('textarea');
+                if (first) first.focus();
             });
 
             body.querySelectorAll('.js-tp-output-row').forEach(bindRow);
+
+            // Enter in a one-line cell would submit the whole plan; add a row instead.
+            body.addEventListener('keydown', function (event) {
+                if (event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.altKey) return;
+                if (event.target.tagName === 'TEXTAREA') return;
+                if (!event.target.closest('.js-tp-output-row')) return;
+                event.preventDefault();
+                var row = addRow();
+                var first = row.querySelector('textarea');
+                if (first) first.focus();
+            });
+
+            body.querySelectorAll('textarea.js-tp-points').forEach(grow);
         });
     })();
     </script>

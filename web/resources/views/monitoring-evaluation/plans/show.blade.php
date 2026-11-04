@@ -123,8 +123,8 @@
                     @forelse ($plan->outputs as $index => $out)
                         <tr>
                             <td class="tich-caption">{{ $index + 1 }}</td>
-                            <td><strong>{{ $out->output }}</strong></td>
-                            <td>{{ $out->activity }}</td>
+                            <td style="white-space:pre-wrap;"><strong>{{ $out->output }}</strong></td>
+                            <td style="white-space:pre-wrap;">{{ $out->activity }}</td>
                             <td>{{ $out->costable_item ?: '-' }}</td>
                             <td>{{ number_format((float) $out->planned, 2) }}</td>
                             <td>{{ $out->planned_unit ?: '-' }}</td>

@@ -73,8 +73,8 @@
                     <tbody>
                         @forelse ($rows as $row)
                             <tr>
-                                <td>{{ $row->output }}</td>
-                                <td>{{ $row->activity }}</td>
+                                <td style="white-space:pre-wrap;">{{ $row->output }}</td>
+                                <td style="white-space:pre-wrap;">{{ $row->activity }}</td>
                                 <td class="tich-caption">{{ $row->costable_item ?? '-' }}</td>
                                 <td>{{ number_format((float) $row->planned, 2) }}</td>
                                 <td class="tich-caption">{{ $row->planned_unit ?? '-' }}</td>
