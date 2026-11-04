@@ -111,6 +111,9 @@ class EmployeeApi {
   Future<Map<String, dynamic>> appraisals() =>
       _client.get('/employee/appraisals');
 
+  Future<Map<String, dynamic>> timeLogCompliance() =>
+      _client.get('/employee/time-log-compliance');
+
   Future<Map<String, dynamic>> timeLogs() =>
       _client.get('/employee/time-logs');
 

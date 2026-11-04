@@ -11,6 +11,7 @@ import '../portal/dashboard_page.dart';
 import '../portal/leave_page.dart';
 import '../portal/more_page.dart';
 import '../portal/payslips_page.dart';
+import '../portal/time_logs_page.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import '../../notifications/tich_notification_router.dart';
@@ -22,11 +23,7 @@ import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
 import 'tich_logout.dart';
 
-/// Called after clock-in/out so the bottom nav pulse updates immediately.
-abstract final class EmployeePortalNavSignals {
-  static VoidCallback? onAttendanceChanged;
-  static VoidCallback? onStaffPhotoChanged;
-}
+import 'employee_portal_signals.dart';
 
 class PortalShell extends StatefulWidget {
   const PortalShell({super.key});
@@ -49,6 +46,8 @@ class _PortalShellState extends State<PortalShell>
   int _moreDot = 0;
   String? _profilePhotoUrl;
   bool _staffPhotoLoaded = false;
+  bool _complianceChecked = false;
+  bool _timeLogsGate = false;
 
   static const _moreMenuKeys = [
     'profile-changes',
@@ -65,7 +64,11 @@ class _PortalShellState extends State<PortalShell>
     EmployeePortalNav.onTabRequest = _applyPendingTab;
     EmployeePortalNavSignals.onAttendanceChanged = refreshNavBadges;
     EmployeePortalNavSignals.onStaffPhotoChanged = _loadStaffPhoto;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    EmployeePortalNavSignals.onTimeLogComplianceChanged =
+        _recheckTimeLogCompliance;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadTimeLogCompliance();
+      if (!mounted) return;
       _applyPendingTab();
       TichNotificationRouter.instance.applyPending(context);
       TichPermissionDisclosures.maybePromptForNotifications(context);
@@ -93,7 +96,49 @@ class _PortalShellState extends State<PortalShell>
     if (EmployeePortalNavSignals.onStaffPhotoChanged == _loadStaffPhoto) {
       EmployeePortalNavSignals.onStaffPhotoChanged = null;
     }
+    if (EmployeePortalNavSignals.onTimeLogComplianceChanged ==
+        _recheckTimeLogCompliance) {
+      EmployeePortalNavSignals.onTimeLogComplianceChanged = null;
+    }
     super.dispose();
+  }
+
+  Future<void> _loadTimeLogCompliance() async {
+    try {
+      final data = await context.read<EmployeeApi>().timeLogCompliance();
+      if (!mounted) return;
+      setState(() {
+        _timeLogsGate = data['blocked'] == true;
+        _complianceChecked = true;
+        if (!_timeLogsGate) {
+          _ensureShellBuilt();
+        }
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _complianceChecked = true;
+          _ensureShellBuilt();
+        });
+      }
+    }
+  }
+
+  Future<void> _recheckTimeLogCompliance() async {
+    try {
+      final data = await context.read<EmployeeApi>().timeLogCompliance();
+      if (!mounted) return;
+      final blocked = data['blocked'] == true;
+      if (blocked == _timeLogsGate) return;
+      setState(() {
+        _timeLogsGate = blocked;
+        if (!blocked) {
+          _ensureShellBuilt();
+        } else {
+          _root = null;
+        }
+      });
+    } catch (_) {}
   }
 
   void _loadStaffPhoto() {
@@ -112,10 +157,10 @@ class _PortalShellState extends State<PortalShell>
     if (mounted) setState(() => _staffPhotoLoaded = true);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_root != null) return;
+  void _ensureShellBuilt() {
+    if (_root != null || !_complianceChecked || _timeLogsGate) {
+      return;
+    }
     final api = context.read<EmployeeApi>();
     if (!_staffPhotoLoaded) {
       _loadStaffPhoto();
@@ -146,6 +191,12 @@ class _PortalShellState extends State<PortalShell>
       ),
       items: _tabItems(),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureShellBuilt();
   }
 
   List<AdaptiveTabItem> _tabItems() {
@@ -244,6 +295,39 @@ class _PortalShellState extends State<PortalShell>
 
   @override
   Widget build(BuildContext context) {
+    if (!_complianceChecked) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_timeLogsGate) {
+      final api = context.read<EmployeeApi>();
+      return EmployeePortalMenuScope(
+        profilePhotoUrl: _profilePhotoUrl,
+        child: AdaptiveScaffold(
+          title: 'Weekly time log',
+          onLogout: tichLogout(context),
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Text(
+                  'Complete and submit your weekly time logs for this month '
+                  'before using other employee portal sections.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                ),
+              ),
+              Expanded(child: TimeLogsPage(api: api)),
+            ],
+          ),
+        ),
+      );
+    }
+
     return EmployeePortalMenuScope(
       profilePhotoUrl: _profilePhotoUrl,
       child: _root ?? const SizedBox.shrink(),

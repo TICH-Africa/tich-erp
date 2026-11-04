@@ -4,13 +4,21 @@
     <p class="tich-caption">{{ $staff->employee_number ?? '' }}</p>
 
     <nav class="tich-admin-sidebar__nav" aria-label="Employee portal navigation">
-        @include('partials.navigation.sidebar-link', [
-            'href' => route('employee.profile.edit'),
-            'label' => ($mustCompleteProfile ?? false) ? 'Complete profile' : 'Update profile',
-            'icon' => 'clipboard-list',
-            'active' => request()->routeIs('employee.profile.*'),
-            'badgeKey' => ($mustCompleteProfile ?? false) ? null : 'profile-changes',
-        ])
+        @if ($employeeTimeLogHold ?? null)
+            @include('partials.navigation.sidebar-link', [
+                'href' => route('employee.time-logs.index'),
+                'label' => 'Weekly Time Log',
+                'icon' => 'calendar',
+                'active' => request()->routeIs('employee.time-logs.*'),
+            ])
+        @else
+            @include('partials.navigation.sidebar-link', [
+                'href' => route('employee.profile.edit'),
+                'label' => ($mustCompleteProfile ?? false) ? 'Complete profile' : 'Update profile',
+                'icon' => 'clipboard-list',
+                'active' => request()->routeIs('employee.profile.*'),
+                'badgeKey' => ($mustCompleteProfile ?? false) ? null : 'profile-changes',
+            ])
 
         @unless ($mustCompleteProfile ?? false)
             @include('partials.navigation.sidebar-link', ['href' => route('employee.dashboard'), 'label' => 'My profile', 'icon' => 'user', 'active' => request()->routeIs('employee.dashboard')])
@@ -75,6 +83,7 @@
                 @include('partials.navigation.sidebar-link', ['href' => route('staff.dashboard'), 'label' => 'Staff portal', 'icon' => 'book-open'])
             @endif
         @endunless
+        @endif
     </nav>
     <div class="tich-admin-sidebar__footer">
         @unless ($mustCompleteProfile ?? false)

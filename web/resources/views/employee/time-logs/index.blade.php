@@ -4,10 +4,25 @@
 
 @section('employee-content')
     <x-page-toolbar title="Weekly Time Log" meta="Fill weekly, or complete every week at month end · Submitted to HR">
-        <x-slot:actions>
-            <a href="{{ route('employee.dashboard') }}" class="tich-btn tich-btn-ghost">Back</a>
-        </x-slot:actions>
+        @unless ($employeeTimeLogHold ?? null)
+            <x-slot:actions>
+                <a href="{{ route('employee.dashboard') }}" class="tich-btn tich-btn-ghost">Back</a>
+            </x-slot:actions>
+        @endunless
     </x-page-toolbar>
+
+    @if ($employeeTimeLogHold ?? null)
+        <div class="tich-alert tich-alert--warning tich-mt-4">
+            Complete and submit your weekly time logs for {{ $employeeTimeLogHold['month_label'] }} before using other employee portal sections.
+            @if (! empty($employeeTimeLogHold['incomplete_weeks']))
+                Still open:
+                {{ collect($employeeTimeLogHold['incomplete_weeks'])->pluck('week_ref')->implode(', ') }}.
+            @endif
+        </div>
+    @endif
+    @if (session('warning'))
+        <div class="tich-alert tich-alert--warning tich-mt-4">{{ session('warning') }}</div>
+    @endif
 
     @if (session('status'))
         <div class="tich-alert tich-alert--success tich-mt-4">{{ session('status') }}</div>

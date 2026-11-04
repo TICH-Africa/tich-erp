@@ -135,7 +135,8 @@ Route::get('/session-check', function () {
 | Mobile / Sanctum employee self-service portal.
 | MFA is intentionally not required here (product: mobile v1).
 */
-Route::middleware(['auth:sanctum', 'employee.portal'])->prefix('employee')->group(function () {
+Route::middleware(['auth:sanctum', 'employee.portal', 'employee.time-logs.complete'])->prefix('employee')->group(function () {
+    Route::get('/time-log-compliance', \App\Http\Controllers\Api\Employee\mobile\TimeLogComplianceController::class);
     Route::get('/dashboard', \App\Http\Controllers\Api\Employee\mobile\DashboardController::class);
     Route::get('/notifications', \App\Http\Controllers\Api\Employee\mobile\NotificationController::class);
     Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Api\Employee\mobile\NotificationController::class, 'markRead']);

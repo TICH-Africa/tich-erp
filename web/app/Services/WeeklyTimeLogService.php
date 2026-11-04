@@ -748,6 +748,71 @@ class WeeklyTimeLogService
         return $daysUntilEnd >= 0 && $daysUntilEnd <= 7;
     }
 
+    /**
+     * When set, the employee may only use weekly time log screens until open weeks are submitted.
+     *
+     * @return array{month_label: string, incomplete_weeks: list<array{week_number: int, week_ref: string, label: string}>}|null
+     */
+    public function portalComplianceHold(Staff $staff, ?Carbon $today = null): ?array
+    {
+        if (! Schema::hasTable('staff_weekly_time_logs') || ! $this->staffIsEligibleForTimeLogReminders($staff)) {
+            return null;
+        }
+
+        $today = ($today ?? now())->copy()->startOfDay();
+        $year = (int) $today->year;
+        $month = (int) $today->month;
+        $incomplete = $this->incompleteWeeksForStaff($staff, $year, $month, $today);
+        if ($incomplete === []) {
+            return null;
+        }
+
+        $monthLabel = $today->copy()->startOfMonth()->format('F Y');
+        $entityId = sprintf('%04d-%02d', $year, $month);
+        $notificationTitle = 'Weekly time logs due — '.$monthLabel;
+        $inWindow = $this->isMonthEndReminderWindow($today);
+        $reminded = $this->reminderSentForMonth((int) $staff->user_id, $entityId, $notificationTitle);
+
+        if (! $inWindow && ! $reminded) {
+            return null;
+        }
+
+        return [
+            'month_label' => $monthLabel,
+            'incomplete_weeks' => $incomplete,
+        ];
+    }
+
+    public function reminderSentForMonth(int $userId, string $entityId, string $title): bool
+    {
+        if (! Schema::hasTable('notifications')) {
+            return false;
+        }
+
+        return DB::table('notifications')
+            ->where('user_id', $userId)
+            ->where('related_entity_type', 'weekly_time_log_reminder')
+            ->where('related_entity_id', $entityId)
+            ->where('title', $title)
+            ->exists();
+    }
+
+    public function staffIsEligibleForTimeLogReminders(Staff $staff): bool
+    {
+        if (! $staff->user_id) {
+            return false;
+        }
+
+        if (! in_array((string) $staff->employment_status, ['active', 'on_leave', 'onboarding'], true)) {
+            return false;
+        }
+
+        return Staff::query()
+            ->whereKey($staff->id)
+            ->excludePlatformOperators()
+            ->exists();
+    }
+
     public function weekNeedsEmployeeAttention(?StaffWeeklyTimeLog $log): bool
     {
         if ($log === null) {

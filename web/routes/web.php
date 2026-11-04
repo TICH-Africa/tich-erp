@@ -1421,10 +1421,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
     Route::get('/lesson-plans/{plan}/upload/download', [StaffLessonPlanDocumentController::class, 'downloadUpload'])->name('lesson-plans.upload.download');
 
     Route::get('/employee', [\App\Http\Controllers\Employee\EmployeePortalController::class, '__invoke'])
-        ->middleware('employee.portal')
+        ->middleware(['employee.portal', 'employee.time-logs.complete'])
         ->name('employee.dashboard');
 
-    Route::middleware('employee.portal')->prefix('employee')->group(function () use ($registerModuleMeReports) {
+    Route::middleware(['employee.portal', 'employee.time-logs.complete'])->prefix('employee')->group(function () use ($registerModuleMeReports) {
         Route::get('/sidebar-notifications', \App\Http\Controllers\Employee\SidebarNotificationController::class)->name('employee.sidebar-notifications');
         $registerModuleMeReports('employee');
 

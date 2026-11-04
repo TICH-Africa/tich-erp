@@ -63,6 +63,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'student.portal' => \App\Http\Middleware\EnsureStudentPortalAccess::class,
             'staff.portal' => \App\Http\Middleware\EnsureStaffPortalAccess::class,
             'employee.portal' => \App\Http\Middleware\EnsureEmployeePortalAccess::class,
+            'employee.time-logs.complete' => \App\Http\Middleware\RestrictEmployeeUntilWeeklyTimeLogsComplete::class,
             'employee.profile.complete' => \App\Http\Middleware\EnsureEmployeeProfileComplete::class,
             'employee.unassigned.restrict' => \App\Http\Middleware\RestrictUnassignedEmployeeAccess::class,
             'resolve.academics.hub' => \App\Http\Middleware\ResolveAcademicsHub::class,

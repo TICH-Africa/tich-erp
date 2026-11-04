@@ -10,7 +10,7 @@ import '../../utils/tich_clock_in_messages.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
-import '../shell/portal_shell.dart';
+import '../shell/employee_portal_signals.dart';
 import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 

@@ -7,6 +7,7 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
+import '../shell/employee_portal_signals.dart';
 import 'portal_helpers.dart';
 
 class TimeLogDetailPage extends StatefulWidget {
@@ -148,6 +149,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
         SnackBar(content: Text(res['message']?.toString() ?? 'Submitted')),
       );
       setState(() => _future = Future.value(res));
+      EmployeePortalNavSignals.onTimeLogComplianceChanged?.call();
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
