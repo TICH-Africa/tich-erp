@@ -3,9 +3,13 @@
         {{ $institution['website'] ?? 'tich.africa' }}
     </div>
     @if (! empty($showSignatures))
+        @php
+            $signatureLines = $signatureLabels ?? ['Academic Registrar - signature & stamp', 'Date'];
+        @endphp
         <div class="tich-doc-footer__signatures">
-            <p>Academic Registrar - signature &amp; stamp</p>
-            <p>Date</p>
+            @foreach ($signatureLines as $label)
+                <p>{{ $label }}</p>
+            @endforeach
         </div>
     @endif
 </footer>

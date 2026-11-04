@@ -10,6 +10,11 @@
     <x-page-toolbar :title="$plan->title" :meta="($plan->department?->dept_name ?? 'Department').' · '.\App\Support\StatusTone::label($plan->status)">
         <x-slot:actions>
             <a href="{{ route('monitoring_evaluation.plans.index', ['status' => 'me_review']) }}" class="tich-btn tich-btn-ghost">Back to queue</a>
+            <a href="{{ route('monitoring_evaluation.plans.print', ['plan' => $plan, 'quarter' => 'all']) }}" class="tich-btn tich-btn-secondary">Print plan</a>
+            <a href="{{ route('monitoring_evaluation.plans.pdf', ['plan' => $plan, 'quarter' => 'all']) }}" class="tich-btn tich-btn-secondary">Download plan PDF</a>
+            @if ($plan->quarterlyReports->isNotEmpty())
+                <a href="{{ route('monitoring_evaluation.plans.quarters.report-pdf', ['plan' => $plan, 'quarter' => 'all']) }}" class="tich-btn tich-btn-primary">Download reports PDF</a>
+            @endif
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -72,74 +77,164 @@
 
         <article class="tich-card">
             <h2 class="tich-h3">Review actions</h2>
-            @if (in_array($plan->status, ['me_review', 'returned'], true))
-                <p class="tich-caption tich-mt-2">Review the technical plan outputs below, then approve or return to the department.</p>
-                <form method="POST" action="{{ route('monitoring_evaluation.plans.approve', $plan) }}" class="tich-form-stack tich-mt-4">
-                    @csrf
-                    <textarea name="me_notes" class="tich-input" rows="2" placeholder="Optional approval notes">{{ old('me_notes') }}</textarea>
-                    <button type="submit" class="tich-btn tich-btn-primary">Approve technical plan</button>
-                </form>
-                <form method="POST" action="{{ route('monitoring_evaluation.plans.return', $plan) }}" class="tich-form-stack tich-mt-4">
-                    @csrf
-                    <textarea name="me_notes" class="tich-input" rows="2" required placeholder="Return reason">{{ old('me_notes') }}</textarea>
-                    <button type="submit" class="tich-btn tich-btn-secondary">Return to department</button>
-                </form>
-            @elseif ($plan->status === 'me_approved')
-                <form method="POST" action="{{ route('monitoring_evaluation.plans.lock', $plan) }}" class="tich-mt-4">
-                    @csrf
-                    <button type="submit" class="tich-btn tich-btn-primary">Try baseline lock</button>
-                </form>
-                <p class="tich-caption tich-mt-2">Requires linked budget status = approved.</p>
-            @elseif ($plan->isBaselineLocked())
+            @php $clearedCount = $plan->quarters->where('status', 'me_approved')->count(); @endphp
+            @if ($plan->isBaselineLocked())
                 <p class="tich-text tich-mt-2">Baseline locked {{ $plan->baseline_locked_at?->format('d M Y H:i') }}.</p>
                 <div class="tich-mt-4" style="display:flex;flex-wrap:wrap;gap:0.5rem;">
                     @foreach ($plan->quarters as $q)
                         <a href="{{ route('monitoring_evaluation.plans.open-quarter', [$plan, $q->quarter_number]) }}" class="tich-btn tich-btn-secondary">Open {{ $q->label() }} report</a>
                     @endforeach
                 </div>
+            @elseif (in_array($plan->status, ['me_review', 'returned', 'me_approved'], true))
+                <p class="tich-caption tich-mt-2">Review the technical plan outputs below, then approve or return to the department. {{ $clearedCount }} of 4 quarters approved.</p>
+                <form method="POST" action="{{ route('monitoring_evaluation.plans.approve', $plan) }}" class="tich-form-stack tich-mt-4">
+                    @csrf
+                    <textarea name="me_notes" class="tich-input" rows="2" placeholder="Optional approval notes">{{ old('me_notes') }}</textarea>
+                    <button type="submit" class="tich-btn tich-btn-primary">Approve filed quarters</button>
+                </form>
+                <form method="POST" action="{{ route('monitoring_evaluation.plans.return', $plan) }}" class="tich-form-stack tich-mt-4">
+                    @csrf
+                    <textarea name="me_notes" class="tich-input" rows="2" required placeholder="Return reason">{{ old('me_notes') }}</textarea>
+                    <button type="submit" class="tich-btn tich-btn-secondary">Return to department</button>
+                </form>
+                @if ($plan->status === 'me_approved')
+                    <form method="POST" action="{{ route('monitoring_evaluation.plans.lock', $plan) }}" class="tich-mt-4">
+                        @csrf
+                        <button type="submit" class="tich-btn tich-btn-primary">Try baseline lock</button>
+                    </form>
+                    <p class="tich-caption tich-mt-2">Locks only when Q1 to Q4 are filled and approved and the linked budget is approved.</p>
+                @endif
             @else
                 <p class="tich-caption tich-mt-2">No actions available for status <strong>{{ \App\Support\StatusTone::label($plan->status) }}</strong>.</p>
             @endif
         </article>
     </div>
 
-    <div class="tich-card tich-mt-6">
-        <h2 class="tich-h3">Technical plan</h2>
-        <p class="tich-caption tich-mt-1">Department outputs and activities submitted for M&amp;E baseline review.</p>
+    @php
+        $hasQuarterTags = $plan->outputs->contains(fn ($o) => $o->quarter !== null);
+        $quarterRows = $plan->quartersByNumber();
+    @endphp
 
-        <div class="tich-table-wrap tich-mt-4">
-            <table class="tich-admin-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Output</th>
-                        <th>Activity</th>
-                        <th>Costable item</th>
-                        <th>Planned</th>
-                        <th>Unit</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($plan->outputs as $index => $out)
-                        <tr>
-                            <td class="tich-caption">{{ $index + 1 }}</td>
-                            <td style="white-space:pre-wrap;"><strong>{{ $out->output }}</strong></td>
-                            <td style="white-space:pre-wrap;">{{ $out->activity }}</td>
-                            <td>{{ $out->costable_item ?: '-' }}</td>
-                            <td>{{ number_format((float) $out->planned, 2) }}</td>
-                            <td>{{ $out->planned_unit ?: '-' }}</td>
-                        </tr>
-                    @empty
-                        @include('partials.states.table-empty', [
-                            'colspan' => 6,
-                            'title' => 'No technical plan outputs on this record',
-                            'icon' => 'inbox',
-                        ])
-                    @endforelse
-                </tbody>
-            </table>
+    @if ($hasQuarterTags)
+        <div class="tich-card tich-mt-6">
+            <h2 class="tich-h3">Technical plan</h2>
+            <p class="tich-caption tich-mt-1">
+                Approve the quarters the department has filed. The baseline plan only locks once Q1 to Q4 are filled and approved.
+            </p>
         </div>
-    </div>
+
+        @foreach (\App\Http\Controllers\Module\TechnicalPlanController::QUARTERS as $qKey => $qLabel)
+            @php
+                $qRows = $plan->outputs->filter(fn ($o) => (int) $o->quarter === (int) $qKey);
+                $qRow = $quarterRows[(int) $qKey] ?? null;
+            @endphp
+            <div class="tich-card tich-mt-4">
+                <div class="tich-flex-wrap" style="justify-content:space-between;align-items:center;gap:0.75rem;">
+                    <h2 class="tich-h3">{{ $qLabel }}</h2>
+                    <div class="tich-flex-wrap" style="gap:0.5rem;">
+                        @if ($qRow)
+                            <x-status-badge :status="$qRow->status" :label="$qRow->statusLabel()" />
+                        @endif
+                        <a href="{{ route('monitoring_evaluation.plans.pdf', ['plan' => $plan, 'quarter' => (int) $qKey]) }}" class="tich-btn tich-btn-secondary">Q{{ $qKey }} plan PDF</a>
+                        @if ($qRow && $plan->quarterlyReports->contains('quarter_id', $qRow->id))
+                            <a href="{{ route('monitoring_evaluation.plans.quarters.report-pdf', ['plan' => $plan, 'quarter' => (int) $qKey]) }}" class="tich-btn tich-btn-secondary">Q{{ $qKey }} report PDF</a>
+                        @endif
+                        @if ($qRow?->isApproved())
+                            <a href="{{ route('monitoring_evaluation.plans.open-quarter', [$plan, $qKey]) }}" class="tich-btn tich-btn-primary">Open {{ $qLabel }} report</a>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="tich-table-wrap tich-mt-4">
+                    <table class="tich-admin-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Output</th>
+                                <th>Activity</th>
+                                <th>Costable item</th>
+                                <th>Planned</th>
+                                <th>Unit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($qRows as $index => $out)
+                                <tr>
+                                    <td class="tich-caption">{{ $index + 1 }}</td>
+                                    <td style="white-space:pre-wrap;"><strong>{{ $out->output }}</strong></td>
+                                    <td style="white-space:pre-wrap;">{{ $out->activity }}</td>
+                                    <td>{{ $out->costable_item ?: '-' }}</td>
+                                    <td>{{ number_format((float) $out->planned, 2) }}</td>
+                                    <td>{{ $out->planned_unit ?: '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="tich-caption">The department has not filed {{ $qLabel }} yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if ($qRow?->review_notes)
+                    <p class="tich-caption tich-mt-3">M&amp;E note on this quarter: {{ $qRow->review_notes }}</p>
+                @endif
+
+                @if (! $plan->isBaselineLocked() && $qRows->isNotEmpty() && ! $qRow?->isApproved())
+                    <div class="tich-grid tich-grid--2 tich-mt-4" style="gap:1rem;">
+                        <form method="POST" action="{{ route('monitoring_evaluation.plans.quarters.approve', [$plan, $qKey]) }}" class="tich-form-stack">
+                            @csrf
+                            <textarea name="me_notes" class="tich-input" rows="2" placeholder="Optional approval notes">{{ old('me_notes') }}</textarea>
+                            <button type="submit" class="tich-btn tich-btn-primary">Approve {{ $qLabel }}</button>
+                        </form>
+                        <form method="POST" action="{{ route('monitoring_evaluation.plans.quarters.return', [$plan, $qKey]) }}" class="tich-form-stack">
+                            @csrf
+                            <textarea name="me_notes" class="tich-input" rows="2" required placeholder="Return reason">{{ old('me_notes') }}</textarea>
+                            <button type="submit" class="tich-btn tich-btn-secondary">Return {{ $qLabel }}</button>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        @endforeach
+    @else
+        <div class="tich-card tich-mt-6">
+            <h2 class="tich-h3">Technical plan</h2>
+            <p class="tich-caption tich-mt-1">Department outputs and activities submitted for M&amp;E baseline review.</p>
+
+            <div class="tich-table-wrap tich-mt-4">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Output</th>
+                            <th>Activity</th>
+                            <th>Costable item</th>
+                            <th>Planned</th>
+                            <th>Unit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($plan->outputs as $index => $out)
+                            <tr>
+                                <td class="tich-caption">{{ $index + 1 }}</td>
+                                <td style="white-space:pre-wrap;"><strong>{{ $out->output }}</strong></td>
+                                <td style="white-space:pre-wrap;">{{ $out->activity }}</td>
+                                <td>{{ $out->costable_item ?: '-' }}</td>
+                                <td>{{ number_format((float) $out->planned, 2) }}</td>
+                                <td>{{ $out->planned_unit ?: '-' }}</td>
+                            </tr>
+                        @empty
+                            @include('partials.states.table-empty', [
+                                'colspan' => 6,
+                                'title' => 'No technical plan outputs on this record',
+                                'icon' => 'inbox',
+                            ])
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
 
     @if ($budget)
         <div class="tich-card tich-mt-6">

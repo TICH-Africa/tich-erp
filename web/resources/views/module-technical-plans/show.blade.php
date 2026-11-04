@@ -9,9 +9,11 @@
     >
         <x-slot:actions>
             <a href="{{ route($indexRoute) }}" class="tich-btn tich-btn-ghost">Back</a>
-            @if (in_array($plan->status, ['draft', 'returned'], true))
+            <a href="{{ route($printRoute, ['plan' => $plan->id, 'quarter' => 'all']) }}" class="tich-btn tich-btn-secondary">Print</a>
+            <a href="{{ route($pdfRoute, ['plan' => $plan->id, 'quarter' => 'all']) }}" class="tich-btn tich-btn-secondary">Download whole year</a>
+            @unless ($plan->isBaselineLocked())
                 <a href="{{ route($editRoute, $plan->id) }}" class="tich-btn tich-btn-primary">Revise</a>
-            @endif
+            @endunless
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -56,9 +58,23 @@
             $rows = $hasQuarterTags
                 ? $plan->outputs->filter(fn ($o) => (int) $o->quarter === (int) $qKey)
                 : $plan->outputs;
+            $quarterRow = $hasQuarterTags ? ($plan->quartersByNumber()[(int) $qKey] ?? null) : null;
         @endphp
         <div class="tich-card tich-table-panel tich-mt-6">
-            <h2 class="tich-h3">{{ $hasQuarterTags ? $qLabel : 'Outputs' }}</h2>
+            <div class="tich-flex-wrap" style="justify-content:space-between;align-items:center;gap:0.75rem;">
+                <h2 class="tich-h3">{{ $hasQuarterTags ? $qLabel : 'Outputs' }}</h2>
+                <div class="tich-flex-wrap" style="align-items:center;gap:0.5rem;">
+                    @if ($quarterRow)
+                        <x-status-badge :status="$quarterRow->status" :label="$quarterRow->statusLabel()" />
+                    @endif
+                    @if ($hasQuarterTags)
+                        <a href="{{ route($pdfRoute, ['plan' => $plan->id, 'quarter' => (int) $qKey]) }}" class="tich-btn tich-btn-secondary">Download Q{{ $qKey }}</a>
+                    @endif
+                </div>
+            </div>
+            @if ($quarterRow?->review_notes)
+                <p class="tich-caption tich-mt-1">M&amp;E note on this quarter: {{ $quarterRow->review_notes }}</p>
+            @endif
             <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>

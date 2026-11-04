@@ -5,17 +5,20 @@ namespace App\Http\Controllers\MonitoringEvaluation;
 use App\Http\Controllers\Controller;
 use App\Models\Me\MeQuarterlyReport;
 use App\Models\Me\MeTechnicalPlan;
+use App\Services\Me\MeQuarterlyReportDocumentService;
 use App\Services\Me\MeQuarterlyReportService;
 use App\Services\Me\MeTechnicalPlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
     public function __construct(
         protected MeQuarterlyReportService $reports,
         protected MeTechnicalPlanService $plans,
+        protected MeQuarterlyReportDocumentService $documents,
     ) {}
 
     public function index(Request $request): View
@@ -38,6 +41,41 @@ class ReportController extends Controller
         $report->load(['department', 'quarter', 'lines', 'technicalPlan', 'submitter', 'meVerifier']);
 
         return view('monitoring-evaluation.reports.show', compact('report'));
+    }
+
+    public function print(MeQuarterlyReport $report): View
+    {
+        return $this->documents->page($report);
+    }
+
+    public function pdf(MeQuarterlyReport $report): StreamedResponse
+    {
+        return $this->documents->download($report);
+    }
+
+    /**
+     * Every report a plan has filed for one quarter or the whole year.
+     */
+    public function planPrint(MeTechnicalPlan $plan, int|string $quarter): View
+    {
+        return $this->planDocuments($plan, $quarter, 'planPage');
+    }
+
+    public function planPdf(MeTechnicalPlan $plan, int|string $quarter): StreamedResponse
+    {
+        return $this->planDocuments($plan, $quarter, 'planDownload');
+    }
+
+    private function planDocuments(MeTechnicalPlan $plan, int|string $quarter, string $method)
+    {
+        $scope = ctype_digit((string) $quarter) ? (int) $quarter : 'all';
+        $plan->loadMissing(['department', 'quarters']);
+
+        try {
+            return $this->documents->{$method}($plan, $scope);
+        } catch (\RuntimeException $e) {
+            abort(404, $e->getMessage());
+        }
     }
 
     public function verify(Request $request, MeQuarterlyReport $report): RedirectResponse
@@ -72,9 +110,11 @@ class ReportController extends Controller
 
     public function openQuarter(Request $request, MeTechnicalPlan $plan, int $quarter): RedirectResponse
     {
-        abort_unless($plan->isBaselineLocked(), 403, 'Plan must be baseline-locked.');
-
+        // M&E clears a quarter at a time; each cleared quarter can be reported on without
+        // waiting for the whole year to baseline-lock.
         $q = $plan->quarters()->where('quarter_number', $quarter)->firstOrFail();
+        abort_unless($plan->isQuarterReportable((int) $q->quarter_number), 403, 'This quarter is not approved by M&E yet.');
+
         $report = $this->plans->ensureQuarterlyReportDraft($plan, $q);
         $report->loadMissing('department');
 

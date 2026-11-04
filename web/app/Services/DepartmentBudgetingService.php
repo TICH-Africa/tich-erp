@@ -194,7 +194,7 @@ class DepartmentBudgetingService
     }
 
     /**
-     * @return array{index: string, create: string, store: string, show: string, edit: string, update: string}
+     * @return array{index: string, create: string, store: string, show: string, edit: string, update: string, print: string, pdf: string}
      */
     public function technicalPlanRouteNames(string $module): array
     {
@@ -209,6 +209,8 @@ class DepartmentBudgetingService
             'show' => $base.'.show',
             'edit' => $base.'.edit',
             'update' => $base.'.update',
+            'print' => $base.'.print',
+            'pdf' => $base.'.pdf',
         ];
     }
 

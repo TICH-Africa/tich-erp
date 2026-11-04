@@ -90,14 +90,35 @@
             @foreach ($quarters as $qKey => $qLabel)
                 @php
                     $outputs = $quarterOutputs[$qKey]['outputs'] ?? [['output'=>'','activity'=>'','costable_item'=>'','planned'=>'','planned_unit'=>'']];
+                    $cleared = $plan && ! $plan->isQuarterEditable((int) $qKey);
+                    $quarterRow = $plan?->quartersByNumber()[(int) $qKey] ?? null;
                 @endphp
-                <div class="uf-form-section js-tp-quarter" data-quarter="{{ $qKey }}">
-                    <div class="uf-section-head">{{ $qLabel }}</div>
-                    <div class="uf-section-body">
-                        <div class="tich-flex-wrap" style="justify-content:space-between;align-items:center;margin-bottom:1rem;">
-                            <span class="tich-caption">Enter inside Output or Activity starts another point - it does not submit the plan.</span>
-                            <button type="button" class="uf-btn uf-btn-secondary js-tp-add-output" data-quarter="{{ $qKey }}">+ Add output</button>
+                <div class="uf-form-section js-tp-quarter{{ $cleared ? ' is-locked' : '' }}" data-quarter="{{ $qKey }}">
+                    <div class="uf-section-head">
+                        {{ $qLabel }}
+                        @if ($cleared)
+                            <span class="uf-badge">Approved by M&amp;E</span>
+                        @elseif ($quarterRow?->isReturned())
+                            <span class="uf-badge">Returned - revise</span>
+                        @elseif ($quarterRow?->isAwaitingReview())
+                            <span class="uf-badge">With M&amp;E</span>
+                        @endif
+                    </div>
+                    @if ($quarterRow?->review_notes)
+                        <div class="uf-section-body" style="padding-bottom:0;">
+                            <p class="tich-caption">M&amp;E note on this quarter</p>
+                            <pre class="tich-pre" style="white-space:pre-wrap;margin:0;">{{ $quarterRow->review_notes }}</pre>
                         </div>
+                    @endif
+                    <div class="uf-section-body">
+                        @if ($cleared)
+                            <p class="tich-caption" style="margin-bottom:1rem;">M&amp;E has cleared {{ $qLabel }}. Its points are baseline and cannot be changed - fill the quarters still open below.</p>
+                        @else
+                            <div class="tich-flex-wrap" style="justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                                <span class="tich-caption">Enter inside Output or Activity starts another point - it does not submit the plan.</span>
+                                <button type="button" class="uf-btn uf-btn-secondary js-tp-add-output" data-quarter="{{ $qKey }}">+ Add output</button>
+                            </div>
+                        @endif
                         <div class="tich-table-wrap">
                             <table class="tich-admin-table">
                                 <thead>
@@ -107,19 +128,31 @@
                                         <th style="min-width:10rem;">Costable item</th>
                                         <th style="min-width:7rem;">Planned</th>
                                         <th style="min-width:6rem;">Unit</th>
-                                        <th style="width:3rem;"></th>
+                                        @unless ($cleared)
+                                            <th style="width:3rem;"></th>
+                                        @endunless
                                     </tr>
                                 </thead>
                                 <tbody class="js-tp-outputs-body" data-quarter="{{ $qKey }}">
                                     @foreach ($outputs as $oi => $oRow)
-                                        <tr class="js-tp-output-row">
-                                            <td><textarea name="quarters[{{ $qKey }}][outputs][{{ $oi }}][output]" class="tich-input js-tp-points" rows="2" maxlength="2000" style="resize:none;" placeholder="Strategic target">{{ $oRow['output'] ?? '' }}</textarea></td>
-                                            <td><textarea name="quarters[{{ $qKey }}][outputs][{{ $oi }}][activity]" class="tich-input js-tp-points" rows="2" maxlength="2000" style="resize:none;" placeholder="Implementation task">{{ $oRow['activity'] ?? '' }}</textarea></td>
-                                            <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][costable_item]" class="tich-input" value="{{ $oRow['costable_item'] ?? '' }}" maxlength="500" placeholder="Budget code / resource"></td>
-                                            <td><input type="number" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][planned]" class="tich-input" value="{{ $oRow['planned'] ?? '' }}" min="0" step="0.01" placeholder="0"></td>
-                                            <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][planned_unit]" class="tich-input" value="{{ $oRow['planned_unit'] ?? '' }}" maxlength="50" placeholder="e.g. students"></td>
-                                            <td><button type="button" class="tich-btn tich-btn-ghost js-tp-remove-output" title="Remove" aria-label="Remove">&times;</button></td>
-                                        </tr>
+                                        @if ($cleared)
+                                            <tr>
+                                                <td style="white-space:pre-wrap;">{{ $oRow['output'] ?? '' }}</td>
+                                                <td style="white-space:pre-wrap;">{{ $oRow['activity'] ?? '' }}</td>
+                                                <td class="tich-caption">{{ ($oRow['costable_item'] ?? '') ?: '-' }}</td>
+                                                <td>{{ ($oRow['planned'] ?? '') === '' ? '-' : number_format((float) $oRow['planned'], 2) }}</td>
+                                                <td class="tich-caption">{{ ($oRow['planned_unit'] ?? '') ?: '-' }}</td>
+                                            </tr>
+                                        @else
+                                            <tr class="js-tp-output-row">
+                                                <td><textarea name="quarters[{{ $qKey }}][outputs][{{ $oi }}][output]" class="tich-input js-tp-points" rows="2" maxlength="2000" style="resize:none;" placeholder="Strategic target">{{ $oRow['output'] ?? '' }}</textarea></td>
+                                                <td><textarea name="quarters[{{ $qKey }}][outputs][{{ $oi }}][activity]" class="tich-input js-tp-points" rows="2" maxlength="2000" style="resize:none;" placeholder="Implementation task">{{ $oRow['activity'] ?? '' }}</textarea></td>
+                                                <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][costable_item]" class="tich-input" value="{{ $oRow['costable_item'] ?? '' }}" maxlength="500" placeholder="Budget code / resource"></td>
+                                                <td><input type="number" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][planned]" class="tich-input" value="{{ $oRow['planned'] ?? '' }}" min="0" step="0.01" placeholder="0"></td>
+                                                <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][planned_unit]" class="tich-input" value="{{ $oRow['planned_unit'] ?? '' }}" maxlength="50" placeholder="e.g. students"></td>
+                                                <td><button type="button" class="tich-btn tich-btn-ghost js-tp-remove-output" title="Remove" aria-label="Remove">&times;</button></td>
+                                            </tr>
+                                        @endif
                                     @endforeach
                                 </tbody>
                             </table>

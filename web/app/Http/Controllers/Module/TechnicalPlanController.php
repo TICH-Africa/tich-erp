@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Module;
 use App\Http\Controllers\Controller;
 use App\Models\Me\MeTechnicalPlan;
 use App\Services\DepartmentBudgetingService;
+use App\Services\Me\MeTechnicalPlanDocumentService;
 use App\Services\Me\MeTechnicalPlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TechnicalPlanController extends Controller
 {
@@ -23,6 +25,7 @@ class TechnicalPlanController extends Controller
     public function __construct(
         protected DepartmentBudgetingService $budgeting,
         protected MeTechnicalPlanService $mePlans,
+        protected MeTechnicalPlanDocumentService $documents,
     ) {}
 
     public function index(Request $request): View
@@ -36,6 +39,7 @@ class TechnicalPlanController extends Controller
         if (Schema::hasTable('me_technical_plans')) {
             $plansQuery = MeTechnicalPlan::query()
                 ->withCount('outputs')
+                ->with(['quarters' => fn ($q) => $q->select('id', 'technical_plan_id', 'quarter_number', 'status')])
                 ->where('department_id', $department->id)
                 ->whereNull('budget_request_id')
                 ->latest();
@@ -56,6 +60,7 @@ class TechnicalPlanController extends Controller
             'createRoute' => $routes['create'],
             'editRoute' => $routes['edit'],
             'showRoute' => $routes['show'],
+            'pdfRoute' => $routes['pdf'],
         ]);
     }
 
@@ -92,11 +97,29 @@ class TechnicalPlanController extends Controller
             'module' => $module,
             'moduleContext' => $context,
             'department' => $department,
-            'plan' => $record->load(['outputs', 'submitter']),
+            'plan' => $record->load(['outputs', 'submitter', 'quarters']),
             'quarters' => self::QUARTERS,
             'indexRoute' => $routes['index'],
             'editRoute' => $routes['edit'],
+            'printRoute' => $routes['print'],
+            'pdfRoute' => $routes['pdf'],
         ]);
+    }
+
+    public function print(Request $request, int $plan): View
+    {
+        return $this->documents->page(
+            $this->documentPlan($request, $plan),
+            $this->quarterFilter($request),
+        );
+    }
+
+    public function pdf(Request $request, int $plan): StreamedResponse
+    {
+        return $this->documents->download(
+            $this->documentPlan($request, $plan),
+            $this->quarterFilter($request),
+        );
     }
 
     public function edit(Request $request, int $plan): View
@@ -107,7 +130,8 @@ class TechnicalPlanController extends Controller
         $routes = $this->budgeting->technicalPlanRouteNames($module);
         $record = $this->findDepartmentPlan($department->id, $plan, $request->user(), $module);
 
-        abort_unless(in_array($record->status, ['draft', 'returned'], true), 403, 'Only draft or returned plans can be revised.');
+        // Quarters M&E has already cleared are locked on the form; the rest of the
+        // year stays open until all four are approved and the baseline is stamped.
         abort_if($record->isBaselineLocked(), 403, 'Baseline-locked plans cannot be edited.');
 
         $quarterOutputs = old('quarters');
@@ -121,7 +145,7 @@ class TechnicalPlanController extends Controller
             'department' => $department,
             'quarters' => self::QUARTERS,
             'quarterOutputs' => $quarterOutputs,
-            'plan' => $record,
+            'plan' => $record->load('quarters'),
             'formAction' => route($routes['update'], $record->id),
             'submitLabel' => 'Resubmit technical plan to M&E',
             'pageTitle' => 'Revise technical plan',
@@ -149,24 +173,22 @@ class TechnicalPlanController extends Controller
             'fiscal_year' => ['nullable', 'string', 'max:20'],
             'summary' => ['nullable', 'string', 'max:5000'],
             'quarters' => ['required', 'array'],
-            'quarters.1' => ['required', 'array'],
-            'quarters.2' => ['required', 'array'],
-            'quarters.3' => ['required', 'array'],
-            'quarters.4' => ['required', 'array'],
-            'quarters.*.outputs' => ['required', 'array', 'min:1'],
+            // A quarter can stay blank while the department works through the year;
+            // M&E clears them one at a time and the baseline locks at Q4.
+            'quarters.*.outputs' => ['nullable', 'array'],
             'quarters.*.outputs.*.output' => ['nullable', 'string', 'max:2000'],
             'quarters.*.outputs.*.activity' => ['nullable', 'string', 'max:2000'],
             'quarters.*.outputs.*.costable_item' => ['nullable', 'string', 'max:500'],
             'quarters.*.outputs.*.planned' => ['nullable', 'numeric', 'min:0'],
             'quarters.*.outputs.*.planned_unit' => ['nullable', 'string', 'max:50'],
         ], [
-            'quarters.required' => 'Add outputs for each quarter.',
+            'quarters.required' => 'Add outputs for the quarters you are filing.',
         ]);
 
         $flatOutputs = $this->flattenQuarterOutputs($data['quarters']);
         if ($flatOutputs === []) {
             return back()->withInput()->withErrors([
-                'quarters' => 'Add at least one output with an output name and activity across the four quarters.',
+                'quarters' => 'Add at least one output with an output name and activity.',
             ]);
         }
 
@@ -307,6 +329,24 @@ class TechnicalPlanController extends Controller
         }
 
         return $plan;
+    }
+
+    private function documentPlan(Request $request, int $planId): MeTechnicalPlan
+    {
+        $module = $this->moduleKey($request);
+        $department = $this->budgeting->budgetDepartmentForUser($module, $request->user());
+
+        return $this->findDepartmentPlan($department->id, $planId, $request->user(), $module);
+    }
+
+    /**
+     * The PDF covers one quarter or the whole year: ?quarter=1|2|3|4|all
+     */
+    private function quarterFilter(Request $request): int|string
+    {
+        $quarter = (string) $request->query('quarter', 'all');
+
+        return ctype_digit($quarter) ? (int) $quarter : 'all';
     }
 
     private function moduleKey(Request $request): string

@@ -9,6 +9,8 @@
     >
         <x-slot:actions>
             <a href="{{ route('monitoring_evaluation.reports.index') }}" class="tich-btn tich-btn-ghost">Back</a>
+            <a href="{{ route('monitoring_evaluation.reports.print', $report) }}" class="tich-btn tich-btn-secondary">Print</a>
+            <a href="{{ route('monitoring_evaluation.reports.pdf', $report) }}" class="tich-btn tich-btn-primary">Download PDF</a>
         </x-slot:actions>
     </x-page-toolbar>
 

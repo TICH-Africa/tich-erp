@@ -216,6 +216,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/technical-plans/{plan}', [ModuleTechnicalPlanController::class, 'show'])->name('finance.technical-plans.show');
             Route::get('/technical-plans/{plan}/edit', [ModuleTechnicalPlanController::class, 'edit'])->name('finance.technical-plans.edit');
             Route::put('/technical-plans/{plan}', [ModuleTechnicalPlanController::class, 'update'])->name('finance.technical-plans.update');
+            Route::get('/technical-plans/{plan}/print', [ModuleTechnicalPlanController::class, 'print'])->name('finance.technical-plans.print');
+            Route::get('/technical-plans/{plan}/pdf', [ModuleTechnicalPlanController::class, 'pdf'])->name('finance.technical-plans.pdf');
 
             Route::get('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name('finance.me-policy.sign');
             Route::post('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name('finance.me-policy.sign.store');
@@ -238,6 +240,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/technical-plans/{plan}', [ModuleTechnicalPlanController::class, 'show'])->name("{$module}.technical-plans.show");
         Route::get('/technical-plans/{plan}/edit', [ModuleTechnicalPlanController::class, 'edit'])->name("{$module}.technical-plans.edit");
         Route::put('/technical-plans/{plan}', [ModuleTechnicalPlanController::class, 'update'])->name("{$module}.technical-plans.update");
+        Route::get('/technical-plans/{plan}/print', [ModuleTechnicalPlanController::class, 'print'])->name("{$module}.technical-plans.print");
+        Route::get('/technical-plans/{plan}/pdf', [ModuleTechnicalPlanController::class, 'pdf'])->name("{$module}.technical-plans.pdf");
 
         Route::get('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'signForm'])->name("{$module}.me-policy.sign");
         Route::post('/me-policy/sign', [\App\Http\Controllers\MonitoringEvaluation\PolicyController::class, 'sign'])->name("{$module}.me-policy.sign.store");
@@ -251,20 +255,32 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         $controller = \App\Http\Controllers\MonitoringEvaluation\DepartmentReportController::class;
 
         if ($module === 'academics') {
-            Route::get('/me-reports', [$controller, 'index'])->name('departments.academics.me-reports.index');
-            Route::get('/me-reports/plans/{plan}/quarters/{quarter}', [$controller, 'open'])->name('departments.academics.me-reports.open');
-            Route::get('/me-reports/{report}/edit', [$controller, 'edit'])->name('departments.academics.me-reports.edit');
-            Route::put('/me-reports/{report}', [$controller, 'update'])->name('departments.academics.me-reports.update');
-            Route::post('/me-reports/{report}/submit', [$controller, 'submit'])->name('departments.academics.me-reports.submit');
-
-            return;
+            $base = 'departments.academics.me-reports';
+            $academics = true;
+        } else {
+            $base = "{$namePrefix}.me-reports";
+            $academics = false;
         }
 
-        Route::get('/me-reports', [$controller, 'index'])->name("{$namePrefix}.me-reports.index");
-        Route::get('/me-reports/plans/{plan}/quarters/{quarter}', [$controller, 'open'])->name("{$namePrefix}.me-reports.open");
-        Route::get('/me-reports/{report}/edit', [$controller, 'edit'])->name("{$namePrefix}.me-reports.edit");
-        Route::put('/me-reports/{report}', [$controller, 'update'])->name("{$namePrefix}.me-reports.update");
-        Route::post('/me-reports/{report}/submit', [$controller, 'submit'])->name("{$namePrefix}.me-reports.submit");
+        Route::get('/me-reports', [$controller, 'index'])->name($base.'.index');
+        Route::get('/me-reports/plans/{plan}/quarters/{quarter}', [$controller, 'open'])
+            ->where('quarter', '[1-4]')
+            ->name($base.'.open');
+        Route::get('/me-reports/plans/{plan}/quarters/{quarter}/print', [$controller, 'planPrint'])
+            ->where('quarter', '[1-4]|all')
+            ->name($base.'.plan-print');
+        Route::get('/me-reports/plans/{plan}/quarters/{quarter}/pdf', [$controller, 'planPdf'])
+            ->where('quarter', '[1-4]|all')
+            ->name($base.'.plan-pdf');
+        Route::get('/me-reports/{report}/print', [$controller, 'print'])->name($base.'.print');
+        Route::get('/me-reports/{report}/pdf', [$controller, 'pdf'])->name($base.'.pdf');
+        Route::get('/me-reports/{report}/edit', [$controller, 'edit'])->name($base.'.edit');
+        Route::put('/me-reports/{report}', [$controller, 'update'])->name($base.'.update');
+        Route::post('/me-reports/{report}/submit', [$controller, 'submit'])->name($base.'.submit');
+
+        if ($academics) {
+            return;
+        }
     };
 
     Route::prefix('admin')->group(function () {
@@ -968,15 +984,27 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
 
             Route::get('/plans', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'index'])->name('monitoring_evaluation.plans.index');
             Route::get('/plans/{plan}', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'show'])->name('monitoring_evaluation.plans.show');
+            Route::get('/plans/{plan}/print', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'print'])->name('monitoring_evaluation.plans.print');
+            Route::get('/plans/{plan}/pdf', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'pdf'])->name('monitoring_evaluation.plans.pdf');
             Route::post('/plans/{plan}/approve', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'approve'])->name('monitoring_evaluation.plans.approve');
             Route::post('/plans/{plan}/return', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'returnPlan'])->name('monitoring_evaluation.plans.return');
             Route::post('/plans/{plan}/lock-baseline', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'lockBaseline'])->name('monitoring_evaluation.plans.lock');
 
             Route::get('/reports', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'index'])->name('monitoring_evaluation.reports.index');
             Route::get('/reports/{report}', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'show'])->name('monitoring_evaluation.reports.show');
+            Route::get('/reports/{report}/print', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'print'])->name('monitoring_evaluation.reports.print');
+            Route::get('/reports/{report}/pdf', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'pdf'])->name('monitoring_evaluation.reports.pdf');
             Route::post('/reports/{report}/verify', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'verify'])->name('monitoring_evaluation.reports.verify');
             Route::post('/reports/{report}/return', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'returnReport'])->name('monitoring_evaluation.reports.return');
             Route::get('/plans/{plan}/quarters/{quarter}/open', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'openQuarter'])->name('monitoring_evaluation.plans.open-quarter');
+            Route::get('/plans/{plan}/quarters/{quarter}/report-pdf', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'planPdf'])
+                ->where('quarter', '[1-4]|all')
+                ->name('monitoring_evaluation.plans.quarters.report-pdf');
+            Route::get('/plans/{plan}/quarters/{quarter}/report-print', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'planPrint'])
+                ->where('quarter', '[1-4]|all')
+                ->name('monitoring_evaluation.plans.quarters.report-print');
+            Route::post('/plans/{plan}/quarters/{quarter}/approve', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'approveQuarter'])->where('quarter', '[1-4]')->name('monitoring_evaluation.plans.quarters.approve');
+            Route::post('/plans/{plan}/quarters/{quarter}/return', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'returnQuarter'])->where('quarter', '[1-4]')->name('monitoring_evaluation.plans.quarters.return');
 
             Route::get('/pime', [\App\Http\Controllers\MonitoringEvaluation\PimeController::class, 'index'])->name('monitoring_evaluation.pime.index');
             Route::post('/pime/recalculate-health', [\App\Http\Controllers\MonitoringEvaluation\PimeController::class, 'recalculateHealth'])->name('monitoring_evaluation.pime.recalculate');

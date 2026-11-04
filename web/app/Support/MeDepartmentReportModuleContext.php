@@ -24,7 +24,7 @@ class MeDepartmentReportModuleContext
      *     key: string,
      *     layout: string,
      *     content_section: string,
-     *     routes: array{index: string, open: string, edit: string, update: string, submit: string},
+     *     routes: array{index: string, open: string, edit: string, update: string, submit: string, print: string, pdf: string, 'plan-print': string, 'plan-pdf': string},
      *     department?: Department|null
      * }
      */
@@ -38,7 +38,7 @@ class MeDepartmentReportModuleContext
      *     key: string,
      *     layout: string,
      *     content_section: string,
-     *     routes: array{index: string, open: string, edit: string, update: string, submit: string},
+     *     routes: array{index: string, open: string, edit: string, update: string, submit: string, print: string, pdf: string, 'plan-print': string, 'plan-pdf': string},
      *     department?: Department|null
      * }
      */
@@ -166,28 +166,24 @@ class MeDepartmentReportModuleContext
     }
 
     /**
-     * @return array{index: string, open: string, edit: string, update: string, submit: string}
+     * @return array{index: string, open: string, edit: string, update: string, submit: string, print: string, pdf: string, 'plan-print': string, 'plan-pdf': string}
      */
     public static function routeNames(string $moduleKey): array
     {
-        if ($moduleKey === 'academics' || $moduleKey === 'departments') {
-            return [
-                'index' => 'departments.academics.me-reports.index',
-                'open' => 'departments.academics.me-reports.open',
-                'edit' => 'departments.academics.me-reports.edit',
-                'update' => 'departments.academics.me-reports.update',
-                'submit' => 'departments.academics.me-reports.submit',
-            ];
-        }
-
-        $prefix = $moduleKey.'.me-reports';
+        $base = in_array($moduleKey, ['academics', 'departments'], true)
+            ? 'departments.academics.me-reports'
+            : $moduleKey.'.me-reports';
 
         return [
-            'index' => $prefix.'.index',
-            'open' => $prefix.'.open',
-            'edit' => $prefix.'.edit',
-            'update' => $prefix.'.update',
-            'submit' => $prefix.'.submit',
+            'index' => $base.'.index',
+            'open' => $base.'.open',
+            'edit' => $base.'.edit',
+            'update' => $base.'.update',
+            'submit' => $base.'.submit',
+            'print' => $base.'.print',
+            'pdf' => $base.'.pdf',
+            'plan-print' => $base.'.plan-print',
+            'plan-pdf' => $base.'.plan-pdf',
         ];
     }
 

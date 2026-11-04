@@ -20,6 +20,8 @@
             @if (! $canSubmit && in_array($report->status, ['submitted', 'me_verified', 'ceo_delivered'], true) && \Illuminate\Support\Facades\Route::has('monitoring_evaluation.reports.show'))
                 <a href="{{ route('monitoring_evaluation.reports.show', $report) }}" class="tich-btn tich-btn-primary">Open for verification</a>
             @endif
+            <a href="{{ route($reportRoutes['print'], $report) }}" class="tich-btn tich-btn-secondary">Print</a>
+            <a href="{{ route($reportRoutes['pdf'], $report) }}" class="tich-btn tich-btn-secondary">Download PDF</a>
             <a href="{{ route($reportRoutes['index']) }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>

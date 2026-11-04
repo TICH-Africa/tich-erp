@@ -6,18 +6,23 @@ use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Me\MeQuarterlyReport;
 use App\Models\Me\MeTechnicalPlan;
+use App\Services\Me\MeQuarterlyReportDocumentService;
 use App\Services\Me\MeQuarterlyReportService;
+use App\Services\Me\MeTechnicalPlanDocumentService;
 use App\Services\Me\MeTechnicalPlanService;
 use App\Support\MeDepartmentReportModuleContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DepartmentReportController extends Controller
 {
     public function __construct(
         protected MeQuarterlyReportService $reports,
         protected MeTechnicalPlanService $plans,
+        protected MeQuarterlyReportDocumentService $reportDocuments,
+        protected MeTechnicalPlanDocumentService $planDocuments,
     ) {}
 
     public function index(Request $request): View
@@ -33,11 +38,17 @@ class DepartmentReportController extends Controller
 
         abort_if($scopeIds === [], 403, 'No department is configured for this module.');
 
+        // A locked plan reports on every quarter; a plan still being filled reports on
+        // the quarters M&E has already approved.
         $plans = MeTechnicalPlan::query()
-            ->with(['quarters', 'department'])
-            ->where('status', 'baseline_locked')
+            ->with(['quarters', 'department', 'quarterlyReports'])
+            ->where(function ($query) {
+                $query->where('status', 'baseline_locked')
+                    ->orWhereHas('quarters', fn ($q) => $q->where('status', 'me_approved'));
+            })
             ->whereIn('department_id', $scopeIds)
             ->orderByDesc('baseline_locked_at')
+            ->orderByDesc('id')
             ->get();
 
         $reports = MeQuarterlyReport::query()
@@ -59,18 +70,79 @@ class DepartmentReportController extends Controller
         $moduleContext = MeDepartmentReportModuleContext::resolve($request);
         $this->assertDepartmentInModuleScope($moduleContext, $plan->department);
 
-        abort_unless($plan->isBaselineLocked(), 403);
         abort_unless(
             $this->reports->userCanEditDepartmentReport($request->user(), $plan->department),
             403
         );
 
         $q = $plan->quarters()->where('quarter_number', $quarter)->firstOrFail();
+        abort_unless(
+            $plan->isQuarterReportable((int) $q->quarter_number),
+            403,
+            $q->label().' is not approved by M&E yet, so its report cannot be filled.'
+        );
+
         $report = $this->plans->ensureQuarterlyReportDraft($plan, $q);
 
         return redirect()->to(MeDepartmentReportModuleContext::url('edit', $moduleContext['key'], [
             'report' => $report,
         ]));
+    }
+
+    /**
+     * A filed quarterly report as a signed document.
+     */
+    public function print(Request $request, MeQuarterlyReport $report): View
+    {
+        $this->assertReportVisible($request, $report);
+
+        return $this->reportDocuments->page($report);
+    }
+
+    public function pdf(Request $request, MeQuarterlyReport $report): StreamedResponse
+    {
+        $this->assertReportVisible($request, $report);
+
+        return $this->reportDocuments->download($report);
+    }
+
+    /**
+     * The reports a department filed against one technical plan: {quarter}=1|2|3|4|all.
+     */
+    public function planPrint(Request $request, MeTechnicalPlan $plan, int|string $quarter): View
+    {
+        return $this->documents($request, $plan, $quarter, 'planPage');
+    }
+
+    public function planPdf(Request $request, MeTechnicalPlan $plan, int|string $quarter): StreamedResponse
+    {
+        return $this->documents($request, $plan, $quarter, 'planDownload');
+    }
+
+    private function documents(Request $request, MeTechnicalPlan $plan, int|string $quarter, string $method)
+    {
+        $moduleContext = MeDepartmentReportModuleContext::resolve($request);
+        $this->assertDepartmentInModuleScope($moduleContext, $plan->department);
+
+        $plan->loadMissing(['department', 'quarters']);
+
+        try {
+            return $this->reportDocuments->{$method}($plan, $this->quarterFilter($quarter));
+        } catch (\RuntimeException $e) {
+            abort(404, $e->getMessage());
+        }
+    }
+
+    private function quarterFilter(int|string $quarter): int|string
+    {
+        return ctype_digit((string) $quarter) ? (int) $quarter : 'all';
+    }
+
+    private function assertReportVisible(Request $request, MeQuarterlyReport $report): void
+    {
+        $moduleContext = MeDepartmentReportModuleContext::resolve($request);
+        $report->loadMissing('department');
+        $this->assertDepartmentInModuleScope($moduleContext, $report->department);
     }
 
     public function edit(Request $request, MeQuarterlyReport $report): View

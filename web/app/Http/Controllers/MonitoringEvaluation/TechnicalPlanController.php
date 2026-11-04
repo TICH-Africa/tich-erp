@@ -4,15 +4,18 @@ namespace App\Http\Controllers\MonitoringEvaluation;
 
 use App\Http\Controllers\Controller;
 use App\Models\Me\MeTechnicalPlan;
+use App\Services\Me\MeTechnicalPlanDocumentService;
 use App\Services\Me\MeTechnicalPlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TechnicalPlanController extends Controller
 {
     public function __construct(
         protected MeTechnicalPlanService $plans,
+        protected MeTechnicalPlanDocumentService $documents,
     ) {}
 
     public function index(Request $request): View
@@ -37,7 +40,7 @@ class TechnicalPlanController extends Controller
 
     public function show(MeTechnicalPlan $plan): View
     {
-        $plan->load(['department', 'budgetRequest', 'outputs', 'quarters', 'submitter', 'meReviewer']);
+        $plan->load(['department', 'budgetRequest', 'outputs', 'quarters', 'quarterlyReports', 'submitter', 'meReviewer']);
 
         if ($plan->outputs->isEmpty() && $plan->budget_request_id) {
             try {
@@ -49,6 +52,26 @@ class TechnicalPlanController extends Controller
         }
 
         return view('monitoring-evaluation.plans.show', compact('plan'));
+    }
+
+    public function print(Request $request, MeTechnicalPlan $plan): View
+    {
+        return $this->documents->page($plan, $this->quarterFilter($request));
+    }
+
+    public function pdf(Request $request, MeTechnicalPlan $plan): StreamedResponse
+    {
+        return $this->documents->download($plan, $this->quarterFilter($request));
+    }
+
+    /**
+     * The document covers one quarter or the whole year: ?quarter=1|2|3|4|all
+     */
+    private function quarterFilter(Request $request): int|string
+    {
+        $quarter = (string) $request->query('quarter', 'all');
+
+        return ctype_digit($quarter) ? (int) $quarter : 'all';
     }
 
     public function approve(Request $request, MeTechnicalPlan $plan): RedirectResponse
@@ -70,6 +93,45 @@ class TechnicalPlanController extends Controller
         return redirect()
             ->route('monitoring_evaluation.plans.show', $updated)
             ->with('status', $message);
+    }
+
+    public function approveQuarter(
+        Request $request,
+        MeTechnicalPlan $plan,
+        int $quarter,
+    ): RedirectResponse {
+        $data = $request->validate([
+            'me_notes' => ['nullable', 'string', 'max:3000'],
+        ]);
+
+        try {
+            $updated = $this->plans->approveQuarter($plan, $quarter, $request->user(), $data['me_notes'] ?? null);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['plan' => $e->getMessage()]);
+        }
+
+        $message = $updated->isBaselineLocked()
+            ? 'Q'.$quarter.' approved - all four quarters are cleared, so the baseline plan is locked.'
+            : 'Q'.$quarter.' approved. The remaining quarters stay open for the department to fill.';
+
+        return redirect()
+            ->route('monitoring_evaluation.plans.show', $updated)
+            ->with('status', $message);
+    }
+
+    public function returnQuarter(Request $request, MeTechnicalPlan $plan, int $quarter): RedirectResponse
+    {
+        $data = $request->validate([
+            'me_notes' => ['required', 'string', 'max:3000'],
+        ]);
+
+        try {
+            $this->plans->returnQuarter($plan, $quarter, $request->user(), $data['me_notes']);
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['plan' => $e->getMessage()]);
+        }
+
+        return back()->with('status', 'Q'.$quarter.' returned to the department for revision.');
     }
 
     public function returnPlan(Request $request, MeTechnicalPlan $plan): RedirectResponse

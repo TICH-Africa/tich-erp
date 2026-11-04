@@ -1,6 +1,9 @@
 @php
     $moduleContext = $moduleContext ?? \App\Support\MeDepartmentReportModuleContext::forModule('monitoring_evaluation');
     $reportRoutes = $reportRoutes ?? $moduleContext['routes'];
+    $technicalPlanPdfRoute = ($moduleContext['key'] ?? '') !== ''
+        ? $moduleContext['key'].'.technical-plans.pdf'
+        : null;
 @endphp
 
 @extends($moduleContext['layout'])
@@ -18,20 +21,34 @@
     @endif
 
     <article class="tich-card tich-mt-6">
-        <h2 class="tich-h3">Baseline plans</h2>
+        <h2 class="tich-h3">Technical plans</h2>
+        <p class="tich-caption tich-mt-1">A quarter opens for reporting once M&amp;E approves it, or once the whole year is baseline locked.</p>
         <ul class="tich-mt-4" style="margin:0;padding-left:1.25rem;">
             @forelse ($plans as $plan)
                 <li class="tich-text tich-mt-3">
                     <strong>{{ $plan->title }}</strong>
-                    <span class="tich-caption">· {{ $plan->department?->dept_name }}</span>
+                    @if ($viewAllDepartments ?? false)
+                        <span class="tich-caption">· {{ $plan->department?->dept_name }}</span>
+                    @endif
                     <div class="tich-mt-2" style="display:flex;flex-wrap:wrap;gap:0.5rem;">
                         @foreach ($plan->quarters as $q)
-                            <a href="{{ route($reportRoutes['open'], [$plan, $q->quarter_number]) }}" class="tich-btn tich-btn-secondary">{{ $q->label() }} report</a>
+                            @if ($plan->isQuarterReportable((int) $q->quarter_number))
+                                <a href="{{ route($reportRoutes['open'], [$plan, $q->quarter_number]) }}" class="tich-btn tich-btn-secondary">{{ $q->label() }} report</a>
+                                @if ($plan->quarterlyReports->contains('quarter_id', $q->id))
+                                    <a href="{{ route($reportRoutes['plan-pdf'], [$plan, $q->quarter_number]) }}" class="tich-btn tich-btn-ghost">Download {{ $q->label() }}</a>
+                                @endif
+                            @endif
                         @endforeach
+                        @if ($plan->quarterlyReports->count() > 1)
+                            <a href="{{ route($reportRoutes['plan-pdf'], [$plan, 'all']) }}" class="tich-btn tich-btn-primary">Download all reports</a>
+                        @endif
+                        @if ($technicalPlanPdfRoute && Route::has($technicalPlanPdfRoute))
+                            <a href="{{ route($technicalPlanPdfRoute, ['plan' => $plan->id, 'quarter' => 'all']) }}" class="tich-btn tich-btn-ghost">Download technical plan</a>
+                        @endif
                     </div>
                 </li>
             @empty
-                <li class="tich-text">No baseline-locked plans available for this department yet.</li>
+                <li class="tich-text">No quarters have been approved by M&amp;E for this department yet.</li>
             @endforelse
         </ul>
     </article>
@@ -55,9 +72,12 @@
                             <td>{{ $report->quarter?->label() }}</td>
                             <td><x-status-badge :status="$report->status" /></td>
                             <td>
-                                <a href="{{ route($reportRoutes['edit'], $report) }}" class="tich-link">
-                                    {{ in_array($report->status, ['draft', 'returned'], true) ? 'Edit' : 'View' }}
-                                </a>
+                                <div class="tich-flex-wrap" style="gap:0.5rem;">
+                                    <a href="{{ route($reportRoutes['edit'], $report) }}" class="tich-link">
+                                        {{ in_array($report->status, ['draft', 'returned'], true) ? 'Edit' : 'View' }}
+                                    </a>
+                                    <a href="{{ route($reportRoutes['pdf'], $report) }}" class="tich-btn tich-btn-ghost">Download PDF</a>
+                                </div>
                             </td>
                         </tr>
                     @empty
