@@ -66,8 +66,7 @@
                             <th>Output</th>
                             <th>Activity</th>
                             <th>Costable item</th>
-                            <th>Planned</th>
-                            <th>Unit</th>
+                            <th>Target</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -77,10 +76,9 @@
                                 <td>{{ $row->activity }}</td>
                                 <td class="tich-caption">{{ $row->costable_item ?? '-' }}</td>
                                 <td>{{ number_format((float) $row->planned, 2) }}</td>
-                                <td class="tich-caption">{{ $row->planned_unit ?? '-' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="tich-caption">No outputs for this quarter.</td></tr>
+                            <tr><td colspan="4" class="tich-caption">No outputs for this quarter.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

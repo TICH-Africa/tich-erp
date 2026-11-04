@@ -89,7 +89,7 @@
 
             @foreach ($quarters as $qKey => $qLabel)
                 @php
-                    $outputs = $quarterOutputs[$qKey]['outputs'] ?? [['output'=>'','activity'=>'','costable_item'=>'','planned'=>'','planned_unit'=>'']];
+                    $outputs = $quarterOutputs[$qKey]['outputs'] ?? [['output'=>'','activity'=>'','costable_item'=>'','planned'=>'']];
                 @endphp
                 <div class="uf-form-section js-tp-quarter" data-quarter="{{ $qKey }}">
                     <div class="uf-section-head">{{ $qLabel }}</div>
@@ -104,8 +104,7 @@
                                         <th style="min-width:12rem;">Output</th>
                                         <th style="min-width:12rem;">Activity</th>
                                         <th style="min-width:10rem;">Costable item</th>
-                                        <th style="min-width:7rem;">Planned</th>
-                                        <th style="min-width:6rem;">Unit</th>
+                                        <th style="min-width:7rem;">Target</th>
                                         <th style="width:3rem;"></th>
                                     </tr>
                                 </thead>
@@ -116,7 +115,6 @@
                                             <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][activity]" class="tich-input" value="{{ $oRow['activity'] ?? '' }}" maxlength="2000" placeholder="Implementation task"></td>
                                             <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][costable_item]" class="tich-input" value="{{ $oRow['costable_item'] ?? '' }}" maxlength="500" placeholder="Budget code / resource"></td>
                                             <td><input type="number" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][planned]" class="tich-input" value="{{ $oRow['planned'] ?? '' }}" min="0" step="0.01" placeholder="0"></td>
-                                            <td><input type="text" name="quarters[{{ $qKey }}][outputs][{{ $oi }}][planned_unit]" class="tich-input" value="{{ $oRow['planned_unit'] ?? '' }}" maxlength="50" placeholder="e.g. students"></td>
                                             <td><button type="button" class="tich-btn tich-btn-ghost js-tp-remove-output" title="Remove" aria-label="Remove">&times;</button></td>
                                         </tr>
                                     @endforeach
@@ -182,7 +180,6 @@
                     '<td><input type="text" name="quarters[' + qKey + '][outputs][' + index + '][activity]" class="tich-input" maxlength="2000" placeholder="Implementation task"></td>' +
                     '<td><input type="text" name="quarters[' + qKey + '][outputs][' + index + '][costable_item]" class="tich-input" maxlength="500" placeholder="Budget code / resource"></td>' +
                     '<td><input type="number" name="quarters[' + qKey + '][outputs][' + index + '][planned]" class="tich-input" min="0" step="0.01" placeholder="0"></td>' +
-                    '<td><input type="text" name="quarters[' + qKey + '][outputs][' + index + '][planned_unit]" class="tich-input" maxlength="50" placeholder="e.g. students"></td>' +
                     '<td><button type="button" class="tich-btn tich-btn-ghost js-tp-remove-output" title="Remove" aria-label="Remove">&times;</button></td>';
                 body.appendChild(row);
                 bindRow(row);
