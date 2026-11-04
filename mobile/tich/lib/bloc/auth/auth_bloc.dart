@@ -51,7 +51,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         case SessionRestoreResultType.locked:
           emit(AuthLocked(result.user!));
         case SessionRestoreResultType.authenticated:
-          _startCacheForUser(result.user!);
+          await _startCacheForUser(result.user!);
           emit(AuthAuthenticated(result.user!));
       }
     } catch (e) {
@@ -72,7 +72,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
-      _startCacheForUser(user);
+      await _startCacheForUser(user);
       emit(AuthAuthenticated(user));
     } on AuthApiException catch (e) {
       emit(AuthUnauthenticated(message: e.message));
@@ -84,9 +84,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  void _startCacheForUser(AuthUser user) {
+  Future<void> _startCacheForUser(AuthUser user) async {
     TichScreenCache.assignUser(user.id);
-    unawaited(TichScreenCache.hydrateFromDisk());
+    await TichScreenCache.hydrateFromDisk();
   }
 
   Future<void> _onBiometricUnlock(
@@ -99,7 +99,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final error = await _biometrics.authenticate(reason: 'Unlock TICH');
     if (error == null) {
       await _settings.clearNeedsUnlock();
-      _startCacheForUser(current.user);
+      await _startCacheForUser(current.user);
       emit(AuthAuthenticated(current.user));
     } else {
       emit(AuthLocked(current.user, message: error));
@@ -119,7 +119,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
-      _startCacheForUser(user);
+      await _startCacheForUser(user);
       emit(AuthAuthenticated(user));
     } on AuthApiException catch (e) {
       emit(AuthLocked(current.user, message: e.message));

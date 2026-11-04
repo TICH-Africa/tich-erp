@@ -94,7 +94,12 @@ class ApiClient {
 
   /// Large scans / certificate bundles can exceed the default API timeout.
   static const Duration uploadTimeout = Duration(minutes: 3);
+
+  /// Reuse in-flight GETs and recent successful GET bodies (nav + tab overlap).
+  static const Duration getDedupeTtl = Duration(seconds: 25);
+
   String? _cachedToken;
+  final Map<String, _GetDedupeEntry> _getDedupe = {};
 
   Future<String?> _token() async {
     if (_cachedToken != null && _cachedToken!.isNotEmpty) {
@@ -105,7 +110,10 @@ class ApiClient {
   }
 
   /// Call after login / logout so secure-storage isn't hit every request.
-  void invalidateTokenCache() => _cachedToken = null;
+  void invalidateTokenCache() {
+    _cachedToken = null;
+    _getDedupe.clear();
+  }
 
   void cacheToken(String? token) {
     _cachedToken = token;
@@ -152,6 +160,34 @@ class ApiClient {
     if (query != null && query.isNotEmpty) {
       uri = uri.replace(queryParameters: query);
     }
+    final key = uri.toString();
+    final now = DateTime.now();
+    final existing = _getDedupe[key];
+    if (existing?.inFlight != null) {
+      return existing!.inFlight!;
+    }
+    if (existing?.body != null &&
+        existing!.completedAt != null &&
+        now.difference(existing.completedAt!) < getDedupeTtl) {
+      return Map<String, dynamic>.from(existing.body!);
+    }
+
+    final future = _performGet(uri);
+    _getDedupe[key] = _GetDedupeEntry(inFlight: future);
+    try {
+      final body = await future;
+      _getDedupe[key] = _GetDedupeEntry(
+        body: body,
+        completedAt: DateTime.now(),
+      );
+      return body;
+    } catch (e) {
+      _getDedupe.remove(key);
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> _performGet(Uri uri) async {
     final response = await _client
         .get(uri, headers: await _headers())
         .timeout(timeout);
@@ -182,7 +218,11 @@ class ApiClient {
           body: rawBody,
         )
         .timeout(timeoutOverride ?? timeout);
-    return _decode(response);
+    final decoded = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      _invalidateGetCacheForMutation(path);
+    }
+    return decoded;
   }
 
   Future<Map<String, dynamic>> put(
@@ -196,7 +236,11 @@ class ApiClient {
           body: body == null ? null : jsonEncode(body),
         )
         .timeout(timeout);
-    return _decode(response);
+    final decoded = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      _invalidateGetCacheForMutation(path);
+    }
+    return decoded;
   }
 
   Future<Map<String, dynamic>> multipart(
@@ -242,7 +286,16 @@ class ApiClient {
     }
     final streamed = await request.send().timeout(uploadTimeout);
     final response = await http.Response.fromStream(streamed);
-    return _decode(response);
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      _invalidateGetCacheForMutation(path);
+    }
+    return body;
+  }
+
+  void _invalidateGetCacheForMutation(String path) {
+    final normalized = Uri.parse(path).path;
+    _getDedupe.removeWhere((key, _) => key.contains(normalized));
   }
 
   Map<String, dynamic> _decode(http.Response response) {
@@ -271,4 +324,12 @@ class ApiClient {
       statusCode: response.statusCode,
     );
   }
+}
+
+class _GetDedupeEntry {
+  _GetDedupeEntry({this.inFlight, this.body, this.completedAt});
+
+  final Future<Map<String, dynamic>>? inFlight;
+  final Map<String, dynamic>? body;
+  final DateTime? completedAt;
 }

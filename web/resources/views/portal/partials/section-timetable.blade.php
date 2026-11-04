@@ -61,15 +61,21 @@
                     </h2>
                     <p class="tich-caption tich-mt-2">{{ $timetableData['period_label'] ?? ('Semester '.$timetableData['teaching_period']) }} · {{ $timetable->deliveryModeLabel() }} · {{ ucfirst($timetable->status) }}</p>
                 </div>
-                @if ($timetable->sessions->isNotEmpty())
+                @if ($timetable->hasViewableDocument())
                     <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
                         <a href="{{ route('portal.timetable.print', $timetable) }}" target="_blank" class="tich-btn tich-btn-secondary">Print / preview</a>
-                        <a href="{{ route('portal.timetable.pdf', $timetable) }}" class="tich-btn tich-btn-secondary">Download PDF</a>
+                        <a href="{{ route('portal.timetable.pdf', $timetable) }}" class="tich-btn tich-btn-secondary">Download</a>
                     </div>
                 @endif
             </div>
 
-            @if ($timetable->sessions->isNotEmpty())
+            @if ($timetable->hasUploadedDocument())
+                @include('partials.timetable-uploaded-document', [
+                    'timetable' => $timetable,
+                    'pdfUrl' => route('portal.timetable.pdf', $timetable),
+                    'fileLabel' => $timetable->source_name,
+                ])
+            @elseif ($timetable->sessions->isNotEmpty())
                 @include('academics.programs.partials.timetable-grid', [
                     'sessions' => $timetable->sessions,
                     'dayLabels' => $timetableData['day_labels'],

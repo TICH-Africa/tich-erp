@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/employee_api.dart';
+import '../../data/employee_badge_service.dart';
 import '../../data/tich_portal_warmup.dart';
 import '../../data/tich_screen_cache.dart';
 import '../portal/attendance_page.dart';
@@ -11,22 +14,17 @@ import '../portal/dashboard_page.dart';
 import '../portal/leave_page.dart';
 import '../portal/more_page.dart';
 import '../portal/payslips_page.dart';
+import '../portal/time_logs_page.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import '../../notifications/tich_notification_router.dart';
 import '../../permissions/tich_permission_disclosures.dart';
-import 'employee_clock_nav.dart';
 import 'employee_portal_menu_scope.dart';
 import 'employee_portal_nav.dart';
-import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
 import 'tich_logout.dart';
 
-/// Called after clock-in/out so the bottom nav pulse updates immediately.
-abstract final class EmployeePortalNavSignals {
-  static VoidCallback? onAttendanceChanged;
-  static VoidCallback? onStaffPhotoChanged;
-}
+import 'employee_portal_signals.dart';
 
 class PortalShell extends StatefulWidget {
   const PortalShell({super.key});
@@ -37,6 +35,8 @@ class PortalShell extends StatefulWidget {
 
 class _PortalShellState extends State<PortalShell>
     with WidgetsBindingObserver, ShellNavBadgeMixin {
+  static const _complianceCacheKey = 'portal.time_log_compliance';
+
   final GlobalKey<AdaptiveTabScaffoldState> _scaffoldKey =
       GlobalKey<AdaptiveTabScaffoldState>();
   List<Widget>? _pages;
@@ -49,6 +49,7 @@ class _PortalShellState extends State<PortalShell>
   int _moreDot = 0;
   String? _profilePhotoUrl;
   bool _staffPhotoLoaded = false;
+  bool _timeLogsGate = false;
 
   static const _moreMenuKeys = [
     'profile-changes',
@@ -65,11 +66,25 @@ class _PortalShellState extends State<PortalShell>
     EmployeePortalNav.onTabRequest = _applyPendingTab;
     EmployeePortalNavSignals.onAttendanceChanged = refreshNavBadges;
     EmployeePortalNavSignals.onStaffPhotoChanged = _loadStaffPhoto;
+    EmployeePortalNavSignals.onTimeLogComplianceChanged =
+        _recheckTimeLogCompliance;
+    _applyCachedCompliance();
+    _loadStaffPhoto();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_refreshTimeLogCompliance());
       _applyPendingTab();
       TichNotificationRouter.instance.applyPending(context);
       TichPermissionDisclosures.maybePromptForNotifications(context);
     });
+  }
+
+  void _applyCachedCompliance() {
+    final cached =
+        TichScreenCache.read<Map<String, dynamic>>(_complianceCacheKey);
+    if (cached != null) {
+      _timeLogsGate = cached['blocked'] == true;
+    }
   }
 
   void _applyPendingTab() {
@@ -93,7 +108,36 @@ class _PortalShellState extends State<PortalShell>
     if (EmployeePortalNavSignals.onStaffPhotoChanged == _loadStaffPhoto) {
       EmployeePortalNavSignals.onStaffPhotoChanged = null;
     }
+    if (EmployeePortalNavSignals.onTimeLogComplianceChanged ==
+        _recheckTimeLogCompliance) {
+      EmployeePortalNavSignals.onTimeLogComplianceChanged = null;
+    }
     super.dispose();
+  }
+
+  Future<void> _refreshTimeLogCompliance() async {
+    try {
+      final data = await context.read<EmployeeApi>().timeLogCompliance();
+      if (!mounted) return;
+      TichScreenCache.write(_complianceCacheKey, {
+        'blocked': data['blocked'] == true,
+        if (data['hold'] != null) 'hold': data['hold'],
+      });
+      final blocked = data['blocked'] == true;
+      if (blocked == _timeLogsGate) return;
+      setState(() {
+        _timeLogsGate = blocked;
+        if (!blocked) {
+          _ensureShellBuilt();
+        } else {
+          _root = null;
+        }
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _recheckTimeLogCompliance() async {
+    await _refreshTimeLogCompliance();
   }
 
   void _loadStaffPhoto() {
@@ -109,17 +153,16 @@ class _PortalShellState extends State<PortalShell>
       }
       return;
     }
-    if (mounted) setState(() => _staffPhotoLoaded = true);
+    if (mounted && !_staffPhotoLoaded) {
+      setState(() => _staffPhotoLoaded = true);
+    }
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_root != null) return;
-    final api = context.read<EmployeeApi>();
-    if (!_staffPhotoLoaded) {
-      _loadStaffPhoto();
+  void _ensureShellBuilt() {
+    if (_root != null || _timeLogsGate) {
+      return;
     }
+    final api = context.read<EmployeeApi>();
     _pages = [
       DashboardPage(api: api),
       LeavePage(api: api),
@@ -146,6 +189,12 @@ class _PortalShellState extends State<PortalShell>
       ),
       items: _tabItems(),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureShellBuilt();
   }
 
   List<AdaptiveTabItem> _tabItems() {
@@ -202,41 +251,30 @@ class _PortalShellState extends State<PortalShell>
     _scaffoldKey.currentState?.updateNavItems(_tabItems());
   }
 
+  void _applyBadgeSnapshot(EmployeeBadgeSnapshot snap) {
+    var moreDot = 0;
+    for (final key in _moreMenuKeys) {
+      moreDot += snap.sidebarCounts[key] ?? 0;
+    }
+    _counts = snap.sidebarCounts;
+    _homeBadge = snap.notificationTotal;
+    _leaveBadge = snap.sidebarCounts['leave.returned'] ?? 0;
+    _clockBadge = snap.sidebarCounts['attendance_clock_in'] ?? 0;
+    _clockPulse = snap.clockPulse;
+    _moreDot = moreDot;
+    _pushNavBadgesToScaffold();
+  }
+
   @override
   Future<void> refreshNavBadges() {
-    scheduleNavBadgeFetch(() async {
+    scheduleNavBadgeFetch((force) async {
       if (!mounted) return;
-      final api = context.read<EmployeeApi>();
-
-      var clockPulse = _clockPulse;
-      try {
-        final attendance = await api.attendance();
-        if (mounted) {
-          clockPulse = employeeNeedsClockInPulse(attendance);
-        }
-      } catch (_) {}
-
-      try {
-        final data = await api.notifications();
-        if (!mounted) return;
-        final counts = parseSidebarCounts(data['counts']);
-        final total = (data['total'] as num?)?.toInt() ?? 0;
-        var moreDot = 0;
-        for (final key in _moreMenuKeys) {
-          moreDot += counts[key] ?? 0;
-        }
-        _counts = counts;
-        _homeBadge = total;
-        _leaveBadge = counts['leave.returned'] ?? 0;
-        _clockBadge = counts['attendance_clock_in'] ?? 0;
-        _clockPulse = clockPulse;
-        _moreDot = moreDot;
-        _pushNavBadgesToScaffold();
-      } catch (_) {
-        if (mounted) {
-          _clockPulse = clockPulse;
-          _pushNavBadgesToScaffold();
-        }
+      final badges = context.read<EmployeeBadgeService>();
+      await badges.refresh(force: force);
+      if (!mounted) return;
+      final snap = badges.snapshot;
+      if (snap != null) {
+        _applyBadgeSnapshot(snap);
       }
     });
     return Future.value();
@@ -244,9 +282,40 @@ class _PortalShellState extends State<PortalShell>
 
   @override
   Widget build(BuildContext context) {
+    if (_root == null && !_timeLogsGate) {
+      _ensureShellBuilt();
+    }
+
+    if (_timeLogsGate) {
+      final api = context.read<EmployeeApi>();
+      return EmployeePortalMenuScope(
+        profilePhotoUrl: _profilePhotoUrl,
+        child: AdaptiveScaffold(
+          title: 'Weekly time log',
+          onLogout: tichLogout(context),
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Text(
+                  'Complete and submit your weekly time logs for this month '
+                  'before using other employee portal sections.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                ),
+              ),
+              Expanded(child: TimeLogsPage(api: api)),
+            ],
+          ),
+        ),
+      );
+    }
+
     return EmployeePortalMenuScope(
       profilePhotoUrl: _profilePhotoUrl,
-      child: _root ?? const SizedBox.shrink(),
+      child: _root!,
     );
   }
 }

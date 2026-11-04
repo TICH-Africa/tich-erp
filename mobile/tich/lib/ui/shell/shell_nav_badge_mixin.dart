@@ -55,7 +55,7 @@ mixin ShellNavBadgeMixin<T extends StatefulWidget> on State<T>, WidgetsBindingOb
 
   Future<void> refreshNavBadges();
 
-  void scheduleNavBadgeFetch(Future<void> Function() fetch) {
+  void scheduleNavBadgeFetch(Future<void> Function(bool force) fetch) {
     final force = _forceNextBadgeFetch;
     _forceNextBadgeFetch = false;
     if (!force &&
@@ -68,7 +68,7 @@ mixin ShellNavBadgeMixin<T extends StatefulWidget> on State<T>, WidgetsBindingOb
     if (_badgeFetchScheduled) return;
     _badgeFetchScheduled = true;
     unawaited(
-      fetch().whenComplete(() {
+      fetch(force).whenComplete(() {
         _badgeFetchScheduled = false;
       }),
     );

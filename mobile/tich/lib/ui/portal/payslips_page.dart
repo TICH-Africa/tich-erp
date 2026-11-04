@@ -25,7 +25,7 @@ class _PayslipsPageState extends State<PayslipsPage> {
 
   late Future<Map<String, dynamic>> _future;
   Object? _dataCache;
-  bool _showCompensation = false;
+  final ValueNotifier<bool> _showCompensation = ValueNotifier(false);
 
   Future<Map<String, dynamic>> _fetchAll() async {
     final payslips = await widget.api.payslips();
@@ -72,6 +72,12 @@ class _PayslipsPageState extends State<PayslipsPage> {
       fetch: _fetchAll,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadCompensationIfNeeded());
+  }
+
+  @override
+  void dispose() {
+    _showCompensation.dispose();
+    super.dispose();
   }
 
   Future<void> _reload() => portalCachedReload(
@@ -129,103 +135,113 @@ class _PayslipsPageState extends State<PayslipsPage> {
               data['compensation'] as Map? ?? {},
             );
 
+            final payslipCount = items.isEmpty ? 1 : items.length;
+            const fixedLeading = 3;
             return RefreshIndicator(
               onRefresh: () async => _reload(),
-              child: ListView(
+              child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-                children: [
-                  const TichSectionHeader('Compensation'),
-                  TichCard(
-                    child: Column(
-                      children: [
-                        _CompensationRow(
-                          label: 'Consolidated gross pay',
-                          amount: compensation['gross_monthly_salary'],
-                          revealed: _showCompensation,
-                          onToggle: () => setState(
-                            () => _showCompensation = !_showCompensation,
-                          ),
-                        ),
-                        _CompensationRow(
-                          label: 'Allowances',
-                          amount: compensation['allowances_total'],
-                          revealed: _showCompensation,
-                          onToggle: () => setState(
-                            () => _showCompensation = !_showCompensation,
-                          ),
-                        ),
-                        _CompensationRow(
-                          label: 'Total package',
-                          amount: compensation['total_monthly'],
-                          revealed: _showCompensation,
-                          onToggle: () => setState(
-                            () => _showCompensation = !_showCompensation,
-                          ),
-                          showDivider: false,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const TichSectionHeader('Released payslips'),
-                  if (items.isEmpty)
-                    const TichCard(
-                      child: TichEmpty('No released payslips yet.'),
-                    )
-                  else
-                    ...items.map((raw) {
-                      final p = Map<String, dynamic>.from(raw as Map);
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: TichCard(
-                          onTap: () => _open(p),
-                          child: Row(
+                itemCount: fixedLeading + payslipCount,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return const TichSectionHeader('Compensation');
+                  }
+                  if (index == 1) {
+                    return ValueListenableBuilder<bool>(
+                      valueListenable: _showCompensation,
+                      builder: (context, revealed, _) {
+                        void toggle() =>
+                            _showCompensation.value = !_showCompensation.value;
+                        return TichCard(
+                          child: Column(
                             children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: TichColors.greenLight,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.receipt_long,
-                                  color: TichColors.greenDark,
-                                ),
+                              _CompensationRow(
+                                label: 'Consolidated gross pay',
+                                amount: compensation['gross_monthly_salary'],
+                                revealed: revealed,
+                                onToggle: toggle,
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      p['period_label']?.toString() ??
-                                          'Payslip',
-                                      style: tichUi(fontWeight: FontWeight.w700),
-                                    ),
-                                    Text(
-                                      p['payslip_number']?.toString() ?? '',
-                                      style: tichUi(
-                                        fontSize: 12,
-                                        color: TichColors.neutralMuted,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              _CompensationRow(
+                                label: 'Allowances',
+                                amount: compensation['allowances_total'],
+                                revealed: revealed,
+                                onToggle: toggle,
                               ),
-                              Text(
-                                _money(p['net_pay']),
-                                style: tichUi(
-                                  fontWeight: FontWeight.w700,
-                                  color: TichColors.blueDark,
-                                ),
+                              _CompensationRow(
+                                label: 'Total package',
+                                amount: compensation['total_monthly'],
+                                revealed: revealed,
+                                onToggle: toggle,
+                                showDivider: false,
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    }),
-                ],
+                        );
+                      },
+                    );
+                  }
+                  if (index == 2) {
+                    return const Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: TichSectionHeader('Released payslips'),
+                    );
+                  }
+                  if (items.isEmpty) {
+                    return const TichCard(
+                      child: TichEmpty('No released payslips yet.'),
+                    );
+                  }
+                  final p =
+                      Map<String, dynamic>.from(items[index - fixedLeading] as Map);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: TichCard(
+                      onTap: () => _open(p),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: TichColors.greenLight,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.receipt_long,
+                              color: TichColors.greenDark,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  p['period_label']?.toString() ?? 'Payslip',
+                                  style: tichUi(fontWeight: FontWeight.w700),
+                                ),
+                                Text(
+                                  p['payslip_number']?.toString() ?? '',
+                                  style: tichUi(
+                                    fontSize: 12,
+                                    color: TichColors.neutralMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            _money(p['net_pay']),
+                            style: tichUi(
+                              fontWeight: FontWeight.w700,
+                              color: TichColors.blueDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             );
           },

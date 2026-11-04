@@ -12,8 +12,16 @@ abstract final class TichScreenCache {
   static String _userScope = '';
   static Timer? _persistDebounce;
   static bool _hydrated = false;
+  static Future<void>? _hydrateFuture;
+  static final Set<String> _dirtyKeys = {};
 
   static bool get isHydrated => _hydrated;
+
+  /// Completes when disk payloads for the current [assignUser] scope are in memory.
+  static Future<void> whenHydrated() async {
+    if (_hydrated || _userScope.isEmpty) return;
+    await hydrateFromDisk();
+  }
 
   /// Sets active user scope immediately (safe before [hydrateFromDisk] finishes).
   static void assignUser(int? userId) {
@@ -23,17 +31,28 @@ abstract final class TichScreenCache {
     _store.clear();
     _lru.clear();
     _inFlight.clear();
+    _dirtyKeys.clear();
     _hydrated = false;
+    _hydrateFuture = null;
   }
 
   /// Loads persisted tab payloads for the current [assignUser] scope.
   static Future<void> hydrateFromDisk() async {
     if (_userScope.isEmpty || _hydrated) return;
-    final disk = await TichScreenCacheStore.load(_userScope);
-    for (final entry in disk.entries) {
-      write(entry.key, entry.value);
+    _hydrateFuture ??= _hydrateFromDiskImpl();
+    await _hydrateFuture;
+  }
+
+  static Future<void> _hydrateFromDiskImpl() async {
+    try {
+      final disk = await TichScreenCacheStore.load(_userScope);
+      for (final entry in disk.entries) {
+        _writeWithoutPersist(entry.key, entry.value);
+      }
+    } finally {
+      _hydrated = true;
+      _hydrateFuture = null;
     }
-    _hydrated = true;
   }
 
   /// Call after login; loads persisted payloads for this user.
@@ -48,7 +67,9 @@ abstract final class TichScreenCache {
     _store.clear();
     _lru.clear();
     _inFlight.clear();
+    _dirtyKeys.clear();
     _hydrated = false;
+    _hydrateFuture = null;
     _userScope = '';
     _persistDebounce?.cancel();
     if (wipeDisk && scope.isNotEmpty) {
@@ -65,6 +86,12 @@ abstract final class TichScreenCache {
   }
 
   static void write(String key, Object value) {
+    _writeWithoutPersist(key, value);
+    _dirtyKeys.add(key);
+    _schedulePersist();
+  }
+
+  static void _writeWithoutPersist(String key, Object value) {
     if (value is! Map<String, dynamic>) {
       _store[key] = value;
     } else {
@@ -72,7 +99,6 @@ abstract final class TichScreenCache {
     }
     _touch(key);
     _trimMemory();
-    _schedulePersist();
   }
 
   static Map<String, dynamic> _cloneMap(Map<String, dynamic> source) {
@@ -94,19 +120,37 @@ abstract final class TichScreenCache {
   }
 
   static void _trimMemory() {
+    final scope = _userScope;
     while (_lru.length > _maxMemoryEntries) {
       final evict = _lru.removeAt(0);
       _store.remove(evict);
+      _dirtyKeys.remove(evict);
+      if (scope.isNotEmpty) {
+        unawaited(TichScreenCacheStore.deleteEntry(scope, evict));
+      }
     }
   }
 
   static void _schedulePersist() {
-    if (_userScope.isEmpty) return;
+    if (_userScope.isEmpty || _dirtyKeys.isEmpty) return;
     _persistDebounce?.cancel();
     _persistDebounce = Timer(const Duration(milliseconds: 800), () {
-      unawaited(
-        TichScreenCacheStore.save(_userScope, _store, _lru),
-      );
+      final scope = _userScope;
+      if (scope.isEmpty || _dirtyKeys.isEmpty) return;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final batch = <String, Map<String, dynamic>>{};
+      for (final key in _dirtyKeys.toList()) {
+        final value = _store[key];
+        if (value is Map<String, dynamic>) {
+          batch[key] = value;
+        }
+      }
+      _dirtyKeys.clear();
+      if (batch.isNotEmpty) {
+        unawaited(
+          TichScreenCacheStore.saveDirtyEntries(scope, batch, now),
+        );
+      }
     });
   }
 
@@ -126,9 +170,10 @@ abstract final class TichScreenCache {
   }
 
   /// One shared in-flight request per [key] - prefetch and page open dedupe.
-  static Future<T> ensure<T>(String key, Future<T> Function() fetch) {
+  static Future<T> ensure<T>(String key, Future<T> Function() fetch) async {
+    await whenHydrated();
     final cached = read<T>(key);
-    if (cached != null) return Future<T>.value(cached);
+    if (cached != null) return cached;
 
     final existing = _inFlight[key];
     if (existing != null) {

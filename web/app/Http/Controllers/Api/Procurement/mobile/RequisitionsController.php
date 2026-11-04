@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Procurement\mobile;
 
 use App\Http\Controllers\Api\Procurement\mobile\Concerns\BroadcastsProcurementCounts;
+use App\Http\Controllers\Api\Procurement\mobile\Concerns\PaginatesMobileProcurementLists;
 use App\Http\Controllers\Controller;
 use App\Models\Administration\BudgetRequest;
 use App\Models\Department;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Schema;
 class RequisitionsController extends Controller
 {
     use BroadcastsProcurementCounts;
+    use PaginatesMobileProcurementLists;
 
     public function __construct(
         protected ProcurementMobilePortalService $portal,
@@ -248,14 +250,13 @@ class RequisitionsController extends Controller
                 });
             })
             ->when($status !== '', fn ($q) => $q->where('status', $status))
-            ->orderByDesc('created_at')
-            ->limit(40);
+            ->orderByDesc('created_at');
 
-        $items = $query->get()->map(
-            fn (ProcurementRequisition $r) => $this->portal->serializeRequisitionListItem($r)
-        )->values();
-
-        return response()->json(['items' => $items]);
+        return $this->paginatedItemsResponse(
+            $request,
+            $query,
+            fn (ProcurementRequisition $r) => $this->portal->serializeRequisitionListItem($r),
+        );
     }
 
     public function show(Request $request, ProcurementRequisition $requisition): JsonResponse

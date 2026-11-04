@@ -120,23 +120,28 @@ class _DocumentsPageState extends State<DocumentsPage> {
     }
   }
 
+  void _uploadFromCache() {
+    final cached = _dataCache;
+    if (cached is Map<String, dynamic>) {
+      _upload(cached);
+      return;
+    }
+    _future.then((data) {
+      if (mounted) _upload(data);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return TichLiveRefreshBinder(
       onLiveRefresh: _liveRefresh,
       child: AdaptiveScaffold(
       title: 'Documents',
-      floatingActionButton: FutureBuilder(
-        future: _future,
-        builder: (context, snap) {
-          if (!snap.hasData) return const SizedBox.shrink();
-          return FloatingActionButton.extended(
-            backgroundColor: TichColors.green,
-            onPressed: () => _upload(snap.data!),
-            icon: const Icon(Icons.upload_file),
-            label: const Text('Upload'),
-          );
-        },
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: TichColors.green,
+        onPressed: _uploadFromCache,
+        icon: const Icon(Icons.upload_file),
+        label: const Text('Upload'),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -149,59 +154,69 @@ class _DocumentsPageState extends State<DocumentsPage> {
           final data = merged! as Map<String, dynamic>;
           final docs = data['documents'] as List? ?? const [];
           final requested = data['requested_types'] as List? ?? const [];
+          final leading = requested.isNotEmpty ? 2 : 0;
+          final docSlots = docs.isEmpty ? 1 : docs.length;
           return RefreshIndicator(
             onRefresh: () async => _reload(),
-            child: ListView(
+            child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-              children: [
-                if (requested.isNotEmpty)
-                  TichCard(
-                    child: Text(
-                      'Requested: ${requested.join(', ')}',
-                      style: tichUi(color: TichColors.blueDark),
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                if (docs.isEmpty)
-                  const TichCard(child: TichEmpty('No documents uploaded yet.'))
-                else
-                  ...docs.map((raw) {
-                    final d = Map<String, dynamic>.from(raw as Map);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: TichCard(
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    d['document_name']?.toString() ?? '',
-                                    style: tichUi(fontWeight: FontWeight.w700),
-                                  ),
-                                  Text(
-                                    '${d['document_type']} · ${d['status'] ?? (d['is_verified'] == true ? 'verified' : 'pending')}',
-                                    style: tichUi(
-                                      fontSize: 12,
-                                      color: TichColors.neutralMuted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            TichStatusChip(
-                              d['is_verified'] == true ? 'verified' : 'pending',
-                              tone: d['is_verified'] == true
-                                  ? TichChipTone.success
-                                  : TichChipTone.warning,
-                            ),
-                          ],
-                        ),
+              itemCount: leading + docSlots,
+              itemBuilder: (context, index) {
+                if (requested.isNotEmpty) {
+                  if (index == 0) {
+                    return TichCard(
+                      child: Text(
+                        'Requested: ${requested.join(', ')}',
+                        style: tichUi(color: TichColors.blueDark),
                       ),
                     );
-                  }),
-              ],
+                  }
+                  if (index == 1) {
+                    return const SizedBox(height: 12);
+                  }
+                }
+                final docIndex = index - leading;
+                if (docs.isEmpty) {
+                  return const TichCard(
+                    child: TichEmpty('No documents uploaded yet.'),
+                  );
+                }
+                final d =
+                    Map<String, dynamic>.from(docs[docIndex] as Map);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: TichCard(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                d['document_name']?.toString() ?? '',
+                                style: tichUi(fontWeight: FontWeight.w700),
+                              ),
+                              Text(
+                                '${d['document_type']} · ${d['status'] ?? (d['is_verified'] == true ? 'verified' : 'pending')}',
+                                style: tichUi(
+                                  fontSize: 12,
+                                  color: TichColors.neutralMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        TichStatusChip(
+                          d['is_verified'] == true ? 'verified' : 'pending',
+                          tone: d['is_verified'] == true
+                              ? TichChipTone.success
+                              : TichChipTone.warning,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },

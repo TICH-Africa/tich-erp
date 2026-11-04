@@ -564,22 +564,33 @@
                 </div>
             @endif
 
-            @include('academics.programs.partials.timetable-grid', [
-                'sessions' => $timetableDraft->sessions,
-                'dayLabels' => $timetableDayLabels,
-                'segmentTypes' => $timetableSegmentTypes,
-                'activeDays' => $activeDays,
-                'segments' => $gridSegments,
-                'editable' => $timetableEditable,
-                'canEditInvigilator' => $canEditInvigilator,
-                'moveSessionUrl' => $timetableEditable
-                    ? route('departments.academics.programs.timetable.move-session', array_merge($hub, [
+            @if ($timetableDraft->hasUploadedDocument())
+                @include('partials.timetable-uploaded-document', [
+                    'timetable' => $timetableDraft,
+                    'pdfUrl' => route('departments.academics.programs.timetable.pdf', array_merge($hub, [
                         'program' => $program->id,
                         'timetable' => $timetableDraft->id,
-                        'session' => '__SESSION__',
-                    ]))
-                    : null,
-            ])
+                    ])),
+                    'fileLabel' => $timetableDraft->source_name,
+                ])
+            @else
+                @include('academics.programs.partials.timetable-grid', [
+                    'sessions' => $timetableDraft->sessions,
+                    'dayLabels' => $timetableDayLabels,
+                    'segmentTypes' => $timetableSegmentTypes,
+                    'activeDays' => $activeDays,
+                    'segments' => $gridSegments,
+                    'editable' => $timetableEditable,
+                    'canEditInvigilator' => $canEditInvigilator,
+                    'moveSessionUrl' => $timetableEditable
+                        ? route('departments.academics.programs.timetable.move-session', array_merge($hub, [
+                            'program' => $program->id,
+                            'timetable' => $timetableDraft->id,
+                            'session' => '__SESSION__',
+                        ]))
+                        : null,
+                ])
+            @endif
 
             @if ($timetableEditable)
                 <script src="{{ asset('js/tich-timetable-drag.js') }}" defer></script>

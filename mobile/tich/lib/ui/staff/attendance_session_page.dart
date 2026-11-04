@@ -12,6 +12,7 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_document_capture.dart';
 import '../widgets/tich_live_refresh.dart';
+import '../widgets/tich_cached_network_image.dart';
 import '../widgets/tich_widgets.dart';
 import 'staff_helpers.dart';
 
@@ -432,12 +433,12 @@ class _AttendanceCaptureTile extends StatelessWidget {
           const SizedBox(height: 8),
           ClipRRect(
             borderRadius: TichRadius.borderRadiusMd,
-            child: Image.network(
-              imageUrl!,
+            child: TichCachedNetworkImage(
+              url: imageUrl!,
               height: 120,
               width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              maxDecodePx: 768,
+              error: const SizedBox.shrink(),
             ),
           ),
         ],

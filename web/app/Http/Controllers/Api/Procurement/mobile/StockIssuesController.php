@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Procurement\mobile;
 
 use App\Http\Controllers\Api\Procurement\mobile\Concerns\BroadcastsProcurementCounts;
+use App\Http\Controllers\Api\Procurement\mobile\Concerns\PaginatesMobileProcurementLists;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\InventoryItem;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Cache;
 class StockIssuesController extends Controller
 {
     use BroadcastsProcurementCounts;
+    use PaginatesMobileProcurementLists;
 
     public function __construct(
         protected ProcurementMobilePortalService $portal,
@@ -133,21 +135,30 @@ class StockIssuesController extends Controller
         ], 201);
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $issues = StockIssue::query()
+        $search = $request->string('search')->toString();
+
+        $query = StockIssue::query()
             ->select([
                 'id', 'inventory_item_id', 'department_id', 'quantity',
                 'approval_status', 'created_at',
             ])
             ->with(['item:id,item_name', 'department:id,dept_name'])
-            ->orderByDesc('created_at')
-            ->limit(40)
-            ->get()
-            ->map(fn (StockIssue $i) => $this->portal->serializeStockIssueListItem($i))
-            ->values();
+            ->when($search !== '', function ($q) use ($search) {
+                $q->where(function ($inner) use ($search) {
+                    $inner->whereHas('item', fn ($item) => $item->where('item_name', 'like', "%{$search}%")
+                        ->orWhere('item_code', 'like', "%{$search}%"))
+                        ->orWhereHas('department', fn ($dept) => $dept->where('dept_name', 'like', "%{$search}%"));
+                });
+            })
+            ->orderByDesc('created_at');
 
-        return response()->json(['items' => $issues]);
+        return $this->paginatedItemsResponse(
+            $request,
+            $query,
+            fn (StockIssue $i) => $this->portal->serializeStockIssueListItem($i),
+        );
     }
 
     public function show(StockIssue $stockIssue): JsonResponse

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../data/api_client.dart';
 import '../../data/tich_power_policy.dart';
+import '../../data/tich_realtime.dart';
+import '../../data/tich_realtime_signals.dart';
 import '../../data/tich_screen_cache.dart';
 import 'tich_page_skeleton.dart';
 import 'tich_tab_active_scope.dart';
@@ -212,6 +214,8 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
   bool _tabVisible = true;
   bool _appActive = true;
   DateTime? _lastAutoRefresh;
+  VoidCallback? _staleDataHook;
+  VoidCallback? _previousStaleHandler;
 
   bool get _shouldRun =>
       widget.enabled && _routeVisible && _tabVisible && _appActive;
@@ -220,6 +224,14 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _previousStaleHandler = TichRealtimeSignals.onDataStale;
+    _staleDataHook = () {
+      _previousStaleHandler?.call();
+      if (_shouldRun) {
+        _maybeAutoRefresh();
+      }
+    };
+    TichRealtimeSignals.onDataStale = _staleDataHook;
   }
 
   @override
@@ -260,11 +272,21 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
     widget.onLiveRefresh();
   }
 
+  Duration get _effectiveInterval {
+    if (TichRealtime.isConnected) {
+      return TichPowerPolicy.liveRefreshIntervalWithRealtime;
+    }
+    return widget.interval;
+  }
+
   void _syncTimer() {
     _timer?.cancel();
     _timer = null;
     if (!_shouldRun) return;
-    _timer = Timer.periodic(widget.interval, (_) => _maybeAutoRefresh());
+    if (TichRealtime.isConnected) {
+      return;
+    }
+    _timer = Timer.periodic(_effectiveInterval, (_) => _maybeAutoRefresh());
   }
 
   @override
@@ -303,6 +325,9 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
   @override
   void dispose() {
     _timer?.cancel();
+    if (TichRealtimeSignals.onDataStale == _staleDataHook) {
+      TichRealtimeSignals.onDataStale = _previousStaleHandler;
+    }
     tichRouteObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -316,7 +341,7 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
         if (mounted) _syncTabVisibility();
       });
     }
-    if (_shouldRun && _timer == null) {
+    if (_shouldRun && (_timer == null || TichRealtime.isConnected)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _syncTimer();
       });

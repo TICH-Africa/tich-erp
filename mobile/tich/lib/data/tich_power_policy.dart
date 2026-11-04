@@ -1,9 +1,12 @@
 /// Intervals and throttles tuned for battery (ERP data does not need second-level freshness).
 abstract final class TichPowerPolicy {
-  /// Visible screen auto-refresh while app is in foreground.
-  static const liveRefreshInterval = Duration(minutes: 5);
+  /// Visible screen auto-refresh while app is in foreground (no WebSocket).
+  static const liveRefreshInterval = Duration(minutes: 8);
 
-  static const liveRefreshMinGap = Duration(seconds: 45);
+  /// Fallback poll when Reverb is connected (push handles most updates).
+  static const liveRefreshIntervalWithRealtime = Duration(minutes: 20);
+
+  static const liveRefreshMinGap = Duration(seconds: 90);
 
   /// Bottom-nav badge poll while portal is open.
   static const navBadgeInterval = Duration(minutes: 5);

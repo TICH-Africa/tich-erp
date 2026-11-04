@@ -30,6 +30,7 @@ class LessonPlanContextService
             ->get();
 
         $session = $this->pickSession($sessions, $plannedDate);
+        $prefillFromTimetable = $session !== null;
 
         $intakeClass = trim((string) ($session?->class_group ?? ''));
         if ($intakeClass === '') {
@@ -43,13 +44,15 @@ class LessonPlanContextService
 
         return [
             'week_number' => $this->resolveWeekNumber($allocation, $plannedDate, $session),
-            'session_time' => $session ? $session->timeLabel() : '',
+            'session_time' => $prefillFromTimetable ? $session->timeLabel() : '',
             'intake_class' => $intakeClass,
             'venue' => $venue,
             'contact_hours' => $this->resolveContactHours($session, $allocation),
             'unit_code' => $allocation->unit?->unit_code,
             'unit_name' => $allocation->unit?->unit_name,
             'timetable_session_id' => $session?->id,
+            'prefill_from_timetable' => $prefillFromTimetable,
+            'timetable_linked' => $prefillFromTimetable,
         ];
     }
 

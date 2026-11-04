@@ -19,6 +19,7 @@ class StaffPortalDashboardService
     public function __construct(
         protected TimetableTemplateService $timetableTemplates,
         protected AcademicsAccessService $academicsAccess,
+        protected ProgramTimetableDocumentService $timetableDocuments,
     ) {}
 
     /**
@@ -210,10 +211,7 @@ class StaffPortalDashboardService
      */
     public function timetableMeta(Staff $staff): array
     {
-        $timetableIds = ProgramTimetableSession::query()
-            ->where('staff_id', $staff->id)
-            ->distinct()
-            ->pluck('program_timetable_id');
+        $timetableIds = $this->timetableIdsForStaff($staff);
 
         if ($timetableIds->isEmpty()) {
             return [
@@ -230,7 +228,7 @@ class StaffPortalDashboardService
             ->orderBy('timetable_kind')
             ->get([
                 'id', 'timetable_kind', 'title', 'teaching_period', 'status',
-                'program_id', 'campus_id',
+                'program_id', 'campus_id', 'source', 'source_file', 'source_name',
             ]);
 
         $primary = $timetables->firstWhere('timetable_kind', 'lesson') ?? $timetables->first();
@@ -258,10 +256,7 @@ class StaffPortalDashboardService
      */
     private function timetable(Staff $staff): array
     {
-        $timetableIds = ProgramTimetableSession::query()
-            ->where('staff_id', $staff->id)
-            ->distinct()
-            ->pluck('program_timetable_id');
+        $timetableIds = $this->timetableIdsForStaff($staff);
 
         $timetables = ProgramTimetable::query()
             ->with([
@@ -292,6 +287,21 @@ class StaffPortalDashboardService
             'teaching_period' => $primary?->teaching_period ?? 1,
             'is_provisional' => $timetables->contains(fn (ProgramTimetable $timetable) => ! $timetable->isPublished()),
         ];
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    protected function timetableIdsForStaff(Staff $staff): Collection
+    {
+        $fromSessions = ProgramTimetableSession::query()
+            ->where('staff_id', $staff->id)
+            ->distinct()
+            ->pluck('program_timetable_id');
+
+        $fromUpload = collect($this->timetableDocuments->uploadTimetableIdsForStaff($staff));
+
+        return $fromSessions->merge($fromUpload)->unique()->values();
     }
 
     /**

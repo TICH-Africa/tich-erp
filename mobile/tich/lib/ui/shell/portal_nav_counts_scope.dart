@@ -1,6 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../data/portal_sidebar_counts.dart';
+
+export '../../data/portal_sidebar_counts.dart';
+
 /// Updates [PortalNavCountsScope] for the More drawer without rebuilding tabs.
 class PortalNavCountsModel extends ChangeNotifier {
   Map<String, int> counts = const {};
@@ -42,15 +46,3 @@ class PortalNavCountsScope extends InheritedWidget {
   }
 }
 
-Map<String, int> parseSidebarCounts(Object? raw) {
-  if (raw is! Map) return const {};
-  final out = <String, int>{};
-  raw.forEach((key, value) {
-    if (key is! String) return;
-    final n = value is num ? value.toInt() : int.tryParse('$value');
-    if (n != null && n > 0) {
-      out[key] = n;
-    }
-  });
-  return out;
-}

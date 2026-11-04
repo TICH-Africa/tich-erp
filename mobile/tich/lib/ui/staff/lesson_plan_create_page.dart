@@ -162,11 +162,13 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
       if (!mounted) return;
       final defaults =
           Map<String, dynamic>.from(data['defaults'] as Map? ?? {});
+      final prefillFromTimetable = defaults['prefill_from_timetable'] != false;
       setState(() {
         if (defaults['week_number'] != null) {
           _weekNumber.text = '${defaults['week_number']}';
         }
-        if (!_sessionTimeEdited &&
+        if (prefillFromTimetable &&
+            !_sessionTimeEdited &&
             '${defaults['session_time'] ?? ''}'.trim().isNotEmpty) {
           _sessionTime.text = '${defaults['session_time']}';
         }
@@ -182,7 +184,6 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
       });
     } catch (_) {
       // Context autofill is optional; tutor can still complete the form.
-      _applySessionTimeFromTimetable();
     } finally {
       if (mounted) setState(() => _loadingContext = false);
     }

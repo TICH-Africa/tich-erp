@@ -46,6 +46,7 @@
         <div class="tich-form-group">
             <label class="tich-label">Session time</label>
             <input type="text" name="session_time" class="tich-input" value="{{ $fieldValue('session_time') }}" placeholder="08:00 - 10:00" data-lesson-plan-session-time required>
+            <p class="tich-caption tich-mt-2">Enter the time from your published timetable. When the programme uses an uploaded timetable only, this is not filled from the platform grid.</p>
         </div>
         <div class="tich-form-group">
             <label class="tich-label">Class / intake</label>

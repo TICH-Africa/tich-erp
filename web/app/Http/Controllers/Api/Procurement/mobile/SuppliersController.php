@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Procurement\mobile;
 
 use App\Http\Controllers\Api\Procurement\mobile\Concerns\BroadcastsProcurementCounts;
+use App\Http\Controllers\Api\Procurement\mobile\Concerns\PaginatesMobileProcurementLists;
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
 use App\Services\Procurement\ProcurementMobilePortalService;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 class SuppliersController extends Controller
 {
     use BroadcastsProcurementCounts;
+    use PaginatesMobileProcurementLists;
 
     public function __construct(
         protected ProcurementMobilePortalService $portal,
@@ -23,7 +25,7 @@ class SuppliersController extends Controller
     {
         $search = $request->string('search')->toString();
 
-        $items = Supplier::query()
+        $query = Supplier::query()
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('supplier_name', 'like', "%{$search}%")
@@ -34,14 +36,15 @@ class SuppliersController extends Controller
                 });
             })
             ->orderByDesc('created_at')
-            ->limit(40)
-            ->get([
+            ->select([
                 'id', 'supplier_code', 'supplier_name', 'email', 'compliance_status',
-            ])
-            ->map(fn (Supplier $s) => $this->portal->serializeSupplierListItem($s))
-            ->values();
+            ]);
 
-        return response()->json(['items' => $items]);
+        return $this->paginatedItemsResponse(
+            $request,
+            $query,
+            fn (Supplier $s) => $this->portal->serializeSupplierListItem($s),
+        );
     }
 
     public function store(Request $request): JsonResponse

@@ -16,7 +16,10 @@ import '../shell/portal_nav_counts_scope.dart';
 import '../widgets/tich_more_row_trailing.dart';
 import '../widgets/tich_widgets.dart';
 import 'assessment_take_page.dart';
+import 'student_academics_lazy_section.dart';
+import 'student_academics_payload.dart';
 import 'student_helpers.dart';
+import '../../data/tich_screen_cache.dart';
 
 class StudentAcademicsHubPage extends StatefulWidget {
   const StudentAcademicsHubPage({super.key, required this.api});
@@ -30,53 +33,81 @@ class StudentAcademicsHubPage extends StatefulWidget {
 class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
   late Future<Map<String, dynamic>> _future;
   Object? _dataCache;
+  Object? _payloadSource;
+  StudentAcademicsPayload? _payload;
+  List<AcademicsHubSection>? _hubSections;
+
+  void _applyAcademicsData(Map<String, dynamic> data) {
+    if (identical(_payloadSource, data) && _hubSections != null) return;
+    _payloadSource = data;
+    _payload = StudentAcademicsPayload.parse(data);
+    _hubSections = _buildHubSections(_payload!);
+  }
+
+  void _onAcademicsCache(Object? cache) {
+    _dataCache = cache;
+    if (cache is Map<String, dynamic>) {
+      _applyAcademicsData(cache);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    final cached =
+        TichScreenCache.read<Map<String, dynamic>>('student.academics');
+    if (cached != null) {
+      _applyAcademicsData(cached);
+    }
     studentPrimeScreen(
       persistKey: 'student.academics',
-      setCache: (c) => _dataCache = c,
+      setCache: _onAcademicsCache,
       setFuture: (f) => _future = f,
       fetch: () => widget.api.academics(),
     );
   }
 
   Future<void> _reload() => studentCachedReload(
-      mounted: () => mounted,
-      setState: setState,
-      fetch: () => widget.api.academics(),
-      onData: (data) => _dataCache = data,
-      persistKey: 'student.academics',
-    );
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.academics(),
+        onData: (data) {
+          _onAcademicsCache(data);
+        },
+        persistKey: 'student.academics',
+      );
 
   void _liveRefresh() {
     tichSilentReload(
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.academics(),
-      onData: (data) => _dataCache = data,
+      onData: (data) {
+        _onAcademicsCache(data);
+      },
       persistKey: 'student.academics',
     );
   }
 
-  void _openSection(String title, Widget Function(Map<String, dynamic>) builder) {
-    _future.then((data) {
-      if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => AdaptiveScaffold(
-            title: title,
-            body: builder(data),
-          ),
+  void _openPayloadSection(
+    String title,
+    Widget Function(StudentAcademicsPayload payload) body,
+  ) {
+    final payload = _payload;
+    if (payload == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AdaptiveScaffold(
+          title: title,
+          body: body(payload),
         ),
-      );
-    });
+      ),
+    );
   }
 
   Widget _listSection({
     required String empty,
-    required List items,
+    required List<Map<String, dynamic>> items,
     required Widget Function(Map<String, dynamic>) tile,
   }) {
     if (items.isEmpty) {
@@ -89,8 +120,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       padding: const EdgeInsets.all(16),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, i) =>
-          tile(Map<String, dynamic>.from(items[i] as Map)),
+      itemBuilder: (context, i) => tile(items[i]),
     );
   }
 
@@ -98,73 +128,93 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
     return PortalNavCountsScope.maybeOf(context)?.countFor(key) ?? 0;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final sections = <(String title, IconData icon, String badgeKey, VoidCallback onTap)>[
-      (
-        'My units',
-        Icons.menu_book_outlined,
-        'academics.units',
-        () => _openSection(
-              'My units',
-              (data) {
-                final academics =
-                    Map<String, dynamic>.from(data['academics'] as Map? ?? {});
-                final units = (academics['registered_units'] as List? ?? const [])
-                    .map((e) => Map<String, dynamic>.from(e as Map))
-                    .toList();
+  List<AcademicsHubSection> _buildHubSections(StudentAcademicsPayload p) {
+    return [
+      AcademicsHubSection(
+        title: 'My units',
+        icon: Icons.menu_book_outlined,
+        badgeKey: 'academics.units',
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => StudentAcademicsLazySection(
+              title: 'My units',
+              cacheKey: 'student.academics.units',
+              fetch: () => widget.api.academicsUnits(),
+              builder: (data) {
+                final units = [
+                  for (final u in (data['registered_units'] as List? ?? const []))
+                    if (u is Map) Map<String, dynamic>.from(u),
+                ];
                 return _StudentUnitsSection(units: units);
               },
             ),
+          ),
+        ),
       ),
-      (
-        'Learning content',
-        Icons.folder_open_outlined,
-        'academics.content',
-        () => _openSection(
-              'Learning content',
-              (data) {
-                final academics =
-                    Map<String, dynamic>.from(data['academics'] as Map? ?? {});
-                final content = academics['unit_content'] as List? ?? const [];
+      AcademicsHubSection(
+        title: 'Learning content',
+        icon: Icons.folder_open_outlined,
+        badgeKey: 'academics.content',
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => StudentAcademicsLazySection(
+              title: 'Learning content',
+              cacheKey: 'student.academics.content',
+              fetch: () => widget.api.academicsContent(),
+              builder: (data) {
+                final items = [
+                  for (final c in (data['unit_content'] as List? ?? const []))
+                    if (c is Map) Map<String, dynamic>.from(c),
+                ];
                 return _listSection(
                   empty: 'No published content yet.',
-                  items: content,
+                  items: items,
                   tile: (c) => TichCard(
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(c['title']?.toString() ?? 'Content',
-                          style: tichUi(fontWeight: FontWeight.w600)),
+                      title: Text(
+                        c['title']?.toString() ?? 'Content',
+                        style: tichUi(fontWeight: FontWeight.w600),
+                      ),
                       subtitle: Text(
                         [
                           c['unit_code'],
                           c['content_type'],
                           formatDateTime(c['published_at']),
-                        ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
+                        ]
+                            .where((e) => e != null && '$e'.isNotEmpty)
+                            .join(' · '),
                       ),
                     ),
                   ),
                 );
               },
             ),
+          ),
+        ),
       ),
-      (
-        'Assessments',
-        Icons.quiz_outlined,
-        'academics.assessments',
-        () => _openSection(
-              'Assessments',
-              (data) {
-                final academics =
-                    Map<String, dynamic>.from(data['academics'] as Map? ?? {});
-                final items = academics['assessments'] as List? ?? const [];
+      AcademicsHubSection(
+        title: 'Assessments',
+        icon: Icons.quiz_outlined,
+        badgeKey: 'academics.assessments',
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => StudentAcademicsLazySection(
+              title: 'Assessments',
+              cacheKey: 'student.academics.assessments',
+              fetch: () => widget.api.academicsAssessments(),
+              builder: (data) {
+                final assessments = [
+                  for (final a in (data['assessments'] as List? ?? const []))
+                    if (a is Map) Map<String, dynamic>.from(a),
+                ];
                 return _listSection(
                   empty: 'No assessments available.',
-                  items: items,
+                  items: assessments,
                   tile: (a) {
-                    final sub = a['submission'] is Map
-                        ? Map<String, dynamic>.from(a['submission'] as Map)
-                        : null;
+              final sub = a['submission'] is Map
+                  ? a['submission'] as Map<String, dynamic>
+                  : null;
                     final id = (a['id'] as num?)?.toInt();
                     final canTake = sub == null &&
                         (a['status']?.toString() == 'ready' ||
@@ -228,29 +278,28 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                 );
               },
             ),
+          ),
+        ),
       ),
-      (
-        'Exams & grades',
-        Icons.grade_outlined,
-        'academics.exams',
-        () => _openSection(
-              'Exams & grades',
-              (data) {
-                final academics =
-                    Map<String, dynamic>.from(data['academics'] as Map? ?? {});
-                final grades = academics['grades'] as List? ?? const [];
-                final cats = academics['cat_scores'] as List? ?? const [];
-                final exams = academics['exam_results'] as List? ?? const [];
-                return ListView(
+      AcademicsHubSection(
+        title: 'Exams & grades',
+        icon: Icons.grade_outlined,
+        badgeKey: 'academics.exams',
+        onTap: () => _openPayloadSection(
+          'Exams & grades',
+          (payload) {
+            final grades = payload.grades;
+            final cats = payload.catScores;
+            final exams = payload.examResults;
+            return ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
                     const TichSectionHeader('Grades'),
                     if (grades.isEmpty)
                       const TichCard(child: TichEmpty('No grades yet.'))
                     else
-                      ...grades.map((raw) {
-                        final g = Map<String, dynamic>.from(raw as Map);
-                        return Padding(
+                      for (final g in grades)
+                        Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: TichCard(
                             child: ListTile(
@@ -265,16 +314,14 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                               ),
                             ),
                           ),
-                        );
-                      }),
+                        ),
                     const SizedBox(height: 12),
                     const TichSectionHeader('CAT scores'),
                     if (cats.isEmpty)
                       const TichCard(child: TichEmpty('No CAT scores yet.'))
                     else
-                      ...cats.take(20).map((raw) {
-                        final c = Map<String, dynamic>.from(raw as Map);
-                        return Padding(
+                      for (final c in cats.take(20))
+                        Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: TichCard(
                             child: Text(
@@ -283,16 +330,14 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                               style: tichUi(fontSize: 13),
                             ),
                           ),
-                        );
-                      }),
+                        ),
                     const SizedBox(height: 12),
                     const TichSectionHeader('Exam results'),
                     if (exams.isEmpty)
                       const TichCard(child: TichEmpty('No exam results yet.'))
                     else
-                      ...exams.take(20).map((raw) {
-                        final e = Map<String, dynamic>.from(raw as Map);
-                        return Padding(
+                      for (final e in exams.take(20))
+                        Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: TichCard(
                             child: Text(
@@ -301,8 +346,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                               style: tichUi(fontSize: 13),
                             ),
                           ),
-                        );
-                      }),
+                        ),
                     const SizedBox(height: 16),
                     AdaptiveFilledButton(
                       onPressed: () async {
@@ -353,175 +397,163 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                     ),
                   ],
                 );
-              },
-            ),
+          },
+        ),
       ),
-      (
-        'Attendance',
-        Icons.how_to_reg_outlined,
-        'academics.attendance',
-        () => _openSection(
-              'Attendance',
-              (data) {
-                final academics =
-                    Map<String, dynamic>.from(data['academics'] as Map? ?? {});
-                final items = academics['attendance'] as List? ?? const [];
-                return _listSection(
-                  empty: 'No attendance summaries yet.',
-                  items: items,
-                  tile: (a) => TichCard(
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        '${a['unit_code'] ?? ''} · ${a['unit_name'] ?? ''}',
-                        style: tichUi(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        '${a['attendance_percentage'] ?? 0}% · '
-                        '${a['total_present'] ?? 0}/${a['total_sessions'] ?? 0} sessions',
-                      ),
-                      trailing: TichStatusChip(
-                        studentAttendanceStatusLabel(a),
-                        tone: studentAttendanceTone(a),
-                      ),
-                    ),
+      AcademicsHubSection(
+        title: 'Attendance',
+        icon: Icons.how_to_reg_outlined,
+        badgeKey: 'academics.attendance',
+        onTap: () => _openPayloadSection(
+          'Attendance',
+          (payload) => _listSection(
+            empty: 'No attendance summaries yet.',
+            items: payload.attendance,
+            tile: (a) => TichCard(
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  '${a['unit_code'] ?? ''} · ${a['unit_name'] ?? ''}',
+                  style: tichUi(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  '${a['attendance_percentage'] ?? 0}% · '
+                  '${a['total_present'] ?? 0}/${a['total_sessions'] ?? 0} sessions',
+                ),
+                trailing: TichStatusChip(
+                  studentAttendanceStatusLabel(a),
+                  tone: studentAttendanceTone(a),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      AcademicsHubSection(
+        title: 'Academic progress',
+        icon: Icons.timeline_outlined,
+        badgeKey: 'academics.progress',
+        onTap: () => _openPayloadSection(
+          'Academic progress',
+          (payload) {
+            final academics = payload.academics;
+            final periods = payload.periods;
+            final curriculum = payload.curriculumUnits;
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                TichCard(
+                  child: Text(
+                    'Registered units: ${academics['registered_unit_count'] ?? 0}\n'
+                    'Curriculum units: ${curriculum.length}\n'
+                    'Current period: ${academics['current_period'] is Map ? (academics['current_period'] as Map)['label'] ?? '-' : '-'}',
+                    style: tichUi(fontSize: 13, height: 1.5),
                   ),
-                );
-              },
-            ),
-      ),
-      (
-        'Academic progress',
-        Icons.timeline_outlined,
-        'academics.progress',
-        () => _openSection(
-              'Academic progress',
-              (data) {
-                final academics =
-                    Map<String, dynamic>.from(data['academics'] as Map? ?? {});
-                final periods = academics['periods'] as List? ?? const [];
-                final curriculum =
-                    academics['curriculum_units'] as List? ?? const [];
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    TichCard(
-                      child: Text(
-                        'Registered units: ${academics['registered_unit_count'] ?? 0}\n'
-                        'Curriculum units: ${curriculum.length}\n'
-                        'Current period: ${academics['current_period'] is Map ? (academics['current_period'] as Map)['label'] ?? '-' : '-'}',
-                        style: tichUi(fontSize: 13, height: 1.5),
+                ),
+                const SizedBox(height: 12),
+                const TichSectionHeader('Periods'),
+                if (periods.isEmpty)
+                  const TichCard(child: TichEmpty('No curriculum periods.'))
+                else
+                  for (final period in periods)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: TichCard(
+                        child: Text(
+                          '${period['label']?.toString().isNotEmpty == true ? period['label'] : 'Semester ${period['semester'] ?? ''}'} · '
+                          '${formatDateTime(period['starts_at'])} → ${formatDateTime(period['ends_at'])}',
+                          style: tichUi(fontSize: 13),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const TichSectionHeader('Periods'),
-                    if (periods.isEmpty)
-                      const TichCard(child: TichEmpty('No curriculum periods.'))
-                    else
-                      ...periods.map((raw) {
-                        final p = Map<String, dynamic>.from(raw as Map);
-                        final label = p['label']?.toString().isNotEmpty == true
-                            ? p['label'].toString()
-                            : 'Semester ${p['semester'] ?? ''}';
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: TichCard(
-                            child: Text(
-                              '$label · ${formatDateTime(p['starts_at'])} → ${formatDateTime(p['ends_at'])}',
-                              style: tichUi(fontSize: 13),
-                            ),
-                          ),
-                        );
-                      }),
-                  ],
-                );
-              },
-            ),
+              ],
+            );
+          },
+        ),
       ),
-      (
-        'Exam eligibility',
-        Icons.verified_outlined,
-        'academics.eligibility',
-        () => _openSection(
-              'Exam eligibility',
-              (data) {
-                final academics =
-                    Map<String, dynamic>.from(data['academics'] as Map? ?? {});
-                final student =
-                    Map<String, dynamic>.from(data['student'] as Map? ?? {});
-                return _StudentExamEligibilitySection(
-                  api: widget.api,
-                  academics: academics,
-                  feeClearanceStatus:
-                      student['fee_clearance_status']?.toString(),
-                );
-              },
-            ),
+      AcademicsHubSection(
+        title: 'Exam eligibility',
+        icon: Icons.verified_outlined,
+        badgeKey: 'academics.eligibility',
+        onTap: () => _openPayloadSection(
+          'Exam eligibility',
+          (payload) => _StudentExamEligibilitySection(
+            api: widget.api,
+            academics: payload.academics,
+            feeClearanceStatus:
+                payload.student['fee_clearance_status']?.toString(),
+          ),
+        ),
       ),
-      (
-        'Supp / special exams',
-        Icons.edit_note_outlined,
-        'academics.exam-requests',
-        () => _openSection(
-              'Supp / special exams',
-              (data) {
-                final academics =
-                    Map<String, dynamic>.from(data['academics'] as Map? ?? {});
-                final units =
-                    academics['registered_units'] as List? ?? const [];
-                final special =
-                    data['special_exam_requests'] as List? ?? const [];
-                final supp =
-                    data['supplementary_exam_requests'] as List? ?? const [];
-                return _ExamRequestsInteractive(
-                  api: widget.api,
-                  units: units,
-                  special: special,
-                  supplementary: supp,
-                  onChanged: _reload,
-                );
-              },
-            ),
+      AcademicsHubSection(
+        title: 'Supp / special exams',
+        icon: Icons.edit_note_outlined,
+        badgeKey: 'academics.exam-requests',
+        onTap: () => _openPayloadSection(
+          'Supp / special exams',
+          (payload) => _ExamRequestsInteractive(
+            api: widget.api,
+            units: payload.registeredUnits,
+            special: payload.specialExamRequests,
+            supplementary: payload.supplementaryExamRequests,
+            onChanged: _reload,
+          ),
+        ),
       ),
     ];
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return TichLiveRefreshBinder(
       onLiveRefresh: _liveRefresh,
       child: AdaptiveScaffold(
-      title: 'Academics',
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _future,
-        builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'student.academics');
-          if (tichShowLoadingSpinner(snap, merged)) { return studentLoadingBody(onRefresh: () async => _reload()); }
-          if (merged == null && snap.hasError) {
-            return studentErrorBody(snap.error, _reload);
-          }
-          return RefreshIndicator(
-            onRefresh: () async => _reload(),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: sections.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, i) {
-                final s = sections[i];
-                final badge = _sectionBadge(context, s.$3);
-                return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: TichColors.blueLight,
-                      child: Icon(s.$2, color: TichColors.blueDark),
+        title: 'Academics',
+        body: FutureBuilder<Map<String, dynamic>>(
+          future: _future,
+          builder: (context, snap) {
+            final merged = tichMergeSnapshot(
+              snap,
+              _dataCache as dynamic,
+              persistKey: 'student.academics',
+            );
+            if (tichShowLoadingSpinner(snap, merged)) {
+              return studentLoadingBody(onRefresh: () async => _reload());
+            }
+            if (merged == null && snap.hasError) {
+              return studentErrorBody(snap.error, _reload);
+            }
+            final data = merged! as Map<String, dynamic>;
+            _applyAcademicsData(data);
+            final sections = _hubSections ?? const <AcademicsHubSection>[];
+            return RefreshIndicator(
+              onRefresh: () async => _reload(),
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: sections.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, i) {
+                  final s = sections[i];
+                  final badge = _sectionBadge(context, s.badgeKey);
+                  return Card(
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: TichColors.blueLight,
+                        child: Icon(s.icon, color: TichColors.blueDark),
+                      ),
+                      title: Text(
+                        s.title,
+                        style: tichUi(fontWeight: FontWeight.w600),
+                      ),
+                      trailing: TichMoreRowTrailing(badgeCount: badge),
+                      onTap: s.onTap,
                     ),
-                    title: Text(s.$1, style: tichUi(fontWeight: FontWeight.w600)),
-                    trailing: TichMoreRowTrailing(badgeCount: badge),
-                    onTap: s.$4,
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
   }

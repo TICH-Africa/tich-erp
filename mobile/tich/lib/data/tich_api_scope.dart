@@ -5,6 +5,7 @@ import '../models/auth_user.dart';
 import '../navigation/tich_root_nav.dart';
 import 'api_client.dart';
 import 'employee_api.dart';
+import 'employee_badge_service.dart';
 import 'procurement_api.dart';
 import 'staff_api.dart';
 import 'student_api.dart';
@@ -44,8 +45,14 @@ class TichApiScope extends StatelessWidget {
 
     return MultiRepositoryProvider(
       providers: [
-        if (user.canAccessEmployeePortal)
+        if (user.canAccessEmployeePortal) ...[
           RepositoryProvider<EmployeeApi>(create: (_) => EmployeeApi(client)),
+          RepositoryProvider<EmployeeBadgeService>(
+            create: (ctx) =>
+                EmployeeBadgeService(ctx.read<EmployeeApi>())..start(),
+            dispose: (service) => service.dispose(),
+          ),
+        ],
         if (user.canAccessStaffPortal)
           RepositoryProvider<StaffApi>(create: (_) => StaffApi(client)),
         if (user.canAccessProcurementPortal)

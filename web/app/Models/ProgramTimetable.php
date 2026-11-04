@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ProgramTimetableDocumentService;
 use App\Support\UiText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -151,5 +152,15 @@ class ProgramTimetable extends Model
     public function isPublished(): bool
     {
         return $this->status === 'published';
+    }
+
+    public function hasUploadedDocument(): bool
+    {
+        return app(ProgramTimetableDocumentService::class)->usesUploadedFile($this);
+    }
+
+    public function hasViewableDocument(): bool
+    {
+        return app(ProgramTimetableDocumentService::class)->hasViewableDocument($this);
     }
 }

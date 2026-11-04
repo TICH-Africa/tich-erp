@@ -12,6 +12,7 @@ import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'procurement_helpers.dart';
 import 'procurement_create_requisition_page.dart';
+import 'procurement_paged_list.dart';
 import 'procurement_raise_stock_issue_page.dart';
 
 final _kes = NumberFormat.currency(symbol: 'KES ', decimalDigits: 0);
@@ -27,21 +28,9 @@ class ProcurementRequisitionsPage extends StatefulWidget {
 }
 
 class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPage> {
-  late Future<Map<String, dynamic>> _future;
-  Object? _cache;
+  final _listKey = GlobalKey<ProcurementPagedListState>();
   Timer? _searchDebounce;
   String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    procurementPrimeScreen(
-      persistKey: 'procurement.requisitions',
-      setCache: (c) => _cache = c,
-      setFuture: (f) => _future = f,
-      fetch: () => widget.api.requisitions(),
-    );
-  }
 
   @override
   void dispose() {
@@ -49,29 +38,14 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
     super.dispose();
   }
 
-  void _load({String? search}) {
-    procurementUpdateFuture(
-      setState,
-      (f) {
-        _future = f;
-      },
-      () => widget.api.requisitions(
-        search: search != null && search.isNotEmpty ? search : null,
-      ),
-      mounted: () => mounted,
-      onData: (d) => _cache = d,
-    );
-  }
-
   void _onSearchChanged(String q) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 320), () {
-      _query = q;
-      _load(search: q);
+      setState(() => _query = q);
     });
   }
 
-  void _reload() => _load(search: _query);
+  void _reload() => _listKey.currentState?.refresh();
 
   Future<void> _openCreate() async {
     final id = await Navigator.of(context).push<int>(
@@ -111,7 +85,7 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
         label: const Text('New requisition'),
       ),
       body: TichLiveRefreshBinder(
-        onLiveRefresh: () => _load(search: _query),
+        onLiveRefresh: _reload,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -120,100 +94,62 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
               onQueryChanged: _onSearchChanged,
             ),
             Expanded(
-              child: FutureBuilder<Map<String, dynamic>>(
-                future: _future,
-                builder: (context, snap) {
-                  final merged = tichMergeSnapshot(
-                    snap,
-                    _cache as dynamic,
-                    persistKey: 'procurement.requisitions',
-                  );
-                  if (tichShowLoadingSpinner(snap, merged)) {
-                    return procurementLoadingBody(onRefresh: () async => _reload());
-                  }
-                  if (merged == null && snap.hasError) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(tichDescribeError(snap.error)),
-                          TextButton(
-                            onPressed: _reload,
-                            child: const Text('Retry'),
+              child: ProcurementPagedList(
+                key: _listKey,
+                cacheKey: 'procurement.requisitions',
+                searchQuery: _query,
+                emptyMessage: 'No requisitions yet. Tap New requisition.',
+                fetch: ({required page, search}) => widget.api.requisitions(
+                  page: page,
+                  search: search,
+                ),
+                itemBuilder: (r) {
+                  final id = (r['id'] as num).toInt();
+                  final dept = (r['department'] ?? '').toString();
+                  final reqDate = formatDate(r['request_date']);
+                  return TichCard(
+                    onTap: () => _openDetail(id),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (r['requisition_number'] ?? '').toString(),
+                          style: TichTheme.display(fontSize: 15),
+                        ),
+                        Text(
+                          (r['requested_item'] ?? '').toString(),
+                          style: tichUi(
+                            fontSize: 13,
+                            color: TichColors.neutralMuted,
+                          ),
+                        ),
+                        if (dept.isNotEmpty || reqDate != '-') ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            [
+                              if (dept.isNotEmpty) dept,
+                              if (reqDate != '-') reqDate,
+                            ].join(' · '),
+                            style: tichUi(
+                              fontSize: 12,
+                              color: TichColors.neutralMuted,
+                            ),
                           ),
                         ],
-                      ),
-                    );
-                  }
-                  final items = (merged as Map<String, dynamic>)['items'] as List? ?? [];
-                  if (items.isEmpty) {
-                    return Center(
-                      child: Text(
-                        _query.isEmpty
-                            ? 'No requisitions yet. Tap New requisition.'
-                            : 'No matches for "$_query".',
-                        textAlign: TextAlign.center,
-                        style: tichUi(color: TichColors.neutralMuted),
-                      ),
-                    );
-                  }
-                  return RefreshIndicator(
-                    onRefresh: () async => _reload(),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: items.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, i) {
-                        final r = Map<String, dynamic>.from(items[i] as Map);
-                        final id = (r['id'] as num).toInt();
-                        final dept = (r['department'] ?? '').toString();
-                        final reqDate = formatDate(r['request_date']);
-                        return TichCard(
-                          onTap: () => _openDetail(id),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                (r['requisition_number'] ?? '').toString(),
-                                style: TichTheme.display(fontSize: 15),
-                              ),
-                              Text(
-                                (r['requested_item'] ?? '').toString(),
-                                style: tichUi(
-                                  fontSize: 13,
-                                  color: TichColors.neutralMuted,
-                                ),
-                              ),
-                              if (dept.isNotEmpty || reqDate != '-') ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  [
-                                    if (dept.isNotEmpty) dept,
-                                    if (reqDate != '-') reqDate,
-                                  ].join(' · '),
-                                  style: tichUi(
-                                    fontSize: 12,
-                                    color: TichColors.neutralMuted,
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  procurementStatusChip(
-                                    (r['status_label'] ?? '').toString(),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    _kes.format((r['estimated_cost'] as num?) ?? 0),
-                                    style: tichUi(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            procurementStatusChip(
+                              (r['status_label'] ?? '').toString(),
+                            ),
+                            const Spacer(),
+                            Text(
+                              _kes.format((r['estimated_cost'] as num?) ?? 0),
+                              style: tichUi(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -1187,7 +1123,7 @@ class _ProcurementAssetsPageState extends State<ProcurementAssetsPage> {
   }
 }
 
-class ProcurementAssetDetailPage extends StatelessWidget {
+class ProcurementAssetDetailPage extends StatefulWidget {
   const ProcurementAssetDetailPage({
     super.key,
     required this.api,
@@ -1198,17 +1134,47 @@ class ProcurementAssetDetailPage extends StatelessWidget {
   final int id;
 
   @override
+  State<ProcurementAssetDetailPage> createState() =>
+      _ProcurementAssetDetailPageState();
+}
+
+class _ProcurementAssetDetailPageState
+    extends State<ProcurementAssetDetailPage> {
+  late Future<Map<String, dynamic>> _future;
+  Object? _cache;
+
+  String get _cacheKey => 'procurement.asset.${widget.id}';
+
+  @override
+  void initState() {
+    super.initState();
+    procurementPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.asset(widget.id),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'Asset',
       body: FutureBuilder<Map<String, dynamic>>(
-        future: api.asset(id),
+        future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return procurementLoadingBody();
-          if (snap.hasError) {
+          final merged = tichMergeSnapshot(
+            snap,
+            _cache as dynamic,
+            persistKey: _cacheKey,
+          );
+          if (tichShowLoadingSpinner(snap, merged)) {
+            return procurementLoadingBody();
+          }
+          if (merged == null && snap.hasError) {
             return Center(child: Text(tichDescribeError(snap.error)));
           }
-          final r = snap.data!;
+          final r = merged! as Map<String, dynamic>;
           return ProcurementDetailBody(
             children: [
               procurementDetailHero(

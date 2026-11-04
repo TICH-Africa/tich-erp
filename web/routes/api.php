@@ -135,7 +135,8 @@ Route::get('/session-check', function () {
 | Mobile / Sanctum employee self-service portal.
 | MFA is intentionally not required here (product: mobile v1).
 */
-Route::middleware(['auth:sanctum', 'employee.portal'])->prefix('employee')->group(function () {
+Route::middleware(['auth:sanctum', 'employee.portal', 'employee.time-logs.complete'])->prefix('employee')->group(function () {
+    Route::get('/time-log-compliance', \App\Http\Controllers\Api\Employee\mobile\TimeLogComplianceController::class);
     Route::get('/dashboard', \App\Http\Controllers\Api\Employee\mobile\DashboardController::class);
     Route::get('/notifications', \App\Http\Controllers\Api\Employee\mobile\NotificationController::class);
     Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Api\Employee\mobile\NotificationController::class, 'markRead']);
@@ -186,6 +187,9 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
     Route::get('/dashboard', \App\Http\Controllers\Api\Student\mobile\DashboardController::class);
     Route::get('/sidebar-notifications', \App\Http\Controllers\Api\Student\mobile\SidebarNotificationsController::class);
     Route::get('/academics', \App\Http\Controllers\Api\Student\mobile\AcademicsController::class);
+    Route::get('/academics/units', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'units']);
+    Route::get('/academics/content', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'content']);
+    Route::get('/academics/assessments', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'assessments']);
     Route::get('/academics/exam-card/pdf', [\App\Http\Controllers\Api\Student\mobile\ExamCardController::class, 'pdf']);
     Route::get('/timetable', \App\Http\Controllers\Api\Student\mobile\TimetableController::class);
     Route::get('/timetable/{timetable}/pdf', \App\Http\Controllers\Api\Student\mobile\TimetablePdfController::class);

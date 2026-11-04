@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Student\mobile\Concerns;
 
 use App\Models\Student;
+use App\Services\ProgramTimetableDocumentService;
 use Illuminate\Support\Collection;
 
 trait SerializesStudentPortal
@@ -49,6 +50,8 @@ trait SerializesStudentPortal
         return [
             'registered_unit_count' => (int) ($a['registered_unit_count'] ?? 0),
             'programme_unit_count' => (int) ($a['programme_unit_count'] ?? 0),
+            'unit_content_count' => (int) ($a['unit_content_count'] ?? collect($a['unit_content'] ?? [])->count()),
+            'assessment_count' => (int) ($a['assessment_count'] ?? collect($a['assessments'] ?? [])->count()),
             'curriculum_is_published' => (bool) ($a['curriculum_is_published'] ?? false),
             'current_period_status' => $a['current_period_status'] ?? null,
             'current_semester' => $a['current_semester'] ? [
@@ -128,6 +131,7 @@ trait SerializesStudentPortal
     {
         $t = $portalData['timetable'] ?? [];
         $timetables = collect($t['timetables'] ?? []);
+        $documents = app(ProgramTimetableDocumentService::class);
 
         return [
             'teaching_period' => $t['teaching_period'] ?? null,
@@ -137,8 +141,8 @@ trait SerializesStudentPortal
             'current_timetable_id' => $t['timetable']?->id ?? null,
             'day_labels' => $t['day_labels'] ?? [],
             'active_days' => $t['active_days'] ?? [1, 2, 3, 4, 5],
-            'timetables' => $timetables->map(function ($tt) use ($t) {
-                return [
+            'timetables' => $timetables->map(function ($tt) use ($t, $documents) {
+                return array_merge([
                     'id' => $tt->id,
                     'kind' => $tt->timetable_kind,
                     'status' => $tt->status,
@@ -168,7 +172,7 @@ trait SerializesStudentPortal
                         'week_to' => $s->week_to,
                         'recurrence' => $s->recurrence,
                     ])->values()->all(),
-                ];
+                ], $documents->mobileDocumentMeta($tt));
             })->values()->all(),
         ];
     }

@@ -238,6 +238,10 @@ class HrSidebarNotificationService
 
     private function pendingWfhCount(): int
     {
+        if (! \App\Support\WorkFromHomePortal::enabled()) {
+            return 0;
+        }
+
         if (! Schema::hasTable('work_from_home_requests')) {
             return 0;
         }

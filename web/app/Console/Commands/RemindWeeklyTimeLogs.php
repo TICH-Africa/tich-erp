@@ -7,7 +7,6 @@ use App\Services\PlatformNotificationService;
 use App\Services\WeeklyTimeLogService;
 use App\Support\ModuleMail;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class RemindWeeklyTimeLogs extends Command
@@ -57,7 +56,7 @@ class RemindWeeklyTimeLogs extends Command
             }
 
             $userId = (int) $staff->user_id;
-            if ($this->alreadyNotified($userId, $entityId, $notificationTitle)) {
+            if ($timeLogs->reminderSentForMonth($userId, $entityId, $notificationTitle)) {
                 $skipped++;
 
                 continue;
@@ -116,17 +115,4 @@ class RemindWeeklyTimeLogs extends Command
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
 
-    private function alreadyNotified(int $userId, string $entityId, string $title): bool
-    {
-        if (! Schema::hasTable('notifications')) {
-            return false;
-        }
-
-        return DB::table('notifications')
-            ->where('user_id', $userId)
-            ->where('related_entity_type', 'weekly_time_log_reminder')
-            ->where('related_entity_id', $entityId)
-            ->where('title', $title)
-            ->exists();
-    }
 }

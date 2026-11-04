@@ -68,6 +68,14 @@
     }
 
     function applyContext(form, data) {
+        if (data.prefill_from_timetable === false) {
+            setFieldValue(form, '[data-lesson-plan-week]', data.week_number);
+            setFieldValue(form, '[data-lesson-plan-intake]', data.intake_class);
+            setFieldValue(form, '[data-lesson-plan-venue]', data.venue);
+            setFieldValue(form, '[data-lesson-plan-hours]', data.contact_hours);
+            return;
+        }
+
         setFieldValue(form, '[data-lesson-plan-week]', data.week_number);
         setFieldValue(form, '[data-lesson-plan-session-time]', data.session_time);
         setFieldValue(form, '[data-lesson-plan-intake]', data.intake_class);

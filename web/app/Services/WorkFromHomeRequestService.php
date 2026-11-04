@@ -7,6 +7,7 @@ use App\Models\Staff;
 use App\Models\User;
 use App\Models\WorkFromHomeRequest;
 use App\Support\ModuleMail;
+use App\Support\WorkFromHomePortal;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -91,6 +92,10 @@ class WorkFromHomeRequestService
      */
     public function submit(Staff $staff, User $user, array $data): WorkFromHomeRequest
     {
+        if (! WorkFromHomePortal::enabled()) {
+            throw new \RuntimeException(WorkFromHomePortal::UNAVAILABLE_MESSAGE);
+        }
+
         $workDate = Carbon::parse($data['work_date'])->startOfDay();
         if ($workDate->isWeekend()) {
             throw new \RuntimeException('Work from home requests are Monday to Friday only.');
@@ -185,6 +190,10 @@ class WorkFromHomeRequestService
 
     public function approve(WorkFromHomeRequest $request, Staff $hr, array $considerations, ?string $notes = null): WorkFromHomeRequest
     {
+        if (! WorkFromHomePortal::enabled()) {
+            throw new \RuntimeException(WorkFromHomePortal::UNAVAILABLE_MESSAGE);
+        }
+
         if (! $request->isPendingHr()) {
             throw new \RuntimeException('Only requests pending HR can be approved.');
         }
@@ -212,6 +221,10 @@ class WorkFromHomeRequestService
 
     public function reject(WorkFromHomeRequest $request, Staff $hr, string $notes): WorkFromHomeRequest
     {
+        if (! WorkFromHomePortal::enabled()) {
+            throw new \RuntimeException(WorkFromHomePortal::UNAVAILABLE_MESSAGE);
+        }
+
         if (! $request->isPendingHr()) {
             throw new \RuntimeException('Only requests pending HR can be rejected.');
         }
@@ -238,6 +251,10 @@ class WorkFromHomeRequestService
 
     public function returnToEmployee(WorkFromHomeRequest $request, Staff $hr, string $notes): WorkFromHomeRequest
     {
+        if (! WorkFromHomePortal::enabled()) {
+            throw new \RuntimeException(WorkFromHomePortal::UNAVAILABLE_MESSAGE);
+        }
+
         if (! $request->isPendingHr()) {
             throw new \RuntimeException('Only requests pending HR can be returned.');
         }
@@ -264,6 +281,10 @@ class WorkFromHomeRequestService
 
     public function cancel(WorkFromHomeRequest $request, Staff $staff, User $user): WorkFromHomeRequest
     {
+        if (! WorkFromHomePortal::enabled()) {
+            throw new \RuntimeException(WorkFromHomePortal::UNAVAILABLE_MESSAGE);
+        }
+
         if ($request->staff_id !== $staff->id) {
             throw new \RuntimeException('You can only cancel your own requests.');
         }

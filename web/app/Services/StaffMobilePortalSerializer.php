@@ -86,16 +86,17 @@ class StaffMobilePortalSerializer
             'teaching_period' => $block['teaching_period'] ?? null,
             'documents' => $rows->map(function (array $row) {
                 $t = $row['timetable'];
+                $meta = app(\App\Services\ProgramTimetableDocumentService::class)->mobileDocumentMeta($t);
 
-                return [
+                return array_merge([
                     'id' => (int) $t->id,
                     'kind' => $t->timetable_kind,
                     'title' => $t->title ?? ucfirst((string) $t->timetable_kind).' timetable',
                     'display_title' => $t->displayTitle(),
                     'teaching_period' => $t->teaching_period,
                     'status' => $t->status,
-                ];
-            })->values(),
+                ], $meta);
+            })->filter(fn (array $row) => ($row['has_document'] ?? false) === true)->values(),
             'sessions' => $sessions->map(fn ($s) => $this->timetableSessionCard($s))->values(),
         ];
     }
