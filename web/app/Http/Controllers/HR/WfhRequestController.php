@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\WorkFromHomeRequest;
 use App\Services\StaffPortalService;
 use App\Services\WorkFromHomeRequestService;
+use App\Support\WorkFromHomePortal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,6 +20,10 @@ class WfhRequestController extends Controller
 
     public function index(Request $request): View
     {
+        if (! WorkFromHomePortal::enabled()) {
+            return WorkFromHomePortal::unavailableView('layouts.hr', 'hr-content');
+        }
+
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:120'],
             'status' => ['nullable', 'in:pending_hr,approved,rejected,returned,cancelled,all'],
@@ -38,6 +43,10 @@ class WfhRequestController extends Controller
 
     public function show(WorkFromHomeRequest $wfh): View
     {
+        if (! WorkFromHomePortal::enabled()) {
+            return WorkFromHomePortal::unavailableView('layouts.hr', 'hr-content');
+        }
+
         $wfh->load(['staff.department', 'staff.lineManager', 'supervisor', 'hrReviewer']);
 
         $entitlement = null;
@@ -59,6 +68,8 @@ class WfhRequestController extends Controller
 
     public function approve(Request $request, WorkFromHomeRequest $wfh): RedirectResponse
     {
+        WorkFromHomePortal::ensureEnabled();
+
         $hr = $this->hrStaff($request);
         $data = $request->validate([
             'considerations' => ['required', 'array'],
@@ -80,6 +91,8 @@ class WfhRequestController extends Controller
 
     public function reject(Request $request, WorkFromHomeRequest $wfh): RedirectResponse
     {
+        WorkFromHomePortal::ensureEnabled();
+
         $hr = $this->hrStaff($request);
         $data = $request->validate([
             'notes' => ['required', 'string', 'max:2000'],
@@ -96,6 +109,8 @@ class WfhRequestController extends Controller
 
     public function returnRequest(Request $request, WorkFromHomeRequest $wfh): RedirectResponse
     {
+        WorkFromHomePortal::ensureEnabled();
+
         $hr = $this->hrStaff($request);
         $data = $request->validate([
             'notes' => ['required', 'string', 'max:2000'],

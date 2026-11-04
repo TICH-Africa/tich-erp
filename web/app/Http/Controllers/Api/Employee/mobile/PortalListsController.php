@@ -22,6 +22,16 @@ class PortalListsController extends Controller
 
     public function wfh(Request $request, WorkFromHomeRequestService $wfh): JsonResponse
     {
+        if (! \App\Support\WorkFromHomePortal::enabled()) {
+            return response()->json([
+                'enabled' => false,
+                'status' => 'inactive',
+                'message' => \App\Support\WorkFromHomePortal::UNAVAILABLE_MESSAGE,
+                'entitlement' => null,
+                'requests' => [],
+            ]);
+        }
+
         $staff = $this->portalStaff($request);
         $requests = WorkFromHomeRequest::query()
             ->where('staff_id', $staff->id)
@@ -30,6 +40,7 @@ class PortalListsController extends Controller
             ->get();
 
         return response()->json([
+            'enabled' => true,
             'entitlement' => $wfh->entitlementSnapshot($staff),
             'requests' => $requests->map(fn ($r) => [
                 'id' => $r->id,
@@ -42,6 +53,12 @@ class PortalListsController extends Controller
 
     public function storeWfh(Request $request, WorkFromHomeRequestService $wfh): JsonResponse
     {
+        if (! \App\Support\WorkFromHomePortal::enabled()) {
+            return response()->json([
+                'message' => \App\Support\WorkFromHomePortal::UNAVAILABLE_MESSAGE,
+            ], 403);
+        }
+
         $staff = $this->portalStaff($request);
         $validated = $request->validate([
             'work_date' => ['required', 'date', 'after_or_equal:today'],

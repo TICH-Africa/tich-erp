@@ -7,6 +7,7 @@ use App\Models\Staff;
 use App\Models\WorkFromHomeRequest;
 use App\Services\EmployeePortalService;
 use App\Services\WorkFromHomeRequestService;
+use App\Support\WorkFromHomePortal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -20,6 +21,10 @@ class EmployeeWfhController extends Controller
 
     public function index(Request $request): View
     {
+        if (! WorkFromHomePortal::enabled()) {
+            return WorkFromHomePortal::unavailableView('layouts.employee', 'employee-content');
+        }
+
         $staff = $this->staff($request);
         $entitlement = $this->wfh->entitlementSnapshot($staff);
 
@@ -39,6 +44,10 @@ class EmployeeWfhController extends Controller
 
     public function create(Request $request): View
     {
+        if (! WorkFromHomePortal::enabled()) {
+            return WorkFromHomePortal::unavailableView('layouts.employee', 'employee-content');
+        }
+
         $staff = $this->staff($request);
         $staff->load(['department', 'lineManager']);
         $entitlement = $this->wfh->entitlementSnapshot($staff);
@@ -52,6 +61,8 @@ class EmployeeWfhController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        WorkFromHomePortal::ensureEnabled();
+
         $staff = $this->staff($request);
 
         $validated = $request->validate([
@@ -89,6 +100,10 @@ class EmployeeWfhController extends Controller
 
     public function show(Request $request, WorkFromHomeRequest $wfh): View
     {
+        if (! WorkFromHomePortal::enabled()) {
+            return WorkFromHomePortal::unavailableView('layouts.employee', 'employee-content');
+        }
+
         $staff = $this->staff($request);
         abort_if($wfh->staff_id !== $staff->id, 403);
 
@@ -103,6 +118,8 @@ class EmployeeWfhController extends Controller
 
     public function cancel(Request $request, WorkFromHomeRequest $wfh): RedirectResponse
     {
+        WorkFromHomePortal::ensureEnabled();
+
         $staff = $this->staff($request);
 
         try {
