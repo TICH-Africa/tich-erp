@@ -16,10 +16,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class TechnicalPlanController extends Controller
 {
     public const QUARTERS = [
-        '1' => 'Q1 · Jan–Mar',
-        '2' => 'Q2 · Apr–Jun',
-        '3' => 'Q3 · Jul–Sep',
-        '4' => 'Q4 · Oct–Dec',
+        '1' => 'Q1',
+        '2' => 'Q2',
+        '3' => 'Q3',
+        '4' => 'Q4',
     ];
 
     public function __construct(

@@ -13,10 +13,10 @@ use Illuminate\View\View;
 class BudgetingController extends Controller
 {
     public const ANNUAL_QUARTERS = [
-        'q1' => 'Q1 · Jan–Mar',
-        'q2' => 'Q2 · Apr–Jun',
-        'q3' => 'Q3 · Jul–Sep',
-        'q4' => 'Q4 · Oct–Dec',
+        'q1' => 'Q1',
+        'q2' => 'Q2',
+        'q3' => 'Q3',
+        'q4' => 'Q4',
     ];
 
     public function __construct(
