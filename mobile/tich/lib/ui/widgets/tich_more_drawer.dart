@@ -5,6 +5,7 @@ import 'employee_avatar.dart';
 import 'tich_more_row_trailing.dart';
 import 'tich_nav_badge.dart';
 import 'tich_brand_logo.dart';
+import 'tich_cached_network_image.dart';
 import 'tich_global_more_footer.dart';
 import 'tich_widgets.dart';
 
@@ -64,26 +65,17 @@ class TichMoreProfileLeading extends StatelessWidget {
       return SizedBox(width: size, height: size, child: Center(child: icon));
     }
 
-    final dpr = MediaQuery.devicePixelRatioOf(context);
-    final px = (size * dpr).round().clamp(48, 128);
-
     return SizedBox(
       width: size,
       height: size,
       child: ClipOval(
-        child: Image.network(
-          uri.toString(),
+        child: TichCachedNetworkImage(
+          url: uri.toString(),
           width: size,
           height: size,
-          fit: BoxFit.cover,
-          cacheWidth: px,
-          cacheHeight: px,
-          filterQuality: FilterQuality.low,
-          errorBuilder: (_, __, ___) => Center(child: icon),
-          frameBuilder: (context, child, frame, wasSync) {
-            if (wasSync || frame != null) return child;
-            return Center(child: icon);
-          },
+          maxDecodePx: 128,
+          placeholder: Center(child: icon),
+          error: Center(child: icon),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/api_config.dart';
 import '../../theme/tich_theme.dart';
+import 'tich_cached_network_image.dart';
 
 Uri? employeePhotoUri(Object? value) {
   final raw = value?.toString().trim() ?? '';
@@ -41,8 +42,7 @@ class EmployeeAvatar extends StatelessWidget {
       style: tichUi(color: TichColors.blueDark, fontWeight: FontWeight.w700),
     );
 
-    final dpr = MediaQuery.devicePixelRatioOf(context);
-    final px = (radius * 2 * dpr).round().clamp(48, 256);
+    final diameter = radius * 2;
 
     return CircleAvatar(
       radius: radius,
@@ -50,19 +50,13 @@ class EmployeeAvatar extends StatelessWidget {
       child: uri == null
           ? fallback
           : ClipOval(
-              child: Image.network(
-                uri.toString(),
-                width: radius * 2,
-                height: radius * 2,
-                fit: BoxFit.cover,
-                cacheWidth: px,
-                cacheHeight: px,
-                filterQuality: FilterQuality.low,
-                errorBuilder: (context, error, stackTrace) => fallback,
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (wasSynchronouslyLoaded || frame != null) return child;
-                  return fallback;
-                },
+              child: TichCachedNetworkImage(
+                url: uri.toString(),
+                width: diameter,
+                height: diameter,
+                maxDecodePx: 256,
+                placeholder: fallback,
+                error: fallback,
               ),
             ),
     );

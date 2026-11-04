@@ -39,10 +39,10 @@ Future<void> main() async {
   PaintingBinding.instance.imageCache.maximumSize = 48;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 24 << 20;
   await AppSettings.instance.load();
-  TichTheme.warmCache();
   runApp(const TichApp());
-  // Defer heavy notification setup until after first frame (faster cold start).
   WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Theme/font warmup is not needed for the first splash frame.
+    TichTheme.warmCache();
     Future<void>.delayed(const Duration(seconds: 5), () {
       unawaited(TichNotifications.instance.init());
     });
@@ -84,7 +84,9 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
       },
     );
     _authBloc = AuthBloc(repository: _authRepository)..add(const AuthStarted());
-    TichNotificationRouter.instance.onPendingEnqueued = _tryApplyNotificationRoute;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      TichNotificationRouter.instance.onPendingEnqueued = _tryApplyNotificationRoute;
+    });
   }
 
   void _tryApplyNotificationRoute() {
