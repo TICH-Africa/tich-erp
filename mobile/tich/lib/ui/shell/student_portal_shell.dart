@@ -71,9 +71,7 @@ class _StudentPortalShellState extends State<StudentPortalShell>
     'academics.attendance',
   ];
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void _ensureShellBuilt() {
     if (_root != null) return;
     final api = context.read<StudentApi>();
     if (!_profilePhotoLoaded) {
@@ -103,6 +101,12 @@ class _StudentPortalShellState extends State<StudentPortalShell>
       ),
       items: _tabItems(counts: const {}),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureShellBuilt();
   }
 
   List<AdaptiveTabItem> _tabItems({required Map<String, int> counts}) {
@@ -210,9 +214,10 @@ class _StudentPortalShellState extends State<StudentPortalShell>
 
   @override
   Widget build(BuildContext context) {
+    if (_root == null) _ensureShellBuilt();
     return StudentPortalMenuScope(
       profilePhotoUrl: _profilePhotoUrl,
-      child: _root ?? const SizedBox.shrink(),
+      child: _root!,
     );
   }
 }

@@ -1,6 +1,8 @@
-import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'tich_screen_cache_codec.dart';
 
 /// Persists API screen payloads so revisiting tabs survives app restarts.
 abstract final class TichScreenCacheStore {
@@ -16,26 +18,15 @@ abstract final class TichScreenCacheStore {
     final raw = prefs.getString(_scopeKey(userScope));
     if (raw == null || raw.isEmpty) return {};
 
+    final now = DateTime.now().millisecondsSinceEpoch;
     try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map) return {};
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final out = <String, Map<String, dynamic>>{};
-      for (final entry in decoded.entries) {
-        final key = entry.key.toString();
-        final row = entry.value;
-        if (row is! Map) continue;
-        final savedAt = (row['t'] as num?)?.toInt();
-        if (savedAt != null &&
-            now - savedAt > maxEntryAge.inMilliseconds) {
-          continue;
-        }
-        final data = row['d'];
-        if (data is Map) {
-          out[key] = Map<String, dynamic>.from(data);
-        }
-      }
-      return out;
+      return await Isolate.run(
+        () => tichParseScreenCacheBlob(
+          raw,
+          now,
+          maxEntryAge.inMilliseconds,
+        ),
+      );
     } catch (_) {
       return {};
     }
@@ -58,7 +49,8 @@ abstract final class TichScreenCacheStore {
       blob[key] = {'t': now, 'd': value};
       count++;
     }
-    await prefs.setString(_scopeKey(userScope), jsonEncode(blob));
+    final json = await Isolate.run(() => tichEncodeScreenCacheBlob(blob));
+    await prefs.setString(_scopeKey(userScope), json);
   }
 
   static Future<void> clearScope(String userScope) async {

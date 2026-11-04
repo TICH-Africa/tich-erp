@@ -53,9 +53,7 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
     super.dispose();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void _ensureShellBuilt() {
     if (_root != null) return;
     final api = context.read<ProcurementApi>();
     _pages = [
@@ -85,6 +83,12 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
       ),
       items: _tabItems(const {}),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureShellBuilt();
   }
 
   List<AdaptiveTabItem> _tabItems(Map<String, int> counts) {
@@ -164,6 +168,7 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
 
   @override
   Widget build(BuildContext context) {
-    return _root ?? const SizedBox.shrink();
+    if (_root == null) _ensureShellBuilt();
+    return _root!;
   }
 }

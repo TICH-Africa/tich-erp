@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,6 +36,8 @@ class PortalShell extends StatefulWidget {
 
 class _PortalShellState extends State<PortalShell>
     with WidgetsBindingObserver, ShellNavBadgeMixin {
+  static const _complianceCacheKey = 'portal.time_log_compliance';
+
   final GlobalKey<AdaptiveTabScaffoldState> _scaffoldKey =
       GlobalKey<AdaptiveTabScaffoldState>();
   List<Widget>? _pages;
@@ -46,7 +50,6 @@ class _PortalShellState extends State<PortalShell>
   int _moreDot = 0;
   String? _profilePhotoUrl;
   bool _staffPhotoLoaded = false;
-  bool _complianceChecked = false;
   bool _timeLogsGate = false;
 
   static const _moreMenuKeys = [
@@ -66,13 +69,23 @@ class _PortalShellState extends State<PortalShell>
     EmployeePortalNavSignals.onStaffPhotoChanged = _loadStaffPhoto;
     EmployeePortalNavSignals.onTimeLogComplianceChanged =
         _recheckTimeLogCompliance;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _loadTimeLogCompliance();
+    _applyCachedCompliance();
+    _loadStaffPhoto();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      unawaited(_refreshTimeLogCompliance());
       _applyPendingTab();
       TichNotificationRouter.instance.applyPending(context);
       TichPermissionDisclosures.maybePromptForNotifications(context);
     });
+  }
+
+  void _applyCachedCompliance() {
+    final cached =
+        TichScreenCache.read<Map<String, dynamic>>(_complianceCacheKey);
+    if (cached != null) {
+      _timeLogsGate = cached['blocked'] == true;
+    }
   }
 
   void _applyPendingTab() {
@@ -103,31 +116,14 @@ class _PortalShellState extends State<PortalShell>
     super.dispose();
   }
 
-  Future<void> _loadTimeLogCompliance() async {
+  Future<void> _refreshTimeLogCompliance() async {
     try {
       final data = await context.read<EmployeeApi>().timeLogCompliance();
       if (!mounted) return;
-      setState(() {
-        _timeLogsGate = data['blocked'] == true;
-        _complianceChecked = true;
-        if (!_timeLogsGate) {
-          _ensureShellBuilt();
-        }
+      TichScreenCache.write(_complianceCacheKey, {
+        'blocked': data['blocked'] == true,
+        if (data['hold'] != null) 'hold': data['hold'],
       });
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _complianceChecked = true;
-          _ensureShellBuilt();
-        });
-      }
-    }
-  }
-
-  Future<void> _recheckTimeLogCompliance() async {
-    try {
-      final data = await context.read<EmployeeApi>().timeLogCompliance();
-      if (!mounted) return;
       final blocked = data['blocked'] == true;
       if (blocked == _timeLogsGate) return;
       setState(() {
@@ -139,6 +135,10 @@ class _PortalShellState extends State<PortalShell>
         }
       });
     } catch (_) {}
+  }
+
+  Future<void> _recheckTimeLogCompliance() async {
+    await _refreshTimeLogCompliance();
   }
 
   void _loadStaffPhoto() {
@@ -154,17 +154,16 @@ class _PortalShellState extends State<PortalShell>
       }
       return;
     }
-    if (mounted) setState(() => _staffPhotoLoaded = true);
+    if (mounted && !_staffPhotoLoaded) {
+      setState(() => _staffPhotoLoaded = true);
+    }
   }
 
   void _ensureShellBuilt() {
-    if (_root != null || !_complianceChecked || _timeLogsGate) {
+    if (_root != null || _timeLogsGate) {
       return;
     }
     final api = context.read<EmployeeApi>();
-    if (!_staffPhotoLoaded) {
-      _loadStaffPhoto();
-    }
     _pages = [
       DashboardPage(api: api),
       LeavePage(api: api),
@@ -295,10 +294,8 @@ class _PortalShellState extends State<PortalShell>
 
   @override
   Widget build(BuildContext context) {
-    if (!_complianceChecked) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+    if (_root == null && !_timeLogsGate) {
+      _ensureShellBuilt();
     }
 
     if (_timeLogsGate) {
@@ -330,7 +327,7 @@ class _PortalShellState extends State<PortalShell>
 
     return EmployeePortalMenuScope(
       profilePhotoUrl: _profilePhotoUrl,
-      child: _root ?? const SizedBox.shrink(),
+      child: _root!,
     );
   }
 }

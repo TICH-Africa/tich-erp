@@ -13,6 +13,7 @@ import 'data/auth_repository.dart';
 import 'data/auth_token_store.dart';
 import 'data/tich_api_scope.dart';
 import 'data/tich_portal_warmup.dart';
+import 'data/tich_screen_cache.dart';
 import 'data/tich_power_policy.dart';
 import 'sync/tich_background_sync.dart';
 import 'data/tich_realtime.dart';
@@ -196,6 +197,31 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
   }
 }
 
+/// Belt-and-suspenders: auth awaits hydration, but never paint portals on an empty cache.
+class _HydratedPortalGate extends StatelessWidget {
+  const _HydratedPortalGate({required this.user});
+
+  final AuthUser user;
+
+  @override
+  Widget build(BuildContext context) {
+    if (TichScreenCache.isHydrated) {
+      return _PortalForUser(user: user);
+    }
+    return FutureBuilder<void>(
+      future: TichScreenCache.whenHydrated(),
+      builder: (context, snapshot) {
+        if (!TichScreenCache.isHydrated) {
+          return const Scaffold(
+            body: Center(child: AdaptiveProgress()),
+          );
+        }
+        return _PortalForUser(user: user);
+      },
+    );
+  }
+}
+
 class _PortalForUser extends StatelessWidget {
   const _PortalForUser({required this.user});
 
@@ -305,7 +331,7 @@ class _AuthGateState extends State<_AuthGate> {
 
         if (state is AuthAuthenticated) {
           childKey = ValueKey('portal-${state.user.id}');
-          child = _PortalForUser(user: state.user);
+          child = _HydratedPortalGate(user: state.user);
         } else if (state is AuthLocked) {
           _primedUserKey = null;
           childKey = ValueKey('unlock-${state.user.id}');
