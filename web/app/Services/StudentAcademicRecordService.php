@@ -429,6 +429,26 @@ class StudentAcademicRecordService
      * @param  list<int>  $studentIds
      * @return Collection<int, Collection<int, object>>
      */
+    /**
+     * The unit ids a student is actually registered on.
+     *
+     * Everything a student is allowed to read - units, published materials, assessments - is
+     * cut down to this list, so another year's units never reach their portal.
+     *
+     * @return array<int, int>
+     */
+    public function registeredUnitIds(Student $student): array
+    {
+        return DB::table('registered_units as ru')
+            ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
+            ->where('ssr.student_id', $student->id)
+            ->pluck('ru.unit_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     private function registeredUnitsForStudents(array $studentIds): Collection
     {
         if ($studentIds === []) {
@@ -449,6 +469,9 @@ class StudentAcademicRecordService
                 'u.unit_code',
                 'u.unit_name',
                 'u.credit_hours',
+                'u.contact_hours',
+                'u.total_learning_hours',
+                'u.is_core',
                 'ssr.semester_id',
                 's.semester_label',
                 's.semester_number',

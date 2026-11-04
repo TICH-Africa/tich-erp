@@ -339,7 +339,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                             ? $request->string('timetable_kind')->toString()
                             : 'lesson'
                     ),
-                    $request->integer('timetable') ?: null
+                    $request->integer('timetable') ?: null,
+                    $request->string('delivery_mode')->toString() ?: null
                 )
                 : null,
             'timetablesInScope' => ($section === 'timetable' && $selectedIntake)
@@ -642,6 +643,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'max:60',
             ],
             'copy_from' => ['nullable', 'integer'],
+            'delivery_mode' => ['nullable', 'in:'.implode(',', array_keys(ProgramTimetable::deliveryModes()))],
         ], [
             'cycle_no.required_with' => 'Say which week or month this timetable covers.',
         ]);
@@ -659,17 +661,19 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             $request,
             $validated['cycle_type'] ?? null,
             isset($validated['cycle_no']) ? (int) $validated['cycle_no'] : null,
-            isset($validated['copy_from']) ? (int) $validated['copy_from'] : null
+            isset($validated['copy_from']) ? (int) $validated['copy_from'] : null,
+            $validated['delivery_mode'] ?? 'physical'
         );
 
         $cycle = $timetable->cycleLabel();
+        $audience = $timetable->isOnlineMode() ? ' for online students' : '';
 
         return $this->timetableRedirect(
             $request,
             $timetable,
             $cycle
-                ? 'Opened the '.$cycle.' timetable - its classes are stamped with it, so nothing lands on another week.'
-                : 'Timetable opened empty - add the classes as the school runs them.'
+                ? 'Opened the '.$cycle.' timetable'.$audience.' - its classes are stamped with it, so nothing lands on another week.'
+                : 'Timetable opened empty'.$audience.' - add the classes as the school runs them.'
         );
     }
 
@@ -770,6 +774,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'week_to' => ['nullable', 'integer', 'min:1', 'max:60', 'after_or_equal:week_no'],
             'every_day' => ['nullable', 'boolean'],
             'session_date' => ['nullable', 'date'],
+            'session_date_to' => ['nullable', 'date'],
             'contact_hours' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
             'start_time' => ['required', 'date_format:H:i'],
@@ -827,6 +832,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'week_no' => ['nullable', 'integer', 'min:1', 'max:60', 'required_with:week_to'],
             'week_to' => ['nullable', 'integer', 'min:1', 'max:60', 'after_or_equal:week_no'],
             'session_date' => ['nullable', 'date'],
+            'session_date_to' => ['nullable', 'date'],
             'contact_hours' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
             'start_time' => ['required', 'date_format:H:i'],
@@ -943,6 +949,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'teaching_period' => $timetable->teaching_period,
                 'timetable_kind' => $timetable->timetable_kind,
                 'timetable' => $timetable->id,
+                'delivery_mode' => $timetable->delivery_mode ?? 'physical',
             ]))
             ->withFragment('timetable-display')
             ->with('status', $status);

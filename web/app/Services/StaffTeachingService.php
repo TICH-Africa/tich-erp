@@ -117,6 +117,24 @@ class StaffTeachingService
 
         $this->lessonPlanApprovals->assertCanInitiateSession($allocation, $data['session_date']);
 
+        // The unit's register for the date may already exist from the timetable, so a class the
+        // lecturer adds for that date widens the one sheet instead of creating a second to mark.
+        $existing = AttendanceSession::query()
+            ->where('unit_allocation_id', $allocation->id)
+            ->whereDate('session_date', $data['session_date'])
+            ->where('is_locked', 0)
+            ->orderBy('start_time')
+            ->first();
+
+        if ($existing) {
+            return $this->widenAttendanceSession(
+                $existing,
+                $data['start_time'] ?? null,
+                $data['end_time'] ?? null,
+                $data['venue'] ?? null,
+            )->fresh(['records']);
+        }
+
         $session = AttendanceSession::query()->create([
             'session_number' => 'ATT-'.now()->format('YmdHis'),
             'unit_allocation_id' => $allocation->id,
@@ -238,6 +256,58 @@ class StaffTeachingService
     }
 
     /**
+     * A second class of the same unit on the same date only widens the day's session - it never
+     * adds a row the lecturer would have to mark again.
+     */
+    public function widenAttendanceSessionTo(AttendanceSession $session, ProgramTimetableSession $slot): AttendanceSession
+    {
+        $slot->loadMissing('room');
+
+        return $this->widenAttendanceSession(
+            $session,
+            $slot->start_time,
+            $slot->end_time,
+            $slot->venue ?? $slot->room?->name,
+        );
+    }
+
+    public function widenAttendanceSession(
+        AttendanceSession $session,
+        ?string $start,
+        ?string $end,
+        ?string $venue = null,
+    ): AttendanceSession {
+        if ($session->is_locked) {
+            return $session;
+        }
+
+        $start = substr((string) $start, 0, 8);
+        $end = substr((string) $end, 0, 8);
+        $currentStart = substr((string) $session->start_time, 0, 8);
+        $currentEnd = substr((string) $session->end_time, 0, 8);
+
+        $update = [];
+
+        if ($start !== '' && ($currentStart === '' || $start < $currentStart)) {
+            $update['start_time'] = $start;
+        }
+
+        if ($end !== '' && ($currentEnd === '' || $end > $currentEnd)) {
+            $update['end_time'] = $end;
+        }
+
+        if (! $session->venue && $venue) {
+            $update['venue'] = $venue;
+        }
+
+        if ($update !== []) {
+            $session->update($update);
+        }
+
+        return $session;
+    }
+
+    /**
      * @param  array<int, int>  $presentStudentIds
      */
     public function saveAttendance(AttendanceSession $session, Staff $staff, array $presentStudentIds): void
@@ -259,6 +329,25 @@ class StaffTeachingService
         }
 
         $this->attendanceVerification->recalculateSummaries($session);
+
+        // One signed register covers the class all day, so every other session this unit has
+        // on the date takes the same marks instead of sitting there as pending.
+        foreach ($session->sameDaySessions() as $sibling) {
+            if ((int) $sibling->id === (int) $session->id) {
+                continue;
+            }
+
+            $sibling->load('records');
+
+            foreach ($sibling->records as $record) {
+                $record->update([
+                    'is_present' => in_array((int) $record->student_id, $present, true),
+                    'recorded_by_tutor' => 1,
+                ]);
+            }
+
+            $this->attendanceVerification->recalculateSummaries($sibling);
+        }
 
         $this->auditService->log(
             'staff.attendance.saved',

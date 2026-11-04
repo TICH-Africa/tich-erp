@@ -1,9 +1,9 @@
 @php
     $grades = $academics['grades'] ?? collect();
-    $units = $academics['curriculum_units'] ?? collect();
+    $programmeUnits = (int) ($academics['programme_unit_count'] ?? 0);
     $registered = $academics['registered_units'] ?? collect();
     $completed = $grades->count();
-    $totalUnits = max($units->count(), $registered->count(), 1);
+    $totalUnits = max($programmeUnits, $registered->count(), 1);
     $completionPct = min(100, round(($completed / $totalUnits) * 100));
     $gpa = $portalData['transcript']['gpa'] ?? null;
 @endphp
@@ -23,7 +23,7 @@
         </article>
         <article class="tich-stat">
             <p class="tich-stat__label">Programme units</p>
-            <p class="tich-stat__value">{{ $units->count() ?: $registered->count() }}</p>
+            <p class="tich-stat__value">{{ $programmeUnits ?: $registered->count() }}</p>
         </article>
         <article class="tich-stat">
             <p class="tich-stat__label">Completion</p>

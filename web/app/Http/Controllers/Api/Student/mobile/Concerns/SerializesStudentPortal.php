@@ -49,6 +49,7 @@ trait SerializesStudentPortal
 
         return [
             'registered_unit_count' => (int) ($a['registered_unit_count'] ?? 0),
+            'programme_unit_count' => (int) ($a['programme_unit_count'] ?? 0),
             'curriculum_is_published' => (bool) ($a['curriculum_is_published'] ?? false),
             'current_period_status' => $a['current_period_status'] ?? null,
             'current_semester' => $a['current_semester'] ? [
@@ -148,6 +149,8 @@ trait SerializesStudentPortal
                     'cycle_type' => $tt->cycle_type,
                     'cycle_no' => $tt->cycle_no,
                     'cycle_label' => $tt->cycleLabel(),
+                    'delivery_mode' => $tt->delivery_mode ?? 'physical',
+                    'audience' => $tt->deliveryModeLabel(),
                     'is_current' => (int) $tt->id === (int) ($t['timetable']?->id ?? 0),
                     'teaching_period' => $tt->teaching_period,
                     'sessions' => collect($tt->sessions ?? [])->map(fn ($s) => [
@@ -161,6 +164,8 @@ trait SerializesStudentPortal
                         'room' => $s->room?->room_name ?? $s->room?->name,
                         'session_type' => $s->session_type,
                         'session_date' => $s->session_date?->format('Y-m-d'),
+                        'session_date_to' => $s->session_date_to?->format('Y-m-d'),
+                        'date_span' => $s->dateLabel(),
                         'week_no' => $s->week_no,
                         'week_to' => $s->week_to,
                         'recurrence' => $s->recurrence,

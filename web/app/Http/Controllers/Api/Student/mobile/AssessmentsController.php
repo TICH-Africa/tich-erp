@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\Student\mobile\Concerns\ResolvesPortalStudent;
 use App\Models\ObjectiveAssessment;
 use App\Models\ObjectiveSubmission;
+use App\Models\Student;
+use App\Services\StudentAcademicRecordService;
 use App\Services\ObjectiveAutoGradingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +25,8 @@ class AssessmentsController extends Controller
             ->where('objective_assessment_id', $assessment->id)
             ->where('student_id', $student->id)
             ->first();
+
+        $this->assertRegistered($student, $assessment, $submission);
 
         $alreadySubmitted = $submission && $submission->student_submitted_at;
 
@@ -67,6 +71,8 @@ class AssessmentsController extends Controller
             ->where('objective_assessment_id', $assessment->id)
             ->where('student_id', $student->id)
             ->first();
+
+        $this->assertRegistered($student, $assessment, $submission);
 
         if ($submission && $submission->student_submitted_at) {
             return response()->json([
@@ -131,5 +137,20 @@ class AssessmentsController extends Controller
                 'submitted_at' => optional($submission->student_submitted_at)?->toIso8601String(),
             ],
         ]);
+    }
+
+    /**
+     * An assessment belongs to a unit, and a student only works on units they are registered for.
+     * Anyone who has already answered keeps access, even if Academics later un-assigns the unit.
+     */
+    private function assertRegistered(Student $student, ObjectiveAssessment $assessment, ?ObjectiveSubmission $submission): void
+    {
+        $held = app(StudentAcademicRecordService::class)->registeredUnitIds($student);
+
+        abort_unless(
+            in_array((int) ($assessment->allocation?->unit_id ?? 0), $held, true) || $submission !== null,
+            403,
+            'You are not registered on this unit yet. Contact your HOD.'
+        );
     }
 }

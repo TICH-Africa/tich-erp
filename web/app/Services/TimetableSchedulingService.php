@@ -178,7 +178,8 @@ class TimetableSchedulingService
         ?int $curriculumVersionId,
         int $teachingPeriod,
         string $timetableKind = 'lesson',
-        ?int $timetableId = null
+        ?int $timetableId = null,
+        ?string $deliveryMode = null
     ): ?ProgramTimetable {
         if ($timetableId) {
             $picked = ProgramTimetable::query()
@@ -194,7 +195,12 @@ class TimetableSchedulingService
             }
         }
 
-        return $this->latestTimetable($programId, $curriculumVersionId, $teachingPeriod, $timetableKind);
+        $mode = in_array($deliveryMode, array_keys(ProgramTimetable::deliveryModes()), true) ? $deliveryMode : null;
+
+        // The audience that was just opened is shown, so an online posting is not swapped for the
+        // campus one of another year. A school running one posting for everybody is unaffected.
+        return $this->latestTimetable($programId, $curriculumVersionId, $teachingPeriod, $timetableKind, $mode)
+            ?? $this->latestTimetable($programId, $curriculumVersionId, $teachingPeriod, $timetableKind);
     }
 
     public function latestTimetable(
@@ -205,7 +211,9 @@ class TimetableSchedulingService
 
         int $teachingPeriod,
 
-        string $timetableKind = 'lesson'
+        string $timetableKind = 'lesson',
+
+        ?string $deliveryMode = null
 
     ): ?ProgramTimetable {
 
@@ -223,6 +231,8 @@ class TimetableSchedulingService
 
             ->where('timetable_kind', $timetableKind)
 
+            ->when($deliveryMode, fn ($query) => $query->where('delivery_mode', $deliveryMode))
+
             ->orderByDesc('updated_at')
 
             ->orderByDesc('id')
@@ -239,6 +249,7 @@ class TimetableSchedulingService
             ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
             ->where('teaching_period', $teachingPeriod)
             ->where('timetable_kind', 'special_exam')
+            ->when($deliveryMode, fn ($query) => $query->where('delivery_mode', $deliveryMode))
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->first();
@@ -343,6 +354,9 @@ class TimetableSchedulingService
     /**
      * Open an empty timetable for a programme, intake, semester and kind. The officer then adds
      * the classes the school actually runs - the system fills nothing in.
+     *
+     * The online class and the campus class are posted on different hours, so each audience keeps
+     * its own timetable for the same year and semester.
      */
     public function startDraft(
         User $user,
@@ -354,26 +368,29 @@ class TimetableSchedulingService
         ?Request $request = null,
         ?string $cycleType = null,
         ?int $cycleNo = null,
-        ?int $copyFromTimetableId = null
+        ?int $copyFromTimetableId = null,
+        string $deliveryMode = 'physical'
     ): ProgramTimetable {
         $timetableKind = $this->normalizeTimetableKind($timetableKind);
+        $deliveryMode = $deliveryMode === 'online' ? 'online' : 'physical';
         $cycleType = array_key_exists((string) $cycleType, ProgramTimetable::cycleTypes()) ? (string) $cycleType : null;
         $cycleNo = $cycleType && $cycleType !== 'semester' ? max(1, (int) $cycleNo) : null;
 
         // A cycle is its own timetable, so week 2 does not overwrite week 1. Without a cycle the
-        // officer is simply reopening the timetable this semester already has.
+        // officer is simply reopening the timetable this semester already has for that audience.
         $existing = $cycleType
             ? ProgramTimetable::query()
                 ->where('program_id', $program->id)
                 ->where('curriculum_version_id', $intake->id)
                 ->where('teaching_period', $teachingPeriod)
                 ->where('timetable_kind', $timetableKind)
+                ->where('delivery_mode', $deliveryMode)
                 ->where('cycle_type', $cycleType)
                 ->when($cycleNo, fn ($query) => $query->where('cycle_no', $cycleNo))
                 ->where('status', '!=', 'archived')
                 ->orderByDesc('id')
                 ->first()
-            : $this->latestTimetable($program->id, $intake->id, $teachingPeriod, $timetableKind);
+            : $this->latestTimetable($program->id, $intake->id, $teachingPeriod, $timetableKind, $deliveryMode);
 
         if ($existing && $existing->status !== 'archived') {
             return $existing->loadMissing(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion']);
@@ -389,6 +406,10 @@ class TimetableSchedulingService
         $kindLabel = self::timetableKinds()[$timetableKind] ?? ucfirst($timetableKind);
         $defaultTitle = $kindLabel.' - '.$program->periodLabel($teachingPeriod);
 
+        if ($deliveryMode === 'online') {
+            $defaultTitle .= ' - online students';
+        }
+
         if ($cycleNo) {
             $defaultTitle .= ' - '.($cycleType === 'monthly' ? 'Month' : 'Week').' '.$cycleNo;
         }
@@ -399,6 +420,7 @@ class TimetableSchedulingService
             'teaching_period' => $teachingPeriod,
             'title' => $title ?: $defaultTitle,
             'timetable_kind' => $timetableKind,
+            'delivery_mode' => $deliveryMode,
             'cycle_type' => $cycleType,
             'cycle_no' => $cycleNo,
             'template_id' => $template->id,
@@ -506,7 +528,9 @@ class TimetableSchedulingService
 
         ?string $title = null,
 
-        ?Request $request = null
+        ?Request $request = null,
+
+        string $deliveryMode = 'physical'
 
     ): ProgramTimetable {
 
@@ -515,6 +539,8 @@ class TimetableSchedulingService
         abort_unless((int) $intake->program_id === (int) $program->id, 404);
 
         $timetableKind = $this->normalizeTimetableKind($timetableKind);
+
+        $deliveryMode = $deliveryMode === 'online' ? 'online' : 'physical';
 
         if (! array_key_exists($timetableKind, self::timetableKinds())) {
 
@@ -600,7 +626,18 @@ class TimetableSchedulingService
 
 
 
-        $defaultTitle = UiText::normalizeDash($title ?: ProgramTimetable::kindLabels()[$timetableKind].' - Semester '.$teachingPeriod);
+        // A generated class belongs to the audience its posting was opened for, so the rows carry
+        // that mode instead of every one of them defaulting to the campus class.
+
+        foreach (array_keys($sessions) as $sessionIndex) {
+
+            $sessions[$sessionIndex]['delivery_mode'] = $deliveryMode;
+
+        }
+
+
+
+        $defaultTitle = UiText::normalizeDash($title ?: ProgramTimetable::kindLabels()[$timetableKind].' - Semester '.$teachingPeriod.($deliveryMode === 'online' ? ' - online students' : ''));
 
 
 
@@ -642,6 +679,11 @@ class TimetableSchedulingService
 
                 ->whereIn('timetable_kind', $draftKinds)
 
+                // Regenerating the campus timetable leaves the online posting standing - the two
+                // audiences are filled in separately.
+
+                ->where('delivery_mode', $deliveryMode)
+
                 ->where('status', 'draft')
 
                 ->delete();
@@ -659,6 +701,8 @@ class TimetableSchedulingService
                 'title' => $defaultTitle,
 
                 'timetable_kind' => $timetableKind,
+
+                'delivery_mode' => $deliveryMode,
 
                 'template_id' => $template->id,
 
@@ -834,6 +878,7 @@ class TimetableSchedulingService
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
             'session_date' => empty($data['session_date']) ? null : $data['session_date'],
+            'session_date_to' => empty($data['session_date_to']) ? null : $data['session_date_to'],
             'session_type' => $data['session_type'] ?? 'lesson',
             'delivery_mode' => $data['delivery_mode'] ?? 'physical',
             'recurrence' => $data['recurrence'] ?? 'weekly',
@@ -854,6 +899,7 @@ class TimetableSchedulingService
         // One date belongs to one day, so a slot posted across the week carries none of them.
         if (count($days) > 1) {
             $payload['session_date'] = null;
+            $payload['session_date_to'] = null;
         }
 
         $sessions = collect($days)->map(
@@ -911,7 +957,7 @@ class TimetableSchedulingService
 
         $original = $session->only([
             'unit_id', 'staff_id', 'room_id', 'day_of_week', 'start_time', 'end_time', 'session_date',
-            'session_type', 'delivery_mode', 'recurrence', 'week_no', 'week_to', 'contact_hours', 'title', 'venue', 'class_group', 'segment_id',
+            'session_date_to', 'session_type', 'delivery_mode', 'recurrence', 'week_no', 'week_to', 'contact_hours', 'title', 'venue', 'class_group', 'segment_id',
         ]);
 
         $payload = [
@@ -924,6 +970,9 @@ class TimetableSchedulingService
             'session_date' => array_key_exists('session_date', $data)
                 ? (empty($data['session_date']) ? null : $data['session_date'])
                 : $session->session_date,
+            'session_date_to' => array_key_exists('session_date_to', $data)
+                ? (empty($data['session_date_to']) ? null : $data['session_date_to'])
+                : $session->session_date_to,
             'session_type' => $data['session_type'] ?? $session->session_type,
             'delivery_mode' => $data['delivery_mode'] ?? $session->delivery_mode ?? 'physical',
             'recurrence' => $data['recurrence'] ?? $session->recurrence ?? 'weekly',
@@ -1339,6 +1388,11 @@ class TimetableSchedulingService
             ->where('teaching_period', $timetable->teaching_period)
 
             ->where('timetable_kind', $timetable->timetable_kind)
+
+            // Publishing the campus posting must not retire the online one - they are two audiences
+            // running side by side, not two versions of the same sheet.
+
+            ->where('delivery_mode', $timetable->delivery_mode ?? 'physical')
 
             ->where('status', 'published')
 
@@ -1902,9 +1956,15 @@ class TimetableSchedulingService
      */
     private function cyclesOverlap(ProgramTimetableSession $session, ProgramTimetableSession $other): bool
     {
-        if ($session->session_date && $other->session_date
-            && $session->session_date->ne($other->session_date)) {
-            return false;
+        if ($session->session_date && $other->session_date) {
+            $thisEnd = ($session->session_date_to ?: $session->session_date);
+            $otherEnd = ($other->session_date_to ?: $other->session_date);
+
+            // Two dated classes only meet when their runs of days touch - a class that ends before
+            // the other starts cannot clash with it, even on the same weekday and hour.
+            if ($thisEnd->lt($other->session_date) || $otherEnd->lt($session->session_date)) {
+                return false;
+            }
         }
 
         $fromA = $this->cycleFrom($session);

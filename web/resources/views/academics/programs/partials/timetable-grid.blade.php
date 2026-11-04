@@ -1,5 +1,15 @@
 @php
-    $activeDayList = $activeDays ?? range(1, 5);
+    // A class posted on a day the template does not teach - a Saturday make-up class, a Sunday
+    // orientation - still has to be seen, so the columns are the teaching days plus every day that
+    // actually carries a class.
+    $activeDayList = collect($activeDays ?? range(1, 5))
+        ->merge(collect($sessions ?? [])->pluck('day_of_week'))
+        ->map(fn ($day): int => (int) $day)
+        ->filter()
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
     $editable = $editable ?? false;
     $canEditInvigilator = $canEditInvigilator ?? false;
     $moveSessionUrl = $moveSessionUrl ?? null;
@@ -57,7 +67,7 @@
         ->filter(fn ($session) => ! empty($session->session_date))
         ->groupBy(fn ($session) => $placement[(int) $session->id] ?? $rowStart($session))
         ->map(fn ($group) => $group
-            ->map(fn ($session) => $session->session_date->format('d M'))
+            ->map(fn ($session) => $session->dateLabel('d M'))
             ->unique()
             ->values());
     $sessionsByDayAndTime = collect($sessions ?? [])->groupBy(
@@ -244,8 +254,8 @@
                                         @if ($session->room)
                                             <span class="tich-caption">{{ $session->room->room_code }}</span>
                                         @endif
-                                        @if ($session->session_date)
-                                            <span class="tich-caption">{{ $session->session_date->format('d M Y') }}</span>
+                                        @if ($session->dateLabel())
+                                            <span class="tich-caption">{{ $session->dateLabel() }}</span>
                                         @endif
                                         @if ($session->staff)
                                             <span class="tich-caption">{{ $canEditInvigilator ? 'Invigilator: ' : '' }}{{ $session->staff->first_name }} {{ $session->staff->surname }}</span>
