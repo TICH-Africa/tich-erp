@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
-import '../../notifications/tich_notifications.dart';
+import '../../data/employee_badge_service.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/employee_avatar.dart';
@@ -32,49 +33,46 @@ class _DashboardPageState extends State<DashboardPage> {
   Object? _dataCache;
   int _notifCount = 0;
   bool? _clockedInToday;
-  DateTime? _lastExtrasRefresh;
+  EmployeeBadgeService? _badges;
+  VoidCallback? _badgeListener;
+  bool _badgeListenerAttached = false;
+
+  void _syncFromBadges(EmployeeBadgeSnapshot? snap) {
+    if (snap == null) return;
+    setState(() {
+      _notifCount = snap.unreadCount;
+      _clockedInToday = snap.clockedInToday;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.dashboard');
     _future = TichScreenCache.ensure('portal.dashboard', () => widget.api.dashboard());
-    // One dashboard request first; badge + reminders after the UI paints.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Future<void>.delayed(const Duration(milliseconds: 800), () {
-        if (!mounted) return;
-        _loadNotifications();
-        _syncAttendanceReminders();
-      });
-    });
   }
 
-  Future<void> _loadNotifications() async {
-    try {
-      final data = await widget.api.notifications();
-      if (!mounted) return;
-      setState(() =>
-          _notifCount = (data['unread'] as num?)?.toInt() ??
-              (data['total'] as num?)?.toInt() ??
-              0);
-      // ignore: unawaited_futures
-      TichNotifications.instance.syncFromServerInBackground(isStudent: false);
-    } catch (_) {}
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_badgeListenerAttached) return;
+    final badges = context.read<EmployeeBadgeService>();
+    _badges = badges;
+    _badgeListener = () => _syncFromBadges(badges.snapshot);
+    badges.addListener(_badgeListener!);
+    _badgeListenerAttached = true;
+    _syncFromBadges(badges.snapshot);
   }
 
-  Future<void> _syncAttendanceReminders() async {
-    try {
-      final data = await widget.api.attendance();
-      final today = data['today'] as Map?;
-      final clockedIn = today != null && today['clock_in_at'] != null;
-      if (!mounted) return;
-      setState(() => _clockedInToday = clockedIn);
-      // ignore: unawaited_futures
-      TichNotifications.instance
-          .scheduleClockInReminders(alreadyClockedIn: clockedIn);
-    } catch (_) {}
+  @override
+  void dispose() {
+    if (_badgeListener != null) {
+      _badges?.removeListener(_badgeListener!);
+    }
+    super.dispose();
   }
+
+  EmployeeBadgeService get _badgeService => context.read<EmployeeBadgeService>();
 
   Future<void> _reload() async {
     await tichRefreshCached<Map<String, dynamic>>(
@@ -84,19 +82,7 @@ class _DashboardPageState extends State<DashboardPage> {
       onData: (data) => _dataCache = data,
       persistKey: 'portal.dashboard',
     );
-    _loadNotifications();
-    _syncAttendanceReminders();
-  }
-
-  void _maybeRefreshExtras() {
-    final now = DateTime.now();
-    if (_lastExtrasRefresh != null &&
-        now.difference(_lastExtrasRefresh!) < const Duration(minutes: 5)) {
-      return;
-    }
-    _lastExtrasRefresh = now;
-    unawaited(_loadNotifications());
-    unawaited(_syncAttendanceReminders());
+    await _badgeService.refresh(force: true);
   }
 
   void _liveRefresh() {
@@ -107,7 +93,11 @@ class _DashboardPageState extends State<DashboardPage> {
       onData: (data) => _dataCache = data,
       persistKey: 'portal.dashboard',
     );
-    _maybeRefreshExtras();
+    unawaited(_badgeService.refresh());
+  }
+
+  Future<void> _refreshBadgesAfterNavigation() async {
+    await _badgeService.refresh(force: true);
   }
 
   Widget _notificationAction() {
@@ -126,7 +116,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 builder: (_) => NotificationsPage(api: widget.api),
               ),
             );
-            _loadNotifications();
+            _refreshBadgesAfterNavigation();
           },
           icon: Icon(icon, color: usesCupertino ? TichColors.white : null),
         ),
@@ -230,8 +220,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                     AttendancePage(api: widget.api),
                               ),
                             );
-                            _syncAttendanceReminders();
-                            _loadNotifications();
+                            _refreshBadgesAfterNavigation();
                           },
                         ),
                         if (_notifCount > 0)
@@ -245,7 +234,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                       NotificationsPage(api: widget.api),
                                 ),
                               );
-                              _loadNotifications();
+                              _refreshBadgesAfterNavigation();
                             },
                           ),
                         PortalHeroPill(

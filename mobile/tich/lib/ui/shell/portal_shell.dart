@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/employee_api.dart';
+import '../../data/employee_badge_service.dart';
 import '../../data/tich_portal_warmup.dart';
 import '../../data/tich_screen_cache.dart';
 import '../portal/attendance_page.dart';
@@ -18,10 +19,8 @@ import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import '../../notifications/tich_notification_router.dart';
 import '../../permissions/tich_permission_disclosures.dart';
-import 'employee_clock_nav.dart';
 import 'employee_portal_menu_scope.dart';
 import 'employee_portal_nav.dart';
-import 'portal_nav_counts_scope.dart';
 import 'shell_nav_badge_mixin.dart';
 import 'tich_logout.dart';
 
@@ -252,41 +251,30 @@ class _PortalShellState extends State<PortalShell>
     _scaffoldKey.currentState?.updateNavItems(_tabItems());
   }
 
+  void _applyBadgeSnapshot(EmployeeBadgeSnapshot snap) {
+    var moreDot = 0;
+    for (final key in _moreMenuKeys) {
+      moreDot += snap.sidebarCounts[key] ?? 0;
+    }
+    _counts = snap.sidebarCounts;
+    _homeBadge = snap.notificationTotal;
+    _leaveBadge = snap.sidebarCounts['leave.returned'] ?? 0;
+    _clockBadge = snap.sidebarCounts['attendance_clock_in'] ?? 0;
+    _clockPulse = snap.clockPulse;
+    _moreDot = moreDot;
+    _pushNavBadgesToScaffold();
+  }
+
   @override
   Future<void> refreshNavBadges() {
-    scheduleNavBadgeFetch(() async {
+    scheduleNavBadgeFetch((force) async {
       if (!mounted) return;
-      final api = context.read<EmployeeApi>();
-
-      var clockPulse = _clockPulse;
-      try {
-        final attendance = await api.attendance();
-        if (mounted) {
-          clockPulse = employeeNeedsClockInPulse(attendance);
-        }
-      } catch (_) {}
-
-      try {
-        final data = await api.notifications();
-        if (!mounted) return;
-        final counts = parseSidebarCounts(data['counts']);
-        final total = (data['total'] as num?)?.toInt() ?? 0;
-        var moreDot = 0;
-        for (final key in _moreMenuKeys) {
-          moreDot += counts[key] ?? 0;
-        }
-        _counts = counts;
-        _homeBadge = total;
-        _leaveBadge = counts['leave.returned'] ?? 0;
-        _clockBadge = counts['attendance_clock_in'] ?? 0;
-        _clockPulse = clockPulse;
-        _moreDot = moreDot;
-        _pushNavBadgesToScaffold();
-      } catch (_) {
-        if (mounted) {
-          _clockPulse = clockPulse;
-          _pushNavBadgesToScaffold();
-        }
+      final badges = context.read<EmployeeBadgeService>();
+      await badges.refresh(force: force);
+      if (!mounted) return;
+      final snap = badges.snapshot;
+      if (snap != null) {
+        _applyBadgeSnapshot(snap);
       }
     });
     return Future.value();

@@ -198,7 +198,7 @@ class _StudentPortalShellState extends State<StudentPortalShell>
 
   @override
   Future<void> refreshNavBadges() {
-    scheduleNavBadgeFetch(() async {
+    scheduleNavBadgeFetch((_) async {
       if (!mounted) return;
       final api = context.read<StudentApi>();
       try {

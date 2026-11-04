@@ -159,7 +159,7 @@ class _StaffPortalShellState extends State<StaffPortalShell>
 
   @override
   Future<void> refreshNavBadges() {
-    scheduleNavBadgeFetch(() async {
+    scheduleNavBadgeFetch((_) async {
       if (!mounted) return;
       final api = context.read<StaffApi>();
       try {

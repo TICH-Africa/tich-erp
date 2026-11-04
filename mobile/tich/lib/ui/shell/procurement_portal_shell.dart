@@ -152,7 +152,7 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
 
   @override
   Future<void> refreshNavBadges() {
-    scheduleNavBadgeFetch(() async {
+    scheduleNavBadgeFetch((_) async {
       if (!mounted) return;
       final api = context.read<ProcurementApi>();
       try {
