@@ -21,7 +21,7 @@ String staffTimetableSessionTimeRange(Map<String, dynamic> session) {
 }
 
 /// Days down the left, time slots across the top - sized to the screen width.
-class StaffTimetableGrid extends StatelessWidget {
+class StaffTimetableGrid extends StatefulWidget {
   const StaffTimetableGrid({
     super.key,
     required this.sessions,
@@ -33,23 +33,46 @@ class StaffTimetableGrid extends StatelessWidget {
   final Map? dayLabels;
   final bool compact;
 
-  List<Map<String, dynamic>> get _weekSessions => sessions
-      .where((s) {
-        final day = (s['day_of_week'] as num?)?.toInt() ?? 0;
-        return staffTimetableWeekdays.contains(day);
-      })
-      .toList();
+  @override
+  State<StaffTimetableGrid> createState() => _StaffTimetableGridState();
+}
 
-  List<String> get _timeSlots {
+class _StaffTimetableGridState extends State<StaffTimetableGrid> {
+  late List<Map<String, dynamic>> _weekSessions;
+  late List<String> _timeSlots;
+  late Map<String, List<Map<String, dynamic>>> _cellIndex;
+  late Map<String, String> _slotHeaders;
+
+  @override
+  void initState() {
+    super.initState();
+    _recomputeLayout();
+  }
+
+  @override
+  void didUpdateWidget(covariant StaffTimetableGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.sessions, widget.sessions) ||
+        oldWidget.dayLabels != widget.dayLabels) {
+      _recomputeLayout();
+    }
+  }
+
+  void _recomputeLayout() {
+    _weekSessions = widget.sessions
+        .where((s) {
+          final day = (s['day_of_week'] as num?)?.toInt() ?? 0;
+          return staffTimetableWeekdays.contains(day);
+        })
+        .toList();
+
     final slots = <String>{};
     for (final s in _weekSessions) {
       final key = staffTimetableTimeKey(s['start_time']);
       if (key.isNotEmpty) slots.add(key);
     }
-    return slots.toList()..sort();
-  }
+    _timeSlots = slots.toList()..sort();
 
-  Map<String, List<Map<String, dynamic>>> get _cellIndex {
     final map = <String, List<Map<String, dynamic>>>{};
     for (final s in _weekSessions) {
       final day = (s['day_of_week'] as num?)?.toInt() ?? 0;
@@ -58,12 +81,21 @@ class StaffTimetableGrid extends StatelessWidget {
       final key = '$day|$start';
       map.putIfAbsent(key, () => []).add(s);
     }
-    return map;
+    _cellIndex = map;
+
+    final headers = <String, String>{};
+    for (final slot in _timeSlots) {
+      headers[slot] = _computeSlotHeader(slot, map);
+    }
+    _slotHeaders = headers;
   }
 
-  String _slotHeader(String slot) {
+  String _computeSlotHeader(
+    String slot,
+    Map<String, List<Map<String, dynamic>>> cellIndex,
+  ) {
     for (final day in staffTimetableWeekdays) {
-      final list = _cellIndex['$day|$slot'];
+      final list = cellIndex['$day|$slot'];
       if (list != null && list.isNotEmpty) {
         return staffTimetableSessionTimeRange(list.first);
       }
@@ -73,12 +105,7 @@ class StaffTimetableGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (_weekSessions.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final timeSlots = _timeSlots;
-    if (timeSlots.isEmpty) {
+    if (_weekSessions.isEmpty || _timeSlots.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -86,17 +113,17 @@ class StaffTimetableGrid extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         const dayColWidth = 52.0;
-        final slotCount = timeSlots.length;
+        final slotCount = _timeSlots.length;
         final slotColWidth = (width - dayColWidth) / slotCount;
 
         return _TimetableTable(
-          timeSlots: timeSlots,
+          timeSlots: _timeSlots,
           cellIndex: _cellIndex,
-          dayLabels: dayLabels,
-          compact: compact,
+          slotHeaders: _slotHeaders,
+          dayLabels: widget.dayLabels,
+          compact: widget.compact,
           dayColWidth: dayColWidth,
           slotColWidth: slotColWidth,
-          slotHeader: _slotHeader,
         );
       },
     );
@@ -107,20 +134,20 @@ class _TimetableTable extends StatelessWidget {
   const _TimetableTable({
     required this.timeSlots,
     required this.cellIndex,
+    required this.slotHeaders,
     required this.dayLabels,
     required this.compact,
     required this.dayColWidth,
     required this.slotColWidth,
-    required this.slotHeader,
   });
 
   final List<String> timeSlots;
   final Map<String, List<Map<String, dynamic>>> cellIndex;
+  final Map<String, String> slotHeaders;
   final Map? dayLabels;
   final bool compact;
   final double dayColWidth;
   final double slotColWidth;
-  final String Function(String slot) slotHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +177,7 @@ class _TimetableTable extends StatelessWidget {
             ),
             for (final slot in timeSlots)
               _HeadCell(
-                label: slotHeader(slot),
+                label: slotHeaders[slot] ?? slot,
                 compact: compact,
                 color: headText,
                 maxLines: 3,
