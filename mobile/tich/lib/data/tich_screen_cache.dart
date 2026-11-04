@@ -13,6 +13,7 @@ abstract final class TichScreenCache {
   static Timer? _persistDebounce;
   static bool _hydrated = false;
   static Future<void>? _hydrateFuture;
+  static final Set<String> _dirtyKeys = {};
 
   static bool get isHydrated => _hydrated;
 
@@ -30,6 +31,7 @@ abstract final class TichScreenCache {
     _store.clear();
     _lru.clear();
     _inFlight.clear();
+    _dirtyKeys.clear();
     _hydrated = false;
     _hydrateFuture = null;
   }
@@ -65,6 +67,7 @@ abstract final class TichScreenCache {
     _store.clear();
     _lru.clear();
     _inFlight.clear();
+    _dirtyKeys.clear();
     _hydrated = false;
     _hydrateFuture = null;
     _userScope = '';
@@ -84,6 +87,7 @@ abstract final class TichScreenCache {
 
   static void write(String key, Object value) {
     _writeWithoutPersist(key, value);
+    _dirtyKeys.add(key);
     _schedulePersist();
   }
 
@@ -116,19 +120,37 @@ abstract final class TichScreenCache {
   }
 
   static void _trimMemory() {
+    final scope = _userScope;
     while (_lru.length > _maxMemoryEntries) {
       final evict = _lru.removeAt(0);
       _store.remove(evict);
+      _dirtyKeys.remove(evict);
+      if (scope.isNotEmpty) {
+        unawaited(TichScreenCacheStore.deleteEntry(scope, evict));
+      }
     }
   }
 
   static void _schedulePersist() {
-    if (_userScope.isEmpty) return;
+    if (_userScope.isEmpty || _dirtyKeys.isEmpty) return;
     _persistDebounce?.cancel();
     _persistDebounce = Timer(const Duration(milliseconds: 800), () {
-      unawaited(
-        TichScreenCacheStore.save(_userScope, _store, _lru),
-      );
+      final scope = _userScope;
+      if (scope.isEmpty || _dirtyKeys.isEmpty) return;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final batch = <String, Map<String, dynamic>>{};
+      for (final key in _dirtyKeys.toList()) {
+        final value = _store[key];
+        if (value is Map<String, dynamic>) {
+          batch[key] = value;
+        }
+      }
+      _dirtyKeys.clear();
+      if (batch.isNotEmpty) {
+        unawaited(
+          TichScreenCacheStore.saveDirtyEntries(scope, batch, now),
+        );
+      }
     });
   }
 

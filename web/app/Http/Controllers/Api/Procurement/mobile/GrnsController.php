@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Procurement\mobile;
 
 use App\Http\Controllers\Api\Procurement\mobile\Concerns\BroadcastsProcurementCounts;
+use App\Http\Controllers\Api\Procurement\mobile\Concerns\PaginatesMobileProcurementLists;
 use App\Http\Controllers\Controller;
 use App\Models\GoodsReceivedNote;
 use App\Services\Procurement\GrnService;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 class GrnsController extends Controller
 {
     use BroadcastsProcurementCounts;
+    use PaginatesMobileProcurementLists;
 
     public function __construct(
         protected ProcurementMobilePortalService $portal,
@@ -21,17 +23,24 @@ class GrnsController extends Controller
     public function index(Request $request): JsonResponse
     {
         $status = $request->string('status')->toString();
+        $search = $request->string('search')->toString();
 
-        $grns = GoodsReceivedNote::query()
+        $query = GoodsReceivedNote::query()
             ->with(['purchaseOrder:id,po_number,supplier_id', 'purchaseOrder.supplier:id,supplier_name'])
             ->when($status !== '', fn ($q) => $q->where('inspection_status', $status))
-            ->orderByDesc('created_at')
-            ->limit(40)
-            ->get()
-            ->map(fn (GoodsReceivedNote $g) => $this->portal->serializeGrnListItem($g))
-            ->values();
+            ->when($search !== '', function ($q) use ($search) {
+                $q->where(function ($inner) use ($search) {
+                    $inner->where('grn_number', 'like', "%{$search}%")
+                        ->orWhereHas('purchaseOrder', fn ($po) => $po->where('po_number', 'like', "%{$search}%"));
+                });
+            })
+            ->orderByDesc('created_at');
 
-        return response()->json(['items' => $grns]);
+        return $this->paginatedItemsResponse(
+            $request,
+            $query,
+            fn (GoodsReceivedNote $g) => $this->portal->serializeGrnListItem($g),
+        );
     }
 
     public function show(GoodsReceivedNote $grn): JsonResponse

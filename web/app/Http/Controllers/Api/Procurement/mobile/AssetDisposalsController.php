@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Procurement\mobile;
 
 use App\Http\Controllers\Api\Procurement\mobile\Concerns\BroadcastsProcurementCounts;
+use App\Http\Controllers\Api\Procurement\mobile\Concerns\PaginatesMobileProcurementLists;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetDisposal;
@@ -16,6 +17,7 @@ use RuntimeException;
 class AssetDisposalsController extends Controller
 {
     use BroadcastsProcurementCounts;
+    use PaginatesMobileProcurementLists;
 
     public function __construct(
         protected ProcurementMobilePortalService $portal,
@@ -93,18 +95,25 @@ class AssetDisposalsController extends Controller
     public function index(Request $request): JsonResponse
     {
         $status = $request->string('status')->toString();
+        $search = $request->string('search')->toString();
 
-        $items = AssetDisposal::query()
+        $query = AssetDisposal::query()
             ->select(['id', 'asset_id', 'disposal_type', 'approval_status', 'created_at'])
             ->with(['asset:id,asset_number,asset_name'])
             ->when($status !== '', fn ($q) => $q->where('approval_status', $status))
-            ->orderByDesc('created_at')
-            ->limit(40)
-            ->get()
-            ->map(fn (AssetDisposal $r) => $this->portal->serializeAssetDisposalListItem($r))
-            ->values();
+            ->when($search !== '', function ($q) use ($search) {
+                $q->whereHas('asset', function ($asset) use ($search) {
+                    $asset->where('asset_number', 'like', "%{$search}%")
+                        ->orWhere('asset_name', 'like', "%{$search}%");
+                });
+            })
+            ->orderByDesc('created_at');
 
-        return response()->json(['items' => $items]);
+        return $this->paginatedItemsResponse(
+            $request,
+            $query,
+            fn (AssetDisposal $r) => $this->portal->serializeAssetDisposalListItem($r),
+        );
     }
 
     public function show(AssetDisposal $assetDisposal): JsonResponse

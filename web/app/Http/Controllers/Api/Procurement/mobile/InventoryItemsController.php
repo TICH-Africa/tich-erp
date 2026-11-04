@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Procurement\mobile;
 
+use App\Http\Controllers\Api\Procurement\mobile\Concerns\PaginatesMobileProcurementLists;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryItem;
 use App\Services\Procurement\ProcurementMobilePortalService;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class InventoryItemsController extends Controller
 {
+    use PaginatesMobileProcurementLists;
+
     public function __construct(
         protected ProcurementMobilePortalService $portal,
     ) {}
@@ -18,7 +21,7 @@ class InventoryItemsController extends Controller
     {
         $search = $request->string('search')->toString();
 
-        $items = InventoryItem::query()
+        $query = InventoryItem::query()
             ->select(['id', 'item_code', 'item_name', 'current_stock', 'reorder_level'])
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
@@ -26,13 +29,13 @@ class InventoryItemsController extends Controller
                         ->orWhere('item_code', 'like', "%{$search}%");
                 });
             })
-            ->orderBy('item_name')
-            ->limit(40)
-            ->get()
-            ->map(fn (InventoryItem $i) => $this->portal->serializeInventoryItemListItem($i))
-            ->values();
+            ->orderBy('item_name');
 
-        return response()->json(['items' => $items]);
+        return $this->paginatedItemsResponse(
+            $request,
+            $query,
+            fn (InventoryItem $i) => $this->portal->serializeInventoryItemListItem($i),
+        );
     }
 
     public function show(InventoryItem $inventoryItem): JsonResponse

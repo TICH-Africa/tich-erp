@@ -187,6 +187,9 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
     Route::get('/dashboard', \App\Http\Controllers\Api\Student\mobile\DashboardController::class);
     Route::get('/sidebar-notifications', \App\Http\Controllers\Api\Student\mobile\SidebarNotificationsController::class);
     Route::get('/academics', \App\Http\Controllers\Api\Student\mobile\AcademicsController::class);
+    Route::get('/academics/units', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'units']);
+    Route::get('/academics/content', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'content']);
+    Route::get('/academics/assessments', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'assessments']);
     Route::get('/academics/exam-card/pdf', [\App\Http\Controllers\Api\Student\mobile\ExamCardController::class, 'pdf']);
     Route::get('/timetable', \App\Http\Controllers\Api\Student\mobile\TimetableController::class);
     Route::get('/timetable/{timetable}/pdf', \App\Http\Controllers\Api\Student\mobile\TimetablePdfController::class);

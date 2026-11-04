@@ -16,6 +16,7 @@ import '../shell/portal_nav_counts_scope.dart';
 import '../widgets/tich_more_row_trailing.dart';
 import '../widgets/tich_widgets.dart';
 import 'assessment_take_page.dart';
+import 'student_academics_lazy_section.dart';
 import 'student_academics_payload.dart';
 import 'student_helpers.dart';
 import '../../data/tich_screen_cache.dart';
@@ -133,35 +134,61 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         title: 'My units',
         icon: Icons.menu_book_outlined,
         badgeKey: 'academics.units',
-        onTap: () => _openPayloadSection(
-          'My units',
-          (payload) => _StudentUnitsSection(units: payload.registeredUnits),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => StudentAcademicsLazySection(
+              title: 'My units',
+              cacheKey: 'student.academics.units',
+              fetch: () => widget.api.academicsUnits(),
+              builder: (data) {
+                final units = [
+                  for (final u in (data['registered_units'] as List? ?? const []))
+                    if (u is Map) Map<String, dynamic>.from(u),
+                ];
+                return _StudentUnitsSection(units: units);
+              },
+            ),
+          ),
         ),
       ),
       AcademicsHubSection(
         title: 'Learning content',
         icon: Icons.folder_open_outlined,
         badgeKey: 'academics.content',
-        onTap: () => _openPayloadSection(
-          'Learning content',
-          (payload) => _listSection(
-            empty: 'No published content yet.',
-            items: payload.unitContent,
-            tile: (c) => TichCard(
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  c['title']?.toString() ?? 'Content',
-                  style: tichUi(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  [
-                    c['unit_code'],
-                    c['content_type'],
-                    formatDateTime(c['published_at']),
-                  ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
-                ),
-              ),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => StudentAcademicsLazySection(
+              title: 'Learning content',
+              cacheKey: 'student.academics.content',
+              fetch: () => widget.api.academicsContent(),
+              builder: (data) {
+                final items = [
+                  for (final c in (data['unit_content'] as List? ?? const []))
+                    if (c is Map) Map<String, dynamic>.from(c),
+                ];
+                return _listSection(
+                  empty: 'No published content yet.',
+                  items: items,
+                  tile: (c) => TichCard(
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        c['title']?.toString() ?? 'Content',
+                        style: tichUi(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        [
+                          c['unit_code'],
+                          c['content_type'],
+                          formatDateTime(c['published_at']),
+                        ]
+                            .where((e) => e != null && '$e'.isNotEmpty)
+                            .join(' · '),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -170,12 +197,21 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         title: 'Assessments',
         icon: Icons.quiz_outlined,
         badgeKey: 'academics.assessments',
-        onTap: () => _openPayloadSection(
-          'Assessments',
-          (payload) => _listSection(
-            empty: 'No assessments available.',
-            items: payload.assessments,
-            tile: (a) {
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => StudentAcademicsLazySection(
+              title: 'Assessments',
+              cacheKey: 'student.academics.assessments',
+              fetch: () => widget.api.academicsAssessments(),
+              builder: (data) {
+                final assessments = [
+                  for (final a in (data['assessments'] as List? ?? const []))
+                    if (a is Map) Map<String, dynamic>.from(a),
+                ];
+                return _listSection(
+                  empty: 'No assessments available.',
+                  items: assessments,
+                  tile: (a) {
               final sub = a['submission'] is Map
                   ? a['submission'] as Map<String, dynamic>
                   : null;
@@ -238,7 +274,10 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                               ),
                       ),
                     );
-            },
+                  },
+                );
+              },
+            ),
           ),
         ),
       ),

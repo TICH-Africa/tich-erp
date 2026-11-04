@@ -50,6 +50,8 @@ trait SerializesStudentPortal
         return [
             'registered_unit_count' => (int) ($a['registered_unit_count'] ?? 0),
             'programme_unit_count' => (int) ($a['programme_unit_count'] ?? 0),
+            'unit_content_count' => (int) ($a['unit_content_count'] ?? collect($a['unit_content'] ?? [])->count()),
+            'assessment_count' => (int) ($a['assessment_count'] ?? collect($a['assessments'] ?? [])->count()),
             'curriculum_is_published' => (bool) ($a['curriculum_is_published'] ?? false),
             'current_period_status' => $a['current_period_status'] ?? null,
             'current_semester' => $a['current_semester'] ? [

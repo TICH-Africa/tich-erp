@@ -138,12 +138,45 @@ class StudentPortalDashboardService
     public function academicsForMobile(Student $student): array
     {
         return [
-            'academics' => $this->academicRecords->forStudentMobile(
+            'academics' => $this->academicRecords->academicsHubForMobile(
                 $student,
                 $this->mayViewProvisionalCurriculum($student),
             ),
             'transcript' => $this->transcript($student),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function academicsUnitsForMobile(Student $student): array
+    {
+        return $this->academicRecords->mobileUnitsForStudent(
+            $student,
+            $this->mayViewProvisionalCurriculum($student),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function academicsContentForMobile(Student $student): array
+    {
+        return $this->academicRecords->mobileContentForStudent(
+            $student,
+            $this->mayViewProvisionalCurriculum($student),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function academicsAssessmentsForMobile(Student $student): array
+    {
+        return $this->academicRecords->mobileAssessmentsForStudent(
+            $student,
+            $this->mayViewProvisionalCurriculum($student),
+        );
     }
 
     /**

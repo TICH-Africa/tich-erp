@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Procurement\mobile;
 
+use App\Http\Controllers\Api\Procurement\mobile\Concerns\PaginatesMobileProcurementLists;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Services\Procurement\ProcurementMobilePortalService;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class AssetsController extends Controller
 {
+    use PaginatesMobileProcurementLists;
+
     public function __construct(
         protected ProcurementMobilePortalService $portal,
     ) {}
@@ -18,7 +21,7 @@ class AssetsController extends Controller
     {
         $search = $request->string('search')->toString();
 
-        $assets = Asset::query()
+        $query = Asset::query()
             ->select(['id', 'asset_number', 'asset_name', 'location_name'])
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
@@ -27,13 +30,13 @@ class AssetsController extends Controller
                         ->orWhere('tag_number', 'like', "%{$search}%");
                 });
             })
-            ->orderBy('asset_number')
-            ->limit(40)
-            ->get()
-            ->map(fn (Asset $a) => $this->portal->serializeAssetListItem($a))
-            ->values();
+            ->orderBy('asset_number');
 
-        return response()->json(['items' => $assets]);
+        return $this->paginatedItemsResponse(
+            $request,
+            $query,
+            fn (Asset $a) => $this->portal->serializeAssetListItem($a),
+        );
     }
 
     public function show(Asset $asset): JsonResponse

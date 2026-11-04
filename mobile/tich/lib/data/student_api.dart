@@ -10,6 +10,15 @@ class StudentApi {
 
   Future<Map<String, dynamic>> academics() => _client.get('/student/academics');
 
+  Future<Map<String, dynamic>> academicsUnits() =>
+      _client.get('/student/academics/units');
+
+  Future<Map<String, dynamic>> academicsContent() =>
+      _client.get('/student/academics/content');
+
+  Future<Map<String, dynamic>> academicsAssessments() =>
+      _client.get('/student/academics/assessments');
+
   Future<List<int>> downloadExamCardPdf({required int semesterId}) =>
       _client.getBytes(
         '/student/academics/exam-card/pdf',

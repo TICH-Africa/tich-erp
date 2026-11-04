@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Procurement\mobile;
 
 use App\Http\Controllers\Api\Procurement\mobile\Concerns\BroadcastsProcurementCounts;
+use App\Http\Controllers\Api\Procurement\mobile\Concerns\PaginatesMobileProcurementLists;
 use App\Http\Controllers\Controller;
 use App\Models\Rfq;
 use App\Services\Procurement\ProcurementMobilePortalService;
@@ -14,6 +15,7 @@ use InvalidArgumentException;
 class RfqsController extends Controller
 {
     use BroadcastsProcurementCounts;
+    use PaginatesMobileProcurementLists;
 
     public function __construct(
         protected ProcurementMobilePortalService $portal,
@@ -25,20 +27,25 @@ class RfqsController extends Controller
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
 
-        $items = Rfq::query()
+        $query = Rfq::query()
             ->select([
                 'id', 'rfq_number', 'status', 'item_description',
                 'approval_status', 'created_at',
             ])
-            ->when($search !== '', fn ($q) => $q->where('rfq_number', 'like', "%{$search}%"))
+            ->when($search !== '', function ($q) use ($search) {
+                $q->where(function ($inner) use ($search) {
+                    $inner->where('rfq_number', 'like', "%{$search}%")
+                        ->orWhere('item_description', 'like', "%{$search}%");
+                });
+            })
             ->when($status !== '', fn ($q) => $q->where('status', $status))
-            ->orderByDesc('created_at')
-            ->limit(40)
-            ->get()
-            ->map(fn (Rfq $r) => $this->portal->serializeRfqListItem($r))
-            ->values();
+            ->orderByDesc('created_at');
 
-        return response()->json(['items' => $items]);
+        return $this->paginatedItemsResponse(
+            $request,
+            $query,
+            fn (Rfq $r) => $this->portal->serializeRfqListItem($r),
+        );
     }
 
     public function show(Rfq $rfq): JsonResponse

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Procurement\mobile;
 
 use App\Http\Controllers\Api\Procurement\mobile\Concerns\BroadcastsProcurementCounts;
+use App\Http\Controllers\Api\Procurement\mobile\Concerns\PaginatesMobileProcurementLists;
 use App\Http\Controllers\Controller;
 use App\Models\ProcurementRequisition;
 use App\Models\StockAlert;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 class StockAlertsController extends Controller
 {
     use BroadcastsProcurementCounts;
+    use PaginatesMobileProcurementLists;
 
     public function __construct(
         protected ProcurementMobilePortalService $portal,
@@ -23,21 +25,28 @@ class StockAlertsController extends Controller
     public function index(Request $request): JsonResponse
     {
         $status = $request->string('status')->toString() ?: 'active';
+        $search = $request->string('search')->toString();
 
-        $alerts = StockAlert::query()
+        $query = StockAlert::query()
             ->select([
                 'id', 'inventory_item_id', 'status', 'current_stock',
                 'reorder_level', 'created_at',
             ])
             ->with('inventoryItem:id,item_name,current_stock,reorder_level')
             ->when($status !== '', fn ($q) => $q->where('status', $status))
-            ->orderByDesc('created_at')
-            ->limit(40)
-            ->get()
-            ->map(fn (StockAlert $a) => $this->portal->serializeStockAlertListItem($a))
-            ->values();
+            ->when($search !== '', function ($q) use ($search) {
+                $q->whereHas('inventoryItem', function ($item) use ($search) {
+                    $item->where('item_name', 'like', "%{$search}%")
+                        ->orWhere('item_code', 'like', "%{$search}%");
+                });
+            })
+            ->orderByDesc('created_at');
 
-        return response()->json(['items' => $alerts]);
+        return $this->paginatedItemsResponse(
+            $request,
+            $query,
+            fn (StockAlert $a) => $this->portal->serializeStockAlertListItem($a),
+        );
     }
 
     public function show(StockAlert $stockAlert): JsonResponse

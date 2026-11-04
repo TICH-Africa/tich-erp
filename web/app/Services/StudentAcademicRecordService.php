@@ -148,10 +148,89 @@ class StudentAcademicRecordService
      */
     public function forStudentMobile(Student $student, bool $allowProvisionalCurriculum = true): array
     {
+        $hub = $this->academicsHubForMobile($student, $allowProvisionalCurriculum);
+        $units = $this->mobileUnitsForStudent($student, $allowProvisionalCurriculum);
+        $hub['registered_units'] = $units['registered_units'];
+        $hub['curriculum_units'] = $units['curriculum_units'];
+        $hub['unit_content'] = $this->mobileContentForStudent($student, $allowProvisionalCurriculum)['unit_content'];
+        $assessmentsPayload = $this->mobileAssessmentsForStudent($student, $allowProvisionalCurriculum);
+        $hub['assessments'] = $assessmentsPayload['assessments'];
+        $hub['my_submissions'] = $assessmentsPayload['my_submissions'];
+
+        return $hub;
+    }
+
+    /**
+     * Hub payload without heavy units/content/assessment lists (loaded per section on mobile).
+     *
+     * @return array<string, mixed>
+     */
+    public function academicsHubForMobile(Student $student, bool $allowProvisionalCurriculum = true): array
+    {
         $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
 
         $registeredUnits = $data['registered_units'];
         $registeredUnitIds = $registeredUnits->pluck('unit_id')->filter()->unique()->values()->all();
+        $unitIds = collect($data['curriculum_units'])->pluck('unit_id')->filter()->unique()
+            ->merge($registeredUnitIds)
+            ->unique()
+            ->values()
+            ->all();
+
+        $data['assessments'] = collect();
+        $data['my_submissions'] = collect();
+        $data['unit_content'] = collect();
+        $data['unit_content_count'] = $this->countPublishedUnitContent($unitIds);
+        $data['assessment_count'] = $this->countReadyAssessments($registeredUnitIds);
+        $data['registrations'] = collect($data['registrations'])->take(20)->values();
+        $data['grades'] = collect($data['grades'])->take(40)->values();
+        $data['cat_scores'] = collect($data['cat_scores'])->take(40)->values();
+        $data['exam_results'] = collect($data['exam_results'])->take(40)->values();
+        $data['attendance'] = collect($data['attendance'])->take(40)->values();
+
+        return $data;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function mobileUnitsForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
+    {
+        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
+
+        return [
+            'registered_units' => $data['registered_units'],
+            'curriculum_units' => $data['curriculum_units'],
+            'registered_unit_count' => $data['registered_unit_count'],
+            'programme_unit_count' => $data['programme_unit_count'],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function mobileContentForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
+    {
+        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
+        $registeredUnitIds = $data['registered_units']->pluck('unit_id')->filter()->unique()->values()->all();
+        $unitIds = collect($data['curriculum_units'])->pluck('unit_id')->filter()->unique()
+            ->merge($registeredUnitIds)
+            ->unique()
+            ->values()
+            ->all();
+
+        return [
+            'unit_content' => $this->publishedUnitContentQuery($unitIds)->get(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function mobileAssessmentsForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
+    {
+        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
+        $registeredUnitIds = $data['registered_units']->pluck('unit_id')->filter()->unique()->values()->all();
 
         $assessments = collect();
         $mySubmissions = collect();
@@ -179,38 +258,68 @@ class StudentAcademicRecordService
             }
         }
 
-        $unitIds = collect($data['curriculum_units'])->pluck('unit_id')->filter()->unique()
-            ->merge($registeredUnitIds)
-            ->unique()
-            ->values()
-            ->all();
+        return [
+            'assessments' => $assessments,
+            'my_submissions' => $mySubmissions,
+        ];
+    }
 
-        $unitContent = collect();
-        if ($unitIds !== []) {
-            $unitContent = UnitContent::query()
-                ->select([
-                    'id', 'unit_id', 'unit_allocation_id', 'title', 'content_type',
-                    'file_path', 'original_filename', 'status', 'published_at', 'created_at', 'display_order',
-                ])
-                ->with(['unit:id,unit_code,unit_name', 'unitAllocation'])
-                ->whereIn('unit_id', $unitIds)
-                ->where('status', 'published')
-                ->orderByDesc('display_order')
-                ->orderByDesc('created_at')
-                ->limit(40)
-                ->get();
+    /**
+     * @param  list<int>  $unitIds
+     */
+    private function countPublishedUnitContent(array $unitIds): int
+    {
+        if ($unitIds === []) {
+            return 0;
         }
 
-        $data['assessments'] = $assessments;
-        $data['my_submissions'] = $mySubmissions;
-        $data['unit_content'] = $unitContent;
-        $data['registrations'] = collect($data['registrations'])->take(20)->values();
-        $data['grades'] = collect($data['grades'])->take(40)->values();
-        $data['cat_scores'] = collect($data['cat_scores'])->take(40)->values();
-        $data['exam_results'] = collect($data['exam_results'])->take(40)->values();
-        $data['attendance'] = collect($data['attendance'])->take(40)->values();
+        return UnitContent::query()
+            ->whereIn('unit_id', $unitIds)
+            ->where('status', 'published')
+            ->count();
+    }
 
-        return $data;
+    /**
+     * @param  list<int>  $registeredUnitIds
+     */
+    private function countReadyAssessments(array $registeredUnitIds): int
+    {
+        if ($registeredUnitIds === []) {
+            return 0;
+        }
+
+        $allocationIds = UnitAllocation::query()
+            ->whereIn('unit_id', $registeredUnitIds)
+            ->where('is_active', 1)
+            ->pluck('id');
+
+        if ($allocationIds->isEmpty()) {
+            return 0;
+        }
+
+        return ObjectiveAssessment::query()
+            ->whereIn('unit_allocation_id', $allocationIds)
+            ->whereIn('status', ['ready', 'graded'])
+            ->count();
+    }
+
+    /**
+     * @param  list<int>  $unitIds
+     * @return \Illuminate\Database\Eloquent\Builder<UnitContent>
+     */
+    private function publishedUnitContentQuery(array $unitIds)
+    {
+        return UnitContent::query()
+            ->select([
+                'id', 'unit_id', 'unit_allocation_id', 'title', 'content_type',
+                'file_path', 'original_filename', 'status', 'published_at', 'created_at', 'display_order',
+            ])
+            ->with(['unit:id,unit_code,unit_name', 'unitAllocation'])
+            ->whereIn('unit_id', $unitIds)
+            ->where('status', 'published')
+            ->orderByDesc('display_order')
+            ->orderByDesc('created_at')
+            ->limit(40);
     }
 
     /**

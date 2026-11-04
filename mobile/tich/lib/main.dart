@@ -14,6 +14,7 @@ import 'data/auth_token_store.dart';
 import 'data/tich_api_scope.dart';
 import 'data/tich_portal_warmup.dart';
 import 'data/tich_screen_cache.dart';
+import 'data/tich_screen_cache_store.dart';
 import 'data/tich_power_policy.dart';
 import 'sync/tich_background_sync.dart';
 import 'data/tich_realtime.dart';
@@ -34,6 +35,7 @@ import 'ui/shell/tich_logout.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await TichScreenCacheStore.init();
   PaintingBinding.instance.imageCache.maximumSize = 48;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 24 << 20;
   await AppSettings.instance.load();
