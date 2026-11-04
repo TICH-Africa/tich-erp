@@ -56,23 +56,28 @@ class _LeavePageState extends State<LeavePage> {
     if (result == true) _reload();
   }
 
+  void _openApplyFromCache() {
+    final cached = _dataCache;
+    if (cached is Map<String, dynamic>) {
+      _openApply(cached);
+      return;
+    }
+    _future.then((data) {
+      if (mounted) _openApply(data);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return TichLiveRefreshBinder(
       onLiveRefresh: _liveRefresh,
       child: AdaptiveScaffold(
       title: 'Leave',
-      floatingActionButton: FutureBuilder(
-        future: _future,
-        builder: (context, snap) {
-          if (!snap.hasData) return const SizedBox.shrink();
-          return FloatingActionButton.extended(
-            backgroundColor: TichColors.green,
-            onPressed: () => _openApply(snap.data!),
-            icon: const Icon(Icons.add),
-            label: const Text('Apply'),
-          );
-        },
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: TichColors.green,
+        onPressed: _openApplyFromCache,
+        icon: const Icon(Icons.add),
+        label: const Text('Apply'),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
@@ -85,212 +90,268 @@ class _LeavePageState extends State<LeavePage> {
               onRetry: _reload,
             );
           }
-          final data = merged! as Map<String, dynamic>;;
+          final data = merged! as Map<String, dynamic>;
           final balances = data['balances'] as List? ?? const [];
           final requests = data['requests'] as List? ?? const [];
           final pending = data['pending_coverages'] as List? ?? const [];
 
           return RefreshIndicator(
             onRefresh: () async => _reload(),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-              children: [
-                const TichSectionHeader('Balances'),
+            child: CustomScrollView(
+              slivers: [
+                const SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: TichSectionHeader('Balances'),
+                  ),
+                ),
                 if (balances.isEmpty)
-                  const TichCard(child: TichEmpty('No balances.'))
+                  const SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    sliver: SliverToBoxAdapter(
+                      child: TichCard(child: TichEmpty('No balances.')),
+                    ),
+                  )
                 else
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: balances.map((raw) {
-                      final b = Map<String, dynamic>.from(raw as Map);
-                      final scheme = Theme.of(context).colorScheme;
-                      return Container(
-                        width: (MediaQuery.of(context).size.width - 40) / 2,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: scheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: scheme.outline.withValues(alpha: 0.35),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              b['leave_type_name']?.toString() ?? '',
-                              style: tichUi(
-                                fontSize: 12,
-                                color: scheme.onSurface.withValues(alpha: 0.65),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    sliver: SliverToBoxAdapter(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: balances.map((raw) {
+                          final b = Map<String, dynamic>.from(raw as Map);
+                          final scheme = Theme.of(context).colorScheme;
+                          return Container(
+                            width: (MediaQuery.of(context).size.width - 40) / 2,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: scheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: scheme.outline.withValues(alpha: 0.35),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${b['balance_days']}',
-                              style: TichTheme.display(
-                                fontSize: 22,
-                                color: scheme.primary,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  b['leave_type_name']?.toString() ?? '',
+                                  style: tichUi(
+                                    fontSize: 12,
+                                    color: scheme.onSurface
+                                        .withValues(alpha: 0.65),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${b['balance_days']}',
+                                  style: TichTheme.display(
+                                    fontSize: 22,
+                                    color: scheme.primary,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ),
                 if (pending.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  const TichSectionHeader('Stand-in requests'),
-                  ...pending.map((raw) {
-                    final c = Map<String, dynamic>.from(raw as Map);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: TichCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${c['applicant']} · ${c['leave_type']}',
-                              style: tichUi(fontWeight: FontWeight.w700),
-                            ),
-                            Text(
-                              '${c['start_date']} → ${c['end_date']}',
-                              style: tichUi(
-                                fontSize: 12,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.65),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: () async {
-                                      try {
-                                        await widget.api.declineCoverage(
-                                          (c['id'] as num).toInt(),
-                                        );
-                                        _reload();
-                                      } on ApiException catch (e) {
-                                        if (!mounted) return;
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(content: Text(e.message)),
-                                        );
-                                      }
-                                    },
-                                    child: const Text('Decline'),
+                  const SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: TichSectionHeader('Stand-in requests'),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, i) {
+                          final c =
+                              Map<String, dynamic>.from(pending[i] as Map);
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: TichCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${c['applicant']} · ${c['leave_type']}',
+                                    style: tichUi(fontWeight: FontWeight.w700),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: FilledButton(
-                                    onPressed: () async {
-                                      try {
-                                        await widget.api.acceptCoverage(
-                                          (c['id'] as num).toInt(),
-                                        );
-                                        _reload();
-                                      } on ApiException catch (e) {
-                                        if (!mounted) return;
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(content: Text(e.message)),
-                                        );
-                                      }
-                                    },
-                                    child: const Text('Accept'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-                const SizedBox(height: 16),
-                const TichSectionHeader('My requests'),
-                if (requests.isEmpty)
-                  const TichCard(child: TichEmpty('No leave requests yet.'))
-                else
-                  ...requests.map((raw) {
-                    final r = Map<String, dynamic>.from(raw as Map);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: TichCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    r['leave_type_name']?.toString() ?? 'Leave',
+                                  Text(
+                                    '${c['start_date']} → ${c['end_date']}',
                                     style: tichUi(
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.65),
                                     ),
                                   ),
-                                ),
-                                TichStatusChip(
-                                  r['overall_status']?.toString() ?? '',
-                                  tone: toneForStatus(
-                                    r['overall_status']?.toString(),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () async {
+                                            try {
+                                              await widget.api.declineCoverage(
+                                                (c['id'] as num).toInt(),
+                                              );
+                                              _reload();
+                                            } on ApiException catch (e) {
+                                              if (!mounted) return;
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(e.message),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          child: const Text('Decline'),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: FilledButton(
+                                          onPressed: () async {
+                                            try {
+                                              await widget.api.acceptCoverage(
+                                                (c['id'] as num).toInt(),
+                                              );
+                                              _reload();
+                                            } on ApiException catch (e) {
+                                              if (!mounted) return;
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(e.message),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          child: const Text('Accept'),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '${r['start_date']} → ${r['end_date']} · ${r['days_requested']} day(s)',
-                              style: tichUi(fontSize: 13),
-                            ),
-                            if (r['reason'] != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                r['reason'].toString(),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: tichUi(
-                                  fontSize: 12,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.65),
-                                ),
+                                ],
                               ),
-                            ],
-                            if (r['editable'] == true) ...[
-                              const SizedBox(height: 8),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () async {
-                                    try {
-                                      await widget.api.cancelLeave(
-                                        (r['id'] as num).toInt(),
-                                      );
-                                      _reload();
-                                    } on ApiException catch (e) {
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text(e.message)),
-                                      );
-                                    }
-                                  },
-                                  child: const Text('Cancel request'),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+                            ),
+                          );
+                        },
+                        childCount: pending.length,
                       ),
-                    );
-                  }),
+                    ),
+                  ),
+                ],
+                const SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: TichSectionHeader('My requests'),
+                  ),
+                ),
+                if (requests.isEmpty)
+                  const SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 88),
+                    sliver: SliverToBoxAdapter(
+                      child: TichCard(
+                        child: TichEmpty('No leave requests yet.'),
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, i) {
+                          final r =
+                              Map<String, dynamic>.from(requests[i] as Map);
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: TichCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          r['leave_type_name']?.toString() ??
+                                              'Leave',
+                                          style: tichUi(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      TichStatusChip(
+                                        r['overall_status']?.toString() ?? '',
+                                        tone: toneForStatus(
+                                          r['overall_status']?.toString(),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${r['start_date']} → ${r['end_date']} · ${r['days_requested']} day(s)',
+                                    style: tichUi(fontSize: 13),
+                                  ),
+                                  if (r['reason'] != null) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      r['reason'].toString(),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: tichUi(
+                                        fontSize: 12,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.65),
+                                      ),
+                                    ),
+                                  ],
+                                  if (r['editable'] == true) ...[
+                                    const SizedBox(height: 8),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton(
+                                        onPressed: () async {
+                                          try {
+                                            await widget.api.cancelLeave(
+                                              (r['id'] as num).toInt(),
+                                            );
+                                            _reload();
+                                          } on ApiException catch (e) {
+                                            if (!mounted) return;
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(e.message),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: const Text('Cancel request'),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        childCount: requests.length,
+                      ),
+                    ),
+                  ),
               ],
             ),
           );

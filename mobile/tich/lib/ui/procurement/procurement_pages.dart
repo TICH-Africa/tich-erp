@@ -1187,7 +1187,7 @@ class _ProcurementAssetsPageState extends State<ProcurementAssetsPage> {
   }
 }
 
-class ProcurementAssetDetailPage extends StatelessWidget {
+class ProcurementAssetDetailPage extends StatefulWidget {
   const ProcurementAssetDetailPage({
     super.key,
     required this.api,
@@ -1198,17 +1198,47 @@ class ProcurementAssetDetailPage extends StatelessWidget {
   final int id;
 
   @override
+  State<ProcurementAssetDetailPage> createState() =>
+      _ProcurementAssetDetailPageState();
+}
+
+class _ProcurementAssetDetailPageState
+    extends State<ProcurementAssetDetailPage> {
+  late Future<Map<String, dynamic>> _future;
+  Object? _cache;
+
+  String get _cacheKey => 'procurement.asset.${widget.id}';
+
+  @override
+  void initState() {
+    super.initState();
+    procurementPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.asset(widget.id),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'Asset',
       body: FutureBuilder<Map<String, dynamic>>(
-        future: api.asset(id),
+        future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) return procurementLoadingBody();
-          if (snap.hasError) {
+          final merged = tichMergeSnapshot(
+            snap,
+            _cache as dynamic,
+            persistKey: _cacheKey,
+          );
+          if (tichShowLoadingSpinner(snap, merged)) {
+            return procurementLoadingBody();
+          }
+          if (merged == null && snap.hasError) {
             return Center(child: Text(tichDescribeError(snap.error)));
           }
-          final r = snap.data!;
+          final r = merged! as Map<String, dynamic>;
           return ProcurementDetailBody(
             children: [
               procurementDetailHero(

@@ -82,91 +82,126 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
 
           return RefreshIndicator(
             onRefresh: () async => _reload(),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: TichColors.greenDark,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Student alerts',
-                              style: TichTheme.display(
-                                color: Colors.white,
-                                fontSize: 18,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              unread == 0
-                                  ? 'No new alerts'
-                                  : '$unread unread',
-                              style: tichUi(color: Colors.white70, fontSize: 13),
-                            ),
-                          ],
-                        ),
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: TichColors.greenDark,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      Icon(Icons.notifications_active,
-                          color: Colors.white.withValues(alpha: 0.9), size: 28),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (items.isEmpty)
-                  const TichCard(child: TichEmpty('No notifications.'))
-                else
-                  ...items.map((raw) {
-                    final n = Map<String, dynamic>.from(raw as Map);
-                    final unreadItem = n['read_at'] == null;
-                    final id = (n['id'] as num?)?.toInt();
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: TichCard(
-                        onTap: unreadItem && id != null
-                            ? () => _markRead(id)
-                            : null,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    n['title']?.toString() ?? 'Notification',
-                                    style: tichUi(fontWeight: FontWeight.w700),
+                                Text(
+                                  'Student alerts',
+                                  style: TichTheme.display(
+                                    color: Colors.white,
+                                    fontSize: 18,
                                   ),
                                 ),
-                                if (unreadItem)
-                                  const TichStatusChip('New',
-                                      tone: TichChipTone.info),
+                                const SizedBox(height: 4),
+                                Text(
+                                  unread == 0
+                                      ? 'No new alerts'
+                                      : '$unread unread',
+                                  style: tichUi(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
                               ],
                             ),
-                            if ((n['body']?.toString() ?? '').isNotEmpty) ...[
-                              const SizedBox(height: 6),
-                              Text(n['body'].toString(),
-                                  style: tichUi(fontSize: 13, height: 1.35)),
-                            ],
-                            const SizedBox(height: 6),
-                            Text(
-                              formatDateTime(n['created_at']),
-                              style: tichUi(
-                                fontSize: 12,
-                                color: TichColors.neutralMuted,
+                          ),
+                          Icon(
+                            Icons.notifications_active,
+                            color: Colors.white.withValues(alpha: 0.9),
+                            size: 28,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                if (items.isEmpty)
+                  const SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    sliver: SliverToBoxAdapter(
+                      child: TichCard(child: TichEmpty('No notifications.')),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, i) {
+                          final n =
+                              Map<String, dynamic>.from(items[i] as Map);
+                          final unreadItem = n['read_at'] == null;
+                          final id = (n['id'] as num?)?.toInt();
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: TichCard(
+                              onTap: unreadItem && id != null
+                                  ? () => _markRead(id)
+                                  : null,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          n['title']?.toString() ??
+                                              'Notification',
+                                          style: tichUi(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      if (unreadItem)
+                                        const TichStatusChip(
+                                          'New',
+                                          tone: TichChipTone.info,
+                                        ),
+                                    ],
+                                  ),
+                                  if ((n['body']?.toString() ?? '')
+                                      .isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      n['body'].toString(),
+                                      style: tichUi(
+                                        fontSize: 13,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    formatDateTime(n['created_at']),
+                                    style: tichUi(
+                                      fontSize: 12,
+                                      color: TichColors.neutralMuted,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          );
+                        },
+                        childCount: items.length,
                       ),
-                    );
-                  }),
+                    ),
+                  ),
               ],
             ),
           );
