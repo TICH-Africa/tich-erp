@@ -22,6 +22,7 @@ use App\Services\CurriculumVersionService;
 use App\Services\DepartmentDashboardService;
 use App\Services\ExamScheduleSyncService;
 use App\Services\PrintDocumentService;
+use App\Services\ProgramTimetableDocumentService;
 use App\Services\ProgramExamService;
 use App\Services\ProgramCurriculumService;
 use App\Services\StudentAcademicRecordService;
@@ -53,6 +54,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         protected ProgramExamService $programExams,
         protected SupplementaryExamService $supplementaryMarks,
         protected PrintDocumentService $printDocuments,
+        protected ProgramTimetableDocumentService $timetableDocuments,
         protected UnitAllocationService $unitAllocations,
         protected ExamScheduleSyncService $examScheduleSync,
         protected StudentUnitRegistrationService $studentRegistrations,
@@ -1013,6 +1015,20 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
     public function printTimetable(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): View
     {
+        $this->timetablePrintData($request, $department, $program, $timetable);
+
+        if ($this->timetableDocuments->usesUploadedFile($timetable)) {
+            return view('partials.timetable-upload-print', [
+                'timetable' => $timetable,
+                'pdfUrl' => route('departments.academics.programs.timetable.pdf', [
+                    'department' => $department,
+                    'program' => $program,
+                    'timetable' => $timetable,
+                ]),
+                'documentTitle' => $timetable->displayTitle(),
+            ]);
+        }
+
         return $this->printDocuments->render(
             'academics.programs.timetable-print',
             $this->timetablePrintData($request, $department, $program, $timetable),
@@ -1021,6 +1037,12 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
     public function downloadTimetablePdf(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): StreamedResponse
     {
+        $this->timetablePrintData($request, $department, $program, $timetable, includeActions: false);
+
+        if ($this->timetableDocuments->usesUploadedFile($timetable)) {
+            return $this->timetableDocuments->inlineResponse($timetable);
+        }
+
         $data = $this->timetablePrintData($request, $department, $program, $timetable, includeActions: false);
         $program = $data['program'];
 

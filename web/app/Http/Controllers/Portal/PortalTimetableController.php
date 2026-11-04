@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\ProgramTimetable;
 use App\Services\PrintDocumentService;
+use App\Services\ProgramTimetableDocumentService;
 use App\Services\StudentPortalService;
 use App\Services\TimetableSchedulingService;
 use Illuminate\Http\Request;
@@ -18,10 +19,21 @@ class PortalTimetableController extends Controller
         protected StudentPortalService $portalService,
         protected TimetableSchedulingService $timetableScheduling,
         protected PrintDocumentService $printDocuments,
+        protected ProgramTimetableDocumentService $timetableDocuments,
     ) {}
 
     public function print(Request $request, ProgramTimetable $timetable): View
     {
+        $this->authorizeStudentTimetable($request, $timetable);
+
+        if ($this->timetableDocuments->usesUploadedFile($timetable)) {
+            return view('partials.timetable-upload-print', [
+                'timetable' => $timetable,
+                'pdfUrl' => route('portal.timetable.pdf', $timetable),
+                'documentTitle' => $timetable->displayTitle(),
+            ]);
+        }
+
         return $this->printDocuments->render(
             'academics.programs.timetable-print',
             $this->documentData($request, $timetable),
@@ -30,6 +42,12 @@ class PortalTimetableController extends Controller
 
     public function pdf(Request $request, ProgramTimetable $timetable): Response
     {
+        $this->authorizeStudentTimetable($request, $timetable);
+
+        if ($this->timetableDocuments->usesUploadedFile($timetable)) {
+            return $this->timetableDocuments->inlineResponse($timetable);
+        }
+
         $data = $this->documentData($request, $timetable, includeActions: false);
         $program = $data['program'];
 
@@ -49,6 +67,14 @@ class PortalTimetableController extends Controller
     /**
      * @return array<string, mixed>
      */
+    protected function authorizeStudentTimetable(Request $request, ProgramTimetable $timetable): void
+    {
+        $student = $this->portalService->studentForUser($request->user());
+        abort_unless($student, 404);
+        abort_unless((int) $timetable->program_id === (int) $student->program_id, 404);
+        abort_unless($timetable->status === 'published', 404);
+    }
+
     protected function documentData(Request $request, ProgramTimetable $timetable, bool $includeActions = true): array
     {
         $student = $this->portalService->studentForUser($request->user());

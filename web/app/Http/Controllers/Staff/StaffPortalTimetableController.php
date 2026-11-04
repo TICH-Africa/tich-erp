@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProgramTimetable;
-use App\Models\ProgramTimetableSession;
 use App\Services\PrintDocumentService;
+use App\Services\ProgramTimetableDocumentService;
 use App\Services\StaffPortalService;
 use App\Services\TimetableSchedulingService;
 use Illuminate\Http\Request;
@@ -19,10 +19,21 @@ class StaffPortalTimetableController extends Controller
         protected StaffPortalService $portalService,
         protected TimetableSchedulingService $timetableScheduling,
         protected PrintDocumentService $printDocuments,
+        protected ProgramTimetableDocumentService $timetableDocuments,
     ) {}
 
     public function print(Request $request, ProgramTimetable $timetable): View
     {
+        $this->authorizedStaff($request, $timetable);
+
+        if ($this->timetableDocuments->usesUploadedFile($timetable)) {
+            return view('partials.timetable-upload-print', [
+                'timetable' => $timetable,
+                'pdfUrl' => route('staff.timetable.pdf', $timetable),
+                'documentTitle' => $timetable->displayTitle(),
+            ]);
+        }
+
         return $this->printDocuments->render(
             'academics.programs.timetable-print',
             $this->documentData($request, $timetable),
@@ -31,6 +42,12 @@ class StaffPortalTimetableController extends Controller
 
     public function pdf(Request $request, ProgramTimetable $timetable): Response
     {
+        $this->authorizedStaff($request, $timetable);
+
+        if ($this->timetableDocuments->usesUploadedFile($timetable)) {
+            return $this->timetableDocuments->inlineResponse($timetable);
+        }
+
         $data = $this->documentData($request, $timetable, includeActions: false);
         $program = $data['program'];
 
@@ -87,12 +104,7 @@ class StaffPortalTimetableController extends Controller
         $staff = $this->portalService->staffForUser($request->user());
         abort_unless($staff, 404);
 
-        $assigned = ProgramTimetableSession::query()
-            ->where('program_timetable_id', $timetable->id)
-            ->where('staff_id', $staff->id)
-            ->exists();
-
-        abort_unless($assigned, 404);
+        abort_unless($this->timetableDocuments->staffCanViewTimetable($staff, $timetable), 404);
 
         return $staff;
     }

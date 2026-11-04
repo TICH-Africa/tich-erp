@@ -23,6 +23,7 @@ class TichTimetableDocumentRef {
       return raw
           .map((e) => Map<String, dynamic>.from(e as Map))
           .where((m) => (m['id'] as num?) != null)
+          .where((m) => m['has_document'] != false)
           .map(
             (m) => TichTimetableDocumentRef(
               id: (m['id'] as num).toInt(),
@@ -40,6 +41,7 @@ class TichTimetableDocumentRef {
     return timetablesFallback
         .map((e) => Map<String, dynamic>.from(e as Map))
         .where((m) => (m['id'] as num?) != null)
+        .where((m) => m['has_document'] != false)
         .map(
           (m) => TichTimetableDocumentRef(
             id: (m['id'] as num).toInt(),

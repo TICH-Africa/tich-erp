@@ -24,15 +24,21 @@
                         · {{ ucfirst($row['timetable']->status) }}
                     </p>
                 </div>
-                @if ($row['timetable']->sessions->isNotEmpty())
+                @if ($row['timetable']->hasViewableDocument())
                     <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
                         <a href="{{ route('staff.timetable.print', $row['timetable']) }}" target="_blank" class="tich-btn tich-btn-secondary">Print / preview</a>
-                        <a href="{{ route('staff.timetable.pdf', $row['timetable']) }}" class="tich-btn tich-btn-secondary">Download PDF</a>
+                        <a href="{{ route('staff.timetable.pdf', $row['timetable']) }}" class="tich-btn tich-btn-secondary">Download</a>
                     </div>
                 @endif
             </div>
 
-            @if ($row['timetable']->sessions->isNotEmpty())
+            @if ($row['timetable']->hasUploadedDocument())
+                @include('partials.timetable-uploaded-document', [
+                    'timetable' => $row['timetable'],
+                    'pdfUrl' => route('staff.timetable.pdf', $row['timetable']),
+                    'fileLabel' => $row['timetable']->source_name,
+                ])
+            @elseif ($row['timetable']->sessions->isNotEmpty())
                 @include('academics.programs.partials.timetable-grid', [
                     'sessions' => $row['timetable']->sessions,
                     'dayLabels' => $portalData['timetable']['day_labels'],

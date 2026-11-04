@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api\Staff\mobile;
 use App\Http\Controllers\Api\Staff\mobile\Concerns\ResolvesPortalTeachingStaff;
 use App\Http\Controllers\Controller;
 use App\Models\ProgramTimetable;
-use App\Models\ProgramTimetableSession;
 use App\Services\PrintDocumentService;
+use App\Services\ProgramTimetableDocumentService;
 use App\Services\TimetableSchedulingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -19,18 +19,18 @@ class TimetablePdfController extends Controller
     public function __construct(
         protected TimetableSchedulingService $timetableScheduling,
         protected PrintDocumentService $printDocuments,
+        protected ProgramTimetableDocumentService $timetableDocuments,
     ) {}
 
     public function __invoke(Request $request, ProgramTimetable $timetable): Response
     {
         $staff = $this->portalStaff($request);
 
-        $assigned = ProgramTimetableSession::query()
-            ->where('program_timetable_id', $timetable->id)
-            ->where('staff_id', $staff->id)
-            ->exists();
+        abort_unless($this->timetableDocuments->staffCanViewTimetable($staff, $timetable), 404);
 
-        abort_unless($assigned, 404);
+        if ($this->timetableDocuments->usesUploadedFile($timetable)) {
+            return $this->timetableDocuments->inlineResponse($timetable);
+        }
 
         $payload = $this->timetableScheduling->documentPayload($timetable);
         $program = $payload['program'];

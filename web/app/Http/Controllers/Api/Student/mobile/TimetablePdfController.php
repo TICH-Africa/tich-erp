@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Student\mobile\Concerns\ResolvesPortalStudent;
 use App\Http\Controllers\Controller;
 use App\Models\ProgramTimetable;
 use App\Services\PrintDocumentService;
+use App\Services\ProgramTimetableDocumentService;
 use App\Services\TimetableSchedulingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -18,6 +19,7 @@ class TimetablePdfController extends Controller
     public function __construct(
         protected TimetableSchedulingService $timetableScheduling,
         protected PrintDocumentService $printDocuments,
+        protected ProgramTimetableDocumentService $timetableDocuments,
     ) {}
 
     public function __invoke(Request $request, ProgramTimetable $timetable): Response
@@ -25,6 +27,10 @@ class TimetablePdfController extends Controller
         $student = $this->portalStudent($request);
         abort_unless((int) $timetable->program_id === (int) $student->program_id, 404);
         abort_unless($timetable->status === 'published', 404);
+
+        if ($this->timetableDocuments->usesUploadedFile($timetable)) {
+            return $this->timetableDocuments->inlineResponse($timetable);
+        }
 
         $payload = $this->timetableScheduling->documentPayload($timetable);
         $program = $payload['program'];
