@@ -12,7 +12,7 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Finance reads the weekly time logs employees have submitted, for payroll proof only. Writing
+ * Finance reads the weekly time sheets employees have submitted, for payroll proof only. Writing
  * them - endorsing, approving, returning - stays with the employee, their manager and HR.
  */
 class TimeLogController extends Controller

@@ -1,13 +1,13 @@
 @extends('layouts.employee')
 
-@section('title', 'Weekly Time Log · '.$log->week_ref)
+@section('title', 'Weekly Time Sheet · '.$log->week_ref)
 
 @section('employee-content')
-    <x-page-toolbar title="STAFF WEEKLY TIME LOG" meta="{{ $log->log_code }} · {{ $log->week_ref }}">
+    <x-page-toolbar title="STAFF WEEKLY TIME SHEET" meta="{{ $log->log_code }} · {{ $log->week_ref }}">
         <x-slot:actions>
             <a href="{{ route('employee.time-logs.print', $log) }}" class="tich-btn tich-btn-secondary">Print</a>
             <a href="{{ route('employee.time-logs.pdf', $log) }}" class="tich-btn tich-btn-primary">Download PDF</a>
-            <a href="{{ route('employee.time-logs.index') }}" class="tich-btn tich-btn-ghost">All my logs</a>
+            <a href="{{ route('employee.time-logs.index') }}" class="tich-btn tich-btn-ghost">All my sheets</a>
         </x-slot:actions>
     </x-page-toolbar>
 
@@ -53,7 +53,7 @@
             </form>
             <script>
             function copyDaysAndConfirm(form) {
-                if (!confirm('Submit this weekly time log to HR? Your signature and today’s date will be recorded.')) return false;
+                if (!confirm('Submit this weekly time sheet to HR? Your signature and today’s date will be recorded.')) return false;
                 var edit = document.getElementById('wtl-edit-form');
                 var box = document.getElementById('wtl-submit-fields');
                 box.innerHTML = '';

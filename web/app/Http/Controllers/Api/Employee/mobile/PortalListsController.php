@@ -169,7 +169,7 @@ class PortalListsController extends Controller
 
         if (! \Illuminate\Support\Facades\Schema::hasTable('staff_weekly_time_logs')
             && ! \Illuminate\Support\Facades\Schema::hasTable('weekly_time_logs')) {
-            return response()->json(['weeks' => [], 'message' => 'Time logs unavailable.']);
+            return response()->json(['weeks' => [], 'message' => 'Time sheets unavailable.']);
         }
 
         $table = \Illuminate\Support\Facades\Schema::hasTable('staff_weekly_time_logs')

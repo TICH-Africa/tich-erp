@@ -1,4 +1,4 @@
-{{-- Shared weekly time log grid. Expects: $log, $departments, $editable (bool), $clockDays (date => ['in','out']) --}}
+{{-- Shared weekly time sheet grid. Expects: $log, $departments, $editable (bool), $clockDays (date => ['in','out']) --}}
 @php
     $deptMap = $departments->keyBy('id');
     $clockDays = $clockDays ?? [];

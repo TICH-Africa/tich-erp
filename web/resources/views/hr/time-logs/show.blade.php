@@ -1,9 +1,9 @@
 @extends('layouts.hr')
 
-@section('title', 'Time log · '.$log->log_code)
+@section('title', 'Time sheet · '.$log->log_code)
 
 @section('hr-content')
-    <x-page-toolbar title="STAFF WEEKLY TIME LOG" meta="{{ $log->log_code }} · {{ $log->week_ref }}">
+    <x-page-toolbar title="STAFF WEEKLY TIME SHEET" meta="{{ $log->log_code }} · {{ $log->week_ref }}">
         <x-slot:actions>
             <a href="{{ route('hr.time-logs.print', $log) }}" class="tich-btn tich-btn-secondary">Print</a>
             <a href="{{ route('hr.time-logs.pdf', $log) }}" class="tich-btn tich-btn-primary">Download PDF</a>
@@ -31,7 +31,7 @@
                     </div>
                     <button type="submit" class="tich-btn tich-btn-primary">Approve</button>
                 </form>
-                <form method="POST" action="{{ route('hr.time-logs.return', $log) }}" class="tich-form-stack" onsubmit="return confirm('Return this log to the employee?')">
+                <form method="POST" action="{{ route('hr.time-logs.return', $log) }}" class="tich-form-stack" onsubmit="return confirm('Return this sheet to the employee?')">
                     @csrf
                     <div class="tich-form-group">
                         <label class="tich-label">Return reason <span class="tich-text--danger">*</span></label>
@@ -39,7 +39,7 @@
                     </div>
                     <button type="submit" class="tich-btn tich-btn-secondary">Return for revision</button>
                 </form>
-                <form method="POST" action="{{ route('hr.time-logs.reject', $log) }}" class="tich-form-stack" onsubmit="return confirm('Reject this time log permanently?')">
+                <form method="POST" action="{{ route('hr.time-logs.reject', $log) }}" class="tich-form-stack" onsubmit="return confirm('Reject this time sheet permanently?')">
                     @csrf
                     <div class="tich-form-group">
                         <label class="tich-label">Reject notes <span class="tich-text--danger">*</span></label>

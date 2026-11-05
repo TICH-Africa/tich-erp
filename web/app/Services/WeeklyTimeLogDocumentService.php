@@ -8,7 +8,7 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Turns a weekly time log into the signed paper document the employee, their manager and HR print.
+ * Turns a weekly time sheet into the signed paper document the employee, their manager and HR print.
  */
 class WeeklyTimeLogDocumentService
 {
@@ -49,9 +49,9 @@ class WeeklyTimeLogDocumentService
         return array_merge([
             'log' => $log,
             'departments' => $staff ? $this->timeLogs->departmentsForStaff($staff) : collect(),
-            'documentTitle' => 'Staff Weekly Time Log',
+            'documentTitle' => 'Staff Weekly Time Sheet',
             'documentRef' => (string) ($log->log_code ?? $log->id),
-            'filename' => 'weekly-time-log-'.Str::slug(collect([
+            'filename' => 'weekly-time-sheet-'.Str::slug(collect([
                 $staff?->employee_number ?? $staff?->id,
                 $log->week_ref,
             ])->filter()->implode('-')).'.pdf',

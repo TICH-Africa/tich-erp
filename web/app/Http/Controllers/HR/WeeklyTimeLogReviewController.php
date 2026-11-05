@@ -110,7 +110,7 @@ class WeeklyTimeLogReviewController extends Controller
             return back()->withErrors(['time_log' => $e->getMessage()]);
         }
 
-        return redirect()->route('hr.time-logs.index')->with('status', 'Time log approved.');
+        return redirect()->route('hr.time-logs.index')->with('status', 'Time sheet approved.');
     }
 
     public function reject(Request $request, StaffWeeklyTimeLog $timeLog): RedirectResponse
@@ -126,7 +126,7 @@ class WeeklyTimeLogReviewController extends Controller
             return back()->withErrors(['time_log' => $e->getMessage()]);
         }
 
-        return redirect()->route('hr.time-logs.index')->with('status', 'Time log rejected.');
+        return redirect()->route('hr.time-logs.index')->with('status', 'Time sheet rejected.');
     }
 
     public function returnLog(Request $request, StaffWeeklyTimeLog $timeLog): RedirectResponse
@@ -142,7 +142,7 @@ class WeeklyTimeLogReviewController extends Controller
             return back()->withErrors(['time_log' => $e->getMessage()]);
         }
 
-        return redirect()->route('hr.time-logs.index')->with('status', 'Time log returned to the employee for revision.');
+        return redirect()->route('hr.time-logs.index')->with('status', 'Time sheet returned to the employee for revision.');
     }
 
     private function hrStaff(Request $request): \App\Models\Staff

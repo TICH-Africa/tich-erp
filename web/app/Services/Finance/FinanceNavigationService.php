@@ -141,7 +141,7 @@ class FinanceNavigationService
         $items[] = $this->item('Payroll → GL integration', 'link', route('finance.payroll-integration.index'), request()->routeIs('finance.payroll-integration.*'), 'payroll-integration');
 
         if (Auth::user()?->can('finance.read')) {
-            $items[] = $this->item('Submitted time logs', 'clock', route('finance.time-logs.index'), request()->routeIs('finance.time-logs.*'));
+            $items[] = $this->item('Submitted time sheets', 'clock', route('finance.time-logs.index'), request()->routeIs('finance.time-logs.*'));
         }
 
         return $items;

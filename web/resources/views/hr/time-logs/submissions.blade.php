@@ -1,6 +1,6 @@
 @extends('layouts.hr')
 
-@section('title', 'Time log submissions by employee')
+@section('title', 'Time sheet submissions by employee')
 
 @section('hr-content')
     @php
@@ -22,7 +22,7 @@
                 href="{{ route('hr.time-logs.submissions', ['year' => $next->year, 'month' => $next->month, 'search' => $filters['search'] ?? null]) }}"
                 class="tich-btn tich-btn-ghost"
             >Next month →</a>
-            <a href="{{ route('hr.time-logs.index') }}" class="tich-btn tich-btn-ghost">Back to time logs</a>
+            <a href="{{ route('hr.time-logs.index') }}" class="tich-btn tich-btn-ghost">Back to time sheets</a>
         </x-slot:actions>
         <x-slot:filters>
             <form method="GET" action="{{ route('hr.time-logs.submissions') }}" class="tich-page-toolbar__filters-form tich-time-log-toolbar-filters" data-live-filter>

@@ -26,7 +26,7 @@ class TimeLogController extends Controller
         if (! Schema::hasTable('staff_weekly_time_logs')) {
             return response()->json([
                 'weeks' => [],
-                'message' => 'Time logs unavailable.',
+                'message' => 'Time sheets unavailable.',
                 'meta' => null,
             ]);
         }
@@ -86,7 +86,7 @@ class TimeLogController extends Controller
         $log = $this->timeLogs->pruneWeekendDays($log->load(['days', 'staff.department', 'manager']));
 
         return response()->json([
-            'message' => 'Weekly time log opened.',
+            'message' => 'Weekly time sheet opened.',
             'log' => $this->serializeLog($log, $staff),
         ], 201);
     }
@@ -131,7 +131,7 @@ class TimeLogController extends Controller
         $timeLog = $this->timeLogs->pruneWeekendDays($timeLog->fresh(['days', 'staff.department', 'manager']));
 
         return response()->json([
-            'message' => 'Time log saved.',
+            'message' => 'Time sheet saved.',
             'log' => $this->serializeLog($timeLog, $staff),
         ]);
     }
@@ -164,7 +164,7 @@ class TimeLogController extends Controller
         $timeLog = $this->timeLogs->pruneWeekendDays($timeLog->fresh(['days', 'staff.department', 'manager']));
 
         return response()->json([
-            'message' => 'Weekly time log submitted to HR.',
+            'message' => 'Weekly time sheet submitted to HR.',
             'log' => $this->serializeLog($timeLog, $staff),
         ]);
     }

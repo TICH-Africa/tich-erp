@@ -1,9 +1,9 @@
 @extends('layouts.employee')
 
-@section('title', 'Weekly Time Log')
+@section('title', 'Weekly Time Sheet')
 
 @section('employee-content')
-    <x-page-toolbar title="Weekly Time Log" meta="Fill weekly, or complete every week at month end · Submitted to HR">
+    <x-page-toolbar title="Weekly Time Sheet" meta="Fill weekly, or complete every week at month end · Submitted to HR">
         @unless ($employeeTimeLogHold ?? null)
             <x-slot:actions>
                 <a href="{{ route('employee.dashboard') }}" class="tich-btn tich-btn-ghost">Back</a>
@@ -13,7 +13,7 @@
 
     @if ($employeeTimeLogHold ?? null)
         <div class="tich-alert tich-alert--warning tich-mt-4">
-            Complete and submit your weekly time logs for {{ $employeeTimeLogHold['month_label'] }} before using other employee portal sections.
+            Complete and submit your weekly time sheets for {{ $employeeTimeLogHold['month_label'] }} before using other employee portal sections.
             @if (! empty($employeeTimeLogHold['incomplete_weeks']))
                 Still open:
                 {{ collect($employeeTimeLogHold['incomplete_weeks'])->pluck('week_ref')->implode(', ') }}.
@@ -63,7 +63,7 @@
     </div>
 
     <div class="tich-card tich-table-panel tich-mt-8">
-        <h2 class="tich-h3">My time logs</h2>
+        <h2 class="tich-h3">My time sheets</h2>
         <div class="tich-table-wrap tich-mt-4">
             <table class="tich-admin-table">
                 <thead>
@@ -87,7 +87,7 @@
                             <td><a href="{{ route('employee.time-logs.show', $item) }}" class="tich-btn tich-btn-secondary" style="padding:0.35rem 0.6rem;font-size:0.85rem;">Open</a></td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No time logs yet', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 6, 'title' => 'No time sheets yet', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

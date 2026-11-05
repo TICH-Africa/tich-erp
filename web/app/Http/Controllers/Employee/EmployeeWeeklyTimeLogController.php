@@ -26,7 +26,7 @@ class EmployeeWeeklyTimeLogController extends Controller
         $current = $this->timeLogs->currentWeekMeta();
 
         return view('employee.time-logs.index', [
-            'portalTitle' => 'Weekly Time Log',
+            'portalTitle' => 'Weekly Time Sheet',
             'staff' => $staff,
             'logs' => $this->timeLogs->logsForStaff($staff),
             'currentYear' => $current['year'],
@@ -78,7 +78,7 @@ class EmployeeWeeklyTimeLogController extends Controller
         $timeLog = $this->timeLogs->pruneWeekendDays($timeLog->load(['days', 'staff.department', 'manager', 'hrReviewer']));
 
         return view('employee.time-logs.show', [
-            'portalTitle' => 'Weekly Time Log',
+            'portalTitle' => 'Weekly Time Sheet',
             'staff' => $staff,
             'log' => $timeLog,
             'departments' => $this->timeLogs->departmentsForStaff($timeLog->staff),
@@ -143,7 +143,7 @@ class EmployeeWeeklyTimeLogController extends Controller
             return back()->withInput()->withErrors(['time_log' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'Time log saved.');
+        return back()->with('status', 'Time sheet saved.');
     }
 
     public function submit(Request $request, StaffWeeklyTimeLog $timeLog): RedirectResponse
@@ -173,7 +173,7 @@ class EmployeeWeeklyTimeLogController extends Controller
 
         return redirect()
             ->route('employee.time-logs.show', $timeLog)
-            ->with('status', 'Weekly time log submitted to HR.');
+            ->with('status', 'Weekly time sheet submitted to HR.');
     }
 
     public function endorse(Request $request, StaffWeeklyTimeLog $timeLog): RedirectResponse
@@ -189,7 +189,7 @@ class EmployeeWeeklyTimeLogController extends Controller
             return back()->withErrors(['time_log' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'Time log endorsed. The form is now locked for the employee.');
+        return back()->with('status', 'Time sheet endorsed. The form is now locked for the employee.');
     }
 
     private function staff(Request $request): \App\Models\Staff

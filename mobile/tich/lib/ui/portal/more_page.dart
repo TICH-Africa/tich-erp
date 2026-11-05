@@ -54,7 +54,7 @@ class MorePage extends StatelessWidget {
         onTap: () => open(const WfhPage()),
       ),
       TichMoreItem(
-        label: 'Time logs',
+        label: 'Time sheets',
         icon: Icons.schedule_outlined,
         onTap: () => open(TimeLogsPage(api: api)),
       ),

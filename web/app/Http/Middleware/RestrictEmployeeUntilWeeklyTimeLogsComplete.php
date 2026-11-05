@@ -33,7 +33,7 @@ class RestrictEmployeeUntilWeeklyTimeLogsComplete
             return $next($request);
         }
 
-        $message = 'Complete and submit your weekly time logs for '.$hold['month_label']
+        $message = 'Complete and submit your weekly time sheets for '.$hold['month_label']
             .' before using other employee portal sections.';
 
         if ($request->expectsJson()) {

@@ -475,7 +475,7 @@ class WeeklyTimeLogService
     public function saveDraft(StaffWeeklyTimeLog $log, Staff $staff, array $payload): StaffWeeklyTimeLog
     {
         if (! $log->isEditableByEmployee()) {
-            throw new \RuntimeException('This time log is locked and cannot be edited.');
+            throw new \RuntimeException('This time sheet is locked and cannot be edited.');
         }
 
         return DB::transaction(function () use ($log, $staff, $payload) {
@@ -536,14 +536,14 @@ class WeeklyTimeLogService
     public function submit(StaffWeeklyTimeLog $log, Staff $staff, bool $selfEndorse = false): StaffWeeklyTimeLog
     {
         if ($log->manager_signed_at) {
-            throw new \RuntimeException('This time log is locked after line-manager endorsement.');
+            throw new \RuntimeException('This time sheet is locked after line-manager endorsement.');
         }
         if (! in_array($log->status, [
             StaffWeeklyTimeLog::STATUS_DRAFT,
             StaffWeeklyTimeLog::STATUS_RETURNED,
             StaffWeeklyTimeLog::STATUS_PENDING_HR,
         ], true)) {
-            throw new \RuntimeException('This time log cannot be submitted.');
+            throw new \RuntimeException('This time sheet cannot be submitted.');
         }
 
         $signedName = trim($staff->fullName());
@@ -866,7 +866,7 @@ class WeeklyTimeLogService
     }
 
     /**
-     * When set, the employee may only use weekly time log screens until open weeks are submitted.
+     * When set, the employee may only use weekly time sheet screens until open weeks are submitted.
      *
      * @return array{month_label: string, incomplete_weeks: list<array{week_number: int, week_ref: string, label: string}>}|null
      */
@@ -886,7 +886,7 @@ class WeeklyTimeLogService
 
         $monthLabel = $today->copy()->startOfMonth()->format('F Y');
         $entityId = sprintf('%04d-%02d', $year, $month);
-        $notificationTitle = 'Weekly time logs due — '.$monthLabel;
+        $notificationTitle = 'Weekly time sheets due — '.$monthLabel;
         $inWindow = $this->isMonthEndReminderWindow($today);
         $reminded = $this->reminderSentForMonth((int) $staff->user_id, $entityId, $notificationTitle);
 
@@ -1116,7 +1116,7 @@ class WeeklyTimeLogService
 
             $this->notifications->notifyUsers(
                 $userIds,
-                'Weekly time log submitted',
+                'Weekly time sheet submitted',
                 ($log->staff?->fullName() ?? 'A staff member').' submitted '.$log->week_ref.' for HR review.',
                 'staff_weekly_time_log',
                 (string) $log->id,
@@ -1140,7 +1140,7 @@ class WeeklyTimeLogService
             }
             $this->notifications->notifyUsers(
                 [(int) $userId],
-                'Time log awaiting your endorsement',
+                'Time sheet awaiting your endorsement',
                 ($log->staff->fullName()).' submitted '.$log->week_ref.'. Please open and digitally endorse it.',
                 'staff_weekly_time_log',
                 (string) $log->id,

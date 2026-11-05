@@ -22,7 +22,7 @@
         ])
         @include('partials.navigation.sidebar-link', [
             'href' => route('hr.time-logs.index'),
-            'label' => 'Time logs',
+            'label' => 'Time sheets',
             'icon' => 'calendar',
             'active' => request()->routeIs('hr.time-logs.*'),
             'badgeKey' => 'time-logs',

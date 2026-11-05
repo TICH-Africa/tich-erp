@@ -13,7 +13,7 @@ class RemindWeeklyTimeLogs extends Command
 {
     protected $signature = 'hr:remind-weekly-time-logs {--dry-run : List recipients without sending} {--force : Run even outside the last week of the month}';
 
-    protected $description = 'Remind employees to complete weekly time logs during the last week of each month (HR email + in-app notification)';
+    protected $description = 'Remind employees to complete weekly time sheets during the last week of each month (HR email + in-app notification)';
 
     public function handle(
         WeeklyTimeLogService $timeLogs,
@@ -30,7 +30,7 @@ class RemindWeeklyTimeLogs extends Command
         }
 
         if (! Schema::hasTable('staff_weekly_time_logs')) {
-            $this->warn('Weekly time log tables are not installed.');
+            $this->warn('Weekly time sheet tables are not installed.');
 
             return self::SUCCESS;
         }
@@ -40,7 +40,7 @@ class RemindWeeklyTimeLogs extends Command
         $monthLabel = $today->copy()->startOfMonth()->format('F Y');
         $daysUntilMonthEnd = (int) $today->diffInDays($today->copy()->endOfMonth()->startOfDay(), false);
         $entityId = sprintf('%04d-%02d', $year, $month);
-        $notificationTitle = 'Weekly time logs due — '.$monthLabel;
+        $notificationTitle = 'Weekly time sheets due — '.$monthLabel;
         $portalUrl = route('employee.time-logs.index');
 
         $sent = 0;
@@ -92,7 +92,7 @@ class RemindWeeklyTimeLogs extends Command
             }
 
             $weekList = implode(', ', array_column($incomplete, 'week_ref'));
-            $body = 'Human Resources reminds you to complete and submit your weekly time logs for '.$monthLabel
+            $body = 'Human Resources reminds you to complete and submit your weekly time sheets for '.$monthLabel
                 .' before month end. Still open: '.$weekList.'.';
 
             $notifications->notifyUser(

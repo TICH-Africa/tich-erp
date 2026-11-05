@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Weekly time log reminder</title>
+    <title>Weekly time sheet reminder</title>
 </head>
 <body style="margin:0;padding:0;background:#f5f6f6;font-family:Georgia,serif;color:#494c50;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f6f6;padding:32px 16px;">
@@ -17,10 +17,10 @@
                                 Human Resources
                             </p>
                             <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#6cab33;">
-                                Weekly time logs due for {{ $monthLabel }}
+                                Weekly time sheets due for {{ $monthLabel }}
                             </h1>
                             <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#494c50;">
-                                Dear {{ $staff->fullName() }}, with {{ $daysUntilMonthEnd === 0 ? 'the end of the month today' : ($daysUntilMonthEnd === 1 ? 'one day' : $daysUntilMonthEnd.' days') }} left in {{ $monthLabel }}, please complete and submit your weekly time logs in the employee portal.
+                                Dear {{ $staff->fullName() }}, with {{ $daysUntilMonthEnd === 0 ? 'the end of the month today' : ($daysUntilMonthEnd === 1 ? 'one day' : $daysUntilMonthEnd.' days') }} left in {{ $monthLabel }}, please complete and submit your weekly time sheets in the employee portal.
                             </p>
                             @if ($incompleteWeeks !== [])
                                 <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:#494c50;">
@@ -33,11 +33,11 @@
                                 </ul>
                             @endif
                             <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#494c50;">
-                                Open <strong>Weekly Time Log</strong> on the web or mobile app, fill in each working day, then submit for line-manager endorsement and HR review.
+                                Open <strong>Weekly Time Sheet</strong> on the web or mobile app, fill in each working day, then submit for line-manager endorsement and HR review.
                             </p>
                             <p style="margin:0;">
                                 <a href="{{ $portalUrl }}" style="display:inline-block;padding:12px 18px;background:#1669a6;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:13px;font-weight:600;">
-                                    Open weekly time logs
+                                    Open weekly time sheets
                                 </a>
                             </p>
                         </td>

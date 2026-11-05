@@ -1,9 +1,9 @@
 @extends('layouts.hr')
 
-@section('title', 'Time logs')
+@section('title', 'Time sheets')
 
 @section('hr-content')
-    <x-page-toolbar title="Time logs" meta="Staff weekly time logs submitted for HR review">
+    <x-page-toolbar title="Time sheets" meta="Staff weekly time sheets submitted for HR review">
         <x-slot:actions>
             <a href="{{ route('hr.time-logs.submissions') }}" class="tich-btn tich-btn-primary">View submissions per employee</a>
             <a href="{{ route('hr.time-logs.index') }}" class="tich-btn tich-btn-ghost">Reset</a>
@@ -112,7 +112,7 @@
                             <td><a href="{{ route('hr.time-logs.show', $item) }}" class="tich-btn tich-btn-primary" style="padding:0.35rem 0.6rem;font-size:0.85rem;">Open</a></td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No time logs match these filters', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No time sheets match these filters', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

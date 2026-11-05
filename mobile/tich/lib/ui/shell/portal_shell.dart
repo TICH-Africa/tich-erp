@@ -291,7 +291,7 @@ class _PortalShellState extends State<PortalShell>
       return EmployeePortalMenuScope(
         profilePhotoUrl: _profilePhotoUrl,
         child: AdaptiveScaffold(
-          title: 'Weekly time log',
+          title: 'Weekly time sheet',
           onLogout: tichLogout(context),
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -299,7 +299,7 @@ class _PortalShellState extends State<PortalShell>
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Text(
-                  'Complete and submit your weekly time logs for this month '
+                  'Complete and submit your weekly time sheets for this month '
                   'before using other employee portal sections.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.error,

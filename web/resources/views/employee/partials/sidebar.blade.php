@@ -7,7 +7,7 @@
         @if ($employeeTimeLogHold ?? null)
             @include('partials.navigation.sidebar-link', [
                 'href' => route('employee.time-logs.index'),
-                'label' => 'Weekly Time Log',
+                'label' => 'Weekly Time Sheet',
                 'icon' => 'calendar',
                 'active' => request()->routeIs('employee.time-logs.*'),
             ])
@@ -53,7 +53,7 @@
             @include('partials.navigation.sidebar-link', ['href' => route('employee.attendance.index'), 'label' => 'Clock in / out', 'icon' => 'clock', 'active' => request()->routeIs('employee.attendance.*')])
             @include('partials.navigation.sidebar-link', [
                 'href' => route('employee.time-logs.index'),
-                'label' => 'Weekly Time Log',
+                'label' => 'Weekly Time Sheet',
                 'icon' => 'calendar',
                 'active' => request()->routeIs('employee.time-logs.*'),
             ])

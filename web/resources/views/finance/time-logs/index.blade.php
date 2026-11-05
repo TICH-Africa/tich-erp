@@ -1,9 +1,9 @@
 @extends('layouts.finance')
 
-@section('title', 'Submitted time logs')
+@section('title', 'Submitted time sheets')
 
 @section('finance-content')
-    <x-page-toolbar title="Submitted time logs" meta="Weekly time logs employees have signed and sent - Finance reads them, HR approves them">
+    <x-page-toolbar title="Submitted time sheets" meta="Weekly time sheets employees have signed and sent - Finance reads them, HR approves them">
         <x-slot:actions>
             <a href="{{ route('finance.time-logs.index') }}" class="tich-btn tich-btn-ghost">Reset</a>
         </x-slot:actions>
@@ -109,7 +109,7 @@
                             <td><a href="{{ route('finance.time-logs.show', $item) }}" class="tich-btn tich-btn-primary" style="padding:0.35rem 0.6rem;font-size:0.85rem;">View</a></td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No submitted time logs match these filters', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No submitted time sheets match these filters', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

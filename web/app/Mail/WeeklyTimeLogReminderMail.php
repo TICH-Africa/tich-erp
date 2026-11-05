@@ -33,7 +33,7 @@ class WeeklyTimeLogReminderMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return $this->moduleEnvelope('Reminder: complete your weekly time logs — '.$this->monthLabel);
+        return $this->moduleEnvelope('Reminder: complete your weekly time sheets — '.$this->monthLabel);
     }
 
     public function content(): Content

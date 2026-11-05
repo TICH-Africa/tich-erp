@@ -129,7 +129,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
       title: 'Submit to HR?',
       content: Text(
         selfEndorse
-            ? 'Your signature and today’s date will be recorded. As HOD you will also self-endorse and lock this log.'
+            ? 'Your signature and today’s date will be recorded. As HOD you will also self-endorse and lock this sheet.'
             : 'Your signature and today’s date will be recorded.',
       ),
       confirmLabel: 'Submit',
@@ -172,7 +172,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
       onLiveRefresh: _liveRefresh,
       enabled: !_busy,
       child: AdaptiveScaffold(
-        title: 'Weekly time log',
+        title: 'Weekly time sheet',
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
@@ -209,7 +209,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        log['log_code']?.toString() ?? 'Time log',
+                        log['log_code']?.toString() ?? 'Time sheet',
                         style: tichUi(fontWeight: FontWeight.w700, fontSize: 16),
                       ),
                       const SizedBox(height: 4),
@@ -368,7 +368,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                     child: Text(
                       log['manager_signed_at'] != null
                           ? 'Locked after line-manager endorsement.'
-                          : 'This log is read-only.',
+                          : 'This sheet is read-only.',
                       style: tichUi(color: TichColors.neutralMuted),
                     ),
                   ),

@@ -39,7 +39,7 @@ class HrSidebarNotificationService
         'contracts' => 'Contracts',
         'profile-changes' => 'Profile changes',
         'attendance' => 'Attendance reviews',
-        'time-logs' => 'Time logs',
+        'time-logs' => 'Time sheets',
         'wfh' => 'Work from home',
         'appraisals' => 'Performance',
         'policies' => 'HR Policies',

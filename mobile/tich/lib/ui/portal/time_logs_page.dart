@@ -92,7 +92,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
             }
 
             return TichFormDialog(
-              title: const Text('Open weekly time log'),
+              title: const Text('Open weekly time sheet'),
               scrollable: true,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -225,7 +225,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
     return TichLiveRefreshBinder(
       onLiveRefresh: _liveRefresh,
       child: AdaptiveScaffold(
-        title: 'Time logs',
+        title: 'Time sheets',
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _openWeek,
           icon: const Icon(Icons.add),
@@ -252,7 +252,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      TichEmpty(message ?? 'No weekly time logs yet.'),
+                      TichEmpty(message ?? 'No weekly time sheets yet.'),
                       const SizedBox(height: 16),
                       AdaptiveFilledButton(
                         onPressed: _openWeek,
@@ -283,7 +283,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                               Text(
                                 w['log_code']?.toString() ??
                                     w['week_ref']?.toString() ??
-                                    'Time log',
+                                    'Time sheet',
                                 style: tichUi(fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 4),
