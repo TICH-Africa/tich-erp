@@ -289,36 +289,41 @@ class TichNotifications {
     String? payload,
   }) async {
     if (!_ready) await init();
-    await _plugin.show(
-      id: id == 0
-          ? DateTime.now().millisecondsSinceEpoch.remainder(100000)
-          : id,
-      title: title,
-      body: body,
-      notificationDetails: NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: 'Clock-in, class, and portal alerts',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.reminder,
-          visibility: NotificationVisibility.public,
-          icon: TichBrandAssets.androidNotificationIcon,
-          styleInformation: BigTextStyleInformation(body),
-          playSound: true,
-          enableVibration: true,
-          ticker: title,
+    try {
+      await _plugin.show(
+        id: id == 0
+            ? DateTime.now().millisecondsSinceEpoch.remainder(100000)
+            : id,
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            _channelName,
+            channelDescription: 'Clock-in, class, and portal alerts',
+            importance: Importance.max,
+            priority: Priority.max,
+            category: AndroidNotificationCategory.reminder,
+            visibility: NotificationVisibility.public,
+            icon: TichBrandAssets.androidNotificationIcon,
+            styleInformation: BigTextStyleInformation(body),
+            playSound: true,
+            enableVibration: true,
+            ticker: title,
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            interruptionLevel: InterruptionLevel.timeSensitive,
+          ),
         ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-          interruptionLevel: InterruptionLevel.timeSensitive,
-        ),
-      ),
-      payload: payload,
-    );
+        payload: payload,
+      );
+    } catch (_) {
+      // The browser refuses until it has granted notification permission, and a
+      // missed popup must never surface as an error on the page that raised it.
+    }
   }
 
   Future<void> scheduleClockInReminders({required bool alreadyClockedIn}) {
