@@ -29,8 +29,12 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
-    _dataCache = studentReadCache(_cacheKey);
-    _future = studentEnsure(_cacheKey, () => widget.api.timetable());
+    studentPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.timetable(),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future<void>.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../theme/tich_theme.dart';
 import '../../data/tich_screen_cache.dart';
@@ -46,6 +45,15 @@ void studentPrimeScreen({
     applyFuture: setFuture,
     fetch: fetch,
   );
+}
+
+String studentDetailCacheKey(String namespace, int id) => '$namespace.$id';
+
+void studentWarm(
+  String persistKey,
+  Future<Map<String, dynamic>> Function() fetch,
+) {
+  TichScreenCache.warm(persistKey, fetch);
 }
 
 Widget studentErrorBody(Object? error, VoidCallback onRetry) {

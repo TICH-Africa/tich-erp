@@ -51,6 +51,8 @@ abstract final class TichPortalWarmup {
     _deferredTimer = Timer(const Duration(seconds: 20), () {
       _runDeferred([
         () => TichScreenCache.warm('student.academics', () => api.academics()),
+        () => TichScreenCache.warm('student.timetable', () => api.timetable()),
+        () => TichScreenCache.warm('student.finance', () => api.finance()),
       ]);
     });
   }
@@ -61,6 +63,18 @@ abstract final class TichPortalWarmup {
         TichScreenCache.warm('student.home', () => api.dashboard());
       case 1:
         TichScreenCache.warm('student.academics', () => api.academics());
+        TichScreenCache.warm(
+          'student.academics.units',
+          () => api.academicsUnits(),
+        );
+        TichScreenCache.warm(
+          'student.academics.content',
+          () => api.academicsContent(),
+        );
+        TichScreenCache.warm(
+          'student.academics.assessments',
+          () => api.academicsAssessments(),
+        );
       case 2:
         TichScreenCache.warm('student.timetable', () => api.timetable());
       case 3:
@@ -73,8 +87,16 @@ abstract final class TichPortalWarmup {
   /// More drawer links - warm only when the user opens the menu.
   static void studentMoreOpened(StudentApi api) {
     _runDeferred([
+      () => TichScreenCache.warm('student.profile', () => api.profile()),
+      () => TichScreenCache.warm('student.enrolment', () => api.profile()),
       () => TichScreenCache.warm('student.notifications', () => api.notifications()),
       () => TichScreenCache.warm('student.documents', () => api.documents()),
+      () => TichScreenCache.warm('student.clearance', () => api.clearance()),
+      () => TichScreenCache.warm('student.evaluations', () => api.evaluations()),
+      () => TichScreenCache.warm(
+            'student.lifecycle',
+            () => api.lifecycleRequests(),
+          ),
     ]);
   }
 
