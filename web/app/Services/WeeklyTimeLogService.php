@@ -9,11 +9,11 @@ use App\Models\StaffContract;
 use App\Models\StaffWeeklyTimeLog;
 use App\Models\StaffWeeklyTimeLogDay;
 use App\Models\User;
+use App\Support\SchemaProbe;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class WeeklyTimeLogService
@@ -165,7 +165,7 @@ class WeeklyTimeLogService
     {
         $ids = collect([(int) $staff->department_id])->filter();
 
-        if ($staff->user_id && Schema::hasTable('user_roles') && Schema::hasColumn('user_roles', 'department_id')) {
+        if ($staff->user_id && SchemaProbe::hasTable('user_roles') && SchemaProbe::hasColumn('user_roles', 'department_id')) {
             $ids = $ids->merge(
                 DB::table('user_roles')
                     ->where('user_id', $staff->user_id)
@@ -174,7 +174,7 @@ class WeeklyTimeLogService
             );
         }
 
-        if (Schema::hasTable('staff_contracts')) {
+        if (SchemaProbe::hasTable('staff_contracts')) {
             $ids = $ids->merge(
                 StaffContract::query()
                     ->where('staff_id', $staff->id)
@@ -736,7 +736,7 @@ class WeeklyTimeLogService
 
     public function pendingHrCount(): int
     {
-        if (! Schema::hasTable('staff_weekly_time_logs')) {
+        if (! SchemaProbe::hasTable('staff_weekly_time_logs')) {
             return 0;
         }
 
@@ -872,7 +872,7 @@ class WeeklyTimeLogService
      */
     public function portalComplianceHold(Staff $staff, ?Carbon $today = null): ?array
     {
-        if (! Schema::hasTable('staff_weekly_time_logs') || ! $this->staffIsEligibleForTimeLogReminders($staff)) {
+        if (! SchemaProbe::hasTable('staff_weekly_time_logs') || ! $this->staffIsEligibleForTimeLogReminders($staff)) {
             return null;
         }
 
@@ -902,7 +902,7 @@ class WeeklyTimeLogService
 
     public function reminderSentForMonth(int $userId, string $entityId, string $title): bool
     {
-        if (! Schema::hasTable('notifications')) {
+        if (! SchemaProbe::hasTable('notifications')) {
             return false;
         }
 
@@ -959,7 +959,7 @@ class WeeklyTimeLogService
      */
     public function incompleteWeeksForStaff(Staff $staff, int $year, int $month, ?Carbon $today = null): array
     {
-        if (! Schema::hasTable('staff_weekly_time_logs')) {
+        if (! SchemaProbe::hasTable('staff_weekly_time_logs')) {
             return [];
         }
 

@@ -87,6 +87,7 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
                 (snap.data?['allocations'] as List?) ??
                 const [];
             return FloatingActionButton.extended(
+              heroTag: 'staff-lesson-plans',
               onPressed: () => _openCreate(allocations),
               icon: const Icon(Icons.add),
               label: const Text('New plan'),

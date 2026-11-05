@@ -70,6 +70,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
       child: AdaptiveScaffold(
       title: 'My feedback',
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'portal-feedback',
         onPressed: _createFeedback,
         icon: const Icon(Icons.add),
         label: const Text('Send feedback'),

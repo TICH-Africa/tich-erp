@@ -137,8 +137,35 @@ abstract final class TichPortalWarmup {
     }
   }
 
-  /// Drawer open - avoid blasting the API; screens warm on navigation.
-  static void employeeMoreOpened(EmployeeApi api) {}
+  /// Screens behind the employee More menu, in the order a phone taps them.
+  ///
+  /// These are the payloads login preload never reaches (the tabs are always
+  /// newer), so every link used to wait on the network. Warming only the two
+  /// coldest per drawer open keeps a serialized server or a weak connection from
+  /// answering seven requests at once, and a tap joins the request already in
+  /// flight instead of starting its own.
+  static void employeeMoreOpened(EmployeeApi api) {
+    final screens = <String, Future<Object> Function()>{
+      'portal.profile': () => api.profile(),
+      'portal.time_logs': () => api.timeLogs(),
+      'portal.documents': () => api.documents(),
+      'portal.policies': () => api.policies(),
+      'portal.appraisals': () => api.appraisals(),
+      'portal.concerns': () => api.concerns(),
+      'portal.feedback': () => api.feedback(),
+    };
+
+    final cold = screens.entries
+        .where((e) => TichScreenCache.read<Map<String, dynamic>>(e.key) == null)
+        .take(2)
+        .toList();
+    if (cold.isEmpty) return;
+
+    _runDeferred([
+      for (final screen in cold)
+        () => TichScreenCache.warm(screen.key, screen.value),
+    ]);
+  }
 
   static void procurementShellOpened(ProcurementApi api) {
     TichScreenCache.warm('procurement.home', () => api.dashboard());

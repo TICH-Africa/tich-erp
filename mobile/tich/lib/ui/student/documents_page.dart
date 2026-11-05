@@ -126,6 +126,7 @@ class _StudentDocumentsPageState extends State<StudentDocumentsPage> {
               ? Map.from(fabData['request_types'] as Map)
               : <String, String>{};
           return FloatingActionButton.extended(
+            heroTag: 'student-documents',
             onPressed: () => _requestDoc(types),
             icon: const Icon(Icons.add),
             label: const Text('Request'),

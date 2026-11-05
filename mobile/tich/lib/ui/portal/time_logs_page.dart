@@ -227,6 +227,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
       child: AdaptiveScaffold(
         title: 'Time sheets',
         floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'portal-time-logs',
           onPressed: _openWeek,
           icon: const Icon(Icons.add),
           label: const Text('Open week'),

@@ -74,6 +74,7 @@ class _LeavePageState extends State<LeavePage> {
       child: AdaptiveScaffold(
       title: 'Leave',
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'portal-leave',
         backgroundColor: TichColors.green,
         onPressed: _openApplyFromCache,
         icon: const Icon(Icons.add),

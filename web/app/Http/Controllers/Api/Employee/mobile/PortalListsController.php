@@ -10,6 +10,7 @@ use App\Models\WorkFromHomeRequest;
 use App\Services\EmployeeConcernService;
 use App\Services\HrPerformanceAppraisalService;
 use App\Services\WorkFromHomeRequestService;
+use App\Support\SchemaProbe;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -167,12 +168,12 @@ class PortalListsController extends Controller
     {
         $staff = $this->portalStaff($request);
 
-        if (! \Illuminate\Support\Facades\Schema::hasTable('staff_weekly_time_logs')
-            && ! \Illuminate\Support\Facades\Schema::hasTable('weekly_time_logs')) {
+        if (! SchemaProbe::hasTable('staff_weekly_time_logs')
+            && ! SchemaProbe::hasTable('weekly_time_logs')) {
             return response()->json(['weeks' => [], 'message' => 'Time sheets unavailable.']);
         }
 
-        $table = \Illuminate\Support\Facades\Schema::hasTable('staff_weekly_time_logs')
+        $table = SchemaProbe::hasTable('staff_weekly_time_logs')
             ? 'staff_weekly_time_logs'
             : 'weekly_time_logs';
         $columns = \Illuminate\Support\Facades\Schema::getColumnListing($table);

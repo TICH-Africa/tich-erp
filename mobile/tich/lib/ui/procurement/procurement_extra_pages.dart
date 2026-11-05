@@ -100,6 +100,7 @@ class _ProcurementSuppliersPageState extends State<ProcurementSuppliersPage> {
     return AdaptiveScaffold(
       title: 'Suppliers',
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'procurement-suppliers',
         onPressed: _openAdd,
         icon: const Icon(Icons.add),
         label: const Text('Add supplier'),
@@ -134,7 +135,7 @@ class _ProcurementSuppliersPageState extends State<ProcurementSuppliersPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('$snap.error'),
+                        Text(tichDescribeError(snap.error)),
                         TextButton(
                           onPressed: () => _load(search: _query),
                           child: const Text('Retry'),
@@ -826,6 +827,7 @@ class _ProcurementDisposalsPageState extends State<ProcurementDisposalsPage> {
     return AdaptiveScaffold(
       title: 'Disposals',
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'procurement-disposals',
         onPressed: _openRequest,
         icon: const Icon(Icons.add),
         label: const Text('Request disposal'),

@@ -181,6 +181,7 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
         builder: (context, snap) {
           final allocations = snap.data?['allocations'] as List? ?? const [];
           return FloatingActionButton.extended(
+            heroTag: 'staff-grading',
             onPressed: () => _recordScore(allocations),
             icon: const Icon(Icons.add),
             label: const Text('Record score'),

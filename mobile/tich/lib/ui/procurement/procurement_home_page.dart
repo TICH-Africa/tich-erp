@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
+import '../../data/api_client.dart';
 import '../../data/procurement_api.dart';
 import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
@@ -76,14 +77,9 @@ class _ProcurementHomePageState extends State<ProcurementHomePage> {
               return procurementLoadingBody(onRefresh: () async => _reload());
             }
             if (merged == null && snap.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('$snap.error'),
-                    TextButton(onPressed: _reload, child: const Text('Retry')),
-                  ],
-                ),
+              return TichErrorRefresh(
+                message: tichDescribeError(snap.error),
+                onRetry: _reload,
               );
             }
             final data = merged! as Map<String, dynamic>;

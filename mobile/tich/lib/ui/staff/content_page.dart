@@ -92,6 +92,7 @@ class _StaffContentPageState extends State<StaffContentPage> {
                 .map((e) => Map<String, dynamic>.from(e as Map))
                 .toList();
             return FloatingActionButton.extended(
+              heroTag: 'staff-content',
               onPressed: () => _openUpload(allocations),
               icon: const Icon(Icons.upload_file),
               label: const Text('Upload'),

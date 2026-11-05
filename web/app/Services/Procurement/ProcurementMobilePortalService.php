@@ -60,7 +60,7 @@ class ProcurementMobilePortalService
             ProcurementRequisition::query()
                 ->select([
                     'id', 'requisition_number', 'requested_item', 'status',
-                    'created_at', 'department_id', 'requesting_department_id',
+                    'created_at', 'requesting_department_id',
                 ])
                 ->with(['department:id,dept_name'])
                 ->whereIn('status', ['submitted', 'hod_approved', 'finance_approved'])

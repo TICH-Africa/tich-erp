@@ -80,6 +80,7 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
     return AdaptiveScaffold(
       title: 'Requisitions',
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'procurement-requisitions',
         onPressed: _openCreate,
         icon: const Icon(Icons.add),
         label: const Text('New requisition'),
@@ -396,6 +397,7 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
     return AdaptiveScaffold(
       title: 'Stock issues',
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'procurement-stock-issues',
         onPressed: _openRaise,
         icon: const Icon(Icons.add),
         label: const Text('Raise issue'),

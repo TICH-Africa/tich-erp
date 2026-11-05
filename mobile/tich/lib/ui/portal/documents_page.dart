@@ -138,6 +138,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
       child: AdaptiveScaffold(
       title: 'Documents',
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'portal-documents',
         backgroundColor: TichColors.green,
         onPressed: _uploadFromCache,
         icon: const Icon(Icons.upload_file),

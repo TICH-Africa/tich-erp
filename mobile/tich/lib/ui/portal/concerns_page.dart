@@ -103,6 +103,7 @@ class _ConcernsPageState extends State<ConcernsPage> {
         builder: (context, snap) {
           if (!snap.hasData) return const SizedBox.shrink();
           return FloatingActionButton.extended(
+            heroTag: 'portal-concerns',
             onPressed: () => _raise(snap.data!),
             icon: const Icon(Icons.add),
             label: const Text('Raise'),
