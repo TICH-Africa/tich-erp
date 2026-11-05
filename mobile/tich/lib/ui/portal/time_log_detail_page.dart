@@ -271,10 +271,8 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                                 child: TextField(
                                   controller: editor.timeIn,
                                   enabled: editable && !_busy && !editor.timeInLocked,
-                                  decoration: InputDecoration(
-                                    labelText: editor.timeInLocked
-                                        ? 'Time in (clocked)'
-                                        : 'Time in',
+                                  decoration: const InputDecoration(
+                                    labelText: 'Time in',
                                     hintText: '08:00',
                                   ),
                                 ),
@@ -284,27 +282,14 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                                 child: TextField(
                                   controller: editor.timeOut,
                                   enabled: editable && !_busy && !editor.timeOutLocked,
-                                  decoration: InputDecoration(
-                                    labelText: editor.timeOutLocked
-                                        ? 'Time out (clocked)'
-                                        : 'Time out',
+                                  decoration: const InputDecoration(
+                                    labelText: 'Time out',
                                     hintText: '17:00',
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          if (editable && editor.clocked) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              'These times come from your clock in and out, so they cannot be changed here. '
-                              'Add times by hand only on days you did not clock in.',
-                              style: tichUi(
-                                fontSize: 12,
-                                color: TichColors.neutralMuted,
-                              ),
-                            ),
-                          ],
                           const SizedBox(height: 10),
                           TextField(
                             controller: editor.tasks,
@@ -422,8 +407,6 @@ class _DayEditor {
   bool get timeInLocked => clockIn != null;
 
   bool get timeOutLocked => clockOut != null;
-
-  bool get clocked => timeInLocked || timeOutLocked;
 
   factory _DayEditor.fromDay(Map<String, dynamic> day) {
     final deptRaw = day['department_ids'] as List? ?? const [];

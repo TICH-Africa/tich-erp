@@ -64,9 +64,6 @@
                         <td>
                             @if ($inLocked)
                                 {{ $day->time_in ? \Illuminate\Support\Str::substr((string) $day->time_in, 0, 5) : '-' }}
-                                @if ($clockIn !== null && $editable)
-                                    <div class="tich-caption">Clocked in</div>
-                                @endif
                             @else
                                 <input type="time" class="tich-input js-wtl-in" name="days[{{ $dateKey }}][time_in]" value="{{ $day->time_in ? \Illuminate\Support\Str::substr((string) $day->time_in, 0, 5) : '' }}">
                             @endif
@@ -74,9 +71,6 @@
                         <td>
                             @if ($outLocked)
                                 {{ $day->time_out ? \Illuminate\Support\Str::substr((string) $day->time_out, 0, 5) : '-' }}
-                                @if ($clockOut !== null && $editable)
-                                    <div class="tich-caption">Clocked out</div>
-                                @endif
                             @else
                                 <input type="time" class="tich-input js-wtl-out" name="days[{{ $dateKey }}][time_out]" value="{{ $day->time_out ? \Illuminate\Support\Str::substr((string) $day->time_out, 0, 5) : '' }}">
                             @endif
