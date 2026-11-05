@@ -200,7 +200,8 @@ Artisan::command('mpesa:clear-token-cache', function () {
     return 0;
 })->purpose('Clear cached Safaricom Daraja OAuth tokens after credential changes');
 
-Schedule::command('finance:mpesa-reconcile-pending')->everyMinute();
+// Overlap guard: a stalled Safaricom query would otherwise pile up a new PHP process every minute.
+Schedule::command('finance:mpesa-reconcile-pending')->everyMinute()->withoutOverlapping(300);
 Schedule::command('finance:mark-overdue-invoices')->dailyAt('06:00');
 Schedule::command('finance:send-invoice-reminders')->dailyAt('09:00');
 Schedule::command('app:check-expiry-alerts')->dailyAt('07:30');
@@ -219,6 +220,7 @@ Schedule::command('attendance:remind-clock-in')
     ->timezone('Africa/Nairobi');
 Schedule::command('academics:remind-upcoming-lessons')
     ->everyFiveMinutes()
+    ->withoutOverlapping(600)
     ->timezone('Africa/Nairobi');
 // The cohort roll runs before the first class of the day, so a semester that starts on Monday
 // finds its students already moved onto it and holding the units mapped there.

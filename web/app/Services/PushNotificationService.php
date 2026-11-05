@@ -40,7 +40,7 @@ class PushNotificationService
 
         foreach ($tokens as $token) {
             try {
-                $response = Http::withHeaders([
+                $response = Http::timeout(10)->connectTimeout(3)->withHeaders([
                     'Authorization' => 'key='.$serverKey,
                     'Content-Type' => 'application/json',
                 ])->post('https://fcm.googleapis.com/fcm/send', [

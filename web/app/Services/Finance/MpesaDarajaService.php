@@ -61,7 +61,8 @@ class MpesaDarajaService
             'TransactionDesc' => substr($description, 0, 50),
         ];
 
-        $response = Http::withToken($this->accessToken())
+        $response = Http::timeout(30)->connectTimeout(5)
+            ->withToken($this->accessToken())
             ->acceptJson()
             ->post($this->settings->baseUrl().'/mpesa/stkpush/v1/processrequest', $payload);
 
@@ -101,7 +102,8 @@ class MpesaDarajaService
         $timestamp = now()->format('YmdHis');
         $password = base64_encode($shortcode.$passkey.$timestamp);
 
-        $response = Http::withToken($this->accessToken())
+        $response = Http::timeout(15)->connectTimeout(5)
+            ->withToken($this->accessToken())
             ->acceptJson()
             ->post($this->settings->baseUrl().'/mpesa/stkpushquery/v1/query', [
                 'BusinessShortCode' => $shortcode,
@@ -141,7 +143,8 @@ class MpesaDarajaService
             $key = (string) $this->settings->consumerKey();
             $secret = (string) $this->settings->consumerSecret();
 
-            $response = Http::withBasicAuth($key, $secret)
+            $response = Http::timeout(20)->connectTimeout(5)
+                ->withBasicAuth($key, $secret)
                 ->acceptJson()
                 ->get($this->settings->baseUrl().'/oauth/v1/generate', [
                     'grant_type' => 'client_credentials',
