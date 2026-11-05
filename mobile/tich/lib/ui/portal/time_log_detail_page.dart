@@ -270,9 +270,11 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                               Expanded(
                                 child: TextField(
                                   controller: editor.timeIn,
-                                  enabled: editable && !_busy,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Time in',
+                                  enabled: editable && !_busy && !editor.timeInLocked,
+                                  decoration: InputDecoration(
+                                    labelText: editor.timeInLocked
+                                        ? 'Time in (clocked)'
+                                        : 'Time in',
                                     hintText: '08:00',
                                   ),
                                 ),
@@ -281,15 +283,28 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                               Expanded(
                                 child: TextField(
                                   controller: editor.timeOut,
-                                  enabled: editable && !_busy,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Time out',
+                                  enabled: editable && !_busy && !editor.timeOutLocked,
+                                  decoration: InputDecoration(
+                                    labelText: editor.timeOutLocked
+                                        ? 'Time out (clocked)'
+                                        : 'Time out',
                                     hintText: '17:00',
                                   ),
                                 ),
                               ),
                             ],
                           ),
+                          if (editable && editor.clocked) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              'These times come from your clock in and out, so they cannot be changed here. '
+                              'Add times by hand only on days you did not clock in.',
+                              style: tichUi(
+                                fontSize: 12,
+                                color: TichColors.neutralMuted,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 10),
                           TextField(
                             controller: editor.tasks,
@@ -388,6 +403,8 @@ class _DayEditor {
     required this.timeOut,
     required this.tasks,
     required this.deptIds,
+    required this.clockIn,
+    required this.clockOut,
   });
 
   final String dayLabel;
@@ -396,16 +413,40 @@ class _DayEditor {
   final TextEditingController tasks;
   final Set<int> deptIds;
 
+  /// The clocked times for this day, when the person actually clocked. Those
+  /// hours belong to the clock, so the fields carry them and stay unread-only
+  /// for typing - only a day with no clock record is filled in by hand.
+  final String? clockIn;
+  final String? clockOut;
+
+  bool get timeInLocked => clockIn != null;
+
+  bool get timeOutLocked => clockOut != null;
+
+  bool get clocked => timeInLocked || timeOutLocked;
+
   factory _DayEditor.fromDay(Map<String, dynamic> day) {
     final deptRaw = day['department_ids'] as List? ?? const [];
+    final clockIn = day['clock_in']?.toString();
+    final clockOut = day['clock_out']?.toString();
     return _DayEditor(
       dayLabel: day['day_label']?.toString() ?? 'Day',
-      timeIn: TextEditingController(text: day['time_in']?.toString() ?? ''),
-      timeOut: TextEditingController(text: day['time_out']?.toString() ?? ''),
+      timeIn: TextEditingController(
+        text: (clockIn?.isNotEmpty ?? false)
+            ? clockIn!
+            : (day['time_in']?.toString() ?? ''),
+      ),
+      timeOut: TextEditingController(
+        text: (clockOut?.isNotEmpty ?? false)
+            ? clockOut!
+            : (day['time_out']?.toString() ?? ''),
+      ),
       tasks: TextEditingController(
         text: day['tasks_accomplished']?.toString() ?? '',
       ),
       deptIds: deptRaw.map((e) => (e as num).toInt()).toSet(),
+      clockIn: (clockIn?.isNotEmpty ?? false) ? clockIn : null,
+      clockOut: (clockOut?.isNotEmpty ?? false) ? clockOut : null,
     );
   }
 

@@ -15,6 +15,7 @@ class StaffAttendanceService
         protected AuditService $auditService,
         protected StaffClockInLocationService $clockInLocation,
         protected StaffClockInSiteService $clockInSite,
+        protected WeeklyTimeLogService $timeLogs,
     ) {}
 
     public function todayRecord(Staff $staff): ?StaffAttendance
@@ -103,6 +104,13 @@ class StaffAttendanceService
             ],
         );
 
+        // The log for this week carries the clocked times, whoever opened it first.
+        // A log hiccup must never cost the staff member their clock-in.
+        try {
+            $this->timeLogs->syncClockedDay($staff, $record);
+        } catch (\Throwable) {
+        }
+
         return $record->fresh();
     }
 
@@ -139,6 +147,11 @@ class StaffAttendanceService
                 'work_hours' => (float) $record->work_hours,
             ],
         );
+
+        try {
+            $this->timeLogs->syncClockedDay($staff, $record);
+        } catch (\Throwable) {
+        }
 
         return $record->fresh();
     }

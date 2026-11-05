@@ -295,8 +295,8 @@ class WeeklyTimeLogService
             $hours = null;
 
             if ($day['in_month'] && $att) {
-                $timeIn = $att->clock_in_time ? Carbon::parse($att->clock_in_time)->format('H:i') : null;
-                $timeOut = $att->clock_out_time ? Carbon::parse($att->clock_out_time)->format('H:i') : null;
+                $timeIn = $this->clockTime($att->clock_in_time);
+                $timeOut = $this->clockTime($att->clock_out_time);
                 $hours = $this->hoursBetween($timeIn, $timeOut);
             }
 
@@ -318,6 +318,116 @@ class WeeklyTimeLogService
         }
 
         $this->recomputeTotals($log);
+    }
+
+    /**
+     * The clocked times behind a log's days, keyed by work date.
+     *
+     * A day the staff member actually clocked in for is the clock's record, not
+     * a form to fill in, so every screen and every save reads this to decide
+     * which times are theirs to type and which are already settled.
+     *
+     * @return Collection<string, StaffAttendance>
+     */
+    public function clockTimesFor(StaffWeeklyTimeLog $log): Collection
+    {
+        $dates = $log->days
+            ->filter(fn (StaffWeeklyTimeLogDay $day) => $day->in_month && $day->work_date)
+            ->map(fn (StaffWeeklyTimeLogDay $day) => $day->work_date->toDateString())
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($dates === []) {
+            return collect();
+        }
+
+        return StaffAttendance::query()
+            ->where('staff_id', $log->staff_id)
+            ->whereIn('attendance_date', $dates)
+            ->whereNotNull('clock_in_time')
+            ->get()
+            ->keyBy(fn (StaffAttendance $row) => $row->attendance_date->toDateString());
+    }
+
+    /** The clock's time for a logged day in H:i, or null when that half was never clocked. */
+    public function clockTime(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->format('H:i');
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Clocked times per date, for a screen that must show a clocked day as
+     * settled rather than as a pair of inputs.
+     *
+     * @return array<string, array{in: string|null, out: string|null}>
+     */
+    public function clockCellsFor(StaffWeeklyTimeLog $log): array
+    {
+        $cells = [];
+        foreach ($this->clockTimesFor($log) as $date => $record) {
+            $cells[(string) $date] = [
+                'in' => $this->clockTime($record->clock_in_time),
+                'out' => $this->clockTime($record->clock_out_time),
+            ];
+        }
+
+        return $cells;
+    }
+
+    /**
+     * A finished clock in/out writes its times into the week's open log straight
+     * away. The log is seeded once, when it is first opened, so a staff member
+     * who fills the log before clocking out would otherwise keep the times they
+     * typed (or the blanks) for a day the clock already knows about.
+     */
+    public function syncClockedDay(Staff $staff, StaffAttendance $record): void
+    {
+        $date = $record->attendance_date?->toDateString();
+        $clockIn = $this->clockTime($record->clock_in_time);
+
+        if (! $date || ! $clockIn) {
+            return;
+        }
+
+        $day = StaffWeeklyTimeLogDay::query()
+            ->where('in_month', true)
+            ->where('work_date', $date)
+            ->whereHas(
+                'weeklyTimeLog',
+                fn ($query) => $query
+                    ->where('staff_id', $staff->id)
+                    ->whereIn('status', [
+                        StaffWeeklyTimeLog::STATUS_DRAFT,
+                        StaffWeeklyTimeLog::STATUS_RETURNED,
+                    ])
+                    ->whereNull('manager_signed_at')
+            )
+            ->first();
+
+        if (! $day) {
+            return;
+        }
+
+        $timeOut = $this->clockTime($record->clock_out_time);
+        $hours = $this->hoursBetween($clockIn, $timeOut);
+
+        $day->update([
+            'time_in' => $clockIn,
+            'time_out' => $timeOut,
+            'total_hours' => $hours,
+            'total_units' => $this->unitsFor($hours),
+        ]);
+
+        $this->recomputeTotals($day->weeklyTimeLog);
     }
 
     /**
@@ -371,6 +481,7 @@ class WeeklyTimeLogService
         return DB::transaction(function () use ($log, $staff, $payload) {
             $daysInput = is_array($payload['days'] ?? null) ? $payload['days'] : [];
             $allowedDeptIds = $this->departmentsForStaff($staff)->pluck('id')->map(fn ($id) => (int) $id)->all();
+            $clocks = $this->clockTimesFor($log);
 
             foreach ($log->days as $day) {
                 $key = $day->work_date->toDateString();
@@ -379,8 +490,14 @@ class WeeklyTimeLogService
                     continue;
                 }
 
-                $timeIn = $this->normalizeTime($row['time_in'] ?? null);
-                $timeOut = $this->normalizeTime($row['time_out'] ?? null);
+                $clock = $clocks->get($key);
+                $clockIn = $clock ? $this->clockTime($clock->clock_in_time) : null;
+                $clockOut = $clock ? $this->clockTime($clock->clock_out_time) : null;
+
+                // The clock answers for any day it covers. A missed clock-out is
+                // the one gap the employee may still fill in by hand.
+                $timeIn = $clockIn ?? $this->normalizeTime($row['time_in'] ?? null);
+                $timeOut = $clockOut ?? $this->normalizeTime($row['time_out'] ?? null);
                 $hours = $this->hoursBetween($timeIn, $timeOut);
 
                 $deptIds = collect(is_array($row['department_ids'] ?? null) ? $row['department_ids'] : [])

@@ -82,6 +82,7 @@ class EmployeeWeeklyTimeLogController extends Controller
             'staff' => $staff,
             'log' => $timeLog,
             'departments' => $this->timeLogs->departmentsForStaff($timeLog->staff),
+            'clockDays' => $this->timeLogs->clockCellsFor($timeLog),
             'editable' => (int) $timeLog->staff_id === (int) $staff->id && $timeLog->isEditableByEmployee(),
             'canEndorse' => $timeLog->status === StaffWeeklyTimeLog::STATUS_PENDING_HR
                 && ! $timeLog->manager_signed_at

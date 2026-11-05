@@ -1,6 +1,7 @@
-{{-- Shared weekly time log grid. Expects: $log, $departments, $editable (bool) --}}
+{{-- Shared weekly time log grid. Expects: $log, $departments, $editable (bool), $clockDays (date => ['in','out']) --}}
 @php
     $deptMap = $departments->keyBy('id');
+    $clockDays = $clockDays ?? [];
 @endphp
 
 <div class="tich-card tich-mt-4">
@@ -44,9 +45,15 @@
                     @php
                         $dateKey = $day->work_date->toDateString();
                         $disabled = ! $editable || ! $day->in_month;
+                        $clockIn = $clockDays[$dateKey]['in'] ?? null;
+                        $clockOut = $clockDays[$dateKey]['out'] ?? null;
+                        $inLocked = $disabled || $clockIn !== null;
+                        $outLocked = $disabled || $clockOut !== null;
                         $selectedDepts = is_array($day->department_ids) ? $day->department_ids : [];
                     @endphp
-                    <tr class="{{ $day->in_month ? '' : 'wtl-row--outside' }}">
+                    <tr class="{{ $day->in_month ? '' : 'wtl-row--outside' }}"
+                        data-clock-in="{{ $clockIn ?: '' }}"
+                        data-clock-out="{{ $clockOut ?: '' }}">
                         <td>
                             <strong>{{ $day->day_label }}</strong>
                             <div class="tich-caption">{{ $day->work_date->format('d/m/Y') }}</div>
@@ -55,15 +62,21 @@
                             @endunless
                         </td>
                         <td>
-                            @if ($disabled)
+                            @if ($inLocked)
                                 {{ $day->time_in ? \Illuminate\Support\Str::substr((string) $day->time_in, 0, 5) : '-' }}
+                                @if ($clockIn !== null && $editable)
+                                    <div class="tich-caption">Clocked in</div>
+                                @endif
                             @else
                                 <input type="time" class="tich-input js-wtl-in" name="days[{{ $dateKey }}][time_in]" value="{{ $day->time_in ? \Illuminate\Support\Str::substr((string) $day->time_in, 0, 5) : '' }}">
                             @endif
                         </td>
                         <td>
-                            @if ($disabled)
+                            @if ($outLocked)
                                 {{ $day->time_out ? \Illuminate\Support\Str::substr((string) $day->time_out, 0, 5) : '-' }}
+                                @if ($clockOut !== null && $editable)
+                                    <div class="tich-caption">Clocked out</div>
+                                @endif
                             @else
                                 <input type="time" class="tich-input js-wtl-out" name="days[{{ $dateKey }}][time_out]" value="{{ $day->time_out ? \Illuminate\Support\Str::substr((string) $day->time_out, 0, 5) : '' }}">
                             @endif
@@ -187,15 +200,21 @@
             var out = row.querySelector('.js-wtl-out');
             var hrs = row.querySelector('.js-wtl-hours');
             var un = row.querySelector('.js-wtl-units');
-            if (!inn || !out || !hrs || !un) return;
+            if (!hrs || !un) return;
+            if (!inn && !out) return;
+
+            // A clocked half has no input to read, so the row carries its value.
+            var fixedIn = row.getAttribute('data-clock-in') || '';
+            var fixedOut = row.getAttribute('data-clock-out') || '';
+
             function sync() {
-                var h = workedHours(inn.value, out.value);
+                var h = workedHours(inn ? inn.value : fixedIn, out ? out.value : fixedOut);
                 hrs.value = h === null ? '' : h.toFixed(2);
                 un.value = h === null ? '' : (h * UNIT_MULTIPLIER).toFixed(2);
                 syncTotals(table);
             }
-            inn.addEventListener('change', sync);
-            out.addEventListener('change', sync);
+            if (inn) inn.addEventListener('change', sync);
+            if (out) out.addEventListener('change', sync);
         });
     });
 })();

@@ -196,6 +196,7 @@ class TimeLogController extends Controller
     {
         $owner = (int) $log->staff_id === (int) $viewer->id;
         $departments = $this->timeLogs->departmentsForStaff($log->staff);
+        $clockDays = $this->timeLogs->clockCellsFor($log);
 
         return [
             'id' => $log->id,
@@ -227,17 +228,21 @@ class TimeLogController extends Controller
                 'code' => $d->dept_code,
                 'name' => $d->dept_name,
             ])->values(),
-            'days' => $log->days->map(function ($day) {
+            'days' => $log->days->map(function ($day) use ($clockDays) {
                 $workDate = $day->work_date;
+                $dateKey = $workDate?->format('Y-m-d');
+                $clock = $dateKey === null ? null : ($clockDays[$dateKey] ?? null);
 
                 return [
                     'id' => $day->id,
-                    'work_date' => $workDate?->format('Y-m-d'),
+                    'work_date' => $dateKey,
                     'day_label' => $day->day_label,
                     'in_month' => (bool) $day->in_month,
                     'is_weekend' => $workDate ? $workDate->isWeekend() : false,
                     'time_in' => $day->time_in ? substr((string) $day->time_in, 0, 5) : null,
                     'time_out' => $day->time_out ? substr((string) $day->time_out, 0, 5) : null,
+                    'clock_in' => $clock['in'] ?? null,
+                    'clock_out' => $clock['out'] ?? null,
                     'tasks_accomplished' => $day->tasks_accomplished,
                     'initials' => $day->initials,
                     'department_ids' => is_array($day->department_ids) ? $day->department_ids : [],
