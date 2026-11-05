@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AcademicProgram;
 use App\Models\MpesaStkRequest;
+use App\Models\ProgramTimetableSession;
 use App\Models\Student;
 use App\Services\Finance\MpesaSettingsService;
 use Illuminate\Support\Collection;
@@ -541,10 +542,15 @@ class StudentPortalDashboardService
                 ->first();
 
             if ($lessonTimetable) {
-                if (! $lessonTimetable->relationLoaded('sessions')) {
-                    $lessonTimetable->load(['sessions.unit', 'sessions.staff', 'sessions.room']);
-                }
-                $lessonReminderSessions = $lessonTimetable->sessions ?? collect();
+                $lessonReminderSessions = ProgramTimetableSession::query()
+                    ->where('program_timetable_id', $lessonTimetable->id)
+                    ->whereNotNull('day_of_week')
+                    ->whereNotNull('start_time')
+                    ->with(['unit:id,unit_code,unit_name', 'staff', 'room'])
+                    ->orderBy('day_of_week')
+                    ->orderBy('start_time')
+                    ->limit(48)
+                    ->get();
             }
         }
 

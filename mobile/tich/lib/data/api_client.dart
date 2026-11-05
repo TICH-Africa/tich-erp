@@ -181,6 +181,7 @@ class ApiClient {
   Future<Map<String, dynamic>> get(
     String path, {
     Map<String, String>? query,
+    Duration? timeout,
   }) async {
     var uri = ApiConfig.uri(path);
     if (query != null && query.isNotEmpty) {
@@ -198,7 +199,7 @@ class ApiClient {
       return Map<String, dynamic>.from(existing.body!);
     }
 
-    final future = _performGet(uri);
+    final future = _performGet(uri, timeout: timeout);
     _getDedupe[key] = _GetDedupeEntry(inFlight: future);
     try {
       final body = await future;
@@ -213,10 +214,13 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> _performGet(Uri uri) async {
+  Future<Map<String, dynamic>> _performGet(
+    Uri uri, {
+    Duration? timeout,
+  }) async {
     final response = await _client
         .get(uri, headers: await _headers())
-        .timeout(timeout);
+        .timeout(timeout ?? ApiClient.timeout);
     return _decode(response);
   }
 

@@ -184,7 +184,9 @@ trait SerializesStudentPortal
             'current_timetable_id' => $t['timetable']?->id ?? null,
             'day_labels' => $mobile ? [] : ($t['day_labels'] ?? []),
             'active_days' => $mobile ? [] : ($t['active_days'] ?? [1, 2, 3, 4, 5]),
-            'timetables' => $timetables->map($documentRow)->values()->all(),
+            'timetables' => $mobile
+                ? []
+                : $timetables->map($documentRow)->values()->all(),
         ];
 
         if ($mobile) {

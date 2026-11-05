@@ -2645,6 +2645,31 @@ PREPARE stmt_fee_add FROM @sql_fee_add;
 EXECUTE stmt_fee_add;
 DEALLOCATE PREPARE stmt_fee_add;
 
+-- Timetable cycle columns (week/month postings within a semester).
+SET @pt_has_cycle_type := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'program_timetables'
+      AND column_name = 'cycle_type'
+);
+SET @sql_pt_cycle_type := IF(@pt_has_cycle_type = 0,
+    'ALTER TABLE `program_timetables` ADD COLUMN `cycle_type` varchar(20) NULL AFTER `timetable_kind`',
+    'SELECT 1');
+PREPARE stmt_pt_cycle_type FROM @sql_pt_cycle_type;
+EXECUTE stmt_pt_cycle_type;
+DEALLOCATE PREPARE stmt_pt_cycle_type;
+
+SET @pt_has_cycle_no := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'program_timetables'
+      AND column_name = 'cycle_no'
+);
+SET @sql_pt_cycle_no := IF(@pt_has_cycle_no = 0,
+    'ALTER TABLE `program_timetables` ADD COLUMN `cycle_no` smallint unsigned NULL AFTER `cycle_type`',
+    'SELECT 1');
+PREPARE stmt_pt_cycle_no FROM @sql_pt_cycle_no;
+EXECUTE stmt_pt_cycle_no;
+DEALLOCATE PREPARE stmt_pt_cycle_no;
+
 CREATE TABLE IF NOT EXISTS `student_application_document_submissions` (
     `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `student_id` bigint(20) unsigned NOT NULL,

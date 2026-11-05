@@ -605,16 +605,17 @@ class StudentAcademicRecordService
     {
         $student->loadMissing(['applicant', 'program', 'campus']);
 
-        $curriculum = $this->resolveCurriculum($student, $allowProvisionalCurriculum);
-        $curriculumUnits = $curriculum
-            ? $curriculum->items->sortBy(['semester', 'display_order', 'priority'])->values()
-            : collect();
+        $curriculum = $this->resolveCurriculum(
+            $student,
+            $allowProvisionalCurriculum,
+            ['periods'],
+        );
 
         $periods = $curriculum
             ? $curriculum->periods->sortBy('semester')->values()
             : collect();
 
-        $currentPeriod = $this->resolveCurrentPeriod($periods, $curriculumUnits);
+        $currentPeriod = $this->resolveCurrentPeriod($periods, collect());
 
         $registrations = DB::table('student_semester_registrations as ssr')
             ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
@@ -636,7 +637,7 @@ class StudentAcademicRecordService
 
         return [
             'curriculum' => $curriculum,
-            'curriculum_units' => $curriculumUnits,
+            'curriculum_units' => collect(),
             'periods' => $periods,
             'current_period' => $currentPeriod,
             'current_semester' => $currentSemester,
@@ -1057,15 +1058,21 @@ class StudentAcademicRecordService
             ->groupBy('student_id');
     }
 
-    private function resolveCurriculum(Student $student, bool $allowProvisionalCurriculum = true): ?CurriculumVersion
-    {
+    /**
+     * @param  list<string>  $with
+     */
+    private function resolveCurriculum(
+        Student $student,
+        bool $allowProvisionalCurriculum = true,
+        array $with = ['items.unit', 'periods'],
+    ): ?CurriculumVersion {
         if (! $student->program_id) {
             return null;
         }
 
         $applicant = $student->applicant;
         $programId = (int) $student->program_id;
-        $relations = ['items.unit', 'periods'];
+        $relations = $with;
 
         if ($applicant?->intake_year && $applicant?->intake_month) {
             $publishedIntake = CurriculumVersion::query()

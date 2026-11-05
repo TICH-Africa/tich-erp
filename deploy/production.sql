@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-11-02 15:04:50 EAT
+-- Generated: 2026-11-05 14:47:54 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -8877,6 +8877,8 @@ CREATE TABLE IF NOT EXISTS `program_timetables` (
   `teaching_period` tinyint(3) unsigned NOT NULL DEFAULT 1,
   `title` varchar(200) DEFAULT NULL,
   `timetable_kind` varchar(50) NOT NULL DEFAULT 'lesson',
+  `cycle_type` varchar(20) DEFAULT NULL,
+  `cycle_no` smallint(5) unsigned DEFAULT NULL,
   `template_id` bigint(20) unsigned DEFAULT NULL,
   `campus_id` bigint(20) unsigned DEFAULT NULL,
   `status` varchar(50) NOT NULL DEFAULT 'draft',
@@ -8903,6 +8905,8 @@ CALL `tich_ensure_column`('program_timetables', 'curriculum_version_id', 'bigint
 CALL `tich_ensure_column`('program_timetables', 'teaching_period', 'tinyint(3) unsigned NOT NULL DEFAULT \'1\'');
 CALL `tich_ensure_column`('program_timetables', 'title', 'varchar(200) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'timetable_kind', 'varchar(50) NOT NULL DEFAULT \'\\\'lesson\\\'\'');
+CALL `tich_ensure_column`('program_timetables', 'cycle_type', 'varchar(20) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_timetables', 'cycle_no', 'smallint(5) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'template_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'campus_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'draft\\\'\'');
