@@ -26,6 +26,7 @@ class StudentPortalDashboardService
 
         $academics = $this->academicRecords->forStudent($student, $this->mayViewProvisionalCurriculum($student));
         $academics = $this->onlyRegisteredUnits($academics);
+        $academics = $this->academicRecords->withPortalProgress($student, $academics);
         $finance = $this->finance($student);
 
         return [
@@ -190,7 +191,7 @@ class StudentPortalDashboardService
         );
 
         return [
-            'timetable' => $this->timetable($student, $academics),
+            'timetable' => $this->timetable($student, $academics, mobile: true),
         ];
     }
 
@@ -421,7 +422,7 @@ class StudentPortalDashboardService
      * @param  array<string, mixed>  $academics
      * @return array<string, mixed>
      */
-    private function timetable(Student $student, array $academics): array
+    private function timetable(Student $student, array $academics, bool $mobile = false): array
     {
         $curriculum = $academics['curriculum'] ?? null;
         $period = $academics['current_period'] ?? null;
@@ -460,7 +461,7 @@ class StudentPortalDashboardService
             $campusId = $student->campus_id ? (int) $student->campus_id : null;
 
             foreach ($candidatePeriods as $candidatePeriod) {
-                $found = $this->resolvePublishedTimetables($programId, $curriculumId, (int) $candidatePeriod, $campusId);
+                $found = $this->resolvePublishedTimetables($programId, $curriculumId, (int) $candidatePeriod, $campusId, $mobile);
                 if ($found->isNotEmpty()) {
                     $timetables = $found;
                     $teachingPeriod = (int) $candidatePeriod;
@@ -469,7 +470,7 @@ class StudentPortalDashboardService
             }
 
             if ($timetables->isEmpty()) {
-                $found = $this->resolveLatestPublishedTimetables($programId, $curriculumId, $campusId, $yearPeriods);
+                $found = $this->resolveLatestPublishedTimetables($programId, $curriculumId, $campusId, $yearPeriods, $mobile);
                 if ($found->isNotEmpty()) {
                     $timetables = $found;
                     $teachingPeriod = (int) ($timetables->first()->teaching_period ?: $teachingPeriod);
@@ -477,7 +478,7 @@ class StudentPortalDashboardService
             }
 
             if ($timetables->isEmpty()) {
-                $drafts = $this->resolveDraftTimetables($programId, $curriculumId, $teachingPeriod, $campusId);
+                $drafts = $this->resolveDraftTimetables($programId, $curriculumId, $teachingPeriod, $campusId, $mobile);
                 if ($drafts->isNotEmpty()) {
                     $timetables = $drafts;
                     $isProvisional = true;
@@ -498,12 +499,28 @@ class StudentPortalDashboardService
         }
 
         $primary = $this->currentPosting($timetables, $period, $teachingPeriod);
-        $template = $primary?->template?->load(['days']);
+        $template = $mobile ? null : $primary?->template?->load(['days']);
+        $lessonReminderSessions = collect();
+
+        if ($mobile) {
+            $lessonTimetable = $timetables
+                ->filter(fn ($timetable) => $timetable->timetable_kind === 'lesson')
+                ->sortByDesc(fn ($timetable) => (int) ($primary?->id === $timetable->id))
+                ->first();
+
+            if ($lessonTimetable) {
+                if (! $lessonTimetable->relationLoaded('sessions')) {
+                    $lessonTimetable->load(['sessions.unit', 'sessions.staff', 'sessions.room']);
+                }
+                $lessonReminderSessions = $lessonTimetable->sessions ?? collect();
+            }
+        }
 
         return [
             'timetables' => $timetables,
             'timetable' => $primary,
             'sessions' => $primary?->sessions ?? collect(),
+            'lesson_reminder_sessions' => $lessonReminderSessions,
             'template' => $template,
             'day_labels' => TimetableTemplateService::dayLabels(),
             'segment_types' => TimetableTemplateService::segmentTypes(),
@@ -570,20 +587,23 @@ class StudentPortalDashboardService
             }
         }
 
+        $documents = app(ProgramTimetableDocumentService::class);
+
         return $candidate->first(fn ($timetable) => in_array($timetable->cycle_type, [null, '', 'semester'], true))
-            ?? $candidate->first(fn ($timetable) => $timetable->sessions->isNotEmpty())
+            ?? $candidate->first(fn ($timetable) => $documents->hasViewableDocument($timetable))
             ?? $candidate->first();
     }
 
     /**
      * @return \Illuminate\Support\Collection<int, \App\Models\ProgramTimetable>
      */
-    private function resolvePublishedTimetables(int $programId, ?int $curriculumId, int $teachingPeriod, ?int $campusId): Collection
+    private function resolvePublishedTimetables(int $programId, ?int $curriculumId, int $teachingPeriod, ?int $campusId, bool $mobile = false): Collection
     {
-        $found = $this->timetableScheduling->publishedTimetablesForPeriod($programId, $curriculumId, $teachingPeriod);
+        $withSessions = ! $mobile;
+        $found = $this->timetableScheduling->publishedTimetablesForPeriod($programId, $curriculumId, $teachingPeriod, $withSessions);
 
         if ($found->isEmpty() && $curriculumId) {
-            $found = $this->timetableScheduling->publishedTimetablesForPeriod($programId, null, $teachingPeriod);
+            $found = $this->timetableScheduling->publishedTimetablesForPeriod($programId, null, $teachingPeriod, $withSessions);
         }
 
         if ($campusId && $found->isNotEmpty()) {
@@ -599,10 +619,14 @@ class StudentPortalDashboardService
     /**
      * @return \Illuminate\Support\Collection<int, \App\Models\ProgramTimetable>
      */
-    private function resolveLatestPublishedTimetables(int $programId, ?int $curriculumId, ?int $campusId, ?array $yearPeriods = null): Collection
+    private function resolveLatestPublishedTimetables(int $programId, ?int $curriculumId, ?int $campusId, ?array $yearPeriods = null, bool $mobile = false): Collection
     {
         $query = \App\Models\ProgramTimetable::query()
-            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.days'])
+            ->when(
+                $mobile,
+                fn ($q) => $q->withCount('sessions'),
+                fn ($q) => $q->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.days']),
+            )
             ->where('program_id', $programId)
             ->where('status', 'published')
             ->when($yearPeriods, fn ($q) => $q->whereBetween('teaching_period', [$yearPeriods['first'], $yearPeriods['last']]))
@@ -634,10 +658,14 @@ class StudentPortalDashboardService
     /**
      * @return \Illuminate\Support\Collection<int, \App\Models\ProgramTimetable>
      */
-    private function resolveDraftTimetables(int $programId, ?int $curriculumId, int $teachingPeriod, ?int $campusId): Collection
+    private function resolveDraftTimetables(int $programId, ?int $curriculumId, int $teachingPeriod, ?int $campusId, bool $mobile = false): Collection
     {
         $query = \App\Models\ProgramTimetable::query()
-            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.days'])
+            ->when(
+                $mobile,
+                fn ($q) => $q->withCount('sessions'),
+                fn ($q) => $q->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.days']),
+            )
             ->where('program_id', $programId)
             ->whereIn('status', ['draft'])
             ->where('teaching_period', $teachingPeriod)
@@ -660,7 +688,7 @@ class StudentPortalDashboardService
         return $query->get()->values();
     }
 
-    private function mayViewProvisionalCurriculum(Student $student): bool
+    public function mayViewProvisionalCurriculum(Student $student): bool
     {
         if ($student->portal_activated_at) {
             return true;

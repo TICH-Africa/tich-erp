@@ -25,6 +25,10 @@ class ApplicationDocument extends Model
         'file_path',
         'original_filename',
         'mime_type',
+        'is_verified',
+        'verified_by',
+        'verified_at',
+        'created_by',
     ];
 
     protected $casts = [

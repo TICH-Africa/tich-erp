@@ -23,6 +23,7 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
   late Future<Map<String, dynamic>> _future;
   Object? _dataCache;
   bool _paying = false;
+  bool _recoverScheduled = false;
 
   @override
   void initState() {
@@ -33,6 +34,10 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
       setFuture: (f) => _future = f,
       fetch: () => widget.api.finance(),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _liveRefresh();
+    });
   }
 
   Future<void> _reload() => studentCachedReload(
@@ -149,12 +154,16 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'student.finance');
-          if (tichShowLoadingSpinner(snap, merged)) { return studentLoadingBody(onRefresh: () async => _reload()); }
-          if (merged == null && snap.hasError) {
-            return studentErrorBody(snap.error, _reload);
-          }
-          final data = merged! as Map<String, dynamic>;
+          return studentCachedMapBody(
+            snap: snap,
+            memoryCache: _dataCache,
+            persistKey: 'student.finance',
+            onRetry: _reload,
+            autoRecoverOnError: true,
+            recoverScheduled: _recoverScheduled,
+            setRecoverScheduled: (v) => _recoverScheduled = v,
+            mounted: () => mounted,
+            builder: (data) {
           final finance =
               Map<String, dynamic>.from(data['finance'] as Map? ?? {});
           final summary =
@@ -319,6 +328,8 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
                   }),
               ],
             ),
+          );
+            },
           );
         },
       ),

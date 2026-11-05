@@ -27,6 +27,7 @@ class StudentAcademicsLazySection extends StatefulWidget {
 class _StudentAcademicsLazySectionState extends State<StudentAcademicsLazySection> {
   late Future<Map<String, dynamic>> _future;
   Object? _cache;
+  bool _recoverScheduled = false;
 
   @override
   void initState() {
@@ -36,6 +37,20 @@ class _StudentAcademicsLazySectionState extends State<StudentAcademicsLazySectio
       setCache: (c) => _cache = c,
       setFuture: (f) => _future = f,
       fetch: widget.fetch,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _liveRefresh();
+    });
+  }
+
+  void _liveRefresh() {
+    tichSilentReload(
+      mounted: () => mounted,
+      setState: setState,
+      fetch: widget.fetch,
+      onData: (data) => _cache = data,
+      persistKey: widget.cacheKey,
     );
   }
 
@@ -49,27 +64,29 @@ class _StudentAcademicsLazySectionState extends State<StudentAcademicsLazySectio
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
-      title: widget.title,
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _future,
-        builder: (context, snap) {
-          final merged = tichMergeSnapshot(
-            snap,
-            _cache as dynamic,
-            persistKey: widget.cacheKey,
-          );
-          if (tichShowLoadingSpinner(snap, merged)) {
-            return studentLoadingBody(onRefresh: () async => _reload());
-          }
-          if (merged == null && snap.hasError) {
-            return studentErrorBody(snap.error, _reload);
-          }
-          return RefreshIndicator(
-            onRefresh: () async => _reload(),
-            child: widget.builder(merged! as Map<String, dynamic>),
-          );
-        },
+    return TichLiveRefreshBinder(
+      onLiveRefresh: _liveRefresh,
+      child: AdaptiveScaffold(
+        title: widget.title,
+        body: FutureBuilder<Map<String, dynamic>>(
+          future: _future,
+          builder: (context, snap) {
+            return studentCachedMapBody(
+              snap: snap,
+              memoryCache: _cache,
+              persistKey: widget.cacheKey,
+              onRetry: _reload,
+              autoRecoverOnError: true,
+              recoverScheduled: _recoverScheduled,
+              setRecoverScheduled: (v) => _recoverScheduled = v,
+              mounted: () => mounted,
+              builder: (data) => RefreshIndicator(
+                onRefresh: () async => _reload(),
+                child: widget.builder(data),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

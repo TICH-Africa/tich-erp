@@ -26,14 +26,14 @@ class TimetableController extends Controller
         $student = $this->portalStudent($request);
         $biodata = $this->mobileBiodata($student);
         $portalData = Cache::remember(
-            'student.mobile.timetable.'.$student->id.'.v1',
-            20,
+            'student.mobile.timetable.'.$student->id.'.v2',
+            120,
             fn () => $this->dashboard->timetableForMobile($student),
         );
 
         return response()->json([
             'student' => $this->serializeStudent($student, $biodata),
-            'timetable' => $this->serializeTimetable($portalData),
+            'timetable' => $this->serializeTimetable($portalData, mobile: true),
         ]);
     }
 }

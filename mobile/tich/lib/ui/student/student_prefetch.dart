@@ -1,4 +1,5 @@
 import '../../data/student_api.dart';
+import '../../data/tich_pdf_cache.dart';
 import 'student_helpers.dart';
 
 /// Starts list/detail payloads before route transition (stale-while-revalidate).
@@ -42,6 +43,54 @@ abstract final class StudentPrefetch {
     studentWarm(timetableKey, () => api.timetable());
   }
 
+  static String _timetablePdfCacheName(Map<String, dynamic> meta) {
+    final id = (meta['id'] as num).toInt();
+    final kind = meta['kind']?.toString() ?? 'lesson';
+    final base = 'timetable-$kind-$id';
+    if (meta['is_upload_document'] == true) {
+      final name = meta['source_name']?.toString() ?? '';
+      if (name.contains('.')) {
+        final ext = name.split('.').last.toLowerCase();
+        if (ext.isNotEmpty && ext.length <= 5) {
+          return '$base.$ext';
+        }
+      }
+    }
+    return '$base.pdf';
+  }
+
+  /// Warm timetable file bytes (matches in-app viewer cache keys).
+  static void timetablePdf(StudentApi api, Map<String, dynamic> docMeta) {
+    final id = (docMeta['id'] as num?)?.toInt();
+    if (id == null) return;
+    final key = _timetablePdfCacheName(docMeta);
+    // ignore: unawaited_futures
+    TichPdfCache.load(key, () => api.downloadTimetablePdf(id));
+  }
+
+  static void timetableDocumentsFromCache(StudentApi api) {
+    final cached = studentReadCache(timetableKey);
+    if (cached == null) return;
+    final tt = Map<String, dynamic>.from(cached['timetable'] as Map? ?? {});
+    if (tt['is_provisional'] == true) return;
+    final docs = tt['documents'] as List? ?? tt['timetables'] as List? ?? const [];
+    for (final raw in docs) {
+      final m = Map<String, dynamic>.from(raw as Map);
+      if (m['has_document'] == false) continue;
+      if (m['kind']?.toString() == 'lesson') {
+        timetablePdf(api, m);
+        return;
+      }
+    }
+    for (final raw in docs) {
+      final m = Map<String, dynamic>.from(raw as Map);
+      if (m['has_document'] != false) {
+        timetablePdf(api, m);
+        return;
+      }
+    }
+  }
+
   static void finance(StudentApi api) {
     studentWarm(financeKey, () => api.finance());
   }
@@ -81,11 +130,43 @@ abstract final class StudentPrefetch {
     studentWarm(assessmentKey(id), () => api.assessment(id));
   }
 
+  static String examCardPdfKey(int semesterId) =>
+      'student.exam-card.pdf.$semesterId';
+
+  /// Warm exam card PDF bytes (eligibility screen / before tap).
+  static void examCardPdf(StudentApi api, int semesterId) {
+    final key = examCardPdfKey(semesterId);
+    // ignore: unawaited_futures
+    TichPdfCache.load(
+      key,
+      () => api.downloadExamCardPdf(semesterId: semesterId),
+    );
+  }
+
   /// Prefetch all academics hub sub-lists (idle / tab warm).
   static void academicsSubsections(StudentApi api) {
     academicsUnits(api);
     academicsContent(api);
     academicsAssessments(api);
+  }
+
+  /// Background warm for non-home tabs (staggered after shell open).
+  static void warmDeferredTabs(StudentApi api) {
+    academics(api);
+    timetable(api);
+    finance(api);
+    academicsSubsections(api);
+  }
+
+  /// Staggered warm for More drawer destinations.
+  static void warmMoreMenu(StudentApi api) {
+    profile(api);
+    enrolment(api);
+    notifications(api);
+    documents(api);
+    clearance(api);
+    evaluations(api);
+    lifecycle(api);
   }
 
   /// More-menu module keys match drawer labels loosely.

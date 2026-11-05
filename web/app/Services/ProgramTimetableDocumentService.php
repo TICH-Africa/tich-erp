@@ -6,7 +6,9 @@ use App\Models\ProgramTimetable;
 use App\Models\ProgramTimetableSession;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProgramTimetableDocumentService
@@ -28,9 +30,7 @@ class ProgramTimetableDocumentService
             return true;
         }
 
-        $sessionCount = $timetable->relationLoaded('sessions')
-            ? $timetable->sessions->count()
-            : $timetable->sessions()->count();
+        $sessionCount = $this->sessionCount($timetable);
 
         return $sessionCount === 0;
     }
@@ -41,11 +41,7 @@ class ProgramTimetableDocumentService
             return true;
         }
 
-        $sessionCount = $timetable->relationLoaded('sessions')
-            ? $timetable->sessions->count()
-            : $timetable->sessions()->count();
-
-        return $sessionCount > 0;
+        return $this->sessionCount($timetable) > 0;
     }
 
     public function displayFileName(ProgramTimetable $timetable): string
@@ -73,6 +69,51 @@ class ProgramTimetableDocumentService
             'Content-Type' => $this->mimeType($timetable),
             'Content-Disposition' => 'inline; filename="'.$filename.'"',
         ]);
+    }
+
+    public function inlineCachedResponse(ProgramTimetable $timetable): Response
+    {
+        abort_unless($this->usesUploadedFile($timetable), 404);
+
+        $binary = $this->cachedUploadedBinary($timetable);
+        $filename = $this->safeFilename($this->displayFileName($timetable));
+
+        return response($binary, 200, [
+            'Content-Type' => $this->mimeType($timetable),
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+        ]);
+    }
+
+    public function cachedUploadedBinary(ProgramTimetable $timetable): string
+    {
+        abort_unless($this->usesUploadedFile($timetable), 404);
+
+        $path = (string) $timetable->source_file;
+        $stamp = sha1($path.'|'.(string) ($timetable->source_uploaded_at ?? '').'|'.$this->storage()->lastModified($path));
+
+        return Cache::remember(
+            'program.timetable.upload.v1.'.$timetable->id.'.'.$stamp,
+            now()->addHours(6),
+            fn () => $this->storage()->get($path)
+        );
+    }
+
+    public function pdfCacheStamp(ProgramTimetable $timetable): string
+    {
+        if ($this->usesUploadedFile($timetable)) {
+            $path = (string) $timetable->source_file;
+
+            return sha1('upload|'.$path.'|'.(string) ($timetable->source_uploaded_at ?? '').'|'.$this->storage()->lastModified($path));
+        }
+
+        $sessionStamp = $timetable->relationLoaded('sessions')
+            ? $timetable->sessions->max('id')
+            : $timetable->sessions()->max('id');
+
+        return sha1(
+            'grid|'.(string) ($timetable->updated_at ?? '').'|'.(string) ($timetable->published_at ?? '')
+            .'|'.(string) $sessionStamp
+        );
     }
 
     public function downloadResponse(ProgramTimetable $timetable): StreamedResponse
@@ -110,11 +151,14 @@ class ProgramTimetableDocumentService
      */
     public function mobileDocumentMeta(ProgramTimetable $timetable): array
     {
+        $isUpload = $this->usesUploadedFile($timetable);
+
         return [
             'source' => $timetable->source,
             'source_name' => $timetable->source_name,
-            'is_upload_document' => $this->usesUploadedFile($timetable),
+            'is_upload_document' => $isUpload,
             'has_document' => $this->hasViewableDocument($timetable),
+            'mime_type' => $isUpload ? $this->mimeType($timetable) : 'application/pdf',
         ];
     }
 
@@ -190,5 +234,18 @@ class ProgramTimetableDocumentService
     private function safeFilename(string $name): string
     {
         return str_replace(['"', "\r", "\n"], '', $name);
+    }
+
+    private function sessionCount(ProgramTimetable $timetable): int
+    {
+        if ($timetable->relationLoaded('sessions')) {
+            return $timetable->sessions->count();
+        }
+
+        if (isset($timetable->sessions_count)) {
+            return (int) $timetable->sessions_count;
+        }
+
+        return (int) $timetable->sessions()->count();
     }
 }

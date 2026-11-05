@@ -10,6 +10,7 @@ use App\Services\ProgramTimetableDocumentService;
 use App\Services\TimetableSchedulingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class TimetablePdfController extends Controller
@@ -29,46 +30,61 @@ class TimetablePdfController extends Controller
         abort_unless($timetable->status === 'published', 404);
 
         if ($this->timetableDocuments->usesUploadedFile($timetable)) {
-            return $this->timetableDocuments->inlineResponse($timetable);
+            return $this->timetableDocuments->inlineCachedResponse($timetable);
         }
 
-        $payload = $this->timetableScheduling->documentPayload($timetable);
-        $program = $payload['program'];
-        $intake = $payload['intake'];
-        $kindLabel = $payload['kindLabel'];
+        $stamp = $this->timetableDocuments->pdfCacheStamp($timetable);
+        $binary = Cache::remember(
+            'student.timetable.pdf.v1.'.$timetable->id.'.'.$stamp,
+            now()->addHours(6),
+            function () use ($timetable, $student) {
+                $payload = $this->timetableScheduling->documentPayload($timetable);
+                $program = $payload['program'];
+                $intake = $payload['intake'];
+                $kindLabel = $payload['kindLabel'];
 
-        $data = array_merge($payload, [
-            'documentTitle' => $kindLabel,
-            'documentSubtitle' => trim(($program->program_name ?? '').($intake ? ' · '.$intake->intakeLabel() : '')),
-            'documentRef' => $this->printDocuments->documentRef(
-                'TT',
-                $student->registration_number,
-                $timetable->teaching_period,
-                $timetable->timetable_kind,
-            ),
-            'paperOrientation' => 'landscape',
-            'metaRows' => [
-                ['label' => 'Student', 'value' => e($student->registration_number)],
-                ['label' => 'Programme', 'value' => e($program->program_name ?? '-')],
-                ['label' => 'Intake', 'value' => e($intake?->intakeLabel() ?? '-')],
-                ['label' => 'Semester', 'value' => e((string) $timetable->teaching_period)],
-                ['label' => 'Campus', 'value' => e($timetable->campus?->campus_name ?? $student->campus?->campus_name ?? '-')],
-                ['label' => 'Timetable', 'value' => e($timetable->displayTitle()), 'full' => true],
-            ],
-            'backUrl' => null,
-            'pdfUrl' => null,
-        ]);
+                $data = array_merge($payload, [
+                    'documentTitle' => $kindLabel,
+                    'documentSubtitle' => trim(($program->program_name ?? '').($intake ? ' · '.$intake->intakeLabel() : '')),
+                    'documentRef' => $this->printDocuments->documentRef(
+                        'TT',
+                        $student->registration_number,
+                        $timetable->teaching_period,
+                        $timetable->timetable_kind,
+                    ),
+                    'paperOrientation' => 'landscape',
+                    'metaRows' => [
+                        ['label' => 'Student', 'value' => e($student->registration_number)],
+                        ['label' => 'Programme', 'value' => e($program->program_name ?? '-')],
+                        ['label' => 'Intake', 'value' => e($intake?->intakeLabel() ?? '-')],
+                        ['label' => 'Semester', 'value' => e((string) $timetable->teaching_period)],
+                        ['label' => 'Campus', 'value' => e($timetable->campus?->campus_name ?? $student->campus?->campus_name ?? '-')],
+                        ['label' => 'Timetable', 'value' => e($timetable->displayTitle()), 'full' => true],
+                    ],
+                    'backUrl' => null,
+                    'pdfUrl' => null,
+                ]);
 
-        return $this->printDocuments->inlinePdf(
-            'academics.programs.timetable-print',
-            $data,
-            sprintf(
-                'timetable-%s-sem%d-%s.pdf',
-                $timetable->timetable_kind,
-                $timetable->teaching_period,
-                Str::slug($program->program_code ?? (string) $program->id)
-            ),
-            'landscape',
+                return $this->printDocuments->pdfBinary(
+                    'academics.programs.timetable-print',
+                    $data,
+                    'landscape',
+                );
+            }
         );
+
+        $timetable->loadMissing('program');
+        $program = $timetable->program;
+        $filename = sprintf(
+            'timetable-%s-sem%d-%s.pdf',
+            $timetable->timetable_kind,
+            $timetable->teaching_period,
+            Str::slug($program->program_code ?? (string) $program->id)
+        );
+
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+        ]);
     }
 }

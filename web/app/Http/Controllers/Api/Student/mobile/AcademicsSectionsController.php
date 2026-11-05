@@ -52,20 +52,15 @@ class AcademicsSectionsController extends Controller
     {
         $student = $this->portalStudent($request);
         $payload = Cache::remember(
-            'student.mobile.academics.content.'.$student->id.'.v1',
+            'student.mobile.academics.content.'.$student->id.'.v2',
             20,
             fn () => $this->dashboard->academicsContentForMobile($student),
         );
 
-        $items = collect($payload['unit_content'] ?? [])->map(fn ($c) => [
-            'id' => $c->id,
-            'title' => $c->title,
-            'content_type' => $c->content_type,
-            'unit_code' => $c->unit?->unit_code,
-            'unit_name' => $c->unit?->unit_name,
-            'status' => $c->status,
-            'published_at' => optional($c->published_at ?? $c->created_at)?->toIso8601String(),
-        ])->values()->all();
+        $items = collect($payload['unit_content'] ?? [])
+            ->map(fn ($c) => $this->serializeUnitContentItem($c))
+            ->values()
+            ->all();
 
         return response()->json(['unit_content' => $items]);
     }

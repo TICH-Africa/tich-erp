@@ -318,16 +318,24 @@ class TimetableSchedulingService
 
         ?int $curriculumVersionId,
 
-        int $teachingPeriod
+        int $teachingPeriod,
+
+        bool $withSessions = true,
 
     ): Collection {
 
         // Every posting of the semester is returned - week 1, week 2, month 1 and the
         // whole-semester timetable all stay separate so each group sees what applies to them.
 
-        return ProgramTimetable::query()
+        $query = ProgramTimetable::query();
 
-            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days'])
+        if ($withSessions) {
+            $query->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days']);
+        } else {
+            $query->withCount('sessions');
+        }
+
+        return $query
 
             ->where('program_id', $programId)
 

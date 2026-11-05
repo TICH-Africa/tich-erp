@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Api\Student\mobile;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\Student\mobile\Concerns\ResolvesPortalStudent;
 use App\Http\Controllers\Api\Student\mobile\Concerns\SerializesStudentPortal;
+use App\Models\ApplicationDocument;
+use App\Models\StudentApplicationDocumentSubmission;
 use App\Models\StudentDocumentRequest;
+use App\Services\StudentPortalDocumentService;
 use App\Services\StudentRecordService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentsController extends Controller
 {
@@ -18,25 +22,16 @@ class DocumentsController extends Controller
 
     public function __construct(
         protected StudentRecordService $studentRecords,
+        protected StudentPortalDocumentService $portalDocuments,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $student = $this->portalStudent($request);
         $biodata = $this->studentRecords->biodata360($student);
-        $documents = collect($biodata['documents'] ?? [])->map(function ($doc) {
-            if (is_array($doc)) {
-                return $doc;
-            }
 
-            return [
-                'id' => $doc->id ?? null,
-                'document_type' => $doc->document_type ?? $doc->type ?? null,
-                'document_name' => $doc->document_name ?? $doc->original_name ?? $doc->file_name ?? null,
-                'status' => $doc->status ?? null,
-                'uploaded_at' => optional($doc->created_at ?? null)?->toIso8601String(),
-            ];
-        })->values()->all();
+        $documents = $this->portalDocuments->serializeDocumentsForPortal($student);
+        $pendingChanges = $this->portalDocuments->serializePendingChanges($student);
 
         $requests = [];
         if (Schema::hasTable('student_document_requests')) {
@@ -59,9 +54,26 @@ class DocumentsController extends Controller
         return response()->json([
             'student' => $this->serializeStudent($student, $biodata),
             'documents' => $documents,
+            'pending_changes' => $pendingChanges,
             'document_requests' => $requests,
             'request_types' => StudentDocumentRequest::TYPES,
+            'upload_types' => $this->portalDocuments->uploadTypeLabels(),
         ]);
+    }
+
+    public function storeUpload(Request $request): JsonResponse
+    {
+        $student = $this->portalStudent($request);
+        $request->validate(['file' => 'required|file']);
+
+        $result = $this->portalDocuments->storeUpload(
+            $student,
+            $request->user(),
+            $request->file('file'),
+            $request->only(['document_type', 'student_notes']),
+        );
+
+        return response()->json($result, $result['kind'] === 'upload' ? 201 : 202);
     }
 
     public function storeRequest(Request $request): JsonResponse
@@ -89,5 +101,29 @@ class DocumentsController extends Controller
                 'status' => $row->status,
             ],
         ], 201);
+    }
+
+    public function file(Request $request, ApplicationDocument $document): StreamedResponse
+    {
+        $student = $this->portalStudent($request);
+        $document = $this->portalDocuments->resolveDocumentForStudent($student, $document);
+
+        if ($request->query('disposition') === 'download') {
+            return $this->portalDocuments->downloadDocumentResponse($document);
+        }
+
+        return $this->portalDocuments->inlineDocumentResponse($document);
+    }
+
+    public function submissionFile(Request $request, StudentApplicationDocumentSubmission $submission): StreamedResponse
+    {
+        $student = $this->portalStudent($request);
+        $submission = $this->portalDocuments->resolveSubmissionForStudent($student, $submission);
+
+        if ($request->query('disposition') === 'download') {
+            return $this->portalDocuments->downloadSubmissionResponse($submission);
+        }
+
+        return $this->portalDocuments->inlineSubmissionResponse($submission);
     }
 }

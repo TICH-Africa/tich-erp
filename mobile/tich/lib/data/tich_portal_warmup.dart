@@ -7,6 +7,7 @@ import 'procurement_api.dart';
 import 'staff_api.dart';
 import 'student_api.dart';
 import '../ui/portal/employee_prefetch.dart';
+import '../ui/student/student_prefetch.dart';
 import 'tich_screen_cache.dart';
 
 /// Background cache warming - kept minimal so the UI thread and API stay responsive.
@@ -48,12 +49,13 @@ abstract final class TichPortalWarmup {
   /// Call when a portal shell opens: warm the visible tab only.
   static void studentShellOpened(StudentApi api) {
     _cancelDeferred();
-    TichScreenCache.warm('student.home', () => api.dashboard());
-    _deferredTimer = Timer(const Duration(seconds: 20), () {
+    StudentPrefetch.home(api);
+    _deferredTimer = Timer(const Duration(seconds: 12), () {
       _runDeferred([
-        () => TichScreenCache.warm('student.academics', () => api.academics()),
-        () => TichScreenCache.warm('student.timetable', () => api.timetable()),
-        () => TichScreenCache.warm('student.finance', () => api.finance()),
+        () => StudentPrefetch.academics(api),
+        () => StudentPrefetch.timetable(api),
+        () => StudentPrefetch.finance(api),
+        () => StudentPrefetch.academicsSubsections(api),
       ]);
     });
   }
@@ -61,25 +63,16 @@ abstract final class TichPortalWarmup {
   static void studentTabSelected(StudentApi api, int index) {
     switch (index) {
       case 0:
-        TichScreenCache.warm('student.home', () => api.dashboard());
+        StudentPrefetch.home(api);
+        StudentPrefetch.timetable(api);
       case 1:
-        TichScreenCache.warm('student.academics', () => api.academics());
-        TichScreenCache.warm(
-          'student.academics.units',
-          () => api.academicsUnits(),
-        );
-        TichScreenCache.warm(
-          'student.academics.content',
-          () => api.academicsContent(),
-        );
-        TichScreenCache.warm(
-          'student.academics.assessments',
-          () => api.academicsAssessments(),
-        );
+        StudentPrefetch.academics(api);
+        StudentPrefetch.academicsSubsections(api);
       case 2:
-        TichScreenCache.warm('student.timetable', () => api.timetable());
+        StudentPrefetch.timetable(api);
+        StudentPrefetch.timetableDocumentsFromCache(api);
       case 3:
-        TichScreenCache.warm('student.finance', () => api.finance());
+        StudentPrefetch.finance(api);
       default:
         break;
     }
@@ -88,16 +81,13 @@ abstract final class TichPortalWarmup {
   /// More drawer links - warm only when the user opens the menu.
   static void studentMoreOpened(StudentApi api) {
     _runDeferred([
-      () => TichScreenCache.warm('student.profile', () => api.profile()),
-      () => TichScreenCache.warm('student.enrolment', () => api.profile()),
-      () => TichScreenCache.warm('student.notifications', () => api.notifications()),
-      () => TichScreenCache.warm('student.documents', () => api.documents()),
-      () => TichScreenCache.warm('student.clearance', () => api.clearance()),
-      () => TichScreenCache.warm('student.evaluations', () => api.evaluations()),
-      () => TichScreenCache.warm(
-            'student.lifecycle',
-            () => api.lifecycleRequests(),
-          ),
+      () => StudentPrefetch.profile(api),
+      () => StudentPrefetch.enrolment(api),
+      () => StudentPrefetch.notifications(api),
+      () => StudentPrefetch.documents(api),
+      () => StudentPrefetch.clearance(api),
+      () => StudentPrefetch.evaluations(api),
+      () => StudentPrefetch.lifecycle(api),
     ]);
   }
 

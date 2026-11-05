@@ -1,6 +1,11 @@
 @php
     $examPortal = $academics['exam_portal'] ?? [];
     $upcomingExams = $examPortal['upcoming_exams'] ?? collect();
+@endphp
+
+@include('portal.partials.academics.provisional-results-by-semester')
+
+@php
     $canViewExamCard = (bool) ($examPortal['can_view_exam_card'] ?? false);
     $semesterId = $examPortal['semester_id'] ?? null;
     $examCard = $examPortal['exam_card'] ?? null;
@@ -292,7 +297,10 @@
         </article>
     </section>
 
-@if ($upcomingExams->isEmpty() && $academics['grades']->isEmpty() && $academics['cat_scores']->isEmpty() && $academics['exam_results']->isEmpty())
+@php
+    $hasProvisional = ! empty($academics['provisional_results_by_semester'] ?? []);
+@endphp
+@if ($upcomingExams->isEmpty() && $academics['grades']->isEmpty() && $academics['cat_scores']->isEmpty() && $academics['exam_results']->isEmpty() && ! $hasProvisional)
     @include('partials.states.empty', [
         'title' => 'No exam or grade records yet',
         'description' => 'CAT marks, exam results, and final grades will appear here once your lecturers publish them.',

@@ -1385,6 +1385,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
     Route::middleware('student.portal')->prefix('portal')->group(function () {
         Route::get('/sidebar-notifications', \App\Http\Controllers\Portal\SidebarNotificationController::class)->name('portal.sidebar-notifications');
 
+        Route::get('/learning-content/{content}/view', [\App\Http\Controllers\Portal\PortalUnitContentController::class, 'view'])
+            ->name('portal.learning-content.view');
+        Route::get('/learning-content/{content}/download', [\App\Http\Controllers\Portal\PortalUnitContentController::class, 'download'])
+            ->name('portal.learning-content.download');
+
         Route::get('/documents/{document}', [\App\Http\Controllers\Portal\PortalDocumentController::class, 'show'])
             ->name('portal.documents.show');
         Route::get('/documents/{document}/download', [\App\Http\Controllers\Portal\PortalDocumentController::class, 'download'])
@@ -1421,6 +1426,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('portal.fee-statement.pdf');
         Route::post('/document-requests', [\App\Http\Controllers\Portal\PortalDocumentRequestController::class, 'store'])
             ->name('portal.document-requests.store');
+        Route::post('/documents/upload', [\App\Http\Controllers\Portal\PortalDocumentUploadController::class, 'store'])
+            ->name('portal.documents.upload');
+        Route::get('/documents/submissions/{submission}', [\App\Http\Controllers\Portal\PortalDocumentSubmissionController::class, 'show'])
+            ->name('portal.documents.submission.show');
         Route::post('/exam-sitting-requests', [\App\Http\Controllers\Portal\PortalExamSittingRequestController::class, 'store'])
             ->name('portal.exam-sitting-requests.store');
         Route::get('/exam-card/print', [\App\Http\Controllers\Portal\PortalExamCardController::class, 'print'])
