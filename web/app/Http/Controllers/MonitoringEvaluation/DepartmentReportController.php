@@ -25,10 +25,14 @@ class DepartmentReportController extends Controller
         protected MeTechnicalPlanDocumentService $planDocuments,
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         $moduleContext = MeDepartmentReportModuleContext::resolve($request);
         $moduleKey = $moduleContext['key'] ?? '';
+
+        if ($moduleKey === 'monitoring_evaluation' && $this->reports->userIsMeReviewer($request->user())) {
+            return redirect()->to(route('monitoring_evaluation.dashboard').'#quarterly-workspace');
+        }
 
         if (in_array($moduleKey, ['qa', 'monitoring_evaluation'], true)) {
             $scopeIds = Department::query()->where('is_active', 1)->pluck('id')->all();
@@ -62,18 +66,16 @@ class DepartmentReportController extends Controller
             'reports' => $reports,
             'scopeDepartment' => $moduleContext['department'] ?? null,
             'viewAllDepartments' => in_array($moduleKey, ['qa', 'monitoring_evaluation'], true),
+            'hodReadOnly' => ! in_array($moduleKey, ['qa', 'monitoring_evaluation'], true),
         ]));
     }
 
     public function open(Request $request, MeTechnicalPlan $plan, int $quarter): RedirectResponse
     {
+        abort_unless($this->reports->userIsMeReviewer($request->user()), 403, 'Quarterly reports are managed on the M&E dashboard.');
+
         $moduleContext = MeDepartmentReportModuleContext::resolve($request);
         $this->assertDepartmentInModuleScope($moduleContext, $plan->department);
-
-        abort_unless(
-            $this->reports->userCanEditDepartmentReport($request->user(), $plan->department),
-            403
-        );
 
         $q = $plan->quarters()->where('quarter_number', $quarter)->firstOrFail();
         abort_unless(
@@ -84,9 +86,7 @@ class DepartmentReportController extends Controller
 
         $report = $this->plans->ensureQuarterlyReportDraft($plan, $q);
 
-        return redirect()->to(MeDepartmentReportModuleContext::url('edit', $moduleContext['key'], [
-            'report' => $report,
-        ]));
+        return redirect()->route('monitoring_evaluation.reports.edit', $report);
     }
 
     /**
@@ -152,67 +152,31 @@ class DepartmentReportController extends Controller
         $report->load(['lines', 'department', 'quarter', 'technicalPlan']);
         $this->assertDepartmentInModuleScope($moduleContext, $report->department);
 
-        $canEdit = $this->reports->userCanEditDepartmentReport($request->user(), $report->department);
-        $canSubmit = $this->reports->userCanSubmitDepartmentReport($request->user(), $report->department);
+        abort_unless(
+            $this->reports->userCanViewDepartmentReport($request->user(), $report->department),
+            403
+        );
 
-        abort_unless($canEdit || in_array($moduleKey, ['qa', 'monitoring_evaluation'], true), 403);
+        if ($this->reports->userIsMeReviewer($request->user())) {
+            return redirect()->route('monitoring_evaluation.reports.show', $report);
+        }
 
         return view('monitoring-evaluation.department.edit', $this->viewPayload($moduleContext, [
             'report' => $report,
-            'canSubmit' => $canSubmit,
-            'canEdit' => $canEdit,
-            'viewOnly' => in_array($moduleKey, ['qa', 'monitoring_evaluation'], true) && ! $canEdit,
+            'canSubmit' => false,
+            'canEdit' => false,
+            'viewOnly' => true,
         ]));
     }
 
     public function update(Request $request, MeQuarterlyReport $report): RedirectResponse
     {
-        $moduleContext = MeDepartmentReportModuleContext::resolve($request);
-        $report->load('department');
-        $this->assertDepartmentInModuleScope($moduleContext, $report->department);
-
-        abort_unless(
-            $this->reports->userCanSubmitDepartmentReport($request->user(), $report->department),
-            403,
-            'Only '.($report->department?->dept_name ?? 'this department')."'s HOD or staff can save this quarterly report."
-        );
-
-        $data = $request->validate([
-            'lines' => ['required', 'array', 'min:1'],
-            'lines.*.id' => ['required', 'integer'],
-            'lines.*.achieved' => ['required', 'numeric'],
-        ]);
-
-        try {
-            $this->reports->saveDraft($report, $data['lines']);
-        } catch (\RuntimeException $e) {
-            return back()->withInput()->withErrors(['report' => $e->getMessage()]);
-        }
-
-        return back()->with('status', 'Draft saved. Deviation recalculated automatically.');
+        abort(403, 'Quarterly reports are compiled by the M&E office on the command center dashboard.');
     }
 
     public function submit(Request $request, MeQuarterlyReport $report): RedirectResponse
     {
-        $moduleContext = MeDepartmentReportModuleContext::resolve($request);
-        $report->load('department');
-        $this->assertDepartmentInModuleScope($moduleContext, $report->department);
-
-        abort_unless(
-            $this->reports->userCanSubmitDepartmentReport($request->user(), $report->department),
-            403,
-            'Only '.($report->department?->dept_name ?? 'this department')."'s HOD or staff can submit this quarterly report to M&E."
-        );
-
-        try {
-            $this->reports->submit($report, $request->user());
-        } catch (\RuntimeException $e) {
-            return back()->withErrors(['report' => $e->getMessage()]);
-        }
-
-        return redirect()
-            ->to(MeDepartmentReportModuleContext::url('index', $moduleContext['key']))
-            ->with('status', 'Quarterly M&E report submitted for M&E Officer verification.');
+        abort(403, 'Quarterly reports are compiled by the M&E office on the command center dashboard.');
     }
 
     /**

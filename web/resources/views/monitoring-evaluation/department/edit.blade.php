@@ -39,12 +39,7 @@
 
     @if ($viewOnly)
         <div class="tich-alert tich-alert--info tich-mt-4">
-            <strong>View only.</strong> You are viewing this department's report. Only that department's HOD or staff can edit and submit it.
-        </div>
-    @elseif (! $canSubmit && in_array($report->status, ['draft', 'returned'], true))
-        <div class="tich-alert tich-alert--info tich-mt-4">
-            This is {{ $report->department?->dept_name ?? 'the department' }}'s report.
-            Only that department's HOD or staff can edit and submit it to M&amp;E for verification.
+            <strong>View only.</strong> The M&amp;E office compiles quarterly achievement reports on the command center dashboard after your technical plan quarters are approved.
         </div>
     @endif
 

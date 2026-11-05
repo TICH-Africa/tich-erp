@@ -21,8 +21,12 @@ class ReportController extends Controller
         protected MeQuarterlyReportDocumentService $documents,
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
+        if (! $request->has('status') && ! $request->boolean('list')) {
+            return redirect()->to(route('monitoring_evaluation.dashboard').'#quarterly-workspace');
+        }
+
         $status = $request->string('status')->toString();
 
         $items = MeQuarterlyReport::query()
@@ -40,7 +44,73 @@ class ReportController extends Controller
     {
         $report->load(['department', 'quarter', 'lines', 'technicalPlan', 'submitter', 'meVerifier']);
 
-        return view('monitoring-evaluation.reports.show', compact('report'));
+        $canEdit = auth()->user()
+            && $this->reports->userCanEnterAchieved(auth()->user(), $report);
+
+        return view('monitoring-evaluation.reports.show', compact('report', 'canEdit'));
+    }
+
+    public function edit(MeQuarterlyReport $report): View|RedirectResponse
+    {
+        abort_unless(auth()->user()?->hasPermission('monitoring_evaluation.read'), 403);
+        abort_unless($this->reports->userIsMeReviewer(auth()->user()), 403);
+
+        $report->load(['lines', 'department', 'quarter', 'technicalPlan']);
+
+        if (! $this->reports->userCanEnterAchieved(auth()->user(), $report)) {
+            return redirect()->route('monitoring_evaluation.reports.show', $report);
+        }
+
+        return view('monitoring-evaluation.reports.edit', [
+            'report' => $report,
+        ]);
+    }
+
+    public function update(Request $request, MeQuarterlyReport $report): RedirectResponse
+    {
+        abort_unless($this->reports->userIsMeReviewer($request->user()), 403);
+        abort_unless($this->reports->userCanEnterAchieved($request->user(), $report), 403);
+
+        $data = $request->validate([
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.id' => ['required', 'integer'],
+            'lines.*.achieved' => ['required', 'numeric'],
+        ]);
+
+        try {
+            $this->reports->saveDraft($report, $data['lines']);
+        } catch (\RuntimeException $e) {
+            return back()->withInput()->withErrors(['report' => $e->getMessage()]);
+        }
+
+        return back()->with('status', 'Achieved values saved.');
+    }
+
+    public function complete(Request $request, MeQuarterlyReport $report): RedirectResponse
+    {
+        abort_unless($this->reports->userIsMeReviewer($request->user()), 403);
+
+        $data = $request->validate([
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.id' => ['required', 'integer'],
+            'lines.*.achieved' => ['required', 'numeric'],
+            'me_notes' => ['nullable', 'string', 'max:3000'],
+        ]);
+
+        try {
+            $this->reports->completeAndDeliver(
+                $report,
+                $request->user(),
+                $data['lines'],
+                $data['me_notes'] ?? null,
+            );
+        } catch (\RuntimeException $e) {
+            return back()->withInput()->withErrors(['report' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('monitoring_evaluation.dashboard')
+            ->with('status', 'Quarterly report verified and delivered to the CEO dashboard.');
     }
 
     public function print(MeQuarterlyReport $report): View
@@ -105,35 +175,24 @@ class ReportController extends Controller
             return back()->withErrors(['report' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'Report returned to the department for revision.');
+        return back()->with('status', 'Report reopened for M&E revision.');
     }
 
     public function openQuarter(Request $request, MeTechnicalPlan $plan, int $quarter): RedirectResponse
     {
-        // M&E clears a quarter at a time; each cleared quarter can be reported on without
-        // waiting for the whole year to baseline-lock.
+        abort_unless($this->reports->userIsMeReviewer($request->user()), 403);
+
         $q = $plan->quarters()->where('quarter_number', $quarter)->firstOrFail();
         abort_unless($plan->isQuarterReportable((int) $q->quarter_number), 403, 'This quarter is not approved by M&E yet.');
 
         $report = $this->plans->ensureQuarterlyReportDraft($plan, $q);
-        $report->loadMissing('department');
 
-        $moduleKey = $report->department
-            ? \App\Support\MeDepartmentReportModuleContext::moduleKeyForDepartment($report->department)
-            : 'monitoring_evaluation';
-        $editUrl = \App\Support\MeDepartmentReportModuleContext::url('edit', $moduleKey, ['report' => $report]);
-
-        // Department staff fill/submit in their own module; M&E officers review on the verification screen.
-        if ($this->reports->userCanSubmitDepartmentReport($request->user(), $report->department)) {
-            return redirect()->to($editUrl);
+        if ($this->reports->userCanEnterAchieved($request->user(), $report)) {
+            return redirect()
+                ->route('monitoring_evaluation.reports.edit', $report)
+                ->with('status', 'Enter achieved values for this quarter.');
         }
 
-        if (in_array($report->status, ['submitted', 'me_verified', 'ceo_delivered', 'returned'], true)) {
-            return redirect()->route('monitoring_evaluation.reports.show', $report);
-        }
-
-        return redirect()
-            ->to($editUrl)
-            ->with('status', 'This report is still a department draft. Open it from that department module to submit to M&E.');
+        return redirect()->route('monitoring_evaluation.reports.show', $report);
     }
 }

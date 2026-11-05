@@ -427,6 +427,11 @@ class MeTechnicalPlanService
         $this->rememberPlanReviewer($plan, $staff, $notes);
         $this->syncPlanStatusFromQuarters($plan);
 
+        $plan = $plan->fresh(['outputs', 'quarters', 'budgetRequest']);
+        $approvedQuarter = $plan->quarters->firstWhere('quarter_number', $quarterNumber)
+            ?? $quarter->fresh();
+        $this->ensureQuarterlyReportDraft($plan, $approvedQuarter);
+
         $locked = $this->tryBaselineLock($plan->fresh(['budgetRequest', 'outputs', 'quarters']), $user);
 
         return $locked ?? $plan->fresh(['outputs', 'quarters', 'budgetRequest']);

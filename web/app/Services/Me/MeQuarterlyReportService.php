@@ -21,21 +21,43 @@ class MeQuarterlyReportService
         protected RBACService $rbac,
     ) {}
 
-    public function userCanEditDepartmentReport(User $user, Department $department): bool
+    /**
+     * Quarterly achievement reports are compiled by M&E (not department HODs).
+     */
+    public function userCanEnterAchieved(User $user, MeQuarterlyReport $report): bool
     {
-        if ($user->hasAnyRole(['Super Admin', 'Monitoring and Evaluation Officer', 'Assistant Monitoring and Evaluation Officer'])) {
+        if (! $this->userIsMeReviewer($user)) {
+            return false;
+        }
+
+        return in_array($report->status, ['draft', 'returned'], true);
+    }
+
+    public function userCanViewDepartmentReport(User $user, ?Department $department): bool
+    {
+        if ($department === null) {
+            return false;
+        }
+
+        if ($this->userIsMeReviewer($user)) {
             return true;
         }
 
         return $this->userIsDepartmentRespondent($user, $department);
     }
 
+    /** @deprecated Use userCanViewDepartmentReport / userCanEnterAchieved */
+    public function userCanEditDepartmentReport(User $user, Department $department): bool
+    {
+        return $this->userIsMeReviewer($user);
+    }
+
     /**
-     * Only the owning department (HOD / staff) may draft and submit reports to M&E.
+     * @deprecated HODs no longer submit quarterly reports.
      */
     public function userCanSubmitDepartmentReport(User $user, Department $department): bool
     {
-        return $this->userIsDepartmentRespondent($user, $department);
+        return false;
     }
 
     public function userIsDepartmentRespondent(User $user, Department $department): bool
@@ -113,15 +135,41 @@ class MeQuarterlyReportService
             throw new \RuntimeException('This report cannot be submitted in its current status.');
         }
 
+        abort_unless($this->userIsMeReviewer($user), 403);
+
         $report->update([
             'status' => 'submitted',
             'submitted_by' => $user->id,
             'submitted_at' => now(),
         ]);
 
-        $this->notifyMeForVerification($report->fresh(['department', 'quarter']));
-
         return $report->fresh('lines');
+    }
+
+    /**
+     * Save achieved values, mark submitted, verify, and deliver to CEO in one step.
+     */
+    public function completeAndDeliver(MeQuarterlyReport $report, User $user, array $lines, ?string $notes = null): MeQuarterlyReport
+    {
+        abort_unless($this->userIsMeReviewer($user), 403);
+
+        if (! in_array($report->status, ['draft', 'returned', 'submitted'], true)) {
+            throw new \RuntimeException('This report cannot be completed in its current status.');
+        }
+
+        $this->saveDraft($report, $lines);
+        $report = $report->fresh(['department', 'quarter', 'lines']);
+
+        if (in_array($report->status, ['draft', 'returned'], true)) {
+            $this->submit($report, $user);
+            $report = $report->fresh(['department', 'quarter', 'lines']);
+        }
+
+        if ($notes !== null && $notes !== '') {
+            $report->update(['me_notes' => $notes]);
+        }
+
+        return $this->verify($report, $user, $notes);
     }
 
     public function verify(MeQuarterlyReport $report, User $user, ?string $notes = null): MeQuarterlyReport
@@ -129,6 +177,8 @@ class MeQuarterlyReportService
         if ($report->status !== 'submitted') {
             throw new \RuntimeException('Only submitted reports can be verified.');
         }
+
+        abort_unless($this->userIsMeReviewer($user), 403);
 
         $staff = $this->staffPortal->staffForUser($user);
 

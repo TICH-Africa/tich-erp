@@ -4,6 +4,7 @@ namespace App\Http\Controllers\MonitoringEvaluation;
 
 use App\Http\Controllers\Controller;
 use App\Models\Me\MeTechnicalPlan;
+use App\Models\Me\MeQuarterlyReport;
 use App\Services\Me\MeTechnicalPlanDocumentService;
 use App\Services\Me\MeTechnicalPlanService;
 use Illuminate\Http\RedirectResponse;
@@ -113,6 +114,18 @@ class TechnicalPlanController extends Controller
         $message = $updated->isBaselineLocked()
             ? 'Q'.$quarter.' approved - all four quarters are cleared, so the baseline plan is locked.'
             : 'Q'.$quarter.' approved. The remaining quarters stay open for the department to fill.';
+
+        $updated->load(['quarters', 'quarterlyReports']);
+        $quarterRow = $updated->quarters->firstWhere('quarter_number', $quarter);
+        $report = $quarterRow
+            ? $updated->quarterlyReports->firstWhere('quarter_id', $quarterRow->id)
+            : null;
+
+        if ($report && in_array($report->status, ['draft', 'returned'], true)) {
+            return redirect()
+                ->route('monitoring_evaluation.reports.edit', $report)
+                ->with('status', $message.' Open the quarterly report to enter achieved values.');
+        }
 
         return redirect()
             ->route('monitoring_evaluation.plans.show', $updated)

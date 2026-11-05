@@ -3,9 +3,10 @@
 @section('title', 'Quarterly M&E reports')
 
 @section('monitoring-evaluation-content')
-    <x-page-toolbar title="Quarterly reports" meta="Verification gate before CEO delivery">
+    <x-page-toolbar title="Quarterly reports" meta="Archive · compile new reports on the command center workspace">
         <x-slot:actions>
-            <a href="{{ route('monitoring_evaluation.reports.index', ['status' => 'submitted']) }}" class="tich-btn tich-btn-secondary">Submitted</a>
+            <a href="{{ route('monitoring_evaluation.dashboard') }}#quarterly-workspace" class="tich-btn tich-btn-primary">Workspace</a>
+            <a href="{{ route('monitoring_evaluation.reports.index', ['list' => 1, 'status' => 'submitted']) }}" class="tich-btn tich-btn-secondary">Submitted</a>
             <a href="{{ route('monitoring_evaluation.reports.index', ['status' => 'ceo_delivered']) }}" class="tich-btn tich-btn-ghost">CEO delivered</a>
         </x-slot:actions>
     </x-page-toolbar>

@@ -991,6 +991,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/plans/{plan}/lock-baseline', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'lockBaseline'])->name('monitoring_evaluation.plans.lock');
 
             Route::get('/reports', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'index'])->name('monitoring_evaluation.reports.index');
+            Route::get('/reports/{report}/edit', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'edit'])->name('monitoring_evaluation.reports.edit');
+            Route::put('/reports/{report}', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'update'])->name('monitoring_evaluation.reports.update');
+            Route::post('/reports/{report}/complete', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'complete'])->name('monitoring_evaluation.reports.complete');
             Route::get('/reports/{report}', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'show'])->name('monitoring_evaluation.reports.show');
             Route::get('/reports/{report}/print', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'print'])->name('monitoring_evaluation.reports.print');
             Route::get('/reports/{report}/pdf', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'pdf'])->name('monitoring_evaluation.reports.pdf');

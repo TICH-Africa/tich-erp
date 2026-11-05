@@ -3,6 +3,9 @@
 @section('title', 'M&E Command Center')
 
 @section('monitoring-evaluation-content')
+@if (session('status'))
+    <div class="tich-alert tich-alert--success tich-mb-4">{{ session('status') }}</div>
+@endif
 <div class="tich-mod-dash">
     <header class="tich-mod-dash__hero">
         <div class="tich-mod-dash__hero-copy">
@@ -77,9 +80,9 @@
             <div class="tich-mod-dash__panel-head">
                 <div>
                     <p class="tich-mod-dash__panel-eyebrow">Queue</p>
-                    <h2 class="tich-mod-dash__panel-title">Verification</h2>
+                    <h2 class="tich-mod-dash__panel-title">Submitted reports</h2>
                 </div>
-                <a href="{{ route('monitoring_evaluation.reports.index', ['status' => 'submitted']) }}" class="tich-btn tich-btn-secondary">View all</a>
+                <a href="{{ route('monitoring_evaluation.reports.index', ['list' => 1, 'status' => 'submitted']) }}" class="tich-btn tich-btn-secondary">Full list</a>
             </div>
             <ul style="margin:0;padding-left:1.25rem;">
                 @forelse ($pendingReports as $report)
@@ -93,6 +96,63 @@
             </ul>
         </article>
     </div>
+
+    <article class="tich-mod-dash__panel" id="quarterly-workspace">
+        <div class="tich-mod-dash__panel-head">
+            <div>
+                <p class="tich-mod-dash__panel-eyebrow">Quarterly reporting</p>
+                <h2 class="tich-mod-dash__panel-title">Department quarters workspace</h2>
+                <p class="tich-mod-dash__panel-meta">After you approve a plan quarter, open the report here and enter achieved values. Planned figures come from the technical plan.</p>
+            </div>
+            <a href="{{ route('monitoring_evaluation.reports.index', ['list' => 1]) }}" class="tich-btn tich-btn-secondary">Report archive</a>
+        </div>
+        <div class="tich-table-wrap">
+            <table class="tich-admin-table">
+                <thead>
+                    <tr>
+                        <th>Department</th>
+                        <th>Plan</th>
+                        <th>Q1</th>
+                        <th>Q2</th>
+                        <th>Q3</th>
+                        <th>Q4</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($quarterlyRows ?? [] as $row)
+                        @php $plan = $row['plan']; @endphp
+                        <tr>
+                            <td>{{ $plan->department?->dept_name }}</td>
+                            <td class="tich-caption">{{ $plan->title }} · {{ $plan->fiscal_year }}</td>
+                            @foreach ([1, 2, 3, 4] as $qNum)
+                                @php
+                                    $cell = $row['quarters'][$qNum] ?? ['reportable' => false, 'report' => null];
+                                    $report = $cell['report'] ?? null;
+                                @endphp
+                                <td>
+                                    @if (! ($cell['reportable'] ?? false))
+                                        <span class="tich-caption">—</span>
+                                    @elseif ($report && in_array($report->status, ['me_verified', 'ceo_delivered'], true))
+                                        <a href="{{ route('monitoring_evaluation.reports.show', $report) }}" class="tich-link"><x-status-badge :status="$report->status" /></a>
+                                    @elseif ($report && $report->status === 'submitted')
+                                        <a href="{{ route('monitoring_evaluation.reports.show', $report) }}" class="tich-btn tich-btn-ghost">Verify</a>
+                                    @elseif ($report)
+                                        <a href="{{ route('monitoring_evaluation.reports.edit', $report) }}" class="tich-btn tich-btn-primary">Enter achieved</a>
+                                    @else
+                                        <a href="{{ route('monitoring_evaluation.plans.open-quarter', [$plan, $qNum]) }}" class="tich-btn tich-btn-secondary">Start</a>
+                                    @endif
+                                </td>
+                            @endforeach
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="tich-text">No departments have M&amp;E-approved plan quarters yet. Review technical plans first.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </article>
 
     <article class="tich-mod-dash__panel">
         <div class="tich-mod-dash__panel-head">
