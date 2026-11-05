@@ -9,6 +9,7 @@ import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
+import 'employee_prefetch.dart';
 import 'portal_helpers.dart';
 
 class PayslipsPage extends StatefulWidget {
@@ -99,7 +100,11 @@ class _PayslipsPageState extends State<PayslipsPage> {
   }
 
   Future<void> _open(Map<String, dynamic> item) async {
-    final detail = await widget.api.payslip((item['id'] as num).toInt());
+    final id = (item['id'] as num).toInt();
+    EmployeePrefetch.payslipDetail(widget.api, id);
+    final cached = portalReadCache(EmployeePrefetch.payslipKey(id));
+    final detail = cached ??
+        await widget.api.payslip(id);
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -197,6 +202,12 @@ class _PayslipsPageState extends State<PayslipsPage> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: TichCard(
                       onTap: () => _open(p),
+                      onTapDown: (_) {
+                        final id = (p['id'] as num?)?.toInt();
+                        if (id != null) {
+                          EmployeePrefetch.payslipDetail(widget.api, id);
+                        }
+                      },
                       child: Row(
                         children: [
                           Container(

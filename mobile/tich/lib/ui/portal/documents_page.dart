@@ -6,8 +6,8 @@ import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../widgets/tich_widgets.dart';
 import '../widgets/tich_form_dialog.dart';
-import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
+import 'portal_helpers.dart';
 
 class DocumentsPage extends StatefulWidget {
   const DocumentsPage({super.key, required this.api});
@@ -25,17 +25,21 @@ class _DocumentsPageState extends State<DocumentsPage> {
   @override
   void initState() {
     super.initState();
-    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.documents');
-    _future = TichScreenCache.ensure('portal.documents', () => widget.api.documents());
+    portalPrimeScreen(
+      persistKey: 'portal.documents',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.documents(),
+    );
   }
 
-  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
-      mounted: () => mounted,
-      setState: setState,
-      fetch: () => widget.api.documents(),
-      onData: (data) => _dataCache = data,
-      persistKey: 'portal.documents',
-    );
+  Future<void> _reload() => portalCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.documents(),
+        onData: (data) => _dataCache = data,
+        persistKey: 'portal.documents',
+      );
 
   void _liveRefresh() {
     tichSilentReload(

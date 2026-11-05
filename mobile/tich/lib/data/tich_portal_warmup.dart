@@ -6,6 +6,7 @@ import 'employee_api.dart';
 import 'procurement_api.dart';
 import 'staff_api.dart';
 import 'student_api.dart';
+import '../ui/portal/employee_prefetch.dart';
 import 'tich_screen_cache.dart';
 
 /// Background cache warming - kept minimal so the UI thread and API stay responsive.
@@ -137,11 +138,13 @@ abstract final class TichPortalWarmup {
 
   static void employeeShellOpened(EmployeeApi api) {
     _cancelDeferred();
-    // Home tab owns `portal.dashboard`; prefetch other tabs only after idle.
+    EmployeePrefetch.dashboard(api);
     _deferredTimer = Timer(const Duration(seconds: 12), () {
       _runDeferred([
-        () => TichScreenCache.warm('portal.leave', () => api.leave()),
-        () => TichScreenCache.warm('portal.attendance', () => api.attendance()),
+        () => EmployeePrefetch.leave(api),
+        () => EmployeePrefetch.attendance(api),
+        () => EmployeePrefetch.payslipsTab(api),
+        () => EmployeePrefetch.notifications(api),
       ]);
     });
   }
@@ -149,20 +152,25 @@ abstract final class TichPortalWarmup {
   static void employeeTabSelected(EmployeeApi api, int index) {
     switch (index) {
       case 0:
-        TichScreenCache.warm('portal.dashboard', () => api.dashboard());
+        EmployeePrefetch.dashboard(api);
+        EmployeePrefetch.notifications(api);
       case 1:
-        TichScreenCache.warm('portal.leave', () => api.leave());
+        EmployeePrefetch.leave(api);
       case 2:
-        TichScreenCache.warm('portal.attendance', () => api.attendance());
+        EmployeePrefetch.attendance(api);
       case 3:
-        TichScreenCache.warm('portal.payslips', () => api.payslips());
+        EmployeePrefetch.payslipsTab(api);
       default:
         break;
     }
   }
 
-  /// Drawer open - avoid blasting the API; screens warm on navigation.
-  static void employeeMoreOpened(EmployeeApi api) {}
+  static void employeeMoreOpened(EmployeeApi api) {
+    _runDeferred([
+      () => EmployeePrefetch.warmMoreMenu(api),
+      () => EmployeePrefetch.notifications(api),
+    ]);
+  }
 
   static void procurementShellOpened(ProcurementApi api) {
     TichScreenCache.warm('procurement.home', () => api.dashboard());

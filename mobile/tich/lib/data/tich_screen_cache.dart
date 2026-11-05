@@ -203,13 +203,32 @@ abstract final class TichScreenCache {
     final diskHit = await _readDisk<T>(key);
     if (diskHit != null) return diskHit;
 
-    final future = fetch().then((value) {
-      write(key, value as Object);
-      return value as Object;
-    }).whenComplete(() => _inFlight.remove(key));
+    final future = _fetchWithRetry(key, fetch)
+        .whenComplete(() => _inFlight.remove(key));
 
     _inFlight[key] = future;
     return future.then((value) => value as T);
+  }
+
+  /// One quick retry avoids a flash error when the first request races login or DNS.
+  static Future<Object> _fetchWithRetry<T>(
+    String key,
+    Future<T> Function() fetch,
+  ) async {
+    Object? lastError;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+      }
+      try {
+        final value = await fetch();
+        write(key, value as Object);
+        return value as Object;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw lastError ?? Exception('Request failed for $key');
   }
 
   static Future<T?> _readDisk<T>(String key) async {
