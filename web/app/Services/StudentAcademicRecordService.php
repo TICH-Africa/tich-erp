@@ -414,13 +414,78 @@ class StudentAcademicRecordService
      */
     public function mobileUnitsForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
     {
-        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
+        $student->loadMissing(['program']);
+
+        $registeredUnits = $this->registeredUnitsForStudents([$student->id], withLecturers: false)
+            ->get($student->id, collect());
+        $count = $registeredUnits->count();
 
         return [
-            'registered_units' => $data['registered_units'],
-            'curriculum_units' => $data['curriculum_units'],
-            'registered_unit_count' => $data['registered_unit_count'],
-            'programme_unit_count' => $data['programme_unit_count'],
+            'registered_units' => $registeredUnits,
+            'registered_unit_count' => $count,
+            'programme_unit_count' => $count,
+        ];
+    }
+
+    /**
+     * Web portal "My units" tab: curriculum + registrations only (no grades, exams, content, or assessments).
+     *
+     * @return array<string, mixed>
+     */
+    public function academicsUnitsPageForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
+    {
+        $student->loadMissing(['applicant', 'program', 'campus']);
+
+        $curriculum = $this->resolveCurriculum($student, $allowProvisionalCurriculum);
+        $curriculumUnits = $curriculum
+            ? $curriculum->items->sortBy(['semester', 'display_order', 'priority'])->values()
+            : collect();
+
+        $periods = $curriculum
+            ? $curriculum->periods->sortBy('semester')->values()
+            : collect();
+
+        $currentPeriod = $this->resolveCurrentPeriod($periods, $curriculumUnits);
+        $currentPeriodUnits = $currentPeriod
+            ? $curriculumUnits->filter(function ($mapping) use ($currentPeriod) {
+                if ($currentPeriod->block_id) {
+                    return (int) $mapping->block_id === (int) $currentPeriod->block_id;
+                }
+
+                return (int) $mapping->semester === (int) $currentPeriod->semester;
+            })->values()
+            : collect();
+
+        $registeredUnits = $this->registeredUnitsForStudents([$student->id], withLecturers: true)
+            ->get($student->id, collect());
+
+        $currentSemester = $student->current_semester_id
+            ? Semester::query()->with('academicYear')->find($student->current_semester_id)
+            : Semester::query()->with('academicYear')->where('is_current', 1)->first();
+
+        return [
+            'curriculum' => $curriculum,
+            'curriculum_is_published' => $curriculum?->isPublished() ?? false,
+            'curriculum_units' => $curriculumUnits,
+            'curriculum_by_semester' => collect($curriculumUnits->groupBy('semester')),
+            'periods' => $periods,
+            'periods_by_semester' => $periods->keyBy('semester'),
+            'current_period' => $currentPeriod,
+            'current_period_units' => $currentPeriodUnits,
+            'current_period_status' => $this->periodStatus($currentPeriod),
+            'registrations' => collect(),
+            'registered_units' => $registeredUnits,
+            'registered_unit_count' => $registeredUnits->count(),
+            'programme_unit_count' => $curriculumUnits->count(),
+            'current_semester' => $currentSemester,
+            'grades' => collect(),
+            'cat_scores' => collect(),
+            'exam_results' => collect(),
+            'attendance' => collect(),
+            'exam_portal' => ['available' => false],
+            'assessments' => collect(),
+            'my_submissions' => collect(),
+            'unit_content' => collect(),
         ];
     }
 
@@ -429,16 +494,12 @@ class StudentAcademicRecordService
      */
     public function mobileContentForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
     {
-        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
-        $registeredUnitIds = $data['registered_units']->pluck('unit_id')->filter()->unique()->values()->all();
-        $unitIds = collect($data['curriculum_units'])->pluck('unit_id')->filter()->unique()
-            ->merge($registeredUnitIds)
-            ->unique()
-            ->values()
-            ->all();
+        $unitIds = $this->registeredUnitIds($student);
 
         return [
-            'unit_content' => $this->publishedUnitContentQuery($unitIds)->get(),
+            'unit_content' => $unitIds === []
+                ? collect()
+                : $this->publishedUnitContentQuery($unitIds)->limit(40)->get(),
         ];
     }
 
@@ -447,8 +508,7 @@ class StudentAcademicRecordService
      */
     public function mobileAssessmentsForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
     {
-        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
-        $registeredUnitIds = $data['registered_units']->pluck('unit_id')->filter()->unique()->values()->all();
+        $registeredUnitIds = $this->registeredUnitIds($student);
 
         $assessments = collect();
         $mySubmissions = collect();
@@ -772,7 +832,7 @@ class StudentAcademicRecordService
             ->all();
     }
 
-    private function registeredUnitsForStudents(array $studentIds): Collection
+    private function registeredUnitsForStudents(array $studentIds, bool $withLecturers = true): Collection
     {
         if ($studentIds === []) {
             return collect();
@@ -803,13 +863,17 @@ class StudentAcademicRecordService
             ])
             ->get();
 
-        $lecturers = $this->lecturersByUnitSemester($rows);
+        if ($withLecturers) {
+            $lecturers = $this->lecturersByUnitSemester($rows);
 
-        return $rows->map(function (object $row) use ($lecturers) {
-            $row->lecturer_names = $lecturers->get(((int) $row->unit_id).'-'.((int) $row->semester_id));
+            $rows = $rows->map(function (object $row) use ($lecturers) {
+                $row->lecturer_names = $lecturers->get(((int) $row->unit_id).'-'.((int) $row->semester_id));
 
-            return $row;
-        })->groupBy('student_id');
+                return $row;
+            });
+        }
+
+        return $rows->groupBy('student_id');
     }
 
     /**

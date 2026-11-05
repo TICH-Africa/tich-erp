@@ -40,6 +40,14 @@ class _StudentAcademicsLazySectionState extends State<StudentAcademicsLazySectio
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final cached = studentReadCache(widget.cacheKey);
+      if (cached != null) {
+        Future<void>.delayed(const Duration(seconds: 10), () {
+          if (!mounted) return;
+          _liveRefresh();
+        });
+        return;
+      }
       _liveRefresh();
     });
   }

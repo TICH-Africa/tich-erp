@@ -312,61 +312,84 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
           'Exams & grades',
           (payload) {
             return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    StudentProvisionalResultsSection(
-                      semesters: payload.provisionalResultsBySemester,
-                    ),
-                    const SizedBox(height: 16),
-                    AdaptiveFilledButton(
-                      onPressed: () async {
-                        final method = await showDialog<String>(
-                          context: context,
-                          builder: (ctx) => TichFormDialog(
-                            title: const Text('Request transcript'),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                for (final m in ['download', 'email', 'collect'])
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: OutlinedButton(
-                                      onPressed: () => Navigator.pop(ctx, m),
-                                      child: Text(m),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text('Cancel'),
+              padding: const EdgeInsets.all(16),
+              children: [
+                StudentProvisionalResultsSemesterList(
+                  semesters: payload.provisionalResultsBySemester,
+                  onSemesterTap: (sem) {
+                    final label =
+                        sem['semester_label']?.toString() ?? 'Results';
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AdaptiveScaffold(
+                          title: label,
+                          body: ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              StudentProvisionalResultsSection(
+                                semester: sem,
                               ),
                             ],
                           ),
-                        );
-                        if (method == null) return;
-                        try {
-                          final res = await widget.api.requestTranscript(
-                            deliveryMethod: method,
-                          );
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(res['message']?.toString() ?? 'Submitted')),
-                          );
-                          _reload();
-                        } on ApiException catch (e) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.message)),
-                          );
-                        }
-                      },
-                      child: const Text('Request official transcript'),
-                    ),
-                  ],
-                );
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                AdaptiveFilledButton(
+                  onPressed: () async {
+                    final method = await showDialog<String>(
+                      context: context,
+                      builder: (ctx) => TichFormDialog(
+                        title: const Text('Request transcript'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (final m in ['download', 'email', 'collect'])
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: OutlinedButton(
+                                  onPressed: () => Navigator.pop(ctx, m),
+                                  child: Text(m),
+                                ),
+                              ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Cancel'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (method == null) return;
+                    try {
+                      final res = await widget.api.requestTranscript(
+                        deliveryMethod: method,
+                      );
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            res['message']?.toString() ?? 'Submitted',
+                          ),
+                        ),
+                      );
+                      _reload();
+                    } on ApiException catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.message)),
+                      );
+                    }
+                  },
+                  child: const Text('Request official transcript'),
+                ),
+              ],
+            );
           },
         ),
       ),

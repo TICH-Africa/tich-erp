@@ -20,9 +20,13 @@ class StudentPortalDashboardService
     /**
      * @return array<string, mixed>
      */
-    public function forStudent(Student $student, array $biodata): array
+    public function forStudent(Student $student, array $biodata, ?string $section = null, ?string $tab = null): array
     {
         $student->loadMissing(['applicant', 'program', 'campus']);
+
+        if ($section === 'academics' && $tab === 'units') {
+            return $this->forStudentUnitsTab($student, $biodata);
+        }
 
         $academics = $this->academicRecords->forStudent($student, $this->mayViewProvisionalCurriculum($student));
         $academics = $this->onlyRegisteredUnits($academics);
@@ -34,6 +38,34 @@ class StudentPortalDashboardService
             'academics' => $academics,
             'timetable' => $this->timetable($student, $academics),
             'transcript' => $this->transcript($student),
+            'finance' => $finance,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function forStudentUnitsTab(Student $student, array $biodata): array
+    {
+        $academics = $this->academicRecords->academicsUnitsPageForStudent(
+            $student,
+            $this->mayViewProvisionalCurriculum($student),
+        );
+        $academics = $this->onlyRegisteredUnits($academics);
+        $finance = $this->finance($student);
+
+        return [
+            'overview_stats' => $this->overviewStats($student, $biodata, $academics, $finance),
+            'academics' => $academics,
+            'timetable' => [
+                'timetables' => collect(),
+                'timetable' => null,
+                'sessions' => collect(),
+                'teaching_period' => null,
+                'period_label' => null,
+                'is_provisional' => false,
+            ],
+            'transcript' => ['available' => false, 'units_completed' => 0],
             'finance' => $finance,
         ];
     }

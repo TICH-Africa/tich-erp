@@ -259,7 +259,12 @@ class AdaptiveScaffold extends StatelessWidget {
               onTap: backToPortal,
             ),
             const SizedBox(height: 1),
-            Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _adaptiveAppBarTitleStyle(context),
+            ),
           ],
         ),
         actions: trailingActions,
@@ -268,6 +273,14 @@ class AdaptiveScaffold extends StatelessWidget {
       floatingActionButton: floatingActionButton,
     );
   }
+}
+
+TextStyle _adaptiveAppBarTitleStyle(BuildContext context) {
+  final appBar = Theme.of(context).appBarTheme;
+  final color =
+      appBar.foregroundColor ?? Theme.of(context).colorScheme.onPrimary;
+  return appBar.titleTextStyle ??
+      TichTheme.display(color: color, fontSize: 18);
 }
 
 /// The small line above a page title: the brand, or "‹ Employee portal" when

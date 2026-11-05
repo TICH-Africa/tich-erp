@@ -82,6 +82,16 @@ abstract final class TichColors {
   /// --tich-table-head-bg, the blue a section header or table strip wears.
   static const blueStrong = Color(0xFF1565C0);
 
+  /// Matches web `[data-theme="dark"]` `--tich-table-head-*`.
+  static const tableHeadBgDark = Color(0xFF0D3A6E);
+  static const tableHeadTextDark = Color(0xFFE3F2FD);
+
+  static Color tableHeadBackground(Brightness brightness) =>
+      brightness == Brightness.dark ? tableHeadBgDark : blueStrong;
+
+  static Color tableHeadForeground(Brightness brightness) =>
+      brightness == Brightness.dark ? tableHeadTextDark : white;
+
   /// --tich-error and its soft background.
   static const error = Color(0xFFC53030);
   static const errorDark = Color(0xFF991B1B);
@@ -204,6 +214,7 @@ abstract final class TichTheme {
         foregroundColor: TichColors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
         iconTheme: const IconThemeData(color: TichColors.white),
         actionsIconTheme: const IconThemeData(color: TichColors.white),
@@ -362,6 +373,10 @@ abstract final class TichTheme {
         foregroundColor: TichColors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: false,
+        iconTheme: const IconThemeData(color: TichColors.white),
+        actionsIconTheme: const IconThemeData(color: TichColors.white),
         titleTextStyle: display(
           color: TichColors.white,
           fontSize: 18,

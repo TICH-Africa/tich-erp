@@ -42,7 +42,7 @@ class PortalDashboardController extends Controller
         $biodata = $this->studentRecords->biodata360($student);
         $section = $this->navigation->resolveSection($request);
         $tab = $this->navigation->resolveTab($request, $section);
-        $portalData = $this->dashboard->forStudent($student, $biodata);
+        $portalData = $this->dashboard->forStudent($student, $biodata, $section, $tab);
 
         $profileChangeRequests = collect();
         $lifecycleRequests = collect();

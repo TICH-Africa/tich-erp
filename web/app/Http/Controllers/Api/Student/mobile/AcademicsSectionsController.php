@@ -23,29 +23,57 @@ class AcademicsSectionsController extends Controller
     {
         $student = $this->portalStudent($request);
         $payload = Cache::remember(
-            'student.mobile.academics.units.'.$student->id.'.v1',
-            20,
+            'student.mobile.academics.units.'.$student->id.'.v2',
+            120,
             fn () => $this->dashboard->academicsUnitsForMobile($student),
         );
 
         return response()->json([
-            'registered_units' => $this->mapRows($payload['registered_units'] ?? []),
-            'curriculum_units' => collect($payload['curriculum_units'] ?? [])->map(function ($item) {
-                $unit = is_object($item) ? ($item->unit ?? null) : null;
-
-                return [
-                    'id' => $item->id ?? null,
-                    'unit_id' => $item->unit_id ?? null,
-                    'unit_code' => $unit?->unit_code ?? ($item->unit_code ?? null),
-                    'unit_name' => $unit?->unit_name ?? ($item->unit_name ?? null),
-                    'semester' => $item->semester ?? null,
-                    'credit_hours' => $item->credit_hours ?? $unit?->credit_hours ?? null,
-                    'is_core' => (bool) ($item->is_core ?? false),
-                ];
-            })->values()->all(),
+            'registered_units' => $this->serializeRegisteredUnits($payload['registered_units'] ?? []),
             'registered_unit_count' => (int) ($payload['registered_unit_count'] ?? 0),
             'programme_unit_count' => (int) ($payload['programme_unit_count'] ?? 0),
         ]);
+    }
+
+    /**
+     * @param  iterable<int, mixed>  $rows
+     * @return list<array<string, mixed>>
+     */
+    protected function serializeRegisteredUnits(iterable $rows): array
+    {
+        return collect($rows)->map(function ($row) {
+            if (is_object($row)) {
+                return [
+                    'id' => $row->id ?? null,
+                    'unit_id' => $row->unit_id ?? null,
+                    'unit_code' => $row->unit_code ?? null,
+                    'unit_name' => $row->unit_name ?? null,
+                    'semester_id' => $row->semester_id ?? null,
+                    'semester_label' => $row->semester_label ?? null,
+                    'semester_number' => $row->semester_number ?? null,
+                    'credit_hours' => $row->credit_hours ?? null,
+                    'registration_status' => $row->registration_status ?? null,
+                    'is_additional' => (bool) ($row->is_additional ?? false),
+                ];
+            }
+
+            if (is_array($row)) {
+                return collect($row)->only([
+                    'id',
+                    'unit_id',
+                    'unit_code',
+                    'unit_name',
+                    'semester_id',
+                    'semester_label',
+                    'semester_number',
+                    'credit_hours',
+                    'registration_status',
+                    'is_additional',
+                ])->all();
+            }
+
+            return [];
+        })->filter(fn (array $row) => ($row['unit_id'] ?? null) !== null)->values()->all();
     }
 
     public function content(Request $request): JsonResponse
