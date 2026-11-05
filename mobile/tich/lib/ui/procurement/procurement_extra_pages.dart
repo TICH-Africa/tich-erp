@@ -1336,6 +1336,7 @@ class _ProcurementPaymentsPageState extends State<ProcurementPaymentsPage> {
         () => widget.api.paymentVerification(),
       mounted: () => mounted,
       onData: (d) => _cache = d,
+      persistKey: 'procurement.payment_verification',
     );
 
   @override

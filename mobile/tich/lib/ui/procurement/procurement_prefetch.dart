@@ -92,4 +92,64 @@ abstract final class ProcurementPrefetch {
       () => api.assetAudit(id),
     );
   }
+
+  /// List payloads for More-menu modules (same keys as each list page's [persistKey]).
+  static void warmListForModule(ProcurementApi api, String moduleKey) {
+    switch (moduleKey) {
+      case 'grns':
+        procurementWarm('procurement.grns', () => api.grns());
+      case 'stock_alerts':
+        procurementWarm('procurement.stock_alerts', () => api.stockAlerts());
+      case 'assets':
+        procurementWarm('procurement.assets', () => api.assets());
+      case 'rfqs':
+        procurementWarm('procurement.rfqs', () => api.rfqs());
+      case 'inventory':
+        procurementWarm('procurement.inventory', () => api.inventoryItems());
+      case 'disposals':
+        procurementWarm('procurement.disposals', () => api.assetDisposals());
+        assetDisposalFormOptions(api);
+      case 'audits':
+        procurementWarm('procurement.asset_audits', () => api.assetAudits());
+      case 'payments':
+        procurementWarm(
+          'procurement.payment_verification',
+          () => api.paymentVerification(),
+        );
+      case 'requisitions':
+        procurementWarm('procurement.requisitions', () => api.requisitions());
+        requisitionFormOptions(api);
+      case 'stock_issues':
+        procurementWarm('procurement.stock_issues', () => api.stockIssues());
+        stockIssueFormOptions(api);
+      case 'suppliers':
+        procurementWarm('procurement.suppliers', () => api.suppliers());
+      default:
+        break;
+    }
+  }
+
+  /// Inbox / home action rows that open a detail screen directly.
+  static void warmInboxDetail(ProcurementApi api, String kind, int id) {
+    switch (kind) {
+      case 'requisition':
+        requisition(api, id);
+      case 'grn':
+        grn(api, id);
+      case 'stock_issue':
+        stockIssue(api, id);
+      case 'stock_alert':
+        stockAlert(api, id);
+      case 'supplier':
+        supplier(api, id);
+      case 'rfq':
+        rfq(api, id);
+      case 'asset_disposal':
+        assetDisposal(api, id);
+      case 'asset_audit':
+        assetAudit(api, id);
+      default:
+        break;
+    }
+  }
 }

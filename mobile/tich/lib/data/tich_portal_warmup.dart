@@ -171,13 +171,19 @@ abstract final class TichPortalWarmup {
   static void procurementMoreOpened(ProcurementApi api) {
     _runDeferred([
       () => TichScreenCache.warm('procurement.grns', () => api.grns()),
-      () => TichScreenCache.warm(
-            'procurement.asset_disposal_form_options',
-            () => api.assetDisposalFormOptions(),
-          ),
+      () => TichScreenCache.warm('procurement.stock_alerts', () => api.stockAlerts()),
+      () => TichScreenCache.warm('procurement.assets', () => api.assets()),
+      () => TichScreenCache.warm('procurement.rfqs', () => api.rfqs()),
+      () => TichScreenCache.warm('procurement.inventory', () => api.inventoryItems()),
+      () => TichScreenCache.warm('procurement.disposals', () => api.assetDisposals()),
+      () => TichScreenCache.warm('procurement.asset_audits', () => api.assetAudits()),
       () => TichScreenCache.warm(
             'procurement.payment_verification',
             () => api.paymentVerification(),
+          ),
+      () => TichScreenCache.warm(
+            'procurement.asset_disposal_form_options',
+            () => api.assetDisposalFormOptions(),
           ),
     ]);
   }
