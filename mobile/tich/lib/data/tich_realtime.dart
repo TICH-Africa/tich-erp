@@ -19,8 +19,18 @@ abstract final class TichRealtime {
 
   static bool get isConnected => _reverb?.state == ReverbState.connected;
 
+  /// A socket that is up, still opening, or already retrying is reused. Building
+  /// a new one costs a config fetch, a handshake and a per-channel auth call,
+  /// which is what made every return to the app feel slow.
+  static bool get _isLive {
+    final client = _reverb;
+    if (client == null) return false;
+    return client.state != ReverbState.disconnected &&
+        client.state != ReverbState.failed;
+  }
+
   static Future<void> connect(ApiClient api) async {
-    if (_connecting || isConnected) return;
+    if (_connecting || _isLive) return;
     _connecting = true;
     try {
       final config = await api.get('/realtime/config');

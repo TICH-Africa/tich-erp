@@ -31,3 +31,17 @@ Map<String, Map<String, dynamic>> tichParseScreenCacheBlob(
 }
 
 String tichEncodeScreenCacheBlob(Map<String, dynamic> blob) => jsonEncode(blob);
+
+/// Top-level encoder for [Isolate.run]: turns a whole dirty batch into the
+/// per-key JSON strings off the UI isolate, so a background save cannot jank a
+/// list the user is scrolling.
+Map<String, String> tichEncodeScreenCacheEntries(
+  Map<String, Map<String, dynamic>> entries,
+  int savedAtMs,
+) {
+  final out = <String, String>{};
+  for (final entry in entries.entries) {
+    out[entry.key] = jsonEncode({'t': savedAtMs, 'd': entry.value});
+  }
+  return out;
+}

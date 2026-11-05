@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 
 import '../config/api_config.dart';
 import 'auth_token_store.dart';
+import 'tich_realtime_signals.dart';
 
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});
@@ -296,6 +297,10 @@ class ApiClient {
   void _invalidateGetCacheForMutation(String path) {
     final normalized = Uri.parse(path).path;
     _getDedupe.removeWhere((key, _) => key.contains(normalized));
+    // Our own write is a staleness signal like a server push: screens still on
+    // screen (the list behind a form, the drawer counts) refresh now instead of
+    // waiting for the next poll, which matters while broadcasting is off.
+    TichRealtimeSignals.notifyDataStale();
   }
 
   Map<String, dynamic> _decode(http.Response response) {

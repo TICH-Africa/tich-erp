@@ -259,6 +259,7 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
     if (tabVisible == _tabVisible) return;
     _tabVisible = tabVisible;
     _syncTimer();
+    if (_tabVisible) _maybeAutoRefresh();
   }
 
   void _maybeAutoRefresh() {
@@ -302,6 +303,7 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
   void didPopNext() {
     _routeVisible = true;
     _syncTimer();
+    _maybeAutoRefresh();
   }
 
   @override

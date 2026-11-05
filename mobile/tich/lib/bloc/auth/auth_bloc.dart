@@ -87,6 +87,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _startCacheForUser(AuthUser user) async {
     TichScreenCache.assignUser(user.id);
     await TichScreenCache.hydrateFromDisk();
+    // Warm the newest screens behind the first frame so the tab the user lands
+    // on paints from cache instead of waiting on the network.
+    unawaited(TichScreenCache.preloadRecent());
   }
 
   Future<void> _onBiometricUnlock(

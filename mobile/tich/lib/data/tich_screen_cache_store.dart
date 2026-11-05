@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -55,35 +56,83 @@ abstract final class TichScreenCacheStore {
     await prefs.remove(legacyKey);
   }
 
-  static Future<Map<String, Map<String, dynamic>>> load(String userScope) async {
+  /// Key -> saved timestamp, without decoding any payload. Lets the app start
+  /// from an index and pull only the screen it is about to show.
+  static Future<Map<String, int>> index(String userScope) async {
     if (userScope.isEmpty) return {};
     await _ensureBox(userScope);
     final box = _box;
     if (box == null) return {};
 
     final now = DateTime.now().millisecondsSinceEpoch;
-    final out = <String, Map<String, dynamic>>{};
+    final out = <String, int>{};
     for (final key in box.keys) {
       final cacheKey = key.toString();
       final raw = box.get(cacheKey);
       if (raw == null || raw.isEmpty) continue;
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is! Map) continue;
-        final savedAt = (decoded['t'] as num?)?.toInt();
-        if (savedAt != null && now - savedAt > maxEntryAge.inMilliseconds) {
-          await box.delete(cacheKey);
-          continue;
-        }
-        final data = decoded['d'];
-        if (data is Map) {
-          out[cacheKey] = Map<String, dynamic>.from(data);
-        }
-      } catch (_) {
+      final savedAt = _savedAtOf(raw);
+      if (savedAt == null) {
         await box.delete(cacheKey);
+        continue;
       }
+      if (now - savedAt > maxEntryAge.inMilliseconds) {
+        await box.delete(cacheKey);
+        continue;
+      }
+      out[cacheKey] = savedAt;
     }
     return out;
+  }
+
+  /// Decodes one payload only - the screen the user actually opened.
+  static Future<Map<String, dynamic>?> loadKey(
+    String userScope,
+    String key,
+  ) async {
+    if (userScope.isEmpty) return null;
+    await _ensureBox(userScope);
+    final box = _box;
+    if (box == null) return null;
+
+    final raw = box.get(key);
+    if (raw == null || raw.isEmpty) return null;
+    final savedAt = _savedAtOf(raw);
+    if (savedAt == null ||
+        DateTime.now().millisecondsSinceEpoch - savedAt >
+            maxEntryAge.inMilliseconds) {
+      await box.delete(key);
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      final data = decoded['d'];
+      return data is Map ? Map<String, dynamic>.from(data) : null;
+    } catch (_) {
+      await box.delete(key);
+      return null;
+    }
+  }
+
+  /// Reads the save time from the payload prefix. Entries are written as
+  /// `{"t":<ms>,"d":{...}}`, so a full jsonDecode is never needed for expiry
+  /// or least-recently-used ordering - the two places that ran on every write.
+  static int? _savedAtOf(String raw) {
+    const prefix = '{"t":';
+    if (!raw.startsWith(prefix)) return _savedAtByDecode(raw);
+    final end = raw.indexOf(',', prefix.length);
+    if (end <= prefix.length) return _savedAtByDecode(raw);
+    return int.tryParse(raw.substring(prefix.length, end));
+  }
+
+  static int? _savedAtByDecode(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      return (decoded['t'] as num?)?.toInt();
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<void> saveEntry(
@@ -105,9 +154,19 @@ abstract final class TichScreenCacheStore {
   ) async {
     if (userScope.isEmpty || entries.isEmpty) return;
     await _ensureBox(userScope);
-    for (final entry in entries.entries) {
-      await _putEncoded(userScope, entry.key, savedAtMs, entry.value);
-    }
+    final box = _box;
+    if (box == null) return;
+
+    // Encode a real batch away from the UI isolate, then write it in one putAll
+    // so a background save cannot drop frames while the user is still scrolling.
+    // Spawning that isolate costs more than the encode itself for one or two
+    // keys, so a small batch stays inline.
+    final encoded = entries.length <= 2
+        ? tichEncodeScreenCacheEntries(entries, savedAtMs)
+        : await Isolate.run(
+            () => tichEncodeScreenCacheEntries(entries, savedAtMs),
+          );
+    await box.putAll(encoded);
     await _enforceMaxEntries(userScope);
   }
 
@@ -153,12 +212,7 @@ abstract final class TichScreenCacheStore {
       final raw = box.get(cacheKey);
       var savedAt = 0;
       if (raw != null && raw.isNotEmpty) {
-        try {
-          final decoded = jsonDecode(raw);
-          if (decoded is Map) {
-            savedAt = (decoded['t'] as num?)?.toInt() ?? 0;
-          }
-        } catch (_) {}
+        savedAt = _savedAtOf(raw) ?? 0;
       }
       if (savedAt > 0 && now - savedAt > maxEntryAge.inMilliseconds) {
         await box.delete(cacheKey);

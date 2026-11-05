@@ -11,47 +11,62 @@ abstract final class TichScreenCache {
 
   static String _userScope = '';
   static Timer? _persistDebounce;
-  static bool _hydrated = false;
+  static bool _indexLoaded = false;
   static Future<void>? _hydrateFuture;
+  static Map<String, int> _diskIndex = {};
   static final Set<String> _dirtyKeys = {};
 
-  static bool get isHydrated => _hydrated;
+  static bool get isHydrated => _indexLoaded;
 
-  /// Completes when disk payloads for the current [assignUser] scope are in memory.
+  /// Completes when the disk index for the current [assignUser] scope is known.
   static Future<void> whenHydrated() async {
-    if (_hydrated || _userScope.isEmpty) return;
+    if (_indexLoaded || _userScope.isEmpty) return;
     await hydrateFromDisk();
   }
 
   /// Sets active user scope immediately (safe before [hydrateFromDisk] finishes).
   static void assignUser(int? userId) {
     final nextScope = userId == null ? '' : 'u$userId';
-    if (nextScope == _userScope && _hydrated) return;
+    if (nextScope == _userScope && _indexLoaded) return;
     _userScope = nextScope;
     _store.clear();
     _lru.clear();
     _inFlight.clear();
     _dirtyKeys.clear();
-    _hydrated = false;
+    _diskIndex = {};
+    _indexLoaded = false;
     _hydrateFuture = null;
   }
 
-  /// Loads persisted tab payloads for the current [assignUser] scope.
+  /// Reads which payloads are on disk. Decodes nothing - a screen pulls its own
+  /// entry on demand, so no page ever waits for the whole cache to parse.
   static Future<void> hydrateFromDisk() async {
-    if (_userScope.isEmpty || _hydrated) return;
+    if (_userScope.isEmpty || _indexLoaded) return;
     _hydrateFuture ??= _hydrateFromDiskImpl();
     await _hydrateFuture;
   }
 
   static Future<void> _hydrateFromDiskImpl() async {
     try {
-      final disk = await TichScreenCacheStore.load(_userScope);
-      for (final entry in disk.entries) {
-        _writeWithoutPersist(entry.key, entry.value);
-      }
+      _diskIndex = await TichScreenCacheStore.index(_userScope);
+    } catch (_) {
+      _diskIndex = {};
     } finally {
-      _hydrated = true;
+      _indexLoaded = true;
       _hydrateFuture = null;
+    }
+  }
+
+  /// Decodes the newest entries in the background so the screens the user lands
+  /// on after login paint from cache instead of a skeleton.
+  static Future<void> preloadRecent({int limit = 6}) async {
+    if (_userScope.isEmpty) return;
+    await hydrateFromDisk();
+    final keys = _diskIndex.keys.toList()
+      ..sort((a, b) => _diskIndex[b]!.compareTo(_diskIndex[a]!));
+    for (final key in keys.take(limit)) {
+      if (_store.containsKey(key)) continue;
+      await _readDisk<Object>(key);
     }
   }
 
@@ -68,7 +83,8 @@ abstract final class TichScreenCache {
     _lru.clear();
     _inFlight.clear();
     _dirtyKeys.clear();
-    _hydrated = false;
+    _diskIndex = {};
+    _indexLoaded = false;
     _hydrateFuture = null;
     _userScope = '';
     _persistDebounce?.cancel();
@@ -125,6 +141,7 @@ abstract final class TichScreenCache {
       final evict = _lru.removeAt(0);
       _store.remove(evict);
       _dirtyKeys.remove(evict);
+      _diskIndex.remove(evict);
       if (scope.isNotEmpty) {
         unawaited(TichScreenCacheStore.deleteEntry(scope, evict));
       }
@@ -147,6 +164,9 @@ abstract final class TichScreenCache {
       }
       _dirtyKeys.clear();
       if (batch.isNotEmpty) {
+        for (final key in batch.keys) {
+          _diskIndex[key] = now;
+        }
         unawaited(
           TichScreenCacheStore.saveDirtyEntries(scope, batch, now),
         );
@@ -170,8 +190,8 @@ abstract final class TichScreenCache {
   }
 
   /// One shared in-flight request per [key] - prefetch and page open dedupe.
+  /// A warm memory hit returns synchronously; only a real miss touches disk.
   static Future<T> ensure<T>(String key, Future<T> Function() fetch) async {
-    await whenHydrated();
     final cached = read<T>(key);
     if (cached != null) return cached;
 
@@ -180,6 +200,9 @@ abstract final class TichScreenCache {
       return existing.then((value) => value as T);
     }
 
+    final diskHit = await _readDisk<T>(key);
+    if (diskHit != null) return diskHit;
+
     final future = fetch().then((value) {
       write(key, value as Object);
       return value as Object;
@@ -187,6 +210,19 @@ abstract final class TichScreenCache {
 
     _inFlight[key] = future;
     return future.then((value) => value as T);
+  }
+
+  static Future<T?> _readDisk<T>(String key) async {
+    if (_userScope.isEmpty) return null;
+    if (!_indexLoaded) await hydrateFromDisk();
+    if (!_diskIndex.containsKey(key)) return null;
+    final data = await TichScreenCacheStore.loadKey(_userScope, key);
+    if (data == null) {
+      _diskIndex.remove(key);
+      return null;
+    }
+    _writeWithoutPersist(key, data);
+    return read<T>(key);
   }
 
   /// Starts [fetch] when idle; safe to call from drawer open / tab preload.
