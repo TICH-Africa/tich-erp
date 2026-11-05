@@ -218,6 +218,15 @@ class StaffMobilePortalSerializer
                 'week_number' => (int) ($p->week_number ?? 0),
                 'status' => $p->status,
                 'contact_hours' => (int) ($p->contact_hours ?? 0),
+                'source_type' => $p->source_type ?? 'form',
+                'is_verified' => filled($p->tutor_verified_at),
+                'uploaded_file_name' => $p->uploaded_file_name,
+                'can_submit' => in_array($p->status, ['draft', 'modified', 'rejected'], true)
+                    && (
+                        ($p->source_type ?? 'form') === 'upload'
+                            ? filled($p->uploaded_file_path)
+                            : filled($p->tutor_verified_at)
+                    ),
             ])->values(),
         ];
     }

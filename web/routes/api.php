@@ -250,6 +250,10 @@ Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(func
     Route::get('/lesson-plans', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'index']);
     Route::get('/lesson-plans/context', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'context']);
     Route::post('/lesson-plans', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'store']);
+    Route::get('/lesson-plans/{plan}', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'show']);
+    Route::post('/lesson-plans/{plan}/verify', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'verify']);
+    Route::get('/lesson-plans/{plan}/pdf', \App\Http\Controllers\Api\Staff\mobile\LessonPlanPdfController::class);
+    Route::get('/lesson-plans/{plan}/upload', \App\Http\Controllers\Api\Staff\mobile\LessonPlanUploadFileController::class);
     Route::post('/lesson-plans/{plan}/submit', [\App\Http\Controllers\Api\Staff\mobile\LessonPlansController::class, 'submit']);
 
     Route::get('/content', [\App\Http\Controllers\Api\Staff\mobile\ContentController::class, 'index']);

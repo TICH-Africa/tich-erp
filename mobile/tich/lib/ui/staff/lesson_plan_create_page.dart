@@ -9,6 +9,7 @@ import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 import 'staff_helpers.dart';
 import 'staff_prefetch.dart';
+import 'lesson_plan_detail_page.dart';
 import 'staff_timetable_grid.dart';
 
 class StaffLessonPlanCreatePage extends StatefulWidget {
@@ -285,7 +286,7 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
     }
     setState(() => _busy = true);
     try {
-      await widget.api.createLessonPlan({
+      final res = await widget.api.createLessonPlan({
         'source_type': 'form',
         'allocation_id': _allocationId,
         'lesson_title': _lessonTitle.text.trim(),
@@ -308,8 +309,21 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
         ],
       });
       if (!mounted) return;
-      _snack('Lesson plan saved as draft.');
-      Navigator.of(context).pop(true);
+      final plan = Map<String, dynamic>.from(res['plan'] as Map? ?? {});
+      final id = (plan['id'] as num?)?.toInt();
+      if (id == null) {
+        Navigator.of(context).pop(true);
+        return;
+      }
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => StaffLessonPlanDetailPage(
+            api: widget.api,
+            planId: id,
+            initialPlan: plan,
+          ),
+        ),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       _snack(e.message);
@@ -370,7 +384,7 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
                               width: 22,
                               child: AdaptiveProgress(),
                             )
-                          : Text(_step < 2 ? 'Next' : 'Save draft'),
+                          : Text(_step < 2 ? 'Next' : 'Save & preview'),
                     ),
                   ),
                 ],

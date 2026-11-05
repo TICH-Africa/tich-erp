@@ -57,12 +57,25 @@ class LessonPlansController extends Controller
         return response()->json(['defaults' => $defaults]);
     }
 
+    public function show(Request $request, LessonPlan $plan): JsonResponse
+    {
+        $staff = $this->portalStaff($request);
+        abort_unless((int) $plan->prepared_by === (int) $staff->id, 403);
+
+        return response()->json(['plan' => $this->serializePlan($plan)]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $staff = $this->portalStaff($request);
         $sourceType = $request->input('source_type') === 'upload' ? 'upload' : 'form';
 
-        $validated = $request->validate($this->formValidationRules($sourceType));
+        $validated = $request->validate(array_merge(
+            $this->formValidationRules($sourceType),
+            $sourceType === 'upload'
+                ? ['document' => ['required', 'file', 'max:'.config('tich-lesson-plans.upload.max_kb', 10240), 'mimes:pdf,doc,docx']]
+                : [],
+        ));
 
         $planData = $this->lessonPlanDocuments->mapValidatedPlanData($validated, $sourceType);
 
@@ -72,21 +85,47 @@ class LessonPlansController extends Controller
             ], 422);
         }
 
+        if ($sourceType === 'upload') {
+            $upload = $this->lessonPlanDocuments->storeUpload($staff, $request->file('document'));
+            $planData = array_merge($planData, $upload);
+        }
+
         $allocation = UnitAllocation::query()
             ->where('staff_id', $staff->id)
             ->findOrFail((int) $validated['allocation_id']);
 
         $plan = $this->teaching->createLessonPlan($staff, $allocation, $planData);
 
+        if ($request->boolean('submit')) {
+            try {
+                $plan = $this->teaching->submitLessonPlan($plan, $staff);
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                    'plan' => $this->serializePlan($plan->fresh()),
+                ], 422);
+            }
+        }
+
         return response()->json([
-            'message' => 'Lesson plan saved as draft.',
-            'plan' => [
-                'id' => $plan->id,
-                'plan_number' => $plan->plan_number,
-                'status' => $plan->status,
-            ],
+            'message' => $request->boolean('submit')
+                ? 'Lesson plan submitted for approval.'
+                : 'Lesson plan saved as draft.',
+            'plan' => $this->serializePlan($plan),
             ...$this->serializer->lessonPlans($staff),
         ], 201);
+    }
+
+    public function verify(Request $request, LessonPlan $plan): JsonResponse
+    {
+        $staff = $this->portalStaff($request);
+        $plan = $this->teaching->verifyLessonPlan($plan, $staff);
+
+        return response()->json([
+            'message' => 'Lesson plan verified. You can now submit it for approval.',
+            'plan' => $this->serializePlan($plan),
+            ...$this->serializer->lessonPlans($staff),
+        ]);
     }
 
     public function submit(Request $request, LessonPlan $plan): JsonResponse
@@ -96,10 +135,7 @@ class LessonPlansController extends Controller
 
         return response()->json([
             'message' => 'Lesson plan submitted for approval.',
-            'plan' => [
-                'id' => $plan->id,
-                'status' => $plan->status,
-            ],
+            'plan' => $this->serializePlan($plan),
             ...$this->serializer->lessonPlans($staff),
         ]);
     }
@@ -142,5 +178,31 @@ class LessonPlansController extends Controller
         }
 
         return $rules;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function serializePlan(LessonPlan $plan): array
+    {
+        $plan->loadMissing(['allocation.unit']);
+
+        return [
+            'id' => (int) $plan->id,
+            'plan_number' => $plan->plan_number,
+            'lesson_title' => $plan->lesson_title,
+            'unit_code' => $plan->allocation?->unit?->unit_code,
+            'unit_name' => $plan->allocation?->unit?->unit_name,
+            'planned_date' => optional($plan->planned_date)?->format('Y-m-d'),
+            'week_number' => (int) ($plan->week_number ?? 0),
+            'contact_hours' => (int) ($plan->contact_hours ?? 0),
+            'status' => $plan->status,
+            'source_type' => $plan->source_type ?? 'form',
+            'tutor_verified_at' => $plan->tutor_verified_at?->toIso8601String(),
+            'is_verified' => $plan->isVerifiedByTutor(),
+            'uploaded_file_name' => $plan->uploaded_file_name,
+            'can_submit' => $plan->isReadyToSubmit(),
+            'hod_comments' => $plan->hod_comments,
+        ];
     }
 }
