@@ -3,6 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @if (! empty($autoRetrySeconds))
+        <meta http-equiv="refresh" content="{{ (int) $autoRetrySeconds }}">
+    @endif
     <title>{{ $title ?? 'Service unavailable' }}</title>
     <style>
         :root { color-scheme: light; }

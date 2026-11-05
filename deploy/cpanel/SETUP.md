@@ -42,7 +42,13 @@ DB_HOST=localhost
 DB_DATABASE=…
 DB_USERNAME=…
 DB_PASSWORD=…
+
+# Strongly recommended on shared hosting (or omit SESSION_DRIVER / CACHE_STORE — production defaults to file):
+SESSION_DRIVER=file
+CACHE_STORE=file
 ```
+
+After changing `.env`, run: `cd ~/tich-erp/web && ea-php82 artisan config:clear`
 
 ## Verify
 
@@ -52,6 +58,19 @@ DB_PASSWORD=…
 - https://tich.africa/tich-mpesa-stk-callback.php - POST only (405 on GET is normal); M-Pesa STK callback bridge
 
 If the site shows a **TICH deploy error** page, follow the hint on that page (usually missing `.env` or `vendor`).
+
+## Troubleshooting HTTP 503 (database reconnect)
+
+Laravel shows **“Service unavailable … reconnect to the database”** when MySQL/MariaDB refuses a connection (too many connections, server restart, wrong host).
+
+| Fix (application / `.env`) | Why |
+|----------------------------|-----|
+| `SESSION_DRIVER=file` and `CACHE_STORE=file` | Avoids 2 extra DB hits on every page (major cause on cPanel) |
+| `DB_HOST=localhost` (not `127.0.0.1`) | Uses local socket when DB is on the same server |
+| Remove stale `bootstrap/cache/config.php` after `.env` changes | `config:clear` or delete cached config |
+| Deploy includes **RetryDatabaseConnection** middleware | Brief blips retry before 503 |
+
+The 503 page auto-refreshes every 15 seconds in production. If it never clears, the database service on the host is still down — ICT/hosting must restore MySQL.
 
 ## Troubleshooting HTTP 500
 
