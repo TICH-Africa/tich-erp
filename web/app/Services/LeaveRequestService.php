@@ -293,10 +293,35 @@ class LeaveRequestService
         });
     }
 
-    public function approve(LeaveRequest $leaveRequest, Staff $hrStaff, array $data = []): LeaveRequest
-    {
-        return DB::transaction(function () use ($leaveRequest, $hrStaff, $data) {
-            $this->coverages->assertAllCoveragesAccepted($leaveRequest);
+    /**
+     * HR records leave for an employee (optionally approving immediately).
+     */
+    public function submitOnBehalfByHr(
+        Staff $employee,
+        Staff $hrStaff,
+        array $data,
+        ?UploadedFile $certificate = null,
+        bool $approveImmediately = true,
+    ): LeaveRequest {
+        $leaveRequest = $this->submit($employee, $data, $certificate);
+
+        if (! $approveImmediately) {
+            return $leaveRequest;
+        }
+
+        return $this->approve($leaveRequest, $hrStaff, [], skipCoverageCheck: true);
+    }
+
+    public function approve(
+        LeaveRequest $leaveRequest,
+        Staff $hrStaff,
+        array $data = [],
+        bool $skipCoverageCheck = false,
+    ): LeaveRequest {
+        return DB::transaction(function () use ($leaveRequest, $hrStaff, $data, $skipCoverageCheck) {
+            if (! $skipCoverageCheck) {
+                $this->coverages->assertAllCoveragesAccepted($leaveRequest);
+            }
 
             $oldSnapshot = $this->auditSnapshot($leaveRequest);
             $previousDays = (int) $leaveRequest->days_requested;

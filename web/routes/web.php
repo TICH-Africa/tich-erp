@@ -1165,6 +1165,18 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/recruitment/{application}/send-qualified-email', [\App\Http\Controllers\HR\RecruitmentController::class, 'sendQualifiedEmail'])->name('hr.recruitment.send-qualified-email');
             Route::get('/leave/overview', [\App\Http\Controllers\HR\LeaveRequestController::class, 'overview'])->name('hr.leave.overview');
             Route::get('/leave/employees', [\App\Http\Controllers\HR\LeaveRequestController::class, 'employees'])->name('hr.leave.employees');
+            Route::get('/leave/apply', [\App\Http\Controllers\HR\LeaveRequestController::class, 'createOnBehalf'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.apply.create');
+            Route::post('/leave/apply', [\App\Http\Controllers\HR\LeaveRequestController::class, 'storeOnBehalf'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.apply.store');
+            Route::get('/leave/employees/{staff}/balances', [\App\Http\Controllers\HR\LeaveRequestController::class, 'editBalances'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.balances.edit');
+            Route::post('/leave/employees/{staff}/balances', [\App\Http\Controllers\HR\LeaveRequestController::class, 'updateBalances'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.balances.update');
             Route::get('/leave', [\App\Http\Controllers\HR\LeaveRequestController::class, 'index'])->name('hr.leave.index');
             Route::get('/leave/carry-forward', [\App\Http\Controllers\HR\LeaveCarryForwardController::class, 'index'])
                 ->middleware('permission:hr.manage_leave')

@@ -7,6 +7,12 @@
         title="Leave requests"
         :meta="$pendingCount > 0 ? $pendingCount . ' awaiting HR review' : null"
     >
+        @if ($canManageLeave ?? false)
+            <x-slot:actions>
+                <a href="{{ route('hr.leave.apply.create') }}" class="tich-btn tich-btn-primary">Apply for employee</a>
+                <a href="{{ route('hr.leave.employees') }}" class="tich-btn tich-btn-ghost">Employee balances</a>
+            </x-slot:actions>
+        @endif
         <x-slot:filters>
             <form method="GET" action="{{ route('hr.leave.index') }}" class="tich-page-toolbar__filters-form">
                 @include('partials.search-field', [

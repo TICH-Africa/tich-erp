@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Schema;
 
 class HrLeaveOverviewService
 {
+    public function __construct(
+        protected HrLeaveBalanceService $balances,
+    ) {}
     /**
      * @return Collection<int, object{
      *     leave_request: LeaveRequest,
@@ -112,6 +115,8 @@ class HrLeaveOverviewService
 
         $balances = collect();
 
+        $annualTypeId = $this->balances->annualLeaveTypeId();
+
         if (Schema::hasTable('leave_balances')) {
             $balances = DB::table('leave_balances')
                 ->whereIn('staff_id', $staffIds)
@@ -120,6 +125,17 @@ class HrLeaveOverviewService
                 ->groupBy('staff_id')
                 ->get()
                 ->keyBy('staff_id');
+
+            $annualBalances = $annualTypeId
+                ? DB::table('leave_balances')
+                    ->whereIn('staff_id', $staffIds)
+                    ->where('year', $year)
+                    ->where('leave_type_id', $annualTypeId)
+                    ->get(['staff_id', 'entitled_days', 'days_taken', 'balance_days', 'days_pending'])
+                    ->keyBy('staff_id')
+                : collect();
+        } else {
+            $annualBalances = collect();
         }
 
         $activeLeave = collect();
@@ -136,8 +152,9 @@ class HrLeaveOverviewService
                 ->keyBy('staff_id');
         }
 
-        return $staffMembers->map(function (Staff $staff) use ($balances, $activeLeave) {
+        return $staffMembers->map(function (Staff $staff) use ($balances, $activeLeave, $annualBalances) {
             $balance = $balances->get($staff->id);
+            $annual = $annualBalances->get($staff->id);
             $leaveRequest = $activeLeave->get($staff->id);
 
             return (object) [
@@ -150,6 +167,10 @@ class HrLeaveOverviewService
                 'accrued_days' => (int) ($balance->accrued_days ?? 0),
                 'days_taken' => (int) ($balance->days_taken ?? 0),
                 'days_remaining' => (int) ($balance->balance_days ?? 0),
+                'annual_entitled' => (int) ($annual->entitled_days ?? 0),
+                'annual_taken' => (int) ($annual->days_taken ?? 0),
+                'annual_remaining' => (int) ($annual->balance_days ?? 0),
+                'annual_pending' => (int) ($annual->days_pending ?? 0),
             ];
         });
     }
