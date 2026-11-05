@@ -13134,6 +13134,24 @@ a.tich-tabs__btn {
     color: #94a3b8;
 }
 
+[data-theme="dark"] .tich-admin__main .tich-card .tich-caption strong {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .tich-admin__main .tich-card .uf-field > label,
+[data-theme="dark"] .tich-admin__main .tich-card .uf-field label.tich-checkbox {
+    color: var(--tich-text, #e2e8f0);
+}
+
+[data-theme="dark"] .tich-admin__main .tich-card .uf-field .uf-hint,
+[data-theme="dark"] .tich-admin__main .tich-card .uf-hint {
+    color: var(--tich-text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] .tich-admin__main .tich-leave-app-form .uf-field input[type="file"] {
+    color: var(--tich-text-secondary, #94a3b8);
+}
+
 /* ??? Unified form (amount bar + section heads) ???????????????????????? */
 
 .uf-form {

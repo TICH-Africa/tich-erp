@@ -40,6 +40,7 @@
                 · {{ $selectedStaff->department?->dept_name ?? 'No department' }}
             </p>
 
+            <div class="uf-form">
             <form method="POST" action="{{ route('hr.leave.apply.store') }}" enctype="multipart/form-data" class="tich-leave-app-form" data-uf="skip">
                 @csrf
                 <input type="hidden" name="staff_id" value="{{ $selectedStaff->id }}">
@@ -104,6 +105,7 @@
                     <button type="submit" class="tich-btn tich-btn-primary">Save leave application</button>
                 </div>
             </form>
+            </div>
         </div>
     @endif
 @endsection

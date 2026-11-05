@@ -28,6 +28,7 @@
         </p>
     </div>
 
+    <div class="uf-form">
     <form method="POST" action="{{ route('hr.leave.balances.update', $staff) }}" class="tich-card tich-table-panel">
         @csrf
         <input type="hidden" name="year" value="{{ $year }}">
@@ -92,4 +93,5 @@
             <button type="submit" class="tich-btn tich-btn-primary">Save balances</button>
         </div>
     </form>
+    </div>
 @endsection
