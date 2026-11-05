@@ -11,6 +11,7 @@ import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'procurement_add_supplier_page.dart';
 import 'procurement_helpers.dart';
+import 'procurement_prefetch.dart';
 import 'procurement_request_asset_disposal_page.dart';
 
 final _kes = NumberFormat.currency(symbol: 'KES ', decimalDigits: 0);
@@ -78,6 +79,7 @@ class _ProcurementSuppliersPageState extends State<ProcurementSuppliersPage> {
     if (!mounted) return;
     _load(search: _query);
     if (id != null) {
+      ProcurementPrefetch.supplier(widget.api, id);
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ProcurementSupplierDetailPage(api: widget.api, id: id),
@@ -87,6 +89,7 @@ class _ProcurementSuppliersPageState extends State<ProcurementSuppliersPage> {
   }
 
   Future<void> _openDetail(int id) async {
+    ProcurementPrefetch.supplier(widget.api, id);
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ProcurementSupplierDetailPage(api: widget.api, id: id),
@@ -164,6 +167,8 @@ class _ProcurementSuppliersPageState extends State<ProcurementSuppliersPage> {
                       final r = Map<String, dynamic>.from(items[i] as Map);
                       final id = (r['id'] as num).toInt();
                       return TichCard(
+                        onTapDown: (_) =>
+                            ProcurementPrefetch.supplier(widget.api, id),
                         onTap: () => _openDetail(id),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,11 +398,15 @@ class _ProcurementRfqsPageState extends State<ProcurementRfqsPage> {
                 final r = Map<String, dynamic>.from(items[i] as Map);
                 final id = (r['id'] as num).toInt();
                 return TichCard(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ProcurementRfqDetailPage(api: widget.api, id: id),
-                    ),
-                  ),
+                  onTapDown: (_) => ProcurementPrefetch.rfq(widget.api, id),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ProcurementRfqDetailPage(api: widget.api, id: id),
+                      ),
+                    );
+                  },
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -645,12 +654,18 @@ class _ProcurementInventoryPageState extends State<ProcurementInventoryPage> {
                 final id = (r['id'] as num).toInt();
                 final low = r['low_stock'] == true;
                 return TichCard(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ProcurementInventoryItemDetailPage(api: widget.api, id: id),
-                    ),
-                  ),
+                  onTapDown: (_) =>
+                      ProcurementPrefetch.inventoryItem(widget.api, id),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ProcurementInventoryItemDetailPage(
+                          api: widget.api,
+                          id: id,
+                        ),
+                      ),
+                    );
+                  },
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -777,6 +792,7 @@ class _ProcurementDisposalsPageState extends State<ProcurementDisposalsPage> {
   @override
   void initState() {
     super.initState();
+    ProcurementPrefetch.assetDisposalFormOptions(widget.api);
     procurementPrimeScreen(
       persistKey: _cacheKey,
       setCache: (c) => _cache = c,
@@ -794,6 +810,7 @@ class _ProcurementDisposalsPageState extends State<ProcurementDisposalsPage> {
       );
 
   Future<void> _openRequest() async {
+    ProcurementPrefetch.assetDisposalFormOptions(widget.api);
     final id = await Navigator.of(context).push<int>(
       MaterialPageRoute(
         builder: (_) =>
@@ -803,6 +820,7 @@ class _ProcurementDisposalsPageState extends State<ProcurementDisposalsPage> {
     if (!mounted) return;
     _reload();
     if (id != null) {
+      ProcurementPrefetch.assetDisposal(widget.api, id);
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ProcurementDisposalDetailPage(api: widget.api, id: id),
@@ -813,6 +831,7 @@ class _ProcurementDisposalsPageState extends State<ProcurementDisposalsPage> {
   }
 
   Future<void> _openDetail(int id) async {
+    ProcurementPrefetch.assetDisposal(widget.api, id);
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ProcurementDisposalDetailPage(api: widget.api, id: id),
@@ -864,6 +883,8 @@ class _ProcurementDisposalsPageState extends State<ProcurementDisposalsPage> {
                 final r = Map<String, dynamic>.from(items[i] as Map);
                 final id = (r['id'] as num).toInt();
                 return TichCard(
+                  onTapDown: (_) =>
+                      ProcurementPrefetch.assetDisposal(widget.api, id),
                   onTap: () => _openDetail(id),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1060,12 +1081,16 @@ class _ProcurementAuditsPageState extends State<ProcurementAuditsPage> {
                 final r = Map<String, dynamic>.from(items[i] as Map);
                 final id = (r['id'] as num).toInt();
                 return TichCard(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ProcurementAuditDetailPage(api: widget.api, id: id),
-                    ),
-                  ),
+                  onTapDown: (_) =>
+                      ProcurementPrefetch.assetAudit(widget.api, id),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ProcurementAuditDetailPage(api: widget.api, id: id),
+                      ),
+                    );
+                  },
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

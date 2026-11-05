@@ -4,12 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../adaptive/adaptive.dart';
-import '../../data/api_client.dart';
 import '../../data/procurement_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 import 'procurement_helpers.dart';
+import 'procurement_prefetch.dart';
 
 class ProcurementCreateRequisitionPage extends StatefulWidget {
   const ProcurementCreateRequisitionPage({super.key, required this.api});
@@ -32,8 +32,8 @@ class _ProcurementCreateRequisitionPageState
   bool _busy = false;
   bool _loadingBudgetLines = false;
 
-  bool _optionsLoading = true;
-  Object? _optionsError;
+  late Future<Map<String, dynamic>> _optionsFuture;
+  Object? _optionsCache;
   List<Map<String, dynamic>> _departments = [];
   List<Map<String, dynamic>> _budgets = [];
 
@@ -54,34 +54,36 @@ class _ProcurementCreateRequisitionPageState
     for (final row in _lines) {
       row.attachRecalc(_recalcTotals);
     }
-    _loadOptions();
+    procurementPrimeScreen(
+      persistKey: ProcurementPrefetch.requisitionFormOptionsKey,
+      setCache: (c) {
+        _optionsCache = c;
+        if (c is Map<String, dynamic>) _applyOptionsMap(c);
+      },
+      setFuture: (f) => _optionsFuture = f,
+      fetch: () => widget.api.requisitionFormOptions(),
+    );
   }
 
-  Future<void> _loadOptions() async {
-    setState(() {
-      _optionsLoading = true;
-      _optionsError = null;
-    });
-    try {
-      final data = await widget.api.requisitionFormOptions();
-      if (!mounted) return;
-      setState(() {
-        _departments = (data['departments'] as List? ?? [])
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
-        _budgets = (data['budgets'] as List? ?? [])
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
-        _optionsLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _optionsError = e;
-        _optionsLoading = false;
-      });
-    }
+  void _applyOptionsMap(Map<String, dynamic> data) {
+    _departments = (data['departments'] as List? ?? [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    _budgets = (data['budgets'] as List? ?? [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
   }
+
+  Future<void> _reloadOptions() => procurementCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.requisitionFormOptions(),
+        onData: (data) {
+          _optionsCache = data;
+          _applyOptionsMap(data);
+        },
+        persistKey: ProcurementPrefetch.requisitionFormOptionsKey,
+      );
 
   @override
   void dispose() {
@@ -642,22 +644,19 @@ class _ProcurementCreateRequisitionPageState
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: 'New requisition',
-      body: _optionsLoading
-          ? const Center(child: AdaptiveProgress())
-          : _optionsError != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(tichDescribeError(_optionsError)),
-                      TextButton(
-                        onPressed: _loadOptions,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _optionsFuture,
+        builder: (context, snap) {
+          return procurementCachedMapBody(
+            snap: snap,
+            memoryCache: _optionsCache,
+            persistKey: ProcurementPrefetch.requisitionFormOptionsKey,
+            onRetry: _reloadOptions,
+            builder: (data) {
+              if (_departments.isEmpty && _budgets.isEmpty) {
+                _applyOptionsMap(data);
+              }
+              return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
@@ -699,7 +698,11 @@ class _ProcurementCreateRequisitionPageState
                 ),
               ),
             ],
-          ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

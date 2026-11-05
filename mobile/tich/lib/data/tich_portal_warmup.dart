@@ -150,8 +150,16 @@ abstract final class TichPortalWarmup {
         TichScreenCache.warm('procurement.home', () => api.dashboard());
       case 1:
         TichScreenCache.warm('procurement.requisitions', () => api.requisitions());
+        TichScreenCache.warm(
+          'procurement.requisition_form_options',
+          () => api.requisitionFormOptions(),
+        );
       case 2:
         TichScreenCache.warm('procurement.stock_issues', () => api.stockIssues());
+        TichScreenCache.warm(
+          'procurement.stock_issue_form_options',
+          () => api.stockIssueFormOptions(),
+        );
       case 3:
         TichScreenCache.warm('procurement.suppliers', () => api.suppliers());
       default:
@@ -163,6 +171,10 @@ abstract final class TichPortalWarmup {
   static void procurementMoreOpened(ProcurementApi api) {
     _runDeferred([
       () => TichScreenCache.warm('procurement.grns', () => api.grns()),
+      () => TichScreenCache.warm(
+            'procurement.asset_disposal_form_options',
+            () => api.assetDisposalFormOptions(),
+          ),
       () => TichScreenCache.warm(
             'procurement.payment_verification',
             () => api.paymentVerification(),

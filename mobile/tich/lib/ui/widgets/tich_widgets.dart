@@ -35,11 +35,18 @@ class TichSectionHeader extends StatelessWidget {
 }
 
 class TichCard extends StatelessWidget {
-  const TichCard({super.key, required this.child, this.padding, this.onTap});
+  const TichCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.onTap,
+    this.onTapDown,
+  });
 
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
+  final GestureTapDownCallback? onTapDown;
 
   @override
   Widget build(BuildContext context) {
@@ -48,10 +55,11 @@ class TichCard extends StatelessWidget {
       child: child,
     );
     return Card(
-      child: onTap == null
+      child: onTap == null && onTapDown == null
           ? content
           : InkWell(
               onTap: onTap,
+              onTapDown: onTapDown,
               borderRadius: BorderRadius.circular(12),
               child: content,
             ),

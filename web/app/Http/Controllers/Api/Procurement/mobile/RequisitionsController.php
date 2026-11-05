@@ -261,6 +261,11 @@ class RequisitionsController extends Controller
 
     public function show(Request $request, ProcurementRequisition $requisition): JsonResponse
     {
+        $requisition->loadMissing([
+            'department:id,dept_name',
+            'requester:id,first_name,surname',
+        ]);
+
         return response()->json(
             $this->portal->serializeRequisition($requisition, $request->user())
         );
