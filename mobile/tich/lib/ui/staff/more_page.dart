@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/staff_api.dart';
-import '../../navigation/tich_root_nav.dart';
 import '../shell/portal_nav_counts_scope.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
-import 'content_page.dart';
-import 'grading_page.dart';
-import 'lesson_plans_page.dart';
+import 'staff_module_nav.dart';
 
 class StaffMorePage extends StatelessWidget {
   const StaffMorePage({super.key, required this.api});
@@ -17,8 +14,6 @@ class StaffMorePage extends StatelessWidget {
   static List<TichMoreItem> mainItems(BuildContext context, StaffApi api) {
     final nav = PortalNavCountsScope.maybeOf(context);
 
-    void open(Widget page) => TichRootNav.push(page);
-
     int badge(String key) => nav?.countFor(key) ?? 0;
 
     final items = <TichMoreItem>[
@@ -26,18 +21,18 @@ class StaffMorePage extends StatelessWidget {
         label: 'Marks & assessments',
         icon: Icons.grade_outlined,
         badgeCount: badge('exam-papers'),
-        onTap: () => open(StaffGradingPage(api: api)),
+        onTap: () => openStaffGradingFromMore(api),
       ),
       TichMoreItem(
         label: 'Lesson plans',
         icon: Icons.menu_book_outlined,
         badgeCount: badge('lesson-plans'),
-        onTap: () => open(StaffLessonPlansPage(api: api)),
+        onTap: () => openStaffLessonPlansFromMore(api),
       ),
       TichMoreItem(
         label: 'Learning content',
         icon: Icons.layers_outlined,
-        onTap: () => open(StaffContentPage(api: api)),
+        onTap: () => openStaffContentFromMore(api),
       ),
     ];
 

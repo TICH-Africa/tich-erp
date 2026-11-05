@@ -14,12 +14,9 @@ import '../widgets/portal_hero.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/tich_widgets.dart';
 import '../widgets/tich_live_refresh.dart';
-import 'attendance_page.dart';
-import 'grading_page.dart';
-import 'lesson_plans_page.dart';
 import 'staff_helpers.dart';
-import 'timetable_page.dart';
-import 'units_page.dart';
+import 'staff_module_nav.dart';
+import 'staff_prefetch.dart';
 
 class StaffHomePage extends StatefulWidget {
   const StaffHomePage({super.key, required this.api});
@@ -169,39 +166,23 @@ class _StaffHomePageState extends State<StaffHomePage> {
                     QuickAction(
                       label: 'Class attendance',
                       icon: Icons.fact_check_outlined,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => StaffAttendancePage(api: widget.api),
-                        ),
-                      ),
+                      onTap: () => openStaffAttendance(context, widget.api),
                     ),
                     QuickAction(
                       label: 'Marks',
                       icon: Icons.grade_outlined,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => StaffGradingPage(api: widget.api),
-                        ),
-                      ),
+                      onTap: () => openStaffGrading(context, widget.api),
                     ),
                     QuickAction(
                       label: 'Lesson plans',
                       icon: Icons.menu_book_outlined,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              StaffLessonPlansPage(api: widget.api),
-                        ),
-                      ),
+                      onTap: () =>
+                          openStaffLessonPlans(context, widget.api),
                     ),
                     QuickAction(
                       label: 'Timetable',
                       icon: Icons.calendar_month_outlined,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => StaffTimetablePage(api: widget.api),
-                        ),
-                      ),
+                      onTap: () => openStaffTimetable(context, widget.api),
                     ),
                   ],
                 ),
@@ -209,11 +190,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
                 TichSectionHeader(
                   'Today\'s classes',
                   trailing: TextButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => StaffTimetablePage(api: widget.api),
-                      ),
-                    ),
+                    onPressed: () => openStaffTimetable(context, widget.api),
                     child: const Text('All'),
                   ),
                 ),
@@ -241,11 +218,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
                 TichSectionHeader(
                   'My units',
                   trailing: TextButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => StaffUnitsPage(api: widget.api),
-                      ),
-                    ),
+                    onPressed: () => openStaffUnits(context, widget.api),
                     child: const Text('All'),
                   ),
                 ),
@@ -300,9 +273,23 @@ class _StaffHomePageState extends State<StaffHomePage> {
                   const TichSectionHeader('Upcoming attendance'),
                   ...upcoming.take(3).map((raw) {
                     final s = Map<String, dynamic>.from(raw as Map);
+                    final sessionId = (s['id'] as num?)?.toInt();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TichCard(
+                        onTapDown: sessionId == null
+                            ? null
+                            : (_) => StaffPrefetch.attendanceSession(
+                                  widget.api,
+                                  sessionId,
+                                ),
+                        onTap: sessionId == null
+                            ? null
+                            : () => openStaffAttendanceSession(
+                                  context,
+                                  widget.api,
+                                  sessionId,
+                                ),
                         child: Text(
                           '${formatDate(s['session_date'])} · '
                           '${[

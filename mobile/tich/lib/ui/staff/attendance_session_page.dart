@@ -15,6 +15,7 @@ import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_cached_network_image.dart';
 import '../widgets/tich_widgets.dart';
 import 'staff_helpers.dart';
+import 'staff_prefetch.dart';
 
 class StaffAttendanceSessionPage extends StatefulWidget {
   const StaffAttendanceSessionPage({
@@ -39,31 +40,41 @@ class _StaffAttendanceSessionPageState
   bool _busy = false;
   bool _locked = false;
 
-  String get _cacheKey => 'staff.attendance_session.${widget.sessionId}';
+  String get _cacheKey =>
+      StaffPrefetch.attendanceSessionKey(widget.sessionId);
+
+  void _applySessionPayload(Map<String, dynamic> data) {
+    final records = data['records'] as List? ?? const [];
+    _present
+      ..clear()
+      ..addAll(
+        records
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .where((r) => r['is_present'] == true)
+            .map((r) => (r['student_id'] as num).toInt()),
+      );
+    final session = Map<String, dynamic>.from(data['session'] as Map? ?? {});
+    _locked = session['is_locked'] == true;
+  }
+
+  Future<Map<String, dynamic>> _fetchSession() async {
+    final data = await widget.api.attendanceSession(widget.sessionId);
+    if (mounted) _applySessionPayload(data);
+    return data;
+  }
 
   @override
   void initState() {
     super.initState();
-    _dataCache = staffReadCache(_cacheKey);
-    _future = _fetchSession();
-  }
-
-  Future<Map<String, dynamic>> _fetchSession() {
-    return widget.api.attendanceSession(widget.sessionId).then((data) {
-      final records = data['records'] as List? ?? const [];
-      _present
-        ..clear()
-        ..addAll(
-          records
-              .map((e) => Map<String, dynamic>.from(e as Map))
-              .where((r) => r['is_present'] == true)
-              .map((r) => (r['student_id'] as num).toInt()),
-        );
-      final session =
-          Map<String, dynamic>.from(data['session'] as Map? ?? {});
-      _locked = session['is_locked'] == true;
-      return data;
-    });
+    staffPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) {
+        _dataCache = c;
+        if (c is Map<String, dynamic>) _applySessionPayload(c);
+      },
+      setFuture: (f) => _future = f,
+      fetch: _fetchSession,
+    );
   }
 
   Future<void> _reload() => staffCachedReload(

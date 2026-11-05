@@ -7,6 +7,8 @@ import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import 'staff_helpers.dart';
+import 'staff_prefetch.dart';
 import 'staff_timetable_grid.dart';
 
 class StaffLessonPlanCreatePage extends StatefulWidget {
@@ -72,7 +74,10 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
 
   Future<void> _loadTimetable() async {
     try {
-      final data = await widget.api.timetable();
+      final data = await staffEnsure(
+        StaffPrefetch.timetableKey,
+        () => widget.api.timetable(),
+      );
       if (!mounted) return;
       final sessions = (data['sessions'] as List? ?? const [])
           .map((e) => Map<String, dynamic>.from(e as Map))
@@ -155,9 +160,13 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
     if (id == null) return;
     setState(() => _loadingContext = true);
     try {
-      final data = await widget.api.lessonPlanContext(
-        allocationId: id,
-        plannedDate: _dateApi(_plannedDate),
+      final date = _dateApi(_plannedDate);
+      final data = await staffEnsure(
+        StaffPrefetch.lessonPlanContextKey(id, date),
+        () => widget.api.lessonPlanContext(
+          allocationId: id,
+          plannedDate: date,
+        ),
       );
       if (!mounted) return;
       final defaults =

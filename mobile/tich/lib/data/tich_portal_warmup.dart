@@ -84,6 +84,8 @@ abstract final class TichPortalWarmup {
     _deferredTimer = Timer(const Duration(seconds: 20), () {
       _runDeferred([
         () => TichScreenCache.warm('staff.units', () => api.units()),
+        () => TichScreenCache.warm('staff.timetable', () => api.timetable()),
+        () => TichScreenCache.warm('staff.attendance', () => api.attendance()),
       ]);
     });
   }

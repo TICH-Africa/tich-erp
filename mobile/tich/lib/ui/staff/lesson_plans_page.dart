@@ -9,6 +9,7 @@ import '../widgets/tich_widgets.dart';
 import '../widgets/tich_live_refresh.dart';
 import 'lesson_plan_create_page.dart';
 import 'staff_helpers.dart';
+import 'staff_prefetch.dart';
 
 class StaffLessonPlansPage extends StatefulWidget {
   const StaffLessonPlansPage({super.key, required this.api});
@@ -26,6 +27,7 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
   @override
   void initState() {
     super.initState();
+    StaffPrefetch.timetable(widget.api);
     staffPrimeScreen(
       persistKey: 'staff.lesson_plans',
       setCache: (c) => _dataCache = c,
@@ -59,13 +61,22 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
       );
       return;
     }
+    final maps = allocations
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    final defaultId = (maps.first['id'] as num?)?.toInt();
+    final today =
+        '${DateTime.now().year.toString().padLeft(4, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
+    StaffPrefetch.lessonPlanCreate(
+      widget.api,
+      defaultAllocationId: defaultId,
+      plannedDate: today,
+    );
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => StaffLessonPlanCreatePage(
           api: widget.api,
-          allocations: allocations
-              .map((e) => Map<String, dynamic>.from(e as Map))
-              .toList(),
+          allocations: maps,
         ),
       ),
     );
