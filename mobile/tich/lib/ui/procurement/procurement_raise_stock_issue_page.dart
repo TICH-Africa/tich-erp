@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../adaptive/adaptive.dart';
-import '../../data/api_client.dart';
 import '../../data/procurement_api.dart';
-import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
-import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'procurement_helpers.dart';
+import 'procurement_prefetch.dart';
 
 class ProcurementRaiseStockIssuePage extends StatefulWidget {
   const ProcurementRaiseStockIssuePage({super.key, required this.api});
@@ -28,21 +26,30 @@ class _ProcurementRaiseStockIssuePageState
   final _reason = TextEditingController();
 
   late Future<Map<String, dynamic>> _optionsFuture;
+  Object? _optionsCache;
   int? _itemId;
   int? _departmentId;
   int? _staffId;
   bool _busy = false;
 
-  static const _optionsCacheKey = 'procurement.stock_issue_form_options';
-
   @override
   void initState() {
     super.initState();
-    _optionsFuture = TichScreenCache.ensure(
-      _optionsCacheKey,
-      () => widget.api.stockIssueFormOptions(),
+    procurementPrimeScreen(
+      persistKey: ProcurementPrefetch.stockIssueFormOptionsKey,
+      setCache: (c) => _optionsCache = c,
+      setFuture: (f) => _optionsFuture = f,
+      fetch: () => widget.api.stockIssueFormOptions(),
     );
   }
+
+  Future<void> _reloadOptions() => procurementCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.stockIssueFormOptions(),
+        onData: (d) => _optionsCache = d,
+        persistKey: ProcurementPrefetch.stockIssueFormOptionsKey,
+      );
 
   @override
   void dispose() {
@@ -167,28 +174,12 @@ class _ProcurementRaiseStockIssuePageState
       body: FutureBuilder<Map<String, dynamic>>(
         future: _optionsFuture,
         builder: (context, snap) {
-          if (tichShowLoadingSpinner(snap, snap.hasData ? snap.data : null)) {
-            return procurementLoadingBody();
-          }
-          if (snap.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(tichDescribeError(snap.error)),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _optionsFuture = widget.api.stockIssueFormOptions();
-                      });
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-          final data = snap.data ?? {};
+          return procurementCachedMapBody(
+            snap: snap,
+            memoryCache: _optionsCache,
+            persistKey: ProcurementPrefetch.stockIssueFormOptionsKey,
+            onRetry: _reloadOptions,
+            builder: (data) {
           final items = (data['items'] as List? ?? [])
               .map((e) => Map<String, dynamic>.from(e as Map))
               .toList();
@@ -347,6 +338,8 @@ class _ProcurementRaiseStockIssuePageState
                 ),
               ],
             ),
+          );
+            },
           );
         },
       ),

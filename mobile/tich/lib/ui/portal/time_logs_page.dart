@@ -9,6 +9,7 @@ import '../widgets/tich_form_dialog.dart';
 import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
+import 'employee_prefetch.dart';
 import 'time_log_detail_page.dart';
 
 class TimeLogsPage extends StatefulWidget {
@@ -193,6 +194,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
   }
 
   void _openExisting(int id) {
+    EmployeePrefetch.timeLogDetail(widget.api, id);
     Navigator.of(context)
         .push(
       MaterialPageRoute(
@@ -275,6 +277,12 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                   final id = (w['id'] as num?)?.toInt();
                   return TichCard(
                     onTap: id == null ? null : () => _openExisting(id),
+                    onTapDown: id == null
+                        ? null
+                        : (_) => EmployeePrefetch.timeLogDetail(
+                              widget.api,
+                              id,
+                            ),
                     child: Row(
                       children: [
                         Expanded(

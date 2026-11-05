@@ -8,6 +8,7 @@ import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'student_helpers.dart';
+import 'student_prefetch.dart';
 
 class StudentAssessmentTakePage extends StatefulWidget {
   const StudentAssessmentTakePage({
@@ -31,14 +32,19 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
   bool _busy = false;
   DateTime? _startedAt;
 
-  String get _cacheKey => 'student.assessment.${widget.assessmentId}';
+  String get _cacheKey =>
+      StudentPrefetch.assessmentKey(widget.assessmentId);
 
   @override
   void initState() {
     super.initState();
-    _dataCache = studentReadCache(_cacheKey);
-    _future = widget.api.assessment(widget.assessmentId);
     _startedAt = DateTime.now();
+    studentPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.assessment(widget.assessmentId),
+    );
   }
 
   Future<void> _reload() => studentCachedReload(

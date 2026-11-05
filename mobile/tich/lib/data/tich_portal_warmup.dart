@@ -6,6 +6,7 @@ import 'employee_api.dart';
 import 'procurement_api.dart';
 import 'staff_api.dart';
 import 'student_api.dart';
+import '../ui/portal/employee_prefetch.dart';
 import 'tich_screen_cache.dart';
 
 /// Background cache warming - kept minimal so the UI thread and API stay responsive.
@@ -51,6 +52,8 @@ abstract final class TichPortalWarmup {
     _deferredTimer = Timer(const Duration(seconds: 20), () {
       _runDeferred([
         () => TichScreenCache.warm('student.academics', () => api.academics()),
+        () => TichScreenCache.warm('student.timetable', () => api.timetable()),
+        () => TichScreenCache.warm('student.finance', () => api.finance()),
       ]);
     });
   }
@@ -61,6 +64,18 @@ abstract final class TichPortalWarmup {
         TichScreenCache.warm('student.home', () => api.dashboard());
       case 1:
         TichScreenCache.warm('student.academics', () => api.academics());
+        TichScreenCache.warm(
+          'student.academics.units',
+          () => api.academicsUnits(),
+        );
+        TichScreenCache.warm(
+          'student.academics.content',
+          () => api.academicsContent(),
+        );
+        TichScreenCache.warm(
+          'student.academics.assessments',
+          () => api.academicsAssessments(),
+        );
       case 2:
         TichScreenCache.warm('student.timetable', () => api.timetable());
       case 3:
@@ -73,8 +88,16 @@ abstract final class TichPortalWarmup {
   /// More drawer links - warm only when the user opens the menu.
   static void studentMoreOpened(StudentApi api) {
     _runDeferred([
+      () => TichScreenCache.warm('student.profile', () => api.profile()),
+      () => TichScreenCache.warm('student.enrolment', () => api.profile()),
       () => TichScreenCache.warm('student.notifications', () => api.notifications()),
       () => TichScreenCache.warm('student.documents', () => api.documents()),
+      () => TichScreenCache.warm('student.clearance', () => api.clearance()),
+      () => TichScreenCache.warm('student.evaluations', () => api.evaluations()),
+      () => TichScreenCache.warm(
+            'student.lifecycle',
+            () => api.lifecycleRequests(),
+          ),
     ]);
   }
 
@@ -84,6 +107,8 @@ abstract final class TichPortalWarmup {
     _deferredTimer = Timer(const Duration(seconds: 20), () {
       _runDeferred([
         () => TichScreenCache.warm('staff.units', () => api.units()),
+        () => TichScreenCache.warm('staff.timetable', () => api.timetable()),
+        () => TichScreenCache.warm('staff.attendance', () => api.attendance()),
       ]);
     });
   }
@@ -113,11 +138,13 @@ abstract final class TichPortalWarmup {
 
   static void employeeShellOpened(EmployeeApi api) {
     _cancelDeferred();
-    // Home tab owns `portal.dashboard`; prefetch other tabs only after idle.
+    EmployeePrefetch.dashboard(api);
     _deferredTimer = Timer(const Duration(seconds: 12), () {
       _runDeferred([
-        () => TichScreenCache.warm('portal.leave', () => api.leave()),
-        () => TichScreenCache.warm('portal.attendance', () => api.attendance()),
+        () => EmployeePrefetch.leave(api),
+        () => EmployeePrefetch.attendance(api),
+        () => EmployeePrefetch.payslipsTab(api),
+        () => EmployeePrefetch.notifications(api),
       ]);
     });
   }
@@ -125,45 +152,23 @@ abstract final class TichPortalWarmup {
   static void employeeTabSelected(EmployeeApi api, int index) {
     switch (index) {
       case 0:
-        TichScreenCache.warm('portal.dashboard', () => api.dashboard());
+        EmployeePrefetch.dashboard(api);
+        EmployeePrefetch.notifications(api);
       case 1:
-        TichScreenCache.warm('portal.leave', () => api.leave());
+        EmployeePrefetch.leave(api);
       case 2:
-        TichScreenCache.warm('portal.attendance', () => api.attendance());
+        EmployeePrefetch.attendance(api);
       case 3:
-        TichScreenCache.warm('portal.payslips', () => api.payslips());
+        EmployeePrefetch.payslipsTab(api);
       default:
         break;
     }
   }
 
-  /// Screens behind the employee More menu, in the order a phone taps them.
-  ///
-  /// These are the payloads login preload never reaches (the tabs are always
-  /// newer), so every link used to wait on the network. Warming only the two
-  /// coldest per drawer open keeps a serialized server or a weak connection from
-  /// answering seven requests at once, and a tap joins the request already in
-  /// flight instead of starting its own.
   static void employeeMoreOpened(EmployeeApi api) {
-    final screens = <String, Future<Object> Function()>{
-      'portal.profile': () => api.profile(),
-      'portal.time_logs': () => api.timeLogs(),
-      'portal.documents': () => api.documents(),
-      'portal.policies': () => api.policies(),
-      'portal.appraisals': () => api.appraisals(),
-      'portal.concerns': () => api.concerns(),
-      'portal.feedback': () => api.feedback(),
-    };
-
-    final cold = screens.entries
-        .where((e) => TichScreenCache.read<Map<String, dynamic>>(e.key) == null)
-        .take(2)
-        .toList();
-    if (cold.isEmpty) return;
-
     _runDeferred([
-      for (final screen in cold)
-        () => TichScreenCache.warm(screen.key, screen.value),
+      () => EmployeePrefetch.warmMoreMenu(api),
+      () => EmployeePrefetch.notifications(api),
     ]);
   }
 
@@ -177,8 +182,16 @@ abstract final class TichPortalWarmup {
         TichScreenCache.warm('procurement.home', () => api.dashboard());
       case 1:
         TichScreenCache.warm('procurement.requisitions', () => api.requisitions());
+        TichScreenCache.warm(
+          'procurement.requisition_form_options',
+          () => api.requisitionFormOptions(),
+        );
       case 2:
         TichScreenCache.warm('procurement.stock_issues', () => api.stockIssues());
+        TichScreenCache.warm(
+          'procurement.stock_issue_form_options',
+          () => api.stockIssueFormOptions(),
+        );
       case 3:
         TichScreenCache.warm('procurement.suppliers', () => api.suppliers());
       default:
@@ -190,9 +203,19 @@ abstract final class TichPortalWarmup {
   static void procurementMoreOpened(ProcurementApi api) {
     _runDeferred([
       () => TichScreenCache.warm('procurement.grns', () => api.grns()),
+      () => TichScreenCache.warm('procurement.stock_alerts', () => api.stockAlerts()),
+      () => TichScreenCache.warm('procurement.assets', () => api.assets()),
+      () => TichScreenCache.warm('procurement.rfqs', () => api.rfqs()),
+      () => TichScreenCache.warm('procurement.inventory', () => api.inventoryItems()),
+      () => TichScreenCache.warm('procurement.disposals', () => api.assetDisposals()),
+      () => TichScreenCache.warm('procurement.asset_audits', () => api.assetAudits()),
       () => TichScreenCache.warm(
             'procurement.payment_verification',
             () => api.paymentVerification(),
+          ),
+      () => TichScreenCache.warm(
+            'procurement.asset_disposal_form_options',
+            () => api.assetDisposalFormOptions(),
           ),
     ]);
   }

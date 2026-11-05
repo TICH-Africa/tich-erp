@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/staff_api.dart';
+import '../../theme/tich_theme.dart';
 import '../widgets/tich_widgets.dart';
 
 class StaffContentUploadPage extends StatefulWidget {
@@ -75,14 +76,18 @@ class _StaffContentUploadPageState extends State<StaffContentUploadPage> {
       _snack('Enter a title.');
       return;
     }
+    if (_pickedPath == null || _pickedPath!.isEmpty) {
+      _snack('Choose a file to attach.');
+      return;
+    }
     setState(() => _busy = true);
     try {
       await widget.api.uploadContent(
         unitId: _unitId!,
         title: _title.text.trim(),
-        contentText: _notes.text.trim(),
-        filePath: _pickedPath,
+        filePath: _pickedPath!,
         fileName: _pickedName,
+        contentText: _notes.text.trim(),
       );
       if (!mounted) return;
       _snack('Material posted to students.');
@@ -145,11 +150,24 @@ class _StaffContentUploadPageState extends State<StaffContentUploadPage> {
                     maxLines: 6,
                   ),
                   const SizedBox(height: 12),
+                  RichText(
+                    text: TextSpan(
+                      style: tichUi(fontSize: 12, color: TichColors.neutralMuted),
+                      children: const [
+                        TextSpan(text: 'Attachment '),
+                        TextSpan(
+                          text: '*',
+                          style: TextStyle(color: TichColors.danger),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   OutlinedButton.icon(
                     onPressed: _busy ? null : _pickFile,
                     icon: const Icon(Icons.attach_file),
                     label: Text(
-                      _pickedName ?? 'Attachment (optional)',
+                      _pickedName ?? 'Choose file',
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

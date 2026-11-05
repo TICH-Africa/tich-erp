@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../theme/tich_theme.dart';
 import '../../data/tich_screen_cache.dart';
@@ -46,6 +45,39 @@ void staffPrimeScreen({
     applyFuture: setFuture,
     fetch: fetch,
   );
+}
+
+String staffDetailCacheKey(String namespace, int id) => '$namespace.$id';
+
+void staffWarm(
+  String persistKey,
+  Future<Map<String, dynamic>> Function() fetch,
+) {
+  TichScreenCache.warm(persistKey, fetch);
+}
+
+Widget staffCachedMapBody({
+  required AsyncSnapshot<Map<String, dynamic>> snap,
+  required Object? memoryCache,
+  required String persistKey,
+  required Widget Function(Map<String, dynamic> data) builder,
+  Future<void> Function()? onRetry,
+}) {
+  final merged = tichMergeSnapshot(
+    snap,
+    memoryCache as dynamic,
+    persistKey: persistKey,
+  );
+  if (tichShowLoadingSpinner(snap, merged)) {
+    return staffLoadingBody(onRefresh: onRetry);
+  }
+  if (merged == null && snap.hasError) {
+    return staffErrorBody(
+      snap.error,
+      onRetry != null ? () => onRetry() : () {},
+    );
+  }
+  return builder(merged! as Map<String, dynamic>);
 }
 
 Widget staffErrorBody(Object? error, VoidCallback onRetry) {

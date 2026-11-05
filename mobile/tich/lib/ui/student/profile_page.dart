@@ -40,8 +40,12 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   @override
   void initState() {
     super.initState();
-    _dataCache = studentReadCache(_cacheKey);
-    _future = studentEnsure(_cacheKey, () => widget.api.profile());
+    studentPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.profile(),
+    );
   }
 
   @override

@@ -20,6 +20,7 @@ import '../ui/portal/policies_page.dart';
 import '../ui/portal/profile_page.dart';
 import '../ui/shell/employee_portal_nav.dart';
 import '../ui/shell/staff_portal_nav.dart';
+import '../ui/staff/staff_prefetch.dart';
 import '../ui/staff/timetable_page.dart';
 
 enum TichDeepLinkTarget {
@@ -179,6 +180,7 @@ class TichNotificationRouter {
         break;
       case TichDeepLinkTarget.staffTimetable:
         if (user.canAccessStaffPortal && staffApi != null) {
+          StaffPrefetch.timetable(staffApi);
           if (StaffPortalNav.isStaffShellActive) {
             StaffPortalNav.requestTab(2);
           } else {
@@ -187,7 +189,8 @@ class TichNotificationRouter {
         }
         break;
       case TichDeepLinkTarget.staffAttendance:
-        if (user.canAccessStaffPortal) {
+        if (user.canAccessStaffPortal && staffApi != null) {
+          StaffPrefetch.attendanceList(staffApi);
           StaffPortalNav.requestTab(3);
         }
         break;

@@ -12,13 +12,9 @@ import '../widgets/portal_hero.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
-import 'documents_page.dart';
-import 'finance_page.dart';
-import 'notifications_page.dart';
-import 'profile_page.dart';
 import 'student_helpers.dart';
-import 'suggestions_page.dart';
-import 'timetable_page.dart';
+import 'student_module_nav.dart';
+import 'student_prefetch.dart';
 
 class StudentHomePage extends StatefulWidget {
   const StudentHomePage({super.key, required this.api});
@@ -38,13 +34,9 @@ class _StudentHomePageState extends State<StudentHomePage> {
   Map<String, dynamic>? _nextLesson;
   DateTime? _lastTimetablePrime;
 
-  @override
-  void initState() {
-    super.initState();
-    _dataCache = studentReadCache(_cacheKey);
-    _future = studentEnsure(_cacheKey, () => widget.api.dashboard()).then((data) {
+  Future<Map<String, dynamic>> _fetchDashboard() {
+    return widget.api.dashboard().then((data) {
       final unread = (data['unread_notifications'] as num?)?.toInt() ?? 0;
-      // Paint home first; timetable + reminders run in the background.
       scheduleMicrotask(() {
         if (!mounted) return;
         setState(() => _unread = unread);
@@ -54,19 +46,29 @@ class _StudentHomePageState extends State<StudentHomePage> {
     });
   }
 
+  @override
+  void initState() {
+    super.initState();
+    studentPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) {
+        _dataCache = c;
+        if (c is Map<String, dynamic>) {
+          _unread = (c['unread_notifications'] as num?)?.toInt() ?? 0;
+        }
+      },
+      setFuture: (f) => _future = f,
+      fetch: _fetchDashboard,
+    );
+    scheduleMicrotask(() {
+      if (mounted) unawaited(_primeLessonReminders());
+    });
+  }
+
   Future<void> _reload() => studentCachedReload(
         mounted: () => mounted,
         setState: setState,
-        fetch: () => widget.api.dashboard().then((data) {
-          final unread =
-              (data['unread_notifications'] as num?)?.toInt() ?? 0;
-          scheduleMicrotask(() {
-            if (!mounted) return;
-            setState(() => _unread = unread);
-            unawaited(_primeLessonReminders());
-          });
-          return data;
-        }),
+        fetch: _fetchDashboard,
         onData: (data) => _dataCache = data,
         persistKey: _cacheKey,
       );
@@ -116,11 +118,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
         IconButton(
           tooltip: 'Notifications',
           onPressed: () async {
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => StudentNotificationsPage(api: widget.api),
-              ),
-            );
+            await openStudentNotifications(context, widget.api);
             _reload();
           },
           icon: Icon(icon, color: usesCupertino ? TichColors.white : null),
@@ -231,12 +229,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
                 if (_nextLesson != null) ...[
                   const SizedBox(height: 14),
                   TichCard(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            StudentTimetablePage(api: widget.api),
-                      ),
-                    ),
+                    onTapDown: (_) => StudentPrefetch.timetable(widget.api),
+                    onTap: () => openStudentTimetable(context, widget.api),
                     child: Row(
                       children: [
                         Container(
@@ -335,39 +329,23 @@ class _StudentHomePageState extends State<StudentHomePage> {
                     QuickAction(
                       label: 'Pay fees',
                       icon: Icons.payments_outlined,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => StudentFinancePage(api: widget.api),
-                        ),
-                      ),
+                      onTap: () => openStudentFinance(context, widget.api),
                     ),
                     QuickAction(
                       label: 'My profile',
                       icon: Icons.person_outline,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => StudentProfilePage(api: widget.api),
-                        ),
-                      ),
+                      onTap: () => openStudentProfile(context, widget.api),
                     ),
                     QuickAction(
                       label: 'Documents',
                       icon: Icons.folder_outlined,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => StudentDocumentsPage(api: widget.api),
-                        ),
-                      ),
+                      onTap: () => openStudentDocuments(context, widget.api),
                     ),
                     QuickAction(
                       label: 'Suggestion box',
                       icon: Icons.lightbulb_outline,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              StudentSuggestionsPage(api: widget.api),
-                        ),
-                      ),
+                      onTap: () =>
+                          openStudentSuggestions(context, widget.api),
                     ),
                   ],
                 ),

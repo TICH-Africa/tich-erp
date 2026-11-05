@@ -15,10 +15,11 @@ import '../widgets/tich_live_refresh.dart';
 import '../shell/portal_nav_counts_scope.dart';
 import '../widgets/tich_more_row_trailing.dart';
 import '../widgets/tich_widgets.dart';
-import 'assessment_take_page.dart';
 import 'student_academics_lazy_section.dart';
 import 'student_academics_payload.dart';
 import 'student_helpers.dart';
+import 'student_module_nav.dart';
+import 'student_prefetch.dart';
 import '../../data/tich_screen_cache.dart';
 
 class StudentAcademicsHubPage extends StatefulWidget {
@@ -65,6 +66,9 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       setFuture: (f) => _future = f,
       fetch: () => widget.api.academics(),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      StudentPrefetch.academicsSubsections(widget.api);
+    });
   }
 
   Future<void> _reload() => studentCachedReload(
@@ -134,7 +138,9 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         title: 'My units',
         icon: Icons.menu_book_outlined,
         badgeKey: 'academics.units',
-        onTap: () => Navigator.of(context).push(
+        onTap: () {
+          StudentPrefetch.academicsUnits(widget.api);
+          Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StudentAcademicsLazySection(
               title: 'My units',
@@ -149,13 +155,16 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
               },
             ),
           ),
-        ),
+        );
+        },
       ),
       AcademicsHubSection(
         title: 'Learning content',
         icon: Icons.folder_open_outlined,
         badgeKey: 'academics.content',
-        onTap: () => Navigator.of(context).push(
+        onTap: () {
+          StudentPrefetch.academicsContent(widget.api);
+          Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StudentAcademicsLazySection(
               title: 'Learning content',
@@ -191,13 +200,16 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
               },
             ),
           ),
-        ),
+        );
+        },
       ),
       AcademicsHubSection(
         title: 'Assessments',
         icon: Icons.quiz_outlined,
         badgeKey: 'academics.assessments',
-        onTap: () => Navigator.of(context).push(
+        onTap: () {
+          StudentPrefetch.academicsAssessments(widget.api);
+          Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StudentAcademicsLazySection(
               title: 'Assessments',
@@ -219,20 +231,21 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                     final canTake = sub == null &&
                         (a['status']?.toString() == 'ready' ||
                             a['status']?.toString() == 'open');
+                    Future<void> openTake() async {
+                      if (id == null) return;
+                      final done = await openStudentAssessmentTake(
+                        context,
+                        widget.api,
+                        id,
+                      );
+                      if (done == true) _reload();
+                    }
+
                     return TichCard(
-                      onTap: id == null
+                      onTapDown: id == null
                           ? null
-                          : () async {
-                              final done = await Navigator.of(context).push<bool>(
-                                MaterialPageRoute(
-                                  builder: (_) => StudentAssessmentTakePage(
-                                    api: widget.api,
-                                    assessmentId: id,
-                                  ),
-                                ),
-                              );
-                              if (done == true) _reload();
-                            },
+                          : (_) => StudentPrefetch.assessment(widget.api, id),
+                      onTap: canTake ? () => openTake() : null,
                       child: ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: Text(a['title']?.toString() ?? 'Assessment',
@@ -247,21 +260,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                         ),
                         trailing: canTake
                             ? FilledButton(
-                                onPressed: id == null
-                                    ? null
-                                    : () async {
-                                        final done =
-                                            await Navigator.of(context).push<bool>(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                StudentAssessmentTakePage(
-                                              api: widget.api,
-                                              assessmentId: id,
-                                            ),
-                                          ),
-                                        );
-                                        if (done == true) _reload();
-                                      },
+                                onPressed: id == null ? null : () => openTake(),
                                 child: const Text('Take'),
                               )
                             : TichStatusChip(
@@ -279,7 +278,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
               },
             ),
           ),
-        ),
+        );
+        },
       ),
       AcademicsHubSection(
         title: 'Exams & grades',

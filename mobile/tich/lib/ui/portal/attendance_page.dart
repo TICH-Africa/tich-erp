@@ -11,8 +11,8 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 import '../shell/employee_portal_signals.dart';
-import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
+import 'portal_helpers.dart';
 
 class AttendancePage extends StatefulWidget {
   const AttendancePage({super.key, required this.api});
@@ -32,21 +32,25 @@ class _AttendancePageState extends State<AttendancePage> {
   Object? _selectedCampusId;
   List<Map<String, dynamic>> _clockInSites = const [];
 
+  Future<Map<String, dynamic>> _fetchAttendance() async {
+    final data = await widget.api.attendance();
+    final today = data['today'] as Map?;
+    final clockedIn = today != null && today['clock_in_at'] != null;
+    // ignore: unawaited_futures
+    TichNotifications.instance
+        .scheduleClockInReminders(alreadyClockedIn: clockedIn);
+    return data;
+  }
+
   @override
   void initState() {
     super.initState();
-    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.attendance');
-    _future = TichScreenCache.ensure(
-      'portal.attendance',
-      () => widget.api.attendance(),
-    ).then((data) {
-      final today = data['today'] as Map?;
-      final clockedIn = today != null && today['clock_in_at'] != null;
-      // ignore: unawaited_futures
-      TichNotifications.instance
-          .scheduleClockInReminders(alreadyClockedIn: clockedIn);
-      return data;
-    });
+    portalPrimeScreen(
+      persistKey: 'portal.attendance',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: _fetchAttendance,
+    );
   }
 
   @override

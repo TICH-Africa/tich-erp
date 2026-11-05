@@ -214,7 +214,10 @@ class ProcurementMobilePortalService
         $requisition->loadMissing(['department', 'requester']);
 
         $level = $requisition->currentApprovalLevel();
-        $budget = $this->requisitionService->verifyBudget($requisition);
+        // Drafts without a linked budget code do not need a heavy budget scan on every open.
+        $budget = $requisition->isDraft() && ! filled($requisition->budget_code)
+            ? ['passed' => true, 'message' => '']
+            : $this->requisitionService->verifyBudget($requisition);
         $budgetPassed = (bool) ($budget['passed'] ?? false);
         $canAct = $user ? $this->canApproveRequisition($user, $requisition, $budget) : false;
 

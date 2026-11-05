@@ -8,6 +8,7 @@ import '../widgets/tich_widgets.dart';
 import '../widgets/tich_live_refresh.dart';
 import 'content_upload_page.dart';
 import 'staff_helpers.dart';
+import 'staff_prefetch.dart';
 
 class StaffContentPage extends StatefulWidget {
   const StaffContentPage({super.key, required this.api});
@@ -58,6 +59,7 @@ class _StaffContentPageState extends State<StaffContentPage> {
       );
       return;
     }
+    StaffPrefetch.contentUpload(widget.api);
     final posted = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => StaffContentUploadPage(

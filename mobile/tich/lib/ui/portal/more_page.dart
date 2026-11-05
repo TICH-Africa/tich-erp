@@ -6,13 +6,8 @@ import '../shell/employee_portal_menu_scope.dart';
 import '../shell/portal_nav_counts_scope.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
-import 'appraisals_page.dart';
-import 'concerns_page.dart';
-import 'documents_page.dart';
-import 'feedback_page.dart';
-import 'policies_page.dart';
-import 'profile_page.dart';
-import 'time_logs_page.dart';
+import 'employee_module_nav.dart';
+import 'employee_prefetch.dart';
 import 'wfh_page.dart';
 
 class MorePage extends StatelessWidget {
@@ -24,8 +19,6 @@ class MorePage extends StatelessWidget {
   static List<TichMoreItem> mainItems(BuildContext context, EmployeeApi api) {
     final nav = PortalNavCountsScope.maybeOf(context);
 
-    void open(Widget page) => TichRootNav.push(page);
-
     int badge(String key) => nav?.countFor(key) ?? 0;
 
     return [
@@ -35,46 +28,53 @@ class MorePage extends StatelessWidget {
         badgeCount: badge('profile-changes'),
         showProfilePhoto: true,
         photoUrl: EmployeePortalMenuScope.photoUrlOf(context),
-        onTap: () => open(ProfilePage(api: api)),
+        onTapDown: (_) => EmployeePrefetch.profile(api),
+        onTap: () => openEmployeeProfile(api),
       ),
       TichMoreItem(
         label: 'Documents',
         icon: Icons.folder_outlined,
-        onTap: () => open(DocumentsPage(api: api)),
+        onTapDown: (_) => EmployeePrefetch.documents(api),
+        onTap: () => openEmployeeDocuments(api),
       ),
       TichMoreItem(
         label: 'HR policies',
         icon: Icons.policy_outlined,
         badgeCount: badge('policies'),
-        onTap: () => open(PoliciesPage(api: api)),
+        onTapDown: (_) => EmployeePrefetch.policies(api),
+        onTap: () => openEmployeePolicies(api),
       ),
       TichMoreItem(
         label: 'Work from home',
         icon: Icons.home_work_outlined,
-        onTap: () => open(const WfhPage()),
+        onTap: () => TichRootNav.push(const WfhPage()),
       ),
       TichMoreItem(
         label: 'Time sheets',
         icon: Icons.schedule_outlined,
-        onTap: () => open(TimeLogsPage(api: api)),
+        onTapDown: (_) => EmployeePrefetch.timeLogs(api),
+        onTap: () => openEmployeeTimeLogs(api),
       ),
       TichMoreItem(
         label: 'Appraisals',
         icon: Icons.flag_outlined,
         badgeCount: badge('appraisals'),
-        onTap: () => open(AppraisalsPage(api: api)),
+        onTapDown: (_) => EmployeePrefetch.appraisals(api),
+        onTap: () => openEmployeeAppraisals(api),
       ),
       TichMoreItem(
         label: 'Concerns',
         icon: Icons.report_problem_outlined,
         badgeCount: badge('concerns'),
-        onTap: () => open(ConcernsPage(api: api)),
+        onTapDown: (_) => EmployeePrefetch.concerns(api),
+        onTap: () => openEmployeeConcerns(api),
       ),
       TichMoreItem(
         label: 'Feedback',
         icon: Icons.feedback_outlined,
         badgeCount: badge('feedback'),
-        onTap: () => open(FeedbackPage(api: api)),
+        onTapDown: (_) => EmployeePrefetch.feedback(api),
+        onTap: () => openEmployeeFeedback(api),
       ),
     ];
   }

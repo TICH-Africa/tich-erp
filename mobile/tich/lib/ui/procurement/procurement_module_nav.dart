@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/procurement_api.dart';
 import 'procurement_extra_pages.dart';
 import 'procurement_pages.dart';
+import 'procurement_prefetch.dart';
 
 void openProcurementModule(
   BuildContext context, {
@@ -12,6 +13,8 @@ void openProcurementModule(
   required String webPath,
   required bool mobile,
 }) {
+  ProcurementPrefetch.warmListForModule(api, key);
+
   Widget page;
   switch (key) {
     case 'requisitions':
@@ -51,6 +54,8 @@ void openProcurementInboxItem(
   final kind = (item['kind'] ?? '').toString();
   final id = (item['id'] as num?)?.toInt();
   if (id == null) return;
+
+  ProcurementPrefetch.warmInboxDetail(api, kind, id);
 
   Widget page;
   switch (kind) {

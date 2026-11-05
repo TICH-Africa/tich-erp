@@ -179,7 +179,15 @@ class _StaffGradingPageState extends State<StaffGradingPage> {
       floatingActionButton: FutureBuilder(
         future: _future,
         builder: (context, snap) {
-          final allocations = snap.data?['allocations'] as List? ?? const [];
+          final merged = tichMergeSnapshot(
+                snap,
+                _dataCache as dynamic,
+                persistKey: 'staff.grading',
+              )
+              as Map<String, dynamic>?;
+          final allocations = (merged?['allocations'] as List?) ??
+              (snap.data?['allocations'] as List?) ??
+              const [];
           return FloatingActionButton.extended(
             heroTag: 'staff-grading',
             onPressed: () => _recordScore(allocations),

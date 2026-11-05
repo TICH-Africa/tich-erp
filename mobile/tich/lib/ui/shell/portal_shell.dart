@@ -68,7 +68,6 @@ class _PortalShellState extends State<PortalShell>
     EmployeePortalNavSignals.onStaffPhotoChanged = _loadStaffPhoto;
     EmployeePortalNavSignals.onTimeLogComplianceChanged =
         _recheckTimeLogCompliance;
-    _applyCachedCompliance();
     _loadStaffPhoto();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -77,14 +76,6 @@ class _PortalShellState extends State<PortalShell>
       TichNotificationRouter.instance.applyPending(context);
       TichPermissionDisclosures.maybePromptForNotifications(context);
     });
-  }
-
-  void _applyCachedCompliance() {
-    final cached =
-        TichScreenCache.read<Map<String, dynamic>>(_complianceCacheKey);
-    if (cached != null) {
-      _timeLogsGate = cached['blocked'] == true;
-    }
   }
 
   void _applyPendingTab() {

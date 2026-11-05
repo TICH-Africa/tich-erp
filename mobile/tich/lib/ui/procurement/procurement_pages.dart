@@ -13,6 +13,7 @@ import '../widgets/tich_widgets.dart';
 import 'procurement_helpers.dart';
 import 'procurement_create_requisition_page.dart';
 import 'procurement_paged_list.dart';
+import 'procurement_prefetch.dart';
 import 'procurement_raise_stock_issue_page.dart';
 
 final _kes = NumberFormat.currency(symbol: 'KES ', decimalDigits: 0);
@@ -33,6 +34,12 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
   String _query = '';
 
   @override
+  void initState() {
+    super.initState();
+    ProcurementPrefetch.requisitionFormOptions(widget.api);
+  }
+
+  @override
   void dispose() {
     _searchDebounce?.cancel();
     super.dispose();
@@ -48,6 +55,7 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
   void _reload() => _listKey.currentState?.refresh();
 
   Future<void> _openCreate() async {
+    ProcurementPrefetch.requisitionFormOptions(widget.api);
     final id = await Navigator.of(context).push<int>(
       MaterialPageRoute(
         builder: (_) => ProcurementCreateRequisitionPage(api: widget.api),
@@ -56,6 +64,7 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
     if (!mounted) return;
     _reload();
     if (id != null) {
+      ProcurementPrefetch.requisition(widget.api, id);
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) =>
@@ -67,6 +76,7 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
   }
 
   Future<void> _openDetail(int id) async {
+    ProcurementPrefetch.requisition(widget.api, id);
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ProcurementRequisitionDetailPage(api: widget.api, id: id),
@@ -109,6 +119,8 @@ class _ProcurementRequisitionsPageState extends State<ProcurementRequisitionsPag
                   final dept = (r['department'] ?? '').toString();
                   final reqDate = formatDate(r['request_date']);
                   return TichCard(
+                    onTapDown: (_) =>
+                        ProcurementPrefetch.requisition(widget.api, id),
                     onTap: () => _openDetail(id),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,6 +361,7 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
   @override
   void initState() {
     super.initState();
+    ProcurementPrefetch.stockIssueFormOptions(widget.api);
     procurementPrimeScreen(
       persistKey: _cacheKey,
       setCache: (c) => _cache = c,
@@ -366,6 +379,7 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
       );
 
   Future<void> _openRaise() async {
+    ProcurementPrefetch.stockIssueFormOptions(widget.api);
     final id = await Navigator.of(context).push<int>(
       MaterialPageRoute(
         builder: (_) => ProcurementRaiseStockIssuePage(api: widget.api),
@@ -374,6 +388,7 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
     if (!mounted) return;
     _reload();
     if (id != null) {
+      ProcurementPrefetch.stockIssue(widget.api, id);
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ProcurementStockIssueDetailPage(api: widget.api, id: id),
@@ -384,6 +399,7 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
   }
 
   Future<void> _openDetail(int id) async {
+    ProcurementPrefetch.stockIssue(widget.api, id);
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ProcurementStockIssueDetailPage(api: widget.api, id: id),
@@ -436,6 +452,8 @@ class _ProcurementStockIssuesPageState extends State<ProcurementStockIssuesPage>
                 final row = Map<String, dynamic>.from(items[i] as Map);
                 final id = (row['id'] as num).toInt();
                 return TichCard(
+                  onTapDown: (_) =>
+                      ProcurementPrefetch.stockIssue(widget.api, id),
                   onTap: () => _openDetail(id),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -630,11 +648,15 @@ class _ProcurementGrnsPageState extends State<ProcurementGrnsPage> {
               final row = Map<String, dynamic>.from(items[i] as Map);
               final id = (row['id'] as num).toInt();
               return TichCard(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ProcurementGrnDetailPage(api: widget.api, id: id),
-                  ),
-                ),
+                onTapDown: (_) => ProcurementPrefetch.grn(widget.api, id),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ProcurementGrnDetailPage(api: widget.api, id: id),
+                    ),
+                  );
+                },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -837,12 +859,18 @@ class _ProcurementStockAlertsPageState extends State<ProcurementStockAlertsPage>
               final row = Map<String, dynamic>.from(items[i] as Map);
               final id = (row['id'] as num).toInt();
               return TichCard(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ProcurementStockAlertDetailPage(api: widget.api, id: id),
-                  ),
-                ),
+                onTapDown: (_) =>
+                    ProcurementPrefetch.stockAlert(widget.api, id),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ProcurementStockAlertDetailPage(
+                        api: widget.api,
+                        id: id,
+                      ),
+                    ),
+                  );
+                },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1086,12 +1114,18 @@ class _ProcurementAssetsPageState extends State<ProcurementAssetsPage> {
                     final row = Map<String, dynamic>.from(items[i] as Map);
                     final id = (row['id'] as num).toInt();
                     return TichCard(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ProcurementAssetDetailPage(api: widget.api, id: id),
-                        ),
-                      ),
+                      onTapDown: (_) =>
+                          ProcurementPrefetch.asset(widget.api, id),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ProcurementAssetDetailPage(
+                              api: widget.api,
+                              id: id,
+                            ),
+                          ),
+                        );
+                      },
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

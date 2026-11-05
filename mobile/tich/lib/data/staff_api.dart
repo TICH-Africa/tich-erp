@@ -115,6 +115,44 @@ class StaffApi {
   Future<Map<String, dynamic>> createLessonPlan(Map<String, dynamic> body) =>
       _client.post('/staff/lesson-plans', body: body);
 
+  Future<Map<String, dynamic>> createLessonPlanUpload({
+    required int allocationId,
+    required String lessonTitle,
+    required String plannedDate,
+    required int weekNumber,
+    required int contactHours,
+    required String filePath,
+    required String fileName,
+    bool submit = false,
+  }) =>
+      _client.multipart(
+        '/staff/lesson-plans',
+        fields: {
+          'source_type': 'upload',
+          'allocation_id': '$allocationId',
+          'lesson_title': lessonTitle,
+          'planned_date': plannedDate,
+          'week_number': '$weekNumber',
+          'contact_hours': '$contactHours',
+          if (submit) 'submit': '1',
+        },
+        fileField: 'document',
+        filePath: filePath,
+        fileName: fileName,
+      );
+
+  Future<Map<String, dynamic>> lessonPlan(int id) =>
+      _client.get('/staff/lesson-plans/$id');
+
+  Future<List<int>> downloadLessonPlanPdf(int id) =>
+      _client.getBytes('/staff/lesson-plans/$id/pdf');
+
+  Future<List<int>> downloadLessonPlanUpload(int id) =>
+      _client.getBytes('/staff/lesson-plans/$id/upload');
+
+  Future<Map<String, dynamic>> verifyLessonPlan(int id) =>
+      _client.post('/staff/lesson-plans/$id/verify');
+
   Future<Map<String, dynamic>> submitLessonPlan(int id) =>
       _client.post('/staff/lesson-plans/$id/submit');
 
@@ -123,31 +161,22 @@ class StaffApi {
   Future<Map<String, dynamic>> uploadContent({
     required int unitId,
     required String title,
-    String? contentText,
-    String? filePath,
+    required String filePath,
     String? fileName,
-  }) {
-    final fields = <String, String>{
-      'unit_id': '$unitId',
-      'title': title,
-      if (contentText != null && contentText.trim().isNotEmpty)
-        'content_text': contentText.trim(),
-    };
-    if (filePath != null && filePath.isNotEmpty) {
-      return _client.multipart(
+    String? contentText,
+  }) =>
+      _client.multipart(
         '/staff/content',
-        fields: fields,
+        fields: {
+          'unit_id': '$unitId',
+          'title': title,
+          if (contentText != null && contentText.trim().isNotEmpty)
+            'content_text': contentText.trim(),
+        },
         fileField: 'file',
         filePath: filePath,
         fileName: fileName ?? _basename(filePath),
       );
-    }
-    return _client.multipartFiles(
-      '/staff/content',
-      fields: fields,
-      files: const [],
-    );
-  }
 
   Future<Map<String, dynamic>> notifications() =>
       _client.get('/staff/notifications');

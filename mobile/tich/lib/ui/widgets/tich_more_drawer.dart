@@ -26,6 +26,7 @@ class TichMoreItem {
     required this.label,
     required this.icon,
     required this.onTap,
+    this.onTapDown,
     this.badgeCount = 0,
     this.photoUrl,
     this.showProfilePhoto = false,
@@ -34,6 +35,7 @@ class TichMoreItem {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
+  final GestureTapDownCallback? onTapDown;
   final int badgeCount;
 
   /// When [showProfilePhoto] is true, shows staff photo or [icon] as fallback.
@@ -233,6 +235,7 @@ class TichSideNavRow extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      onTapDown: item.onTapDown,
       child: Container(
         color: active ? activeBg : Colors.transparent,
         decoration: active
@@ -297,8 +300,9 @@ class TichMoreList extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = items[index];
         return TichCard(
+          onTap: item.onTap,
+          onTapDown: item.onTapDown,
           child: ListTile(
-            onTap: item.onTap,
             contentPadding: EdgeInsets.zero,
             leading: item.showProfilePhoto
                 ? TichMoreProfileLeading(

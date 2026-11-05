@@ -25,9 +25,8 @@
                     <textarea name="content_text" class="tich-input" rows="3" placeholder="Brief notes for students..."></textarea>
                 </div>
                 <div class="tich-form-group">
-                    <label class="tich-label">Attachment (optional)</label>
-                    <input type="file" name="file" class="tich-input">
-                    <p class="tich-caption tich-mt-1">Leave blank if posting notes only.</p>
+                    <label class="tich-label">Attachment <span style="color:var(--tich-danger, #dc2626);">*</span></label>
+                    <input type="file" name="file" class="tich-input" required>
                 </div>
                 <button type="submit" class="tich-btn tich-btn-primary">Post to students</button>
             </form>

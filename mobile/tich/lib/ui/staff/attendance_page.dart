@@ -11,8 +11,9 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
 import '../widgets/tich_live_refresh.dart';
-import 'attendance_session_page.dart';
 import 'staff_helpers.dart';
+import 'staff_module_nav.dart';
+import 'staff_prefetch.dart';
 
 class StaffAttendancePage extends StatefulWidget {
   const StaffAttendancePage({super.key, required this.api});
@@ -29,6 +30,11 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
   bool _syncing = false;
   bool _flushing = false;
   int _pendingField = 0;
+
+  Future<void> _openSession(int id) async {
+    await openStaffAttendanceSession(context, widget.api, id);
+    if (mounted) _reload();
+  }
 
   @override
   void initState() {
@@ -194,19 +200,13 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TichCard(
-                        onTap: id == null
+                        onTapDown: id == null
                             ? null
-                            : () async {
-                                await Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => StaffAttendanceSessionPage(
-                                      api: widget.api,
-                                      sessionId: id,
-                                    ),
-                                  ),
-                                );
-                                _reload();
-                              },
+                            : (_) => StaffPrefetch.attendanceSession(
+                                  widget.api,
+                                  id,
+                                ),
+                        onTap: id == null ? null : () => _openSession(id),
                         child: _sessionTile(s),
                       ),
                     );
@@ -226,19 +226,13 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TichCard(
-                        onTap: id == null
+                        onTapDown: id == null
                             ? null
-                            : () async {
-                                await Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => StaffAttendanceSessionPage(
-                                      api: widget.api,
-                                      sessionId: id,
-                                    ),
-                                  ),
-                                );
-                                _reload();
-                              },
+                            : (_) => StaffPrefetch.attendanceSession(
+                                  widget.api,
+                                  id,
+                                ),
+                        onTap: id == null ? null : () => _openSession(id),
                         child: _sessionTile(s),
                       ),
                     );

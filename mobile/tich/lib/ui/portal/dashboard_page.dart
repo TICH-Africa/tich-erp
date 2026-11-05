@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
-import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../data/employee_badge_service.dart';
 import '../../theme/tich_theme.dart';
@@ -16,7 +15,7 @@ import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'attendance_page.dart';
-import 'notifications_page.dart';
+import 'employee_module_nav.dart';
 import 'profile_page.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -36,6 +35,7 @@ class _DashboardPageState extends State<DashboardPage> {
   EmployeeBadgeService? _badges;
   VoidCallback? _badgeListener;
   bool _badgeListenerAttached = false;
+  bool _recoverScheduled = false;
 
   void _syncFromBadges(EmployeeBadgeSnapshot? snap) {
     if (snap == null) return;
@@ -50,6 +50,10 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.dashboard');
     _future = TichScreenCache.ensure('portal.dashboard', () => widget.api.dashboard());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _liveRefresh();
+    });
   }
 
   @override
@@ -111,11 +115,7 @@ class _DashboardPageState extends State<DashboardPage> {
         IconButton(
           tooltip: 'Notifications',
           onPressed: () async {
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => NotificationsPage(api: widget.api),
-              ),
-            );
+            await openEmployeeNotifications(context, widget.api);
             _refreshBadgesAfterNavigation();
           },
           icon: Icon(icon, color: usesCupertino ? TichColors.white : null),
@@ -160,14 +160,15 @@ class _DashboardPageState extends State<DashboardPage> {
             final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.dashboard');
             if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
             if (merged == null && snap.hasError) {
-              return TichErrorRefresh(
-                message: snap.error is ApiException
-                    ? snap.error.toString()
-                    : 'Could not load dashboard.',
-                onRetry: _reload,
-              );
+              if (!_recoverScheduled) {
+                _recoverScheduled = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) unawaited(_reload());
+                });
+              }
+              return tichInstantWaitBody(onRefresh: () async => _reload());
             }
-            final data = merged! as Map<String, dynamic>;;
+            final data = merged! as Map<String, dynamic>;
             final staff =
                 Map<String, dynamic>.from(data['staff'] as Map? ?? {});
             final contract =
@@ -228,11 +229,9 @@ class _DashboardPageState extends State<DashboardPage> {
                             icon: Icons.notifications_active_outlined,
                             label: '$_notifCount unread',
                             onTap: () async {
-                              await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      NotificationsPage(api: widget.api),
-                                ),
+                              await openEmployeeNotifications(
+                                context,
+                                widget.api,
                               );
                               _refreshBadgesAfterNavigation();
                             },

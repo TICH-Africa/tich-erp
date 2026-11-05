@@ -89,6 +89,48 @@ void procurementPrimeScreen({
   );
 }
 
+/// Disk + memory cache key for a procurement detail payload.
+String procurementDetailCacheKey(String namespace, int id) => '$namespace.$id';
+
+/// Start loading before [Navigator.push] so detail/create screens paint from cache.
+void procurementWarm(
+  String persistKey,
+  Future<Map<String, dynamic>> Function() fetch,
+) {
+  TichScreenCache.warm(persistKey, fetch);
+}
+
+/// Standard FutureBuilder body for cached map screens (detail, form options).
+Widget procurementCachedMapBody({
+  required AsyncSnapshot<Map<String, dynamic>> snap,
+  required Object? memoryCache,
+  required String persistKey,
+  required Widget Function(Map<String, dynamic> data) builder,
+  Future<void> Function()? onRetry,
+}) {
+  final merged = tichMergeSnapshot(
+    snap,
+    memoryCache as dynamic,
+    persistKey: persistKey,
+  );
+  if (tichShowLoadingSpinner(snap, merged)) {
+    return procurementLoadingBody(onRefresh: onRetry);
+  }
+  if (merged == null && snap.hasError) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(tichDescribeError(snap.error)),
+          if (onRetry != null)
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
+    );
+  }
+  return builder(merged! as Map<String, dynamic>);
+}
+
 void procurementShowError(BuildContext context, Object error) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(tichDescribeError(error))),

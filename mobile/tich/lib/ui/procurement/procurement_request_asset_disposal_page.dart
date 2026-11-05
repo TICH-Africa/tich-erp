@@ -3,13 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../adaptive/adaptive.dart';
-import '../../data/api_client.dart';
 import '../../data/procurement_api.dart';
-import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
-import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'procurement_helpers.dart';
+import 'procurement_prefetch.dart';
 
 class ProcurementRequestAssetDisposalPage extends StatefulWidget {
   const ProcurementRequestAssetDisposalPage({super.key, required this.api});
@@ -29,6 +27,7 @@ class _ProcurementRequestAssetDisposalPageState
   final _reason = TextEditingController();
 
   late Future<Map<String, dynamic>> _optionsFuture;
+  Object? _optionsCache;
   int? _assetId;
   String _disposalType = 'write_off';
   DateTime? _disposalDate;
@@ -37,16 +36,24 @@ class _ProcurementRequestAssetDisposalPageState
   static final _dateFormat = DateFormat('yyyy-MM-dd');
   static final _displayDate = DateFormat('MM/dd/yyyy');
 
-  static const _optionsCacheKey = 'procurement.asset_disposal_form_options';
-
   @override
   void initState() {
     super.initState();
-    _optionsFuture = TichScreenCache.ensure(
-      _optionsCacheKey,
-      () => widget.api.assetDisposalFormOptions(),
+    procurementPrimeScreen(
+      persistKey: ProcurementPrefetch.assetDisposalFormOptionsKey,
+      setCache: (c) => _optionsCache = c,
+      setFuture: (f) => _optionsFuture = f,
+      fetch: () => widget.api.assetDisposalFormOptions(),
     );
   }
+
+  Future<void> _reloadOptions() => procurementCachedReload(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.assetDisposalFormOptions(),
+        onData: (d) => _optionsCache = d,
+        persistKey: ProcurementPrefetch.assetDisposalFormOptionsKey,
+      );
 
   @override
   void dispose() {
@@ -154,29 +161,12 @@ class _ProcurementRequestAssetDisposalPageState
       body: FutureBuilder<Map<String, dynamic>>(
         future: _optionsFuture,
         builder: (context, snap) {
-          if (tichShowLoadingSpinner(snap, snap.hasData ? snap.data : null)) {
-            return procurementLoadingBody();
-          }
-          if (snap.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(tichDescribeError(snap.error)),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _optionsFuture = widget.api.assetDisposalFormOptions();
-                      });
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final data = snap.data ?? {};
+          return procurementCachedMapBody(
+            snap: snap,
+            memoryCache: _optionsCache,
+            persistKey: ProcurementPrefetch.assetDisposalFormOptionsKey,
+            onRetry: _reloadOptions,
+            builder: (data) {
           final assets = (data['assets'] as List? ?? [])
               .map((e) => Map<String, dynamic>.from(e as Map))
               .toList();
@@ -330,6 +320,8 @@ class _ProcurementRequestAssetDisposalPageState
                 ),
               ],
             ),
+          );
+            },
           );
         },
       ),

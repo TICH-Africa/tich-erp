@@ -7,6 +7,9 @@ import '../../data/staff_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
+import 'staff_helpers.dart';
+import 'staff_prefetch.dart';
+import 'lesson_plan_detail_page.dart';
 import 'staff_timetable_grid.dart';
 
 class StaffLessonPlanCreatePage extends StatefulWidget {
@@ -72,7 +75,10 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
 
   Future<void> _loadTimetable() async {
     try {
-      final data = await widget.api.timetable();
+      final data = await staffEnsure(
+        StaffPrefetch.timetableKey,
+        () => widget.api.timetable(),
+      );
       if (!mounted) return;
       final sessions = (data['sessions'] as List? ?? const [])
           .map((e) => Map<String, dynamic>.from(e as Map))
@@ -155,9 +161,13 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
     if (id == null) return;
     setState(() => _loadingContext = true);
     try {
-      final data = await widget.api.lessonPlanContext(
-        allocationId: id,
-        plannedDate: _dateApi(_plannedDate),
+      final date = _dateApi(_plannedDate);
+      final data = await staffEnsure(
+        StaffPrefetch.lessonPlanContextKey(id, date),
+        () => widget.api.lessonPlanContext(
+          allocationId: id,
+          plannedDate: date,
+        ),
       );
       if (!mounted) return;
       final defaults =
@@ -276,7 +286,7 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
     }
     setState(() => _busy = true);
     try {
-      await widget.api.createLessonPlan({
+      final res = await widget.api.createLessonPlan({
         'source_type': 'form',
         'allocation_id': _allocationId,
         'lesson_title': _lessonTitle.text.trim(),
@@ -299,8 +309,21 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
         ],
       });
       if (!mounted) return;
-      _snack('Lesson plan saved as draft.');
-      Navigator.of(context).pop(true);
+      final plan = Map<String, dynamic>.from(res['plan'] as Map? ?? {});
+      final id = (plan['id'] as num?)?.toInt();
+      if (id == null) {
+        Navigator.of(context).pop(true);
+        return;
+      }
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => StaffLessonPlanDetailPage(
+            api: widget.api,
+            planId: id,
+            initialPlan: plan,
+          ),
+        ),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       _snack(e.message);
@@ -361,7 +384,7 @@ class _StaffLessonPlanCreatePageState extends State<StaffLessonPlanCreatePage> {
                               width: 22,
                               child: AdaptiveProgress(),
                             )
-                          : Text(_step < 2 ? 'Next' : 'Save draft'),
+                          : Text(_step < 2 ? 'Next' : 'Save & preview'),
                     ),
                   ),
                 ],
