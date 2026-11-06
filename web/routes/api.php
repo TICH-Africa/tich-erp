@@ -11,6 +11,7 @@ use App\Http\Controllers\HR\StaffController;
 use App\Http\Controllers\HR\StatusHistoryController;
 use App\Http\Controllers\HR\VacancyController;
 use App\Http\Controllers\Api\MobileRealtimeController;
+use App\Http\Controllers\Api\MobileWebHandoffController;
 use App\Http\Controllers\RBACController;
 use Illuminate\Broadcasting\BroadcastController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/realtime/config', MobileRealtimeController::class);
     Route::post('/broadcasting/auth', [BroadcastController::class, 'authenticate']);
+    Route::post('/mobile/web-handoff', [MobileWebHandoffController::class, 'store']);
 });
 
 Route::prefix('auth')->group(function () {

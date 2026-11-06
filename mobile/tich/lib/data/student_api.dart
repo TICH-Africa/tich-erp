@@ -53,6 +53,10 @@ class StudentApi {
 
   Future<Map<String, dynamic>> finance() => _client.get('/student/finance');
 
+  /// One-time link that signs the student into the web portal (same account).
+  Future<Map<String, dynamic>> createWebHandoff({required String path}) =>
+      _client.post('/mobile/web-handoff', body: {'path': path});
+
   Future<Map<String, dynamic>> payInvoice(
     int invoiceId, {
     required double amount,

@@ -74,6 +74,10 @@ Route::get('/programs/{code}', [ProgramsController::class, 'show'])->name('progr
 |--------------------------------------------------------------------------
 */
 
+Route::get('/mobile/handoff/{token}', [\App\Http\Controllers\Auth\MobileWebHandoffController::class, 'consume'])
+    ->middleware('throttle:login')
+    ->name('mobile.handoff.consume');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [WebAuthController::class, 'login'])->middleware('throttle:login');

@@ -21,6 +21,7 @@ import 'student_academics_lazy_section.dart';
 import 'student_academics_payload.dart';
 import 'student_helpers.dart';
 import 'learning_content_page.dart';
+import 'student_academic_calendar_section.dart';
 import 'student_academic_progress_section.dart';
 import 'student_provisional_results_section.dart';
 import 'student_module_nav.dart';
@@ -143,7 +144,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
   List<AcademicsHubSection> _buildHubSections(StudentAcademicsPayload p) {
     return [
       AcademicsHubSection(
-        title: 'My units',
+        title: 'My Units',
         icon: Icons.menu_book_outlined,
         badgeKey: 'academics.units',
         onTapDown: (_) => StudentPrefetch.academicsUnits(widget.api),
@@ -151,7 +152,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
           Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StudentAcademicsLazySection(
-              title: 'My units',
+              title: 'My Units',
               cacheKey: 'student.academics.units',
               fetch: () => widget.api.academicsUnits(),
               builder: (data) {
@@ -167,7 +168,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         },
       ),
       AcademicsHubSection(
-        title: 'Learning content',
+        title: 'Learning Content',
         icon: Icons.folder_open_outlined,
         badgeKey: 'academics.content',
         onTapDown: (_) => StudentPrefetch.academicsContent(widget.api),
@@ -175,7 +176,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
           Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StudentAcademicsLazySection(
-              title: 'Learning content',
+              title: 'Learning Content',
               cacheKey: 'student.academics.content',
               fetch: () => widget.api.academicsContent(),
               builder: (data) {
@@ -304,12 +305,12 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         },
       ),
       AcademicsHubSection(
-        title: 'Exams & grades',
+        title: 'Exams & Grades',
         icon: Icons.grade_outlined,
         badgeKey: 'academics.exams',
         onTapDown: (_) => StudentPrefetch.academics(widget.api),
         onTap: () => _openPayloadSection(
-          'Exams & grades',
+          'Exams & Grades',
           (payload) {
             return ListView(
               padding: const EdgeInsets.all(16),
@@ -394,32 +395,18 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         ),
       ),
       AcademicsHubSection(
-        title: 'Attendance',
-        icon: Icons.how_to_reg_outlined,
-        badgeKey: 'academics.attendance',
+        title: 'Supplementary & Special Exams',
+        icon: Icons.edit_note_outlined,
+        badgeKey: 'academics.exam-requests',
         onTapDown: (_) => StudentPrefetch.academics(widget.api),
         onTap: () => _openPayloadSection(
-          'Attendance',
-          (payload) => _listSection(
-            empty: 'No attendance summaries yet.',
-            items: payload.attendance,
-            tile: (a) => TichCard(
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  '${a['unit_code'] ?? ''} · ${a['unit_name'] ?? ''}',
-                  style: tichUi(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  '${a['attendance_percentage'] ?? 0}% · '
-                  '${a['total_present'] ?? 0}/${a['total_sessions'] ?? 0} sessions',
-                ),
-                trailing: TichStatusChip(
-                  studentAttendanceStatusLabel(a),
-                  tone: studentAttendanceTone(a),
-                ),
-              ),
-            ),
+          'Supplementary & Special Exams',
+          (payload) => _ExamRequestsInteractive(
+            api: widget.api,
+            units: payload.registeredUnits,
+            special: payload.specialExamRequests,
+            supplementary: payload.supplementaryExamRequests,
+            onChanged: _reload,
           ),
         ),
       ),
@@ -454,18 +441,54 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         ),
       ),
       AcademicsHubSection(
-        title: 'Supp / special exams',
-        icon: Icons.edit_note_outlined,
-        badgeKey: 'academics.exam-requests',
+        title: 'Academic calendar',
+        icon: Icons.calendar_month_outlined,
+        badgeKey: 'academics.calendar',
         onTapDown: (_) => StudentPrefetch.academics(widget.api),
         onTap: () => _openPayloadSection(
-          'Supp / special exams',
-          (payload) => _ExamRequestsInteractive(
-            api: widget.api,
-            units: payload.registeredUnits,
-            special: payload.specialExamRequests,
-            supplementary: payload.supplementaryExamRequests,
-            onChanged: _reload,
+          'Academic calendar',
+          (payload) => StudentAcademicCalendarSection(
+            academics: payload.academics,
+          ),
+        ),
+      ),
+      AcademicsHubSection(
+        title: 'Unit registration',
+        icon: Icons.app_registration_outlined,
+        badgeKey: 'academics.registration',
+        onTapDown: (_) => StudentPrefetch.academics(widget.api),
+        onTap: () => _openPayloadSection(
+          'Unit registration',
+          (payload) => _StudentUnitsSection(units: payload.registeredUnits),
+        ),
+      ),
+      AcademicsHubSection(
+        title: 'Attendance',
+        icon: Icons.how_to_reg_outlined,
+        badgeKey: 'academics.attendance',
+        onTapDown: (_) => StudentPrefetch.academics(widget.api),
+        onTap: () => _openPayloadSection(
+          'Attendance',
+          (payload) => _listSection(
+            empty: 'No attendance summaries yet.',
+            items: payload.attendance,
+            tile: (a) => TichCard(
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  '${a['unit_code'] ?? ''} · ${a['unit_name'] ?? ''}',
+                  style: tichUi(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  '${a['attendance_percentage'] ?? 0}% · '
+                  '${a['total_present'] ?? 0}/${a['total_sessions'] ?? 0} sessions',
+                ),
+                trailing: TichStatusChip(
+                  studentAttendanceStatusLabel(a),
+                  tone: studentAttendanceTone(a),
+                ),
+              ),
+            ),
           ),
         ),
       ),
