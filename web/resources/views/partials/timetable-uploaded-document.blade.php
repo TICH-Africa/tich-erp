@@ -18,23 +18,29 @@
             $isPdf = str_contains(strtolower($mime), 'pdf');
             $isImage = str_starts_with(strtolower($mime), 'image/');
         @endphp
-        <div class="doc-viewer" style="min-height:32rem;">
-            @if ($isPdf)
-                <iframe
-                    src="{{ $pdfUrl }}"
-                    title="{{ $timetable->displayTitle() }}"
-                    style="width:100%; min-height:32rem; border:1px solid var(--tich-border); border-radius:0.5rem; background:#fff;"
-                ></iframe>
-            @elseif ($isImage)
-                <img
-                    src="{{ $pdfUrl }}"
-                    alt="{{ $timetable->displayTitle() }}"
-                    style="width:100%; max-width:100%; height:auto; border:1px solid var(--tich-border); border-radius:0.5rem; background:#fff;"
-                />
-            @else
-                <p class="tich-text tich-mb-4">Preview is not available for this file type in the browser.</p>
-                <a href="{{ $pdfUrl }}" class="tich-btn tich-btn-secondary" download>Open / download document</a>
-            @endif
+        <div class="doc-viewer doc-viewer--single doc-viewer--timetable tich-mt-2">
+            <div class="doc-viewer__panel doc-viewer__panel--full">
+                <div class="doc-viewer__stage">
+                    @if ($isPdf)
+                        <iframe
+                            src="{{ $pdfUrl }}"
+                            title="{{ $timetable->displayTitle() }}"
+                            class="doc-viewer__frame"
+                        ></iframe>
+                    @elseif ($isImage)
+                        <img
+                            src="{{ $pdfUrl }}"
+                            alt="{{ $timetable->displayTitle() }}"
+                            class="doc-viewer__image"
+                        />
+                    @else
+                        <div class="doc-viewer__fallback">
+                            <p class="tich-text tich-mb-4">Preview is not available for this file type in the browser.</p>
+                            <a href="{{ $pdfUrl }}" class="tich-btn tich-btn-secondary" download>Open / download document</a>
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
     @else
         <p class="tich-text">The uploaded file is not available right now.</p>

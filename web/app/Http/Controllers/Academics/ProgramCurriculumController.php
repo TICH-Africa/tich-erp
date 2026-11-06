@@ -39,6 +39,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProgramCurriculumController extends DepartmentAcademicsController
@@ -575,15 +576,24 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         );
 
         $moved = $this->timetableTemplates->movedSessions;
+        $redirectParams = array_filter([
+            'program' => $program->id,
+            'learning_department' => $request->integer('learning_department') ?: null,
+            'intake' => $request->integer('intake') ?: null,
+            'section' => 'timetable',
+            'teaching_period' => $request->integer('teaching_period') ?: null,
+            'timetable_kind' => $request->string('timetable_kind')->toString() ?: 'lesson',
+        ]);
+        if ($request->boolean('timetable_edit')) {
+            $redirectParams['timetable_edit'] = 1;
+            if (in_array($request->string('timetable_workspace')->toString(), ['builder', 'upload'], true)) {
+                $redirectParams['timetable_workspace'] = $request->string('timetable_workspace')->toString();
+            }
+        }
+
         return redirect()
-            ->route('departments.academics.programs.curriculum', array_filter([
-                'program' => $program->id,
-                'learning_department' => $request->integer('learning_department') ?: null,
-                'intake' => $request->integer('intake') ?: null,
-                'section' => 'timetable',
-                'teaching_period' => $request->integer('teaching_period') ?: null,
-                'timetable_kind' => $request->string('timetable_kind')->toString() ?: 'lesson',
-            ]))
+            ->route('departments.academics.programs.curriculum', $redirectParams)
+            ->withFragment($request->boolean('timetable_edit') ? 'timetable-edit' : 'timetable-display')
             ->with('status', 'Bell schedule saved.'.($moved > 0 ? ' '.$moved.' class'.($moved === 1 ? '' : 'es').' moved to the new hours.' : ''));
     }
 
@@ -613,15 +623,24 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         );
 
         $moved = $this->timetableTemplates->movedSessions;
+        $redirectParams = array_filter([
+            'program' => $program->id,
+            'learning_department' => $request->integer('learning_department') ?: null,
+            'intake' => $request->integer('intake') ?: null,
+            'section' => 'timetable',
+            'teaching_period' => $request->integer('teaching_period') ?: null,
+            'timetable_kind' => $timetableKind,
+        ]);
+        if ($request->boolean('timetable_edit')) {
+            $redirectParams['timetable_edit'] = 1;
+            if (in_array($request->string('timetable_workspace')->toString(), ['builder', 'upload'], true)) {
+                $redirectParams['timetable_workspace'] = $request->string('timetable_workspace')->toString();
+            }
+        }
+
         return redirect()
-            ->route('departments.academics.programs.curriculum', array_filter([
-                'program' => $program->id,
-                'learning_department' => $request->integer('learning_department') ?: null,
-                'intake' => $request->integer('intake') ?: null,
-                'section' => 'timetable',
-                'teaching_period' => $request->integer('teaching_period') ?: null,
-                'timetable_kind' => $timetableKind,
-            ]))
+            ->route('departments.academics.programs.curriculum', $redirectParams)
+            ->withFragment($request->boolean('timetable_edit') ? 'timetable-edit' : 'timetable-display')
             ->with('status', 'Exam slots saved.'.($moved > 0 ? ' '.$moved.' sitting'.($moved === 1 ? '' : 's').' moved to the new hours.' : ''));
     }
 
@@ -668,12 +687,109 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $cycle = $timetable->cycleLabel();
         $audience = $timetable->isOnlineMode() ? ' for online students' : '';
 
-        return $this->timetableRedirect(
+        return $this->timetableEditRedirect(
             $request,
             $timetable,
             $cycle
                 ? 'Opened the '.$cycle.' timetable'.$audience.' - its classes are stamped with it, so nothing lands on another week.'
                 : 'Timetable opened empty'.$audience.' - add the classes as the school runs them.'
+        );
+    }
+
+    public function uploadTimetable(Request $request, Department $department, AcademicProgram $program, CurriculumVersion $version): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $version->program_id === (int) $program->id, 404);
+
+        $maxKb = $this->timetableDocuments->maxUploadKilobytes();
+
+        $validated = $request->validate([
+            'title' => ['nullable', 'string', 'max:200'],
+            'timetable_kind' => ['nullable', 'in:'.implode(',', array_keys(TimetableSchedulingService::timetableKinds()))],
+            'cycle_type' => ['nullable', 'in:'.implode(',', array_keys(ProgramTimetable::cycleTypes()))],
+            'cycle_no' => [
+                \Illuminate\Validation\Rule::requiredIf(fn () => in_array($request->string('cycle_type')->toString(), ['weekly', 'monthly'], true)),
+                'nullable',
+                'integer',
+                'min:1',
+                'max:60',
+            ],
+            'delivery_mode' => ['nullable', 'in:'.implode(',', array_keys(ProgramTimetable::deliveryModes()))],
+            'timetable_file' => ['required', 'file', 'max:'.$maxKb],
+        ], [
+            'cycle_no.required_with' => 'Say which week or month this timetable covers.',
+            'timetable_file.required' => 'Choose a timetable file to upload.',
+        ]);
+
+        $teachingPeriod = $request->integer('teaching_period') ?: 1;
+        $timetableKind = $this->timetableScheduling->normalizeTimetableKind($validated['timetable_kind'] ?? 'lesson');
+
+        $timetable = $this->timetableScheduling->startDraftFromUpload(
+            $request->user(),
+            $program,
+            $version,
+            $teachingPeriod,
+            $request->file('timetable_file'),
+            $timetableKind,
+            $validated['title'] ?? null,
+            $request,
+            $validated['cycle_type'] ?? null,
+            isset($validated['cycle_no']) ? (int) $validated['cycle_no'] : null,
+            $validated['delivery_mode'] ?? 'physical'
+        );
+
+        return $this->timetableRedirect(
+            $request,
+            $timetable,
+            'Timetable uploaded. Review the document, then publish when ready.'
+        );
+    }
+
+    public function replaceTimetableUpload(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $timetable->program_id === (int) $program->id, 404);
+
+        $maxKb = $this->timetableDocuments->maxUploadKilobytes();
+
+        $request->validate([
+            'timetable_file' => ['required', 'file', 'max:'.$maxKb],
+        ], [
+            'timetable_file.required' => 'Choose a timetable file to upload.',
+        ]);
+
+        $timetable = $this->timetableScheduling->replaceUploadedDocument(
+            $request->user(),
+            $timetable,
+            $request->file('timetable_file'),
+            $request
+        );
+
+        return $this->timetableEditRedirect(
+            $request,
+            $timetable,
+            'Timetable document saved. Upload again or switch to the builder grid from Edit timetable.'
+        );
+    }
+
+    public function useBuilderTimetable(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+        abort_unless((int) $timetable->program_id === (int) $program->id, 404);
+
+        $timetable = $this->timetableScheduling->switchToBuilderMode(
+            $request->user(),
+            $timetable,
+            $request
+        );
+
+        return $this->timetableEditRedirect(
+            $request,
+            $timetable,
+            'Switched to the builder grid. Add or edit classes below, or upload a document again anytime from Edit timetable.'
         );
     }
 
@@ -704,17 +820,20 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             $request
         );
 
-        return redirect()
-            ->route('departments.academics.programs.curriculum', array_filter([
-                'program' => $program->id,
-                'learning_department' => $request->integer('learning_department') ?: null,
-                'intake' => $version->id,
-                'section' => 'timetable',
-                'teaching_period' => $teachingPeriod,
-                'timetable_kind' => $validated['timetable_kind'] ?? $timetableKind,
-            ]))
-            ->withFragment('timetable-display')
-            ->with('status', 'Timetable draft generated. Review conflicts, then publish.');
+        $generated = $this->timetableScheduling->timetableForDisplay(
+            $program->id,
+            $version->id,
+            $teachingPeriod,
+            $this->timetableScheduling->normalizeTimetableKind($validated['timetable_kind'] ?? $timetableKind),
+        );
+
+        abort_unless($generated, 404);
+
+        return $this->timetableEditRedirect(
+            $request,
+            $generated,
+            'Timetable draft generated. Review conflicts, then publish.'
+        );
     }
 
     public function updateTimetableSessionInvigilator(
@@ -741,17 +860,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             $request
         );
 
-        return redirect()
-            ->route('departments.academics.programs.curriculum', array_filter([
-                'program' => $program->id,
-                'learning_department' => $request->integer('learning_department') ?: null,
-                'intake' => $timetable->curriculum_version_id,
-                'section' => 'timetable',
-                'teaching_period' => $timetable->teaching_period,
-                'timetable_kind' => $timetable->timetable_kind,
-            ]))
-            ->withFragment('timetable-display')
-            ->with('status', 'Invigilator updated.');
+        return $this->timetableEditRedirect($request, $timetable, 'Invigilator updated.');
     }
 
     public function addTimetableSession(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): RedirectResponse
@@ -804,7 +913,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             );
         }
 
-        return $this->timetableRedirect($request, $timetable, 'Session added to the '.lcfirst($timetable->kindLabel()).'.');
+        return $this->timetableEditRedirect($request, $timetable, 'Session added to the '.lcfirst($timetable->kindLabel()).'.');
     }
 
     public function updateTimetableSession(
@@ -862,7 +971,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             );
         }
 
-        return $this->timetableRedirect($request, $timetable, 'Session updated: '.$updated->displayTitle().'.');
+        return $this->timetableEditRedirect($request, $timetable, 'Session updated: '.$updated->displayTitle().'.');
     }
 
     public function removeTimetableSession(
@@ -881,7 +990,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
 
         $this->timetableScheduling->removeSession($request->user(), $timetable, $session, $request);
 
-        return $this->timetableRedirect($request, $timetable, 'Session removed: '.$label.'.');
+        return $this->timetableEditRedirect($request, $timetable, 'Session removed: '.$label.'.');
     }
 
     /**
@@ -952,6 +1061,28 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'delivery_mode' => $timetable->delivery_mode ?? 'physical',
             ]))
             ->withFragment('timetable-display')
+            ->with('status', $status);
+    }
+
+    private function timetableEditRedirect(Request $request, ProgramTimetable $timetable, string $status): RedirectResponse
+    {
+        $workspace = $request->string('timetable_workspace')->toString();
+        if (! in_array($workspace, ['builder', 'upload'], true)) {
+            $workspace = $this->timetableDocuments->usesUploadedFile($timetable) ? 'upload' : 'builder';
+        }
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'program' => $timetable->program_id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $timetable->curriculum_version_id,
+                'section' => 'timetable',
+                'teaching_period' => $timetable->teaching_period,
+                'timetable_kind' => $timetable->timetable_kind,
+                'timetable_edit' => 1,
+                'timetable_workspace' => $workspace,
+            ]))
+            ->withFragment('timetable-edit')
             ->with('status', $status);
     }
 
@@ -1042,7 +1173,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         );
     }
 
-    public function downloadTimetablePdf(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): StreamedResponse
+    public function downloadTimetablePdf(Request $request, Department $department, AcademicProgram $program, ProgramTimetable $timetable): Response
     {
         $this->timetablePrintData($request, $department, $program, $timetable, includeActions: false);
 
@@ -1053,15 +1184,26 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $data = $this->timetablePrintData($request, $department, $program, $timetable, includeActions: false);
         $program = $data['program'];
 
+        $filename = sprintf(
+            'timetable-%s-sem%d-%s.pdf',
+            $timetable->timetable_kind,
+            $timetable->teaching_period,
+            \Illuminate\Support\Str::slug($program->program_code ?? (string) $program->id)
+        );
+
+        if ($request->boolean('inline')) {
+            return $this->printDocuments->inlinePdf(
+                'academics.programs.timetable-print',
+                $data,
+                $filename,
+                'landscape',
+            );
+        }
+
         return $this->printDocuments->downloadPdf(
             'academics.programs.timetable-print',
             $data,
-            sprintf(
-                'timetable-%s-sem%d-%s.pdf',
-                $timetable->timetable_kind,
-                $timetable->teaching_period,
-                \Illuminate\Support\Str::slug($program->program_code ?? (string) $program->id)
-            ),
+            $filename,
             'landscape',
         );
     }

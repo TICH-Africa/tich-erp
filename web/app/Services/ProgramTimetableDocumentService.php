@@ -6,8 +6,12 @@ use App\Models\ProgramTimetable;
 use App\Models\ProgramTimetableSession;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -16,6 +20,79 @@ class ProgramTimetableDocumentService
     /**
      * Timetable is shown as the uploaded file (not a generated grid PDF).
      */
+    /**
+     * @return list<string>
+     */
+    public function allowedExtensions(): array
+    {
+        return config('tich-academics.timetable_upload.allowed_extensions', ['pdf', 'png', 'jpg', 'jpeg']);
+    }
+
+    public function maxUploadKilobytes(): int
+    {
+        return (int) config('tich-academics.timetable_upload.max_kb', 15360);
+    }
+
+    public function attachUpload(ProgramTimetable $timetable, UploadedFile $file, User $user): void
+    {
+        $extension = strtolower($file->getClientOriginalExtension() ?: '');
+        $allowed = $this->allowedExtensions();
+        if (! in_array($extension, $allowed, true)) {
+            throw ValidationException::withMessages([
+                'timetable_file' => 'Upload a timetable file ('.implode(', ', $allowed).').',
+            ]);
+        }
+
+        $maxKb = $this->maxUploadKilobytes();
+        if ($file->getSize() > $maxKb * 1024) {
+            throw ValidationException::withMessages([
+                'timetable_file' => 'The file is too large (max '.(int) ($maxKb / 1024).' MB).',
+            ]);
+        }
+
+        if (filled($timetable->source_file)) {
+            $this->deleteStoredFile((string) $timetable->source_file);
+        }
+
+        $directory = 'program-timetables/'.$timetable->program_id.'/'.$timetable->id;
+        $storedName = Str::uuid()->toString().'.'.$extension;
+        $path = $file->storeAs($directory, $storedName, 'local');
+
+        $timetable->forceFill([
+            'source' => 'upload',
+            'source_file' => $path,
+            'source_name' => $file->getClientOriginalName(),
+            'source_uploaded_at' => now(),
+            'source_uploaded_by' => $user->id,
+            'updated_at' => now(),
+        ])->save();
+    }
+
+    public function deleteStoredFile(?string $path): void
+    {
+        if (! filled($path)) {
+            return;
+        }
+
+        if ($this->storage()->exists($path)) {
+            $this->storage()->delete($path);
+        }
+    }
+
+    public function detachUpload(ProgramTimetable $timetable): void
+    {
+        $this->deleteStoredFile($timetable->source_file);
+
+        $timetable->forceFill([
+            'source' => 'manual',
+            'source_file' => null,
+            'source_name' => null,
+            'source_uploaded_at' => null,
+            'source_uploaded_by' => null,
+            'updated_at' => now(),
+        ])->save();
+    }
+
     public function usesUploadedFile(ProgramTimetable $timetable): bool
     {
         if (! filled($timetable->source_file)) {

@@ -130,6 +130,8 @@ return [
         'academics.calendar.year_created' => ['module' => 'academics', 'sensitive' => false],
         'academics.calendar.semester_updated' => ['module' => 'academics', 'sensitive' => false],
         'academics.timetable.generated' => ['module' => 'academics', 'sensitive' => false],
+        'academics.timetable.uploaded' => ['module' => 'academics', 'sensitive' => false],
+        'academics.timetable.format_changed' => ['module' => 'academics', 'sensitive' => false],
         'academics.timetable.published' => ['module' => 'academics', 'sensitive' => false],
         'academics.timetable.session_moved' => ['module' => 'academics', 'sensitive' => false],
         'academics.timetable.session_added' => ['module' => 'academics', 'sensitive' => false],

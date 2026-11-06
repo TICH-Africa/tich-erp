@@ -173,6 +173,9 @@ return function (bool $named = true): void {
         $register('put', '/programs/{program}/timetable/slots', [ProgramCurriculumController::class, 'syncTimetableKindSlots'], 'departments.academics.programs.timetable.sync-kind-slots');
         $register('post', '/programs/{program}/intakes/{version}/timetable/generate', [ProgramCurriculumController::class, 'generateTimetable'], 'departments.academics.programs.timetable.generate');
         $register('post', '/programs/{program}/intakes/{version}/timetable/start', [ProgramCurriculumController::class, 'startTimetable'], 'departments.academics.programs.timetable.start');
+        $register('post', '/programs/{program}/intakes/{version}/timetable/upload', [ProgramCurriculumController::class, 'uploadTimetable'], 'departments.academics.programs.timetable.upload');
+        $register('post', '/programs/{program}/timetables/{timetable}/upload', [ProgramCurriculumController::class, 'replaceTimetableUpload'], 'departments.academics.programs.timetable.replace-upload');
+        $register('post', '/programs/{program}/timetables/{timetable}/use-builder', [ProgramCurriculumController::class, 'useBuilderTimetable'], 'departments.academics.programs.timetable.use-builder');
         $register('post', '/programs/{program}/timetables/{timetable}/sessions', [ProgramCurriculumController::class, 'addTimetableSession'], 'departments.academics.programs.timetable.add-session');
         $register('put', '/programs/{program}/timetables/{timetable}/progress', [ProgramCurriculumController::class, 'saveTimetableProgress'], 'departments.academics.programs.timetable.save-progress');
         $register('put', '/programs/{program}/timetables/{timetable}/sessions/{session}', [ProgramCurriculumController::class, 'updateTimetableSession'], 'departments.academics.programs.timetable.update-session');

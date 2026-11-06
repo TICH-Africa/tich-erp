@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-11-05 14:47:54 EAT
+-- Generated: 2026-11-06 11:46:48 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -8882,6 +8882,11 @@ CREATE TABLE IF NOT EXISTS `program_timetables` (
   `template_id` bigint(20) unsigned DEFAULT NULL,
   `campus_id` bigint(20) unsigned DEFAULT NULL,
   `status` varchar(50) NOT NULL DEFAULT 'draft',
+  `source` varchar(20) NOT NULL DEFAULT 'generated',
+  `source_file` varchar(255) DEFAULT NULL,
+  `source_name` varchar(255) DEFAULT NULL,
+  `source_uploaded_at` datetime DEFAULT NULL,
+  `source_uploaded_by` bigint(20) unsigned DEFAULT NULL,
   `generation_notes` text DEFAULT NULL,
   `published_at` datetime DEFAULT NULL,
   `published_by` bigint(20) unsigned DEFAULT NULL,
@@ -8910,6 +8915,11 @@ CALL `tich_ensure_column`('program_timetables', 'cycle_no', 'smallint(5) unsigne
 CALL `tich_ensure_column`('program_timetables', 'template_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'campus_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'draft\\\'\'');
+CALL `tich_ensure_column`('program_timetables', 'source', 'varchar(20) NOT NULL DEFAULT \'\\\'generated\\\'\'');
+CALL `tich_ensure_column`('program_timetables', 'source_file', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_timetables', 'source_name', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_timetables', 'source_uploaded_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_timetables', 'source_uploaded_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'generation_notes', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'published_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'published_by', 'bigint(20) unsigned NULL DEFAULT NULL');
@@ -8962,7 +8972,14 @@ CREATE TABLE IF NOT EXISTS `program_timetable_sessions` (
   `day_of_week` tinyint(3) unsigned NOT NULL,
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
+  `session_date` date DEFAULT NULL,
+  `week_no` tinyint(3) unsigned DEFAULT NULL,
+  `source` varchar(20) NOT NULL DEFAULT 'generated',
+  `external_ref` varchar(120) DEFAULT NULL,
   `session_type` varchar(50) NOT NULL DEFAULT 'lesson',
+  `delivery_mode` varchar(20) NOT NULL DEFAULT 'physical',
+  `recurrence` varchar(20) NOT NULL DEFAULT 'weekly',
+  `contact_hours` decimal(6,2) DEFAULT NULL,
   `title` varchar(200) DEFAULT NULL,
   `venue` varchar(200) DEFAULT NULL,
   `class_group` varchar(100) DEFAULT NULL,
@@ -8993,7 +9010,14 @@ CALL `tich_ensure_column`('program_timetable_sessions', 'room_id', 'bigint(20) u
 CALL `tich_ensure_column`('program_timetable_sessions', 'day_of_week', 'tinyint(3) unsigned NOT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'start_time', 'time NOT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'end_time', 'time NOT NULL');
+CALL `tich_ensure_column`('program_timetable_sessions', 'session_date', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_timetable_sessions', 'week_no', 'tinyint(3) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_timetable_sessions', 'source', 'varchar(20) NOT NULL DEFAULT \'\\\'generated\\\'\'');
+CALL `tich_ensure_column`('program_timetable_sessions', 'external_ref', 'varchar(120) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'session_type', 'varchar(50) NOT NULL DEFAULT \'\\\'lesson\\\'\'');
+CALL `tich_ensure_column`('program_timetable_sessions', 'delivery_mode', 'varchar(20) NOT NULL DEFAULT \'\\\'physical\\\'\'');
+CALL `tich_ensure_column`('program_timetable_sessions', 'recurrence', 'varchar(20) NOT NULL DEFAULT \'\\\'weekly\\\'\'');
+CALL `tich_ensure_column`('program_timetable_sessions', 'contact_hours', 'decimal(6,2) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'title', 'varchar(200) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'venue', 'varchar(200) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'class_group', 'varchar(100) NULL DEFAULT NULL');

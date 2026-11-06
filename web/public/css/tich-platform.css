@@ -9236,6 +9236,31 @@ a.tich-tabs__btn {
     min-height: 32rem;
 }
 
+/* Timetable / upload embeds: no document list — use full content width */
+.doc-viewer:not(:has(.doc-viewer__list)),
+.doc-viewer.doc-viewer--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.doc-viewer--timetable .doc-viewer__stage,
+.doc-viewer--timetable .doc-viewer__frame {
+    min-height: min(75vh, 52rem);
+}
+
+.doc-viewer--timetable .doc-viewer__panel {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.tich-card.timetable-view-card {
+    border: none;
+    background: transparent;
+}
+
+.tich-card.timetable-view-card:hover {
+    border-color: transparent;
+}
+
 .doc-viewer__list {
     display: flex;
     flex-direction: column;
