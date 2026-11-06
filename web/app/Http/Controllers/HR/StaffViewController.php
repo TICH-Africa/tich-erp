@@ -320,7 +320,7 @@ class StaffViewController extends Controller
 
     public function edit(int $id): View
     {
-        $staff = Staff::excludePlatformOperators()->with(['bankAccount', 'pensionScheme'])->findOrFail($id);
+        $staff = Staff::excludePlatformOperators()->with(['bankAccount', 'pensionScheme', 'lineManager'])->findOrFail($id);
         $departments = Department::assignableForHr()->active()->orderBy('dept_name')->get(['id', 'dept_name']);
         $campuses = \App\Models\Campus::orderBy('campus_name')->get(['id', 'campus_name']);
         $lineManagers = Staff::excludePlatformOperators()
@@ -328,6 +328,12 @@ class StaffViewController extends Controller
             ->whereIn('employment_status', ['active', 'onboarding'])
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number']);
+        if ($staff->line_manager_id) {
+            $currentManager = $staff->lineManager;
+            if ($currentManager && ! $lineManagers->contains('id', (int) $staff->line_manager_id)) {
+                $lineManagers = $lineManagers->prepend($currentManager)->unique('id')->values();
+            }
+        }
         $pensionSchemes = PensionScheme::query()
             ->where(function ($query) use ($staff) {
                 $query->where('is_active', true);
@@ -515,6 +521,10 @@ class StaffViewController extends Controller
 
         if (array_key_exists('department_id', $validated) && $validated['department_id'] === '') {
             $validated['department_id'] = null;
+        }
+
+        if (array_key_exists('line_manager_id', $validated) && $validated['line_manager_id'] === '') {
+            $validated['line_manager_id'] = null;
         }
 
         return $validated;

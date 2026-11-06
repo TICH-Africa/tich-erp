@@ -154,6 +154,21 @@
                             @enderror
                         </div>
                         <div class="uf-field">
+                            <label for="line_manager_id">Line manager</label>
+                            <select id="line_manager_id" name="line_manager_id" class="{{ $errors->has('line_manager_id') ? 'is-invalid' : '' }}">
+                                <option value="">None</option>
+                                @foreach ($lineManagers as $manager)
+                                    <option value="{{ $manager->id }}" @selected((string) old('line_manager_id') === (string) $manager->id)>
+                                        {{ $manager->fullName() }}@if ($manager->employee_number) ({{ $manager->employee_number }})@endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('line_manager_id')
+                                <span class="uf-error">{{ $message }}</span>
+                            @enderror
+                            <span class="uf-hint">Leave blank or choose who endorses this employee’s workflows (leave, time logs, etc.).</span>
+                        </div>
+                        <div class="uf-field">
                             @include('hr.staff.partials.employment-category-select', ['selected' => old('employment_category')])
                         </div>
                         <div class="uf-field">

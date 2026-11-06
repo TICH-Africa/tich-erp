@@ -41,6 +41,7 @@
                         <th>Name</th>
                         <th>Departments</th>
                         <th>Job Title</th>
+                        <th>Line manager</th>
                         <th>Category</th>
                         <th>Status</th>
                         <th></th>
@@ -89,6 +90,16 @@
                                 @endforelse
                             </td>
                             <td>{{ $member->job_title }}</td>
+                            <td>
+                                @if ($member->lineManager)
+                                    <a href="{{ route('hr.staff.show', $member->lineManager) }}" class="tich-link">{{ $member->lineManager->fullName() }}</a>
+                                    @if ($member->lineManager->employee_number)
+                                        <span class="tich-caption" style="display:block;">{{ $member->lineManager->employee_number }}</span>
+                                    @endif
+                                @else
+                                    <span class="tich-caption">—</span>
+                                @endif
+                            </td>
                             <td class="tich-caption">{{ config('tich-payroll.employment_categories.'.$member->employment_category, ucfirst(str_replace('_', ' ', $member->employment_category))) }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ $member->employment_status === 'active' ? 'success' : 'warning' }}">
@@ -131,7 +142,7 @@
                             </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No staff records found', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 9, 'title' => 'No staff records found', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>

@@ -29,8 +29,8 @@ class StudentAcademicCalendarSection extends StatelessWidget {
     final periods = _periods;
 
     if (currentSemester is! Map && currentPeriod is! Map && periods.isEmpty) {
-      return const ListView(
-        padding: EdgeInsets.all(16),
+      return ListView(
+        padding: const EdgeInsets.all(16),
         children: [
           TichCard(
             child: TichEmpty(
