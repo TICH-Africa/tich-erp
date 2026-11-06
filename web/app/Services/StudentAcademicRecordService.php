@@ -121,6 +121,8 @@ class StudentAcademicRecordService
             'curriculum_is_published' => $curriculum?->isPublished() ?? false,
             'curriculum_units' => $curriculumUnits,
             'curriculum_by_semester' => collect($curriculumUnits->groupBy('semester')),
+            // Progress is measured against the whole programme, so hiding units never turns the bar into "100%".
+            'programme_unit_count' => $curriculumUnits->count(),
             'periods' => $periods,
             'periods_by_semester' => $periods->keyBy('semester'),
             'current_period' => $currentPeriod,
@@ -139,6 +141,79 @@ class StudentAcademicRecordService
             'my_submissions' => $mySubmissions,
             'unit_content' => $unitContent,
         ];
+    }
+
+    /**
+     * Build what a student sees from the units they are actually on.
+     *
+     * The programme plan carries every year of the intake, so an unfiltered record showed a
+     * second-year student their first-year units - along with the materials and assessments
+     * sitting on them. Their own list is driven by the registrations Academics made, and the
+     * plan only adds the hours and whether a unit is core. Staff screens read the full plan
+     * and are not routed through here.
+     *
+     * @param  array<string, mixed>  $academics
+     * @return array<string, mixed>
+     */
+    public function onlyRegisteredUnits(array $academics): array
+    {
+        $plan = collect($academics['curriculum_units']);
+        $held = collect($academics['registered_units']);
+
+        $byUnit = $plan->keyBy(fn ($mapping) => (int) $mapping->unit_id);
+        $heldIds = $held->pluck('unit_id')->map(fn ($id) => (int) $id)->unique()->values();
+
+        $academics['curriculum_units'] = $held
+            ->unique(fn (object $row) => (int) $row->unit_id)
+            ->map(function (object $row) use ($byUnit) {
+                $mapping = $byUnit->get((int) $row->unit_id);
+                $core = $mapping ? (bool) $mapping->is_compulsory : (bool) ($row->is_core ?? 0);
+
+                return (object) [
+                    'id' => $mapping->id ?? (int) $row->id,
+                    'unit_id' => (int) $row->unit_id,
+                    'unit_code' => (string) $row->unit_code,
+                    'unit_name' => (string) $row->unit_name,
+                    'semester' => (int) $row->semester_number,
+                    // A unit registered outside the published plan still carries its own hours.
+                    'credit_hours' => $mapping->credit_hours ?? $row->credit_hours ?? null,
+                    'contact_hours' => $mapping->contact_hours ?? ($row->contact_hours ?? 0),
+                    'total_learning_hours' => $mapping->total_learning_hours ?? ($row->total_learning_hours ?? 0),
+                    'is_compulsory' => $core,
+                    'is_core' => $core,
+                ];
+            })
+            ->sortBy(['semester', 'unit_code'])
+            ->values();
+
+        $academics['curriculum_by_semester'] = $academics['curriculum_units']->groupBy('semester');
+
+        $period = $academics['current_period'];
+        $academics['current_period_units'] = $academics['curriculum_units']
+            ->filter(function ($unit) use ($period, $byUnit) {
+                if (! $period) {
+                    return false;
+                }
+
+                $mapping = $byUnit->get((int) $unit->unit_id);
+
+                if ($period->block_id && $mapping) {
+                    return (int) $mapping->block_id === (int) $period->block_id;
+                }
+
+                return (int) $unit->semester === (int) $period->semester;
+            })
+            ->values();
+        $academics['unit_content'] = collect($academics['unit_content'])
+            ->filter(fn ($item) => $heldIds->contains((int) ($item->unit_id ?? 0)))
+            ->values();
+        $academics['assessments'] = collect($academics['assessments'])
+            ->filter(fn ($assessment) => $heldIds->contains((int) ($assessment->allocation?->unit_id ?? 0)))
+            ->values();
+        $academics['my_submissions'] = collect($academics['my_submissions'])
+            ->only($academics['assessments']->pluck('id')->all());
+
+        return $academics;
     }
 
     /**
@@ -167,20 +242,14 @@ class StudentAcademicRecordService
      */
     public function academicsHubForMobile(Student $student, bool $allowProvisionalCurriculum = true): array
     {
-        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
+        $data = $this->onlyRegisteredUnits($this->forStudent($student, $allowProvisionalCurriculum, false));
 
-        $registeredUnits = $data['registered_units'];
-        $registeredUnitIds = $registeredUnits->pluck('unit_id')->filter()->unique()->values()->all();
-        $unitIds = collect($data['curriculum_units'])->pluck('unit_id')->filter()->unique()
-            ->merge($registeredUnitIds)
-            ->unique()
-            ->values()
-            ->all();
+        $registeredUnitIds = $data['registered_units']->pluck('unit_id')->filter()->unique()->values()->all();
 
         $data['assessments'] = collect();
         $data['my_submissions'] = collect();
         $data['unit_content'] = collect();
-        $data['unit_content_count'] = $this->countPublishedUnitContent($unitIds);
+        $data['unit_content_count'] = $this->countPublishedUnitContent($registeredUnitIds);
         $data['assessment_count'] = $this->countReadyAssessments($registeredUnitIds);
         $data['registrations'] = collect($data['registrations'])->take(20)->values();
         $data['grades'] = collect($data['grades'])->take(40)->values();
@@ -196,7 +265,7 @@ class StudentAcademicRecordService
      */
     public function mobileUnitsForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
     {
-        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
+        $data = $this->onlyRegisteredUnits($this->forStudent($student, $allowProvisionalCurriculum, false));
 
         return [
             'registered_units' => $data['registered_units'],
@@ -213,14 +282,9 @@ class StudentAcademicRecordService
     {
         $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
         $registeredUnitIds = $data['registered_units']->pluck('unit_id')->filter()->unique()->values()->all();
-        $unitIds = collect($data['curriculum_units'])->pluck('unit_id')->filter()->unique()
-            ->merge($registeredUnitIds)
-            ->unique()
-            ->values()
-            ->all();
 
         return [
-            'unit_content' => $this->publishedUnitContentQuery($unitIds)->get(),
+            'unit_content' => $this->publishedUnitContentQuery($registeredUnitIds)->get(),
         ];
     }
 
@@ -360,6 +424,8 @@ class StudentAcademicRecordService
             ? Semester::query()->with('academicYear')->find($student->current_semester_id)
             : Semester::query()->with('academicYear')->where('is_current', 1)->first();
 
+        $registeredUnits = $this->registeredUnitsForStudents([$student->id])->get($student->id, collect());
+
         return [
             'curriculum' => $curriculum,
             'curriculum_units' => $curriculumUnits,
@@ -367,8 +433,8 @@ class StudentAcademicRecordService
             'current_period' => $currentPeriod,
             'current_semester' => $currentSemester,
             'registrations' => $registrations,
-            'registered_units' => collect(),
-            'registered_unit_count' => 0,
+            'registered_units' => $registeredUnits,
+            'registered_unit_count' => $registeredUnits->count(),
         ];
     }
 

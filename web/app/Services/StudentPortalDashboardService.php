@@ -24,8 +24,9 @@ class StudentPortalDashboardService
     {
         $student->loadMissing(['applicant', 'program', 'campus']);
 
-        $academics = $this->academicRecords->forStudent($student, $this->mayViewProvisionalCurriculum($student));
-        $academics = $this->onlyRegisteredUnits($academics);
+        $academics = $this->academicRecords->onlyRegisteredUnits(
+            $this->academicRecords->forStudent($student, $this->mayViewProvisionalCurriculum($student))
+        );
         $finance = $this->finance($student);
 
         return [
@@ -35,71 +36,6 @@ class StudentPortalDashboardService
             'transcript' => $this->transcript($student),
             'finance' => $finance,
         ];
-    }
-
-    /**
-     * Build what a student sees from the units they are actually on.
-     *
-     * The programme plan carries every year of the intake, so an unfiltered portal showed a
-     * second-year student their first-year units - along with the materials and assessments
-     * sitting on them. Their own list is driven by the registrations Academics made, and the
-     * plan only adds the hours and whether a unit is core. Staff screens read the full plan
-     * and are not routed through here.
-     *
-     * @param  array<string, mixed>  $academics
-     * @return array<string, mixed>
-     */
-    private function onlyRegisteredUnits(array $academics): array
-    {
-        $plan = $academics['curriculum_units'];
-        $held = $academics['registered_units'];
-
-        // Completion is still measured against the whole programme, so the progress bar does not
-        // quietly turn into "100%" the moment we hide the units a student is not on yet.
-        $academics['programme_unit_count'] = $plan->count();
-
-        $byUnit = $plan->keyBy(fn ($mapping) => (int) $mapping->unit_id);
-        $heldIds = $held->pluck('unit_id')->map(fn ($id) => (int) $id)->unique()->values();
-
-        $academics['curriculum_units'] = $held
-            ->unique(fn (object $row) => (int) $row->unit_id)
-            ->map(function (object $row) use ($byUnit) {
-                $mapping = $byUnit->get((int) $row->unit_id);
-                $core = $mapping ? (bool) $mapping->is_compulsory : (bool) ($row->is_core ?? 0);
-
-                return (object) [
-                    'id' => $mapping->id ?? (int) $row->id,
-                    'unit_id' => (int) $row->unit_id,
-                    'unit_code' => (string) $row->unit_code,
-                    'unit_name' => (string) $row->unit_name,
-                    'semester' => (int) $row->semester_number,
-                    // A unit registered outside the published plan still has its own hours,
-                    // so the student never sees a unit listed as 0 contact hours.
-                    'credit_hours' => $mapping->credit_hours ?? $row->credit_hours ?? null,
-                    'contact_hours' => $mapping->contact_hours ?? ($row->contact_hours ?? 0),
-                    'total_learning_hours' => $mapping->total_learning_hours ?? ($row->total_learning_hours ?? 0),
-                    'is_compulsory' => $core,
-                    'is_core' => $core,
-                ];
-            })
-            ->sortBy(['semester', 'unit_code'])
-            ->values();
-
-        $academics['curriculum_by_semester'] = $academics['curriculum_units']->groupBy('semester');
-
-        $onRecord = fn ($item) => $heldIds->contains((int) ($item->unit_id ?? 0));
-
-        $academics['current_period_units'] = $academics['curriculum_units']
-            ->filter(fn ($unit) => (int) $unit->semester === (int) ($academics['current_period']?->semester ?? -1))
-            ->values();
-        $academics['unit_content'] = $academics['unit_content']->filter($onRecord)->values();
-        $academics['assessments'] = $academics['assessments']
-            ->filter(fn ($assessment) => $heldIds->contains((int) ($assessment->allocation?->unit_id ?? 0)))
-            ->values();
-        $academics['my_submissions'] = $academics['my_submissions']
-            ->only($academics['assessments']->pluck('id')->all());
-
-        return $academics;
     }
 
     /**
@@ -499,6 +435,21 @@ class StudentPortalDashboardService
 
         $primary = $this->currentPosting($timetables, $period, $teachingPeriod);
         $template = $primary?->template?->load(['days']);
+
+        // Only classes for units they hold stay on the grid; an unregistered student keeps the whole posting.
+        $heldUnitIds = collect($academics['registered_units'] ?? [])
+            ->pluck('unit_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($heldUnitIds->isNotEmpty()) {
+            foreach ($timetables as $posted) {
+                $posted->setRelation('sessions', $posted->sessions->filter(
+                    fn ($session) => ! $session->unit_id || $heldUnitIds->contains((int) $session->unit_id)
+                )->values());
+            }
+        }
 
         return [
             'timetables' => $timetables,

@@ -11,6 +11,7 @@ use App\Models\NursingBlock;
 use App\Models\Semester;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\Sidebar\StudentSidebarNotificationService;
 use App\Support\IntakeIdentity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -32,6 +33,7 @@ class StudentUnitRegistrationService
         protected CurriculumVersionService $versions,
         protected ExamScheduleSyncService $schedule,
         protected AuditService $audits,
+        protected StudentSidebarNotificationService $portalCache,
     ) {}
 
     /**
@@ -242,7 +244,22 @@ class StudentUnitRegistrationService
             }
         });
 
+        $this->clearPortalCache($studentIds);
+
         return ['students' => $registered, 'units' => $unitsWritten];
+    }
+
+    /**
+     * The student's own portals cache their unit list, so a correction has to clear it or the
+     * phone keeps showing a unit Academics has just taken off the record.
+     *
+     * @param  list<int>  $studentIds
+     */
+    private function clearPortalCache(array $studentIds): void
+    {
+        foreach (Student::query()->whereIn('id', $studentIds)->get() as $student) {
+            $this->portalCache->forget($student);
+        }
     }
 
     /**
@@ -1029,6 +1046,9 @@ class StudentUnitRegistrationService
             ->get(['ru.id', 'ssr.id as registration_id', 's.semester_label']);
 
         if ($rows->isEmpty()) {
+            // Nothing to delete still clears the cache, so a stale phone list refreshes on this click.
+            $this->clearPortalCache([$student->id]);
+
             return [
                 'unit_code' => (string) $unit->unit_code,
                 'removed' => 0,
@@ -1081,6 +1101,8 @@ class StudentUnitRegistrationService
 
             return $cleared;
         });
+
+        $this->clearPortalCache([$student->id]);
 
         return [
             'unit_code' => (string) $unit->unit_code,
@@ -1136,6 +1158,8 @@ class StudentUnitRegistrationService
             reason: $reason,
             userId: $officer->id,
         );
+
+        $this->clearPortalCache([$student->id]);
 
         return ['unit_code' => (string) $unit->unit_code, 'cleared' => $cleared];
     }

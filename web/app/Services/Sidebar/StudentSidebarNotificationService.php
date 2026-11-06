@@ -87,7 +87,10 @@ class StudentSidebarNotificationService
         $id = $student->id;
         Cache::forget(self::CACHE_KEY_PREFIX.$id);
         Cache::forget('student.mobile.dashboard.'.$id.'.v1');
-        Cache::forget('student.mobile.academics.'.$id.'.v1');
+        Cache::forget('student.mobile.academics.hub.'.$id.'.v2');
+        Cache::forget('student.mobile.academics.units.'.$id.'.v1');
+        Cache::forget('student.mobile.academics.content.'.$id.'.v1');
+        Cache::forget('student.mobile.academics.assessments.'.$id.'.v1');
         Cache::forget('student.mobile.timetable.'.$id.'.v1');
         Cache::forget('student.mobile.finance.'.$id.'.v1');
         Cache::forget('student.mobile.biodata.'.$id.'.v1');
@@ -271,10 +274,27 @@ class StudentSidebarNotificationService
             $eligibility = max($eligibility, 1);
         }
 
+        $registeredUnitIds = collect();
+        if (SchemaProbe::hasTable('registered_units') && SchemaProbe::hasTable('student_semester_registrations')) {
+            $registeredUnitIds = DB::table('registered_units as ru')
+                ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
+                ->where('ssr.student_id', $student->id)
+                ->pluck('ru.unit_id')
+                ->filter()
+                ->unique()
+                ->values();
+        }
+
         $assessments = 0;
-        if (SchemaProbe::hasTable('objective_assessments') && SchemaProbe::hasTable('objective_submissions')) {
+        if (SchemaProbe::hasTable('objective_assessments')
+            && SchemaProbe::hasTable('objective_submissions')
+            && SchemaProbe::hasTable('unit_allocations')
+            && $registeredUnitIds->isNotEmpty()) {
             $now = now();
             $openAssessments = DB::table('objective_assessments as oa')
+                ->join('unit_allocations as ua', 'ua.id', '=', 'oa.unit_allocation_id')
+                ->whereIn('ua.unit_id', $registeredUnitIds)
+                ->where('ua.is_active', 1)
                 ->whereIn('oa.status', ['published', 'ready'])
                 ->where(function ($q) use ($now) {
                     $q->whereNull('oa.available_from')->orWhere('oa.available_from', '<=', $now);
@@ -318,17 +338,6 @@ class StudentSidebarNotificationService
                 ->where('student_id', $student->id)
                 ->whereIn('application_status', ['pending_review', 'pending_fee', 'on_hold'])
                 ->count();
-        }
-
-        $registeredUnitIds = collect();
-        if (SchemaProbe::hasTable('registered_units') && SchemaProbe::hasTable('student_semester_registrations')) {
-            $registeredUnitIds = DB::table('registered_units as ru')
-                ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
-                ->where('ssr.student_id', $student->id)
-                ->pluck('ru.unit_id')
-                ->filter()
-                ->unique()
-                ->values();
         }
 
         $units = 0;
