@@ -21,6 +21,7 @@
                 ])
                 <select id="status" name="status" class="tich-input tich-input--compact">
                     <option value="">All statuses</option>
+                    <option value="pending_hod" @selected(request('status') === 'pending_hod')>Awaiting line manager</option>
                     <option value="pending_hr" @selected(request('status') === 'pending_hr')>Awaiting HR</option>
                     <option value="returned" @selected(request('status') === 'returned')>Returned</option>
                     <option value="approved" @selected(request('status') === 'approved')>Approved</option>

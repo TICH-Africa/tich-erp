@@ -18,6 +18,7 @@ use App\Services\HodUnitAllocationService;
 use App\Services\Leave\LeaveCatalogService;
 use App\Services\Leave\LeaveCoverageService;
 use App\Services\LeaveRequestService;
+use App\Services\RBACService;
 use App\Services\LessonPlanApprovalService;
 use App\Services\ObjectiveAutoGradingService;
 use App\Services\StaffExamMarksService;
@@ -195,6 +196,9 @@ class StaffPortalDashboardController extends Controller
         $coverageDepartments = collect();
         $eligibleCoverStaff = collect();
         $leaveTypeMeta = [];
+        $teamLeavePending = collect();
+        $hrManagerDisplay = '';
+        $leaveApplicationNotice = '';
         if ($section === 'leave') {
             $leaveService = app(LeaveRequestService::class);
             $catalog = app(LeaveCatalogService::class);
@@ -202,6 +206,25 @@ class StaffPortalDashboardController extends Controller
             $leaveTypes = $leaveService->activeLeaveTypes();
             $leaveBalances = app(EmployeePortalService::class)->leaveBalancesFor($staff);
             $leaveRequests = $leaveService->requestsForStaff($staff);
+            $staff->loadMissing(['department', 'lineManager']);
+            $teamLeavePending = $leaveService->requestsPendingLineManagerFor($staff);
+            $hrManagerDisplay = app(RBACService::class)->primaryHrManagerDisplayName();
+            $lineManager = $staff->lineManager;
+            $lineManagerDisplay = $lineManager
+                ? trim(implode(' ', array_filter([
+                    (string) $lineManager->title,
+                    $lineManager->fullName(),
+                ])))
+                : null;
+            $leaveApplicationNoticeParts = [];
+            if ($lineManagerDisplay) {
+                $leaveApplicationNoticeParts[] = 'Your request is reviewed first by your line manager ('.$lineManagerDisplay.').';
+            } else {
+                $leaveApplicationNoticeParts[] = 'Your request is reviewed first by your line manager once HR has assigned one on your profile.';
+            }
+            $leaveApplicationNoticeParts[] = 'After they approve it, '.$hrManagerDisplay.' (HR) will complete the final review.';
+            $leaveApplicationNoticeParts[] = 'Track progress anytime in the list below.';
+            $leaveApplicationNotice = implode(' ', $leaveApplicationNoticeParts);
             $familyRelations = $catalog->familyRelations();
             $coverageDepartments = $coverageService->departmentsRequiringCoverage($staff);
             $eligibleCoverStaff = $coverageService->eligibleCoverStaff($staff->id);
@@ -283,6 +306,9 @@ class StaffPortalDashboardController extends Controller
             'coverageDepartments' => $coverageDepartments,
             'eligibleCoverStaff' => $eligibleCoverStaff,
             'leaveTypeMeta' => $leaveTypeMeta,
+            'teamLeavePending' => $teamLeavePending,
+            'hrManagerDisplay' => $hrManagerDisplay,
+            'leaveApplicationNotice' => $leaveApplicationNotice,
             'examPapers' => $examPapers,
             'canModerateExamPapers' => $canModerateExamPapers,
             'hodWorkload' => $hodWorkload,

@@ -1,6 +1,7 @@
 @php
     $statusKey = $status ?? '';
     $badgeClass = match ($statusKey) {
+        'pending_hod' => 'tich-badge--info',
         'pending_hr' => 'tich-badge--warning',
         'returned' => 'tich-badge--info',
         'approved' => 'tich-badge--success',

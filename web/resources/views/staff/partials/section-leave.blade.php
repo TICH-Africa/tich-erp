@@ -1,5 +1,70 @@
 <x-page-toolbar title="Leave" :meta="$staff->employee_number . ' · ' . ($staff->job_title ?? 'Staff')" />
 
+@if (($teamLeavePending ?? collect())->isNotEmpty())
+    <article class="tich-card tich-mb-6">
+        <h2 class="tich-h3 tich-mb-4">Team leave awaiting your approval</h2>
+        <p class="tich-text tich-mb-4">These requests are from staff who report to you. Approve them to send each request to HR, or decline with an optional reason.</p>
+        <div class="tich-table-wrap">
+            <table class="tich-admin-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Leave</th>
+                        <th>Dates</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($teamLeavePending as $teamLeave)
+                        <tr>
+                            <td>
+                                <strong>{{ $teamLeave->staff?->fullName() ?? '-' }}</strong>
+                                <p class="tich-caption">{{ $teamLeave->staff?->employee_number }}</p>
+                            </td>
+                            <td>
+                                {{ $teamLeave->leaveType?->leave_name ?? 'Leave' }}
+                                <p class="tich-caption">{{ $teamLeave->leave_number }}</p>
+                            </td>
+                            <td class="tich-caption">
+                                {{ $teamLeave->start_date->format('d M Y') }}
+                                –
+                                {{ $teamLeave->end_date->format('d M Y') }}
+                                · {{ (int) $teamLeave->days_requested }} day(s)
+                            </td>
+                            <td>
+                                <div style="display:flex;gap:0.35rem;flex-wrap:wrap;justify-content:flex-end;">
+                                    <form method="POST" action="{{ route('employee.leave.manager-approve', $teamLeave) }}">
+                                        @csrf
+                                        <button type="submit" class="tich-btn tich-btn-primary">Approve</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('employee.leave.manager-reject', $teamLeave) }}" class="js-line-manager-reject" data-leave="{{ $teamLeave->leave_number }}">
+                                        @csrf
+                                        <input type="hidden" name="reason" value="" class="js-line-manager-reject-reason">
+                                        <button type="submit" class="tich-btn tich-btn-ghost">Decline</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </article>
+    <script>
+        document.querySelectorAll('form.js-line-manager-reject').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                var num = form.getAttribute('data-leave') || 'this request';
+                var reason = window.prompt('Optional reason to share with the employee (leave blank to skip):');
+                if (reason === null) {
+                    e.preventDefault();
+                    return;
+                }
+                form.querySelector('.js-line-manager-reject-reason').value = reason;
+            });
+        });
+    </script>
+@endif
+
 @if ($leaveBalances->isNotEmpty())
     <section class="tich-mt-6">
         <h2 class="tich-h3 tich-mb-4">Leave balances ({{ now()->year }})</h2>
@@ -31,13 +96,17 @@
     </section>
 @endif
 
-<article class="tich-card tich-mt-8">
+<article id="leave-requests-section" class="tich-card tich-mt-8">
     <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap:wrap; gap:0.75rem;">
         <h2 class="tich-h3" style="margin:0;">Leave requests</h2>
         <button type="button" class="tich-btn tich-btn-primary" data-open-modal="leave-request-modal">
             + New leave request
         </button>
     </div>
+
+    @if (! empty($leaveApplicationNotice))
+        <p class="tich-text tich-text--secondary tich-mb-4">{{ $leaveApplicationNotice }}</p>
+    @endif
 
     @if ($leaveRequests->isEmpty())
         <div style="text-align:center; padding:2.5rem 1rem;">
@@ -95,4 +164,6 @@
     'eligibleCoverStaff' => $eligibleCoverStaff ?? collect(),
     'leaveTypeMeta' => $leaveTypeMeta ?? [],
     'staff' => $staff,
+    'hrManagerDisplay' => $hrManagerDisplay ?? 'the HR team',
+    'leaveApplicationNotice' => $leaveApplicationNotice ?? null,
 ])

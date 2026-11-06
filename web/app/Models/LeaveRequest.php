@@ -117,12 +117,13 @@ class LeaveRequest extends Model
 
     public function isCancellableByEmployee(): bool
     {
-        return in_array($this->overall_status, ['pending_hr', 'returned'], true) && ! $this->is_cancelled;
+        return in_array($this->overall_status, ['pending_hod', 'pending_hr', 'returned'], true) && ! $this->is_cancelled;
     }
 
     public function statusLabel(): string
     {
         return match ($this->overall_status) {
+            'pending_hod' => 'Awaiting line manager review',
             'pending_hr' => 'Awaiting HR review',
             'returned' => 'Returned for changes',
             'approved' => 'Approved',

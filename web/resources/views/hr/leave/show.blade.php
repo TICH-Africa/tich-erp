@@ -4,9 +4,9 @@
 
 @section('hr-content')
     @php
-        $canReview = in_array($leaveRequest->overall_status, ['pending_hr', 'returned'], true)
-            && auth()->user()->hasPermission('hr.manage_leave');
-        $pendingReview = $leaveRequest->overall_status === 'pending_hr';
+        $hrCanAct = $leaveRequest->overall_status === 'pending_hr' && $leaveRequest->hr_approval_status === 'pending';
+        $canReview = $hrCanAct && auth()->user()->hasPermission('hr.manage_leave');
+        $pendingReview = $hrCanAct;
         $staffMember = $leaveRequest->staff;
     @endphp
 
@@ -121,9 +121,46 @@
     <article class="tich-card tich-mb-8">
         <h2 class="tich-h3">Request details</h2>
         <div class="tich-kv-grid tich-mt-4">
+            <div style="grid-column: 1 / -1;">
+                <span class="tich-kv-grid__label">Applicant</span>
+                <span class="tich-kv-grid__value">
+                    {{ $staffMember->fullName() }}
+                    @if ($staffMember->employee_number)
+                        <span class="tich-caption">· {{ $staffMember->employee_number }}</span>
+                    @endif
+                </span>
+            </div>
             <div>
-                <span class="tich-kv-grid__label">Submitted</span>
+                <span class="tich-kv-grid__label">Application submitted</span>
                 <span class="tich-kv-grid__value">{{ $leaveRequest->created_at?->format('d M Y, H:i') ?? '-' }}</span>
+            </div>
+            @if ($leaveRequest->updated_at && $leaveRequest->updated_at->ne($leaveRequest->created_at))
+                <div>
+                    <span class="tich-kv-grid__label">Last updated</span>
+                    <span class="tich-kv-grid__value">{{ $leaveRequest->updated_at->format('d M Y, H:i') }}</span>
+                </div>
+            @endif
+            <div style="grid-column: 1 / -1;">
+                <span class="tich-kv-grid__label">Line manager approval</span>
+                <span class="tich-kv-grid__value">
+                    @if ($leaveRequest->hod_approval_status === 'approved' && $leaveRequest->hodApprovedBy)
+                        {{ $leaveRequest->hodApprovedBy->fullName() }}
+                        @if ($leaveRequest->hod_approved_at)
+                            <span class="tich-caption"> · {{ $leaveRequest->hod_approved_at->format('d M Y, H:i') }}</span>
+                        @endif
+                    @elseif ($leaveRequest->hod_approval_status === 'not_required')
+                        <span class="tich-text--secondary">Not required (e.g. recorded by HR on behalf of staff)</span>
+                    @elseif ($leaveRequest->hod_approval_status === 'pending')
+                        <span class="tich-text--secondary">Awaiting line manager — not yet forwarded to HR</span>
+                    @elseif (in_array($leaveRequest->hod_approval_status, ['rejected', 'cancelled'], true))
+                        {{ $leaveRequest->hodApprovedBy?->fullName() ?? '—' }}
+                        @if ($leaveRequest->hod_approved_at)
+                            <span class="tich-caption"> · {{ $leaveRequest->hod_approved_at->format('d M Y, H:i') }}</span>
+                        @endif
+                    @else
+                        —
+                    @endif
+                </span>
             </div>
             <div>
                 <span class="tich-kv-grid__label">Leave type</span>

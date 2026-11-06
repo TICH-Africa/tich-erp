@@ -233,6 +233,7 @@ class LeaveRequestController extends Controller
             'staff.department',
             'staff.lineManager',
             'leaveType',
+            'hodApprovedBy',
             'hrApprovedBy',
             'coverages.coverStaff',
             'coverages.department',
