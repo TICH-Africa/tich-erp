@@ -159,7 +159,15 @@ class StaffAttendanceService
     /**
      * Whether the employee should be prompted to clock in today (working day, not on leave/holiday).
      *
-     * @return array{needs_clock_in: bool, is_holiday: bool, on_leave: bool, is_weekend: bool, clocked_in: bool}
+     * @return array{
+     *     needs_clock_in: bool,
+     *     needs_clock_out: bool,
+     *     is_holiday: bool,
+     *     on_leave: bool,
+     *     is_weekend: bool,
+     *     clocked_in: bool,
+     *     clocked_out: bool
+     * }
      */
     public function clockInPromptStatus(Staff $staff, ?Carbon $now = null): array
     {
@@ -178,12 +186,20 @@ class StaffAttendanceService
             && ! $clockedIn
             && ! $completed;
 
+        $needsClockOut = ! $isWeekend
+            && ! $isHoliday
+            && ! $onLeave
+            && $clockedIn
+            && ! $completed;
+
         return [
             'needs_clock_in' => $needsClockIn,
+            'needs_clock_out' => $needsClockOut,
             'is_holiday' => $isHoliday,
             'on_leave' => $onLeave,
             'is_weekend' => $isWeekend,
             'clocked_in' => $clockedIn,
+            'clocked_out' => $completed,
         ];
     }
 

@@ -88,6 +88,10 @@ class EmployeeBadgeService extends ChangeNotifier {
       final unread = (notifications['unread'] as num?)?.toInt() ?? total;
       final today = attendance['today'];
       final clockedIn = today is Map && today['clock_in_at'] != null;
+      final clockedOut = today is Map && today['clock_out_at'] != null;
+      final status = attendance['clock_in_status'];
+      final needsClockOut =
+          status is Map && status['needs_clock_out'] == true;
       final pulse = employeeNeedsClockInPulse(attendance);
 
       _snapshot = EmployeeBadgeSnapshot(
@@ -107,6 +111,11 @@ class EmployeeBadgeService extends ChangeNotifier {
       unawaited(
         TichNotifications.instance.scheduleClockInReminders(
           alreadyClockedIn: clockedIn,
+        ),
+      );
+      unawaited(
+        TichNotifications.instance.scheduleClockOutReminders(
+          needsClockOut: needsClockOut && !clockedOut,
         ),
       );
     } catch (_) {}
