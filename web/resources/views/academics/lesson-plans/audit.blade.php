@@ -14,7 +14,7 @@
 
     <x-page-toolbar title="Lesson plan audit repository" meta="Approved, modified, and rejected lesson plans">
         <x-slot:actions>
-            <a href="{{ route('departments.academics.lesson-plans.index', $hub) }}" class="tich-btn tich-btn-ghost">HOD approval inbox</a>
+            <a href="{{ route('departments.academics.lesson-plans.index', $hub) }}" class="tich-btn tich-btn-ghost">Approval inbox</a>
         </x-slot:actions>
         <x-slot:filters>
             <form method="GET" class="tich-page-toolbar__filters-form">
@@ -55,7 +55,7 @@
                     <th>Competencies</th>
                     <th>Contact hrs</th>
                     <th>Status</th>
-                    <th>HOD action</th>
+                    <th>Review action</th>
                     <th></th>
                 </tr>
             </thead>
@@ -73,7 +73,7 @@
                         <td>{{ $plan->hod_action_at ? \Illuminate\Support\Carbon::parse($plan->hod_action_at)->format('d M Y') : '-' }}</td>
                         <td style="white-space:nowrap;">
                             <a href="{{ route('departments.academics.lesson-plans.show', array_merge($hub, ['plan' => $plan->id])) }}" class="tich-link">View</a>
-                            @if ($canReview && $plan->status === 'submitted')
+                            @if (in_array((int) $plan->id, $decidablePlanIds ?? [], true) && $plan->status === 'submitted')
                                 <form method="POST" action="{{ route('departments.academics.lesson-plans.approve', array_merge($hub, ['plan' => $plan->id])) }}" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="tich-link">Approve</button>

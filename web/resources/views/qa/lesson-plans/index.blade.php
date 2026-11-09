@@ -3,7 +3,7 @@
 @section('title', 'Lesson plans')
 
 @section('qa-content')
-    <x-page-toolbar title="Lesson plans" meta="Acknowledge and comment in parallel with HOD approval">
+    <x-page-toolbar title="Lesson plans" meta="Acknowledge and comment in parallel with approval review">
         <x-slot:actions>
             <a href="{{ route('qa.lesson-plans.index', ['filter' => 'pending']) }}" class="tich-btn {{ $filter === 'pending' ? 'tich-btn-primary' : 'tich-btn-secondary' }} tich-btn--sm">Pending</a>
             <a href="{{ route('qa.lesson-plans.index', ['filter' => 'acknowledged']) }}" class="tich-btn {{ $filter === 'acknowledged' ? 'tich-btn-primary' : 'tich-btn-secondary' }} tich-btn--sm">Acknowledged</a>
@@ -20,7 +20,7 @@
                         <th>Tutor</th>
                         <th>Unit</th>
                         <th>Department</th>
-                        <th>HOD status</th>
+                        <th>Approval status</th>
                         <th>QA</th>
                         <th></th>
                     </tr>

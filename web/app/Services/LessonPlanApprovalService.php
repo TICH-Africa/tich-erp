@@ -39,7 +39,7 @@ class LessonPlanApprovalService
             $plan->id,
             ['status' => $oldStatus],
             ['status' => 'submitted'],
-            'Lesson plan submitted for HOD approval',
+            'Lesson plan submitted for approval',
             'success',
             $staff->user_id ?? auth()->id(),
         );
@@ -50,22 +50,23 @@ class LessonPlanApprovalService
         return $plan->fresh();
     }
 
-    public function approve(LessonPlan $plan, Staff $hod, ?string $comments = null): LessonPlan
+    public function approve(LessonPlan $plan, Staff $reviewer, ?string $comments = null): LessonPlan
     {
-        $this->assertHodCanReview($plan, $hod);
+        $this->assertCanReview($plan, $reviewer);
+        $actor = $this->reviewerIdentity($plan, $reviewer);
 
         $plan->update([
             'status' => 'approved',
-            'hod_id' => $hod->id,
+            'hod_id' => $reviewer->id,
             'hod_comments' => $comments,
             'hod_action_at' => now(),
             'registrar_visible' => 1,
             'updated_at' => now(),
         ]);
 
-        $this->recordDecision($plan, $hod, 'hod', 'approved', $comments);
+        $this->recordDecision($plan, $reviewer, $actor['level'], 'approved', $comments);
         $this->clearTimetableForPlan($plan->fresh(['allocation']));
-        $this->notifyTutor($plan, 'Lesson plan approved', 'Your lesson plan '.$plan->plan_number.' has been approved by the HOD.');
+        $this->notifyTutor($plan, 'Lesson plan approved', 'Your lesson plan '.$plan->plan_number.' has been approved by '.$actor['label'].'.');
 
         $this->auditService->log(
             'staff.lesson_plan.approved',
@@ -73,29 +74,30 @@ class LessonPlanApprovalService
             $plan->id,
             ['status' => 'submitted'],
             ['status' => 'approved', 'hod_comments' => $comments],
-            'Lesson plan approved by HOD',
+            'Lesson plan approved by '.$actor['role'],
             'success',
-            $hod->user_id ?? auth()->id(),
+            $reviewer->user_id ?? auth()->id(),
         );
 
         return $plan->fresh();
     }
 
-    public function reject(LessonPlan $plan, Staff $hod, string $comments): LessonPlan
+    public function reject(LessonPlan $plan, Staff $reviewer, string $comments): LessonPlan
     {
-        $this->assertHodCanReview($plan, $hod);
+        $this->assertCanReview($plan, $reviewer);
+        $actor = $this->reviewerIdentity($plan, $reviewer);
 
         $plan->update([
             'status' => 'rejected',
-            'hod_id' => $hod->id,
+            'hod_id' => $reviewer->id,
             'hod_comments' => $comments,
             'hod_action_at' => now(),
             'registrar_visible' => 1,
             'updated_at' => now(),
         ]);
 
-        $this->recordDecision($plan, $hod, 'hod', 'rejected', $comments);
-        $this->notifyTutor($plan, 'Lesson plan rejected', 'Your lesson plan '.$plan->plan_number.' was rejected. HOD comments: '.$comments);
+        $this->recordDecision($plan, $reviewer, $actor['level'], 'rejected', $comments);
+        $this->notifyTutor($plan, 'Lesson plan rejected', 'Your lesson plan '.$plan->plan_number.' was rejected by '.$actor['label'].'. Comments: '.$comments);
 
         $this->auditService->log(
             'staff.lesson_plan.rejected',
@@ -103,29 +105,30 @@ class LessonPlanApprovalService
             $plan->id,
             ['status' => 'submitted'],
             ['status' => 'rejected', 'hod_comments' => $comments],
-            'Lesson plan rejected by HOD',
+            'Lesson plan rejected by '.$actor['role'],
             'success',
-            $hod->user_id ?? auth()->id(),
+            $reviewer->user_id ?? auth()->id(),
         );
 
         return $plan->fresh();
     }
 
-    public function requestModification(LessonPlan $plan, Staff $hod, string $comments): LessonPlan
+    public function requestModification(LessonPlan $plan, Staff $reviewer, string $comments): LessonPlan
     {
-        $this->assertHodCanReview($plan, $hod);
+        $this->assertCanReview($plan, $reviewer);
+        $actor = $this->reviewerIdentity($plan, $reviewer);
 
         $plan->update([
             'status' => 'modified',
-            'hod_id' => $hod->id,
+            'hod_id' => $reviewer->id,
             'hod_comments' => $comments,
             'hod_action_at' => now(),
             'registrar_visible' => 1,
             'updated_at' => now(),
         ]);
 
-        $this->recordDecision($plan, $hod, 'hod', 'request_modification', $comments);
-        $this->notifyTutor($plan, 'Lesson plan needs revision', 'Your lesson plan '.$plan->plan_number.' requires changes. HOD comments: '.$comments);
+        $this->recordDecision($plan, $reviewer, $actor['level'], 'request_modification', $comments);
+        $this->notifyTutor($plan, 'Lesson plan needs revision', 'Your lesson plan '.$plan->plan_number.' requires changes. '.$actor['label'].' comments: '.$comments);
 
         $this->auditService->log(
             'staff.lesson_plan.modification_requested',
@@ -133,9 +136,9 @@ class LessonPlanApprovalService
             $plan->id,
             ['status' => 'submitted'],
             ['status' => 'modified', 'hod_comments' => $comments],
-            'Lesson plan sent back for modification',
+            'Lesson plan sent back for modification by '.$actor['role'],
             'success',
-            $hod->user_id ?? auth()->id(),
+            $reviewer->user_id ?? auth()->id(),
         );
 
         return $plan->fresh();
@@ -146,7 +149,8 @@ class LessonPlanApprovalService
      */
     public function updateByHod(LessonPlan $plan, Staff $hod, array $data): LessonPlan
     {
-        $this->assertHodCanReview($plan, $hod);
+        $this->assertCanReview($plan, $hod);
+        $actor = $this->reviewerIdentity($plan, $hod);
 
         $plan->update([
             'lesson_objectives' => $data['lesson_objectives'],
@@ -160,7 +164,7 @@ class LessonPlanApprovalService
             'updated_at' => now(),
         ]);
 
-        $this->recordDecision($plan, $hod, 'hod', 'request_modification', 'Plan content updated by HOD.');
+        $this->recordDecision($plan, $hod, $actor['level'], 'request_modification', 'Plan content updated by '.$actor['role'].'.');
 
         $this->auditService->log(
             'staff.lesson_plan.hod_updated',
@@ -172,7 +176,7 @@ class LessonPlanApprovalService
                 'planned_date' => $data['planned_date'],
                 'contact_hours' => (int) ($data['contact_hours'] ?? $plan->contact_hours),
             ],
-            'Lesson plan content updated by HOD',
+            'Lesson plan content updated by '.$actor['role'],
             'success',
             $hod->user_id ?? auth()->id(),
         );
@@ -225,7 +229,7 @@ class LessonPlanApprovalService
 
     public function assertCanInitiateSession(UnitAllocation $allocation, string $sessionDate): void
     {
-        abort_unless($this->hasApprovedPlanForSession($allocation, $sessionDate), 422, 'An HOD-approved lesson plan is required for this unit and date before you can start a class session. Create and submit a lesson plan, then wait for HOD approval.');
+        abort_unless($this->hasApprovedPlanForSession($allocation, $sessionDate), 422, 'An approved lesson plan is required for this unit and date before you can start a class session. Create and submit a lesson plan, then wait for it to be approved.');
     }
 
     public function hasApprovedPlanForSession(UnitAllocation $allocation, string $sessionDate): bool
@@ -363,34 +367,115 @@ class LessonPlanApprovalService
             ->get();
     }
 
-    public function hodCanReview(LessonPlan $plan, Staff $hod, User $user): bool
+    public function canReview(LessonPlan $plan, Staff $reviewer, User $user): bool
     {
-        if ($user->hasAnyRole(['Super Admin', 'Dean of Students'])) {
+        return $this->reviewerMayDecide($this->unitForPlan($plan)?->department_id, $reviewer, $user);
+    }
+
+    /**
+     * @param  Collection<int, object>  $plans
+     * @return list<int> Plan ids the acting user may approve or reject
+     */
+    public function decidablePlanIds(Collection $plans, ?Staff $reviewer, User $user): array
+    {
+        if (! $reviewer) {
+            return [];
+        }
+
+        if ($user->hasAnyRole(['Super Admin', 'CEO', 'Dean of Students'])) {
+            return $plans->pluck('id')->map(fn ($id) => (int) $id)->all();
+        }
+
+        $departments = Department::query()
+            ->whereIn('id', $plans->pluck('department_id')->filter()->unique())
+            ->get()
+            ->keyBy('id');
+
+        return $plans
+            ->filter(fn ($plan) => isset($departments[$plan->department_id])
+                && $this->reviewerMayDecide((int) $plan->department_id, $reviewer, $user, $departments[$plan->department_id]))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * The HOD of the unit's department decides. A department with no HOD to act falls back to
+     * the Academic Registrar so a plan cannot sit in Submitted forever.
+     */
+    public function reviewerMayDecide(?int $departmentId, Staff $reviewer, User $user, ?Department $department = null): bool
+    {
+        if ($user->hasAnyRole(['Super Admin', 'CEO', 'Dean of Students'])) {
             return true;
         }
 
-        $unit = $this->unitForPlan($plan);
-        if (! $unit) {
+        if (! $departmentId) {
             return false;
         }
 
-        $department = Department::query()->find($unit->department_id);
+        $department ??= Department::query()->find($departmentId);
         if (! $department) {
             return false;
         }
 
-        if ((int) $department->hod_id === (int) $hod->id) {
+        if ((int) $department->hod_id === (int) $reviewer->id) {
             return true;
         }
 
-        return $user->hasRole('HOD');
+        if ($user->hasRole('HOD')) {
+            return true;
+        }
+
+        return $user->hasRole('Academic Registrar') && ! $this->departmentHasReviewingHod($department);
     }
 
-    private function assertHodCanReview(LessonPlan $plan, Staff $hod): void
+    private function departmentHasReviewingHod(?Department $department): bool
+    {
+        if (! $department?->hod_id) {
+            return false;
+        }
+
+        $hod = Staff::query()->find($department->hod_id);
+
+        return $hod !== null && $this->staffUserId($hod) !== null;
+    }
+
+    /**
+     * @return array{level: string, role: string, label: string}
+     */
+    private function reviewerIdentity(LessonPlan $plan, Staff $reviewer): array
+    {
+        $user = auth()->user();
+        $department = $this->departmentForPlan($plan);
+
+        if ($user?->hasRole('Academic Registrar') && ! $this->departmentHasReviewingHod($department)) {
+            return ['level' => 'registrar', 'role' => 'Academic Registrar', 'label' => 'the Academic Registrar'];
+        }
+
+        if ($user?->hasAnyRole(['Super Admin', 'CEO', 'Dean of Students']) && ! $this->isDepartmentHodOf($plan, $reviewer)) {
+            return ['level' => 'registrar', 'role' => 'Academics registry', 'label' => 'the Academics registry'];
+        }
+
+        return ['level' => 'hod', 'role' => 'HOD', 'label' => 'the HOD'];
+    }
+
+    private function isDepartmentHodOf(LessonPlan $plan, Staff $reviewer): bool
+    {
+        return (int) ($this->departmentForPlan($plan)?->hod_id ?? 0) === (int) $reviewer->id;
+    }
+
+    private function departmentForPlan(LessonPlan $plan): ?Department
+    {
+        $departmentId = $this->unitForPlan($plan)?->department_id;
+
+        return $departmentId ? Department::query()->find($departmentId) : null;
+    }
+
+    private function assertCanReview(LessonPlan $plan, Staff $reviewer): void
     {
         abort_unless(in_array($plan->status, ['submitted'], true), 422, 'Only submitted lesson plans can be reviewed.');
         abort_unless(
-            $this->hodCanReview($plan, $hod, auth()->user()),
+            $this->canReview($plan, $reviewer, auth()->user()),
             403,
             'You are not authorized to review this lesson plan.'
         );

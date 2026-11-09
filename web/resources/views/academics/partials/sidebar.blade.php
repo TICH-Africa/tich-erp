@@ -50,6 +50,7 @@
                 $suggestionsOnly = app(\App\Services\AcademicsAccessService::class)->isSuggestionsOnly(auth()->user());
                 $canManageStudentServices = auth()->user()?->hasAnyRole(['Academic Registrar', 'Super Admin', 'Head of Academics']);
                 $canReviewDeferments = auth()->user()?->hasAnyRole(['Academic Registrar', 'Dean of Students', 'Super Admin', 'Head of Academics']);
+                $canReviewLessonPlans = auth()->user()?->hasAnyRole(['Academic Registrar', 'Dean of Students', 'Super Admin']);
             @endphp
 
             @can('academics.read')
@@ -212,6 +213,12 @@
                                 'label' => 'Workplans',
                                 'icon' => 'file-text',
                                 'active' => request()->routeIs('departments.academics.workplans.*'),
+                            ] : null,
+                            $canReviewLessonPlans ? [
+                                'href' => route('departments.academics.lesson-plans.audit', $hub),
+                                'label' => 'Lesson plans',
+                                'icon' => 'notebook',
+                                'active' => request()->routeIs('departments.academics.lesson-plans.*'),
                             ] : null,
                         ])),
                     ])

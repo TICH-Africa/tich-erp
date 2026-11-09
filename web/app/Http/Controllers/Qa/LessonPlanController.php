@@ -68,6 +68,6 @@ class LessonPlanController extends Controller
 
         return redirect()
             ->route('qa.lesson-plans.show', $plan)
-            ->with('status', 'Lesson plan acknowledged. HOD approval continues independently.');
+            ->with('status', 'Lesson plan acknowledged. The approval review continues independently.');
     }
 }

@@ -33,13 +33,16 @@ class LessonPlanController extends DepartmentAcademicsController
         $departmentId = $learningDepartmentId ?? (int) $hub->id;
         $status = $request->string('status')->toString() ?: null;
 
+        $plans = $this->lessonPlans->inboxForDepartment($departmentId, $status);
+        $staff = $this->staffPortal->staffForUser($request->user());
+
         return view('academics.lesson-plans.index', [
             'department' => $hub,
             'learningDepartment' => $learningDepartmentId ? Department::query()->find($learningDepartmentId) : null,
             'learningDepartments' => $this->access->learningDepartmentsInScope($request->user(), $hub),
-            'plans' => $this->lessonPlans->inboxForDepartment($departmentId, $status),
+            'plans' => $plans,
             'selectedStatus' => $status,
-            'canReview' => $request->user()->hasAnyRole(['HOD', 'Dean of Students', 'Super Admin']),
+            'canReview' => $this->lessonPlans->decidablePlanIds($plans, $staff, $request->user()) !== [],
         ]);
     }
 
@@ -55,7 +58,7 @@ class LessonPlanController extends DepartmentAcademicsController
         $unitDepartmentId = (int) $plan->allocation->unit->department_id;
         abort_unless($this->access->managesLearningDepartment($request->user(), $hub, $unitDepartmentId), 404);
 
-        $canReview = $staff && $this->lessonPlans->hodCanReview($plan, $staff, $request->user());
+        $canReview = $staff && $this->lessonPlans->canReview($plan, $staff, $request->user());
 
         return view('academics.lesson-plans.show', [
             'department' => $hub,
@@ -93,7 +96,7 @@ class LessonPlanController extends DepartmentAcademicsController
         $plans = $this->lessonPlans->auditRepository($departmentIds, $status, $semesterId);
 
         $staff = $this->staffPortal->staffForUser($request->user());
-        $canReview = $staff && $plans->isNotEmpty() && $request->user()->hasAnyRole(['HOD', 'Super Admin', 'CEO', 'Dean of Students']);
+        $decidableIds = $this->lessonPlans->decidablePlanIds($plans, $staff, $request->user());
 
         return view('academics.lesson-plans.audit', [
             'department' => $hub,
@@ -103,7 +106,8 @@ class LessonPlanController extends DepartmentAcademicsController
             'semesters' => Semester::query()->with('academicYear')->orderByDesc('id')->get(),
             'selectedStatus' => $status,
             'selectedSemesterId' => $semesterId,
-            'canReview' => $canReview,
+            'canReview' => $decidableIds !== [],
+            'decidablePlanIds' => $decidableIds,
         ]);
     }
 
@@ -124,7 +128,7 @@ class LessonPlanController extends DepartmentAcademicsController
             'resources_required' => ['nullable', 'string', 'max:500'],
         ]);
 
-        abort_unless($this->lessonPlans->hodCanReview($plan, $staff, $request->user()), 403);
+        abort_unless($this->lessonPlans->canReview($plan, $staff, $request->user()), 403);
 
         $this->lessonPlans->updateByHod($plan, $staff, $validated);
 

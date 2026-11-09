@@ -41,7 +41,7 @@
                     @csrf
                     @method('PUT')
                     @include('academics.lesson-plans.partials.form-fields', ['plan' => $plan])
-                    <button type="submit" class="tich-btn tich-btn-secondary tich-mt-4">Save HOD edits</button>
+                    <button type="submit" class="tich-btn tich-btn-secondary tich-mt-4">Save review edits</button>
                 </form>
             @else
                 <dl class="tich-dl tich-mt-4">
@@ -55,7 +55,7 @@
                     <dt>Resources required</dt><dd>{{ $plan->resources_required ?: '-' }}</dd>
                     <dt>Status</dt><dd>{{ ucfirst($plan->status) }}</dd>
                     @if ($plan->hod_comments)
-                        <dt>HOD comments</dt><dd style="white-space:pre-wrap;">{{ $plan->hod_comments }}</dd>
+                        <dt>Review comments</dt><dd style="white-space:pre-wrap;">{{ $plan->hod_comments }}</dd>
                     @endif
                     @if ($plan->qa_acknowledged_at)
                         <dt>QA acknowledgement</dt>
@@ -105,7 +105,7 @@
                     <button type="submit" class="tich-btn tich-btn-secondary" style="color:var(--tich-danger, #b91c1c);">Reject</button>
                 </form>
             @else
-                <p class="tich-text tich-mt-4">This plan is read-only. Only the department HOD can approve or reject submitted plans.</p>
+                <p class="tich-text tich-mt-4">This plan is read-only. Submitted plans are approved or rejected by the department HOD, or by the Academic Registrar when that department has no HOD to act.</p>
             @endif
 
             @if ($plan->approvals->isNotEmpty())

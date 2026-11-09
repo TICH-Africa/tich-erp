@@ -30,9 +30,9 @@
                 <dt>Semester</dt><dd>{{ $allocation?->semester?->semester_label ?? '-' }}</dd>
                 <dt>Planned date</dt><dd>{{ $plan->planned_date?->format('d M Y') }}</dd>
                 <dt>Week / hours</dt><dd>{{ $plan->week_number }} · {{ $plan->contact_hours }} hrs</dd>
-                <dt>HOD status</dt><dd><x-status-badge :status="$plan->status" /></dd>
+                <dt>Approval status</dt><dd><x-status-badge :status="$plan->status" /></dd>
                 @if ($plan->hod_comments)
-                    <dt>HOD comments</dt><dd style="white-space:pre-wrap;">{{ $plan->hod_comments }}</dd>
+                    <dt>Approval comments</dt><dd style="white-space:pre-wrap;">{{ $plan->hod_comments }}</dd>
                 @endif
                 <dt>Lesson objectives</dt><dd style="white-space:pre-wrap;">{{ $plan->lesson_objectives }}</dd>
                 <dt>Topics</dt><dd style="white-space:pre-wrap;">{{ $plan->topics_covered ?: '-' }}</dd>
@@ -43,7 +43,7 @@
 
         <article class="tich-card">
             <h2 class="tich-h3">QA acknowledgement</h2>
-            <p class="tich-caption tich-mt-2">Runs in parallel with HOD approval - does not block or replace the HOD decision.</p>
+            <p class="tich-caption tich-mt-2">Runs in parallel with the approval review - does not block or replace that decision.</p>
 
             @if ($plan->isQaAcknowledged())
                 <dl class="tich-dl tich-mt-4">

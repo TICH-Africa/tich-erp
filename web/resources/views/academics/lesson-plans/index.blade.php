@@ -62,7 +62,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="tich-text">No lesson plans awaiting HOD review.</td></tr>
+                    <tr><td colspan="8" class="tich-text">No lesson plans awaiting review.</td></tr>
                 @endforelse
             </tbody>
         </table>
