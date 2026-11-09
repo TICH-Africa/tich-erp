@@ -26,7 +26,49 @@ class TimetableDocumentPreviewService
     public function __construct(
         private readonly ProgramTimetableDocumentService $documents,
         private readonly SpreadsheetTabularReader $sheets,
+        private readonly PrintDocumentService $print,
     ) {}
+
+    /**
+     * PDF bytes of the uploaded document, cached like the HTML, or '' when it cannot be rendered.
+     */
+    public function cachedPdfBinary(ProgramTimetable $timetable): string
+    {
+        $key = 'program.timetable.document.pdf.v1.'.$timetable->id.'.'.$this->documents->pdfCacheStamp($timetable);
+
+        $cached = Cache::get($key);
+        if (is_string($cached) && $cached !== '') {
+            return $cached;
+        }
+
+        $html = $this->html($timetable);
+        if (! is_string($html) || trim($html) === '') {
+            return '';
+        }
+
+        $binary = $this->print->pdfBinary('academics.programs.timetable-document-print', [
+            'timetable' => $timetable,
+            'documentHtml' => $html,
+            'documentTitle' => $timetable->displayTitle(),
+            'documentSubtitle' => $this->subtitle($timetable),
+            'paperOrientation' => 'landscape',
+        ], 'landscape');
+
+        Cache::put($key, $binary, now()->addHours(6));
+
+        return $binary;
+    }
+
+    private function subtitle(ProgramTimetable $timetable): string
+    {
+        $parts = array_filter([
+            $timetable->program?->program_name,
+            $timetable->campus?->campus_name,
+            $timetable->cycleLabel(),
+        ]);
+
+        return implode(' · ', $parts);
+    }
 
     /**
      * Rendered HTML for the uploaded document, or null when it cannot be shown.
@@ -39,7 +81,7 @@ class TimetableDocumentPreviewService
 
         $extension = strtolower(pathinfo((string) $timetable->source_file, PATHINFO_EXTENSION));
 
-        if (! in_array($extension, ['docx', 'xlsx', 'xls', 'csv'], true)) {
+        if (! in_array($extension, ProgramTimetableDocumentService::PREVIEW_EXTENSIONS, true)) {
             return null;
         }
 

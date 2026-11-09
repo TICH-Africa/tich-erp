@@ -45,7 +45,9 @@ class StaffPortalTimetableController extends Controller
         $this->authorizedStaff($request, $timetable);
 
         if ($this->timetableDocuments->usesUploadedFile($timetable)) {
-            return $this->timetableDocuments->inlineResponse($timetable);
+            // Word and Excel uploads come back as a rendered PDF so the phone can display them.
+            return $this->timetableDocuments->previewPdfResponse($timetable)
+                ?? $this->timetableDocuments->inlineCachedResponse($timetable);
         }
 
         $data = $this->documentData($request, $timetable, includeActions: false);

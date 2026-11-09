@@ -18,6 +18,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ProgramTimetableDocumentService
 {
     /**
+     * Uploaded documents we can turn into an on-screen or PDF preview.
+     *
+     * @var list<string>
+     */
+    public const PREVIEW_EXTENSIONS = ['docx', 'xlsx', 'xls', 'csv'];
+
+    /**
      * Timetable is shown as the uploaded file (not a generated grid PDF).
      */
     /**
@@ -26,6 +33,20 @@ class ProgramTimetableDocumentService
     public function allowedExtensions(): array
     {
         return config('tich-academics.timetable_upload.allowed_extensions', ['pdf', 'png', 'jpg', 'jpeg']);
+    }
+
+    /**
+     * Whether the uploaded file can be rendered as a document preview / PDF.
+     */
+    public function hasRenderablePreview(ProgramTimetable $timetable): bool
+    {
+        if (! $this->usesUploadedFile($timetable)) {
+            return false;
+        }
+
+        $extension = strtolower(pathinfo((string) $timetable->source_file, PATHINFO_EXTENSION));
+
+        return in_array($extension, self::PREVIEW_EXTENSIONS, true);
     }
 
     public function maxUploadKilobytes(): int
@@ -161,6 +182,33 @@ class ProgramTimetableDocumentService
         ]);
     }
 
+    /**
+     * A PDF of the uploaded document, so a phone or the app can show it without Word.
+     */
+    public function previewPdfResponse(ProgramTimetable $timetable): ?Response
+    {
+        if (! $this->hasRenderablePreview($timetable)) {
+            return null;
+        }
+
+        $binary = app(TimetableDocumentPreviewService::class)->cachedPdfBinary($timetable);
+        if ($binary === '') {
+            return null;
+        }
+
+        $filename = sprintf(
+            'timetable-%s-sem%d-%s.pdf',
+            $timetable->timetable_kind,
+            (int) $timetable->teaching_period,
+            Str::slug($timetable->program?->program_code ?? (string) $timetable->program_id)
+        );
+
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+        ]);
+    }
+
     public function cachedUploadedBinary(ProgramTimetable $timetable): string
     {
         abort_unless($this->usesUploadedFile($timetable), 404);
@@ -229,13 +277,15 @@ class ProgramTimetableDocumentService
     public function mobileDocumentMeta(ProgramTimetable $timetable): array
     {
         $isUpload = $this->usesUploadedFile($timetable);
+        // A Word or Excel upload is served as a rendered PDF, so the app shows it instead of a download prompt.
+        $servedAsPdf = $isUpload && $this->hasRenderablePreview($timetable);
 
         return [
             'source' => $timetable->source,
             'source_name' => $timetable->source_name,
             'is_upload_document' => $isUpload,
             'has_document' => $this->hasViewableDocument($timetable),
-            'mime_type' => $isUpload ? $this->mimeType($timetable) : 'application/pdf',
+            'mime_type' => $servedAsPdf ? 'application/pdf' : ($isUpload ? $this->mimeType($timetable) : 'application/pdf'),
         ];
     }
 

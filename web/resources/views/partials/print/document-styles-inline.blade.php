@@ -81,4 +81,12 @@ body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-heigh
 .tich-transcript-scale .grade { text-align: center; font-weight: bold; color: #1e40af; }
 .tich-transcript-note { font-size: 7.5pt; color: #4b5563; margin-top: 4pt; }
 .tich-transcript-cert { font-size: 8pt; color: #1f2937; border: 0.6pt solid #94a3b8; background: #f8fafc; padding: 6pt 8pt; margin-top: 12pt; }
+.tich-doc-uploaded { font-size: 9.5pt; }
+.tich-doc-uploaded h2, .tich-doc-uploaded h3, .tich-doc-uploaded h4, .tich-doc-uploaded h5, .tich-doc-uploaded h6 { font-size: 10.5pt; color: #1e3a5f; margin: 8pt 0 4pt; }
+.tich-doc-uploaded p { margin: 0 0 5pt; }
+.tich-doc-uploaded table { width: 100%; border-collapse: collapse; margin: 0 0 8pt; }
+.tich-doc-uploaded th, .tich-doc-uploaded td { border: 0.8pt solid #000; padding: 4pt 5pt; text-align: left; vertical-align: top; font-size: 8.5pt; }
+.tich-doc-uploaded th { background: #eef2f7; }
+.doc-viewer__doc-scroll { overflow: visible; }
+.doc-viewer__swipe-hint { display: none; }
 </style>

@@ -818,3 +818,13 @@ body {
     color: #1f2937;
     line-height: 1.55;
 }
+
+/* Uploaded Word or Excel timetable shown as a document */
+.tich-doc-uploaded { font-size: 0.8rem; }
+.tich-doc-uploaded h2, .tich-doc-uploaded h3, .tich-doc-uploaded h4, .tich-doc-uploaded h5, .tich-doc-uploaded h6 { font-size: 0.85rem; color: #1e3a5f; margin: 8pt 0 4pt; }
+.tich-doc-uploaded p { margin: 0 0 5pt; }
+.tich-doc-uploaded table { width: 100%; border-collapse: collapse; margin: 0 0 8pt; }
+.tich-doc-uploaded th, .tich-doc-uploaded td { border: 1px solid var(--tich-doc-border, #cbd5e1); padding: 4pt 5pt; text-align: left; vertical-align: top; font-size: 0.78rem; }
+.tich-doc-uploaded th { background: #eef2f7; }
+.doc-viewer__doc-scroll { overflow: visible; }
+.doc-viewer__swipe-hint { display: none; }

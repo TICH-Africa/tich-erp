@@ -45,7 +45,9 @@ class PortalTimetableController extends Controller
         $this->authorizeStudentTimetable($request, $timetable);
 
         if ($this->timetableDocuments->usesUploadedFile($timetable)) {
-            return $this->timetableDocuments->inlineCachedResponse($timetable);
+            // Word and Excel uploads come back as a rendered PDF so the phone can display them.
+            return $this->timetableDocuments->previewPdfResponse($timetable)
+                ?? $this->timetableDocuments->inlineCachedResponse($timetable);
         }
 
         $data = $this->documentData($request, $timetable, includeActions: false);

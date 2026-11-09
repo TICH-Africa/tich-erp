@@ -29,7 +29,9 @@ class TimetablePdfController extends Controller
         abort_unless($this->timetableDocuments->staffCanViewTimetable($staff, $timetable), 404);
 
         if ($this->timetableDocuments->usesUploadedFile($timetable)) {
-            return $this->timetableDocuments->inlineResponse($timetable);
+            // Word and Excel uploads come back as a rendered PDF so the phone can display them.
+            return $this->timetableDocuments->previewPdfResponse($timetable)
+                ?? $this->timetableDocuments->inlineResponse($timetable);
         }
 
         $payload = $this->timetableScheduling->documentPayload($timetable);

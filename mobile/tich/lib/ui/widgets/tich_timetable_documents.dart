@@ -49,7 +49,8 @@ class TichTimetableDocumentRef {
 
   String get cacheFileName {
     final base = 'timetable-$kind-$id';
-    if (isUploadDocument && sourceName != null && sourceName!.contains('.')) {
+    // Server-rendered PDFs keep the .pdf name so the cached bytes match the viewer.
+    if (!isPdf && isUploadDocument && sourceName != null && sourceName!.contains('.')) {
       final ext = sourceName!.split('.').last.toLowerCase();
       if (ext.isNotEmpty && ext.length <= 5) {
         return '$base.$ext';
