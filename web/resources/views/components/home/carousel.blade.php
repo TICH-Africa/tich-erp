@@ -88,8 +88,9 @@
     @if (! empty($tickerMessage))
         <div class="tich-hero-ticker" aria-label="Announcements">
             <div class="tich-hero-ticker__inner">
-                <span class="tich-hero-ticker__item">{{ $tickerMessage }}</span>
-                <span class="tich-hero-ticker__item" aria-hidden="true">{{ $tickerMessage }}</span>
+                @foreach (range(1, 4) as $tickerCopy)
+                    <span class="tich-hero-ticker__item" @if ($tickerCopy > 1) aria-hidden="true" @endif>{{ $tickerMessage }}</span>
+                @endforeach
             </div>
         </div>
     @endif

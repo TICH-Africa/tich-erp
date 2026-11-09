@@ -3389,19 +3389,21 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     display: flex;
     width: max-content;
     will-change: transform;
-    animation: tich-hero-ticker-scroll 22s linear infinite;
+    animation: tich-hero-ticker-scroll 20s linear infinite;
 }
 
+/* Four copies, each at least half a screen wide, so the strip is never left half empty. */
 .tich-hero-ticker__item {
     display: inline-block;
     flex-shrink: 0;
-    padding-right: 4rem;
+    min-width: 50vw;
+    padding: 0 2rem;
     white-space: nowrap;
 }
 
 @keyframes tich-hero-ticker-scroll {
     from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
+    to { transform: translateX(-25%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
