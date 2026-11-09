@@ -379,7 +379,8 @@ class TimetableDocumentPreviewService
             }
         }
 
-        $markup = '<table class="doc-viewer__doc-table">';
+        // Each table scrolls sideways on its own so a phone can swipe the days without losing the page.
+        $markup = '<div class="doc-viewer__doc-scroll"><table class="doc-viewer__doc-table">';
 
         if ($firstHasText) {
             $markup .= '<thead><tr>';
@@ -405,7 +406,7 @@ class TimetableDocumentPreviewService
             $markup .= '</tr>';
         }
 
-        return $markup.'</tbody></table>';
+        return $markup.'</tbody></table></div>';
     }
 
     /**
@@ -469,7 +470,7 @@ class TimetableDocumentPreviewService
             return null;
         }
 
-        $markup = '<div class="doc-viewer__doc"><table class="doc-viewer__doc-table"><tbody>';
+        $markup = '<div class="doc-viewer__doc"><div class="doc-viewer__doc-scroll"><table class="doc-viewer__doc-table"><tbody>';
 
         foreach ($rows as $row) {
             $markup .= '<tr>';
@@ -480,7 +481,7 @@ class TimetableDocumentPreviewService
             $markup .= '</tr>';
         }
 
-        $markup .= '</tbody></table>';
+        $markup .= '</tbody></table></div>';
 
         if ($truncated) {
             $markup .= '<p class="doc-viewer__doc-note">Only the first '.self::MAX_TABLE_ROWS.' rows are previewed. Use the download button for the whole workbook.</p>';

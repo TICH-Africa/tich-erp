@@ -38,6 +38,7 @@
                             class="doc-viewer__image"
                         />
                     @elseif ($documentHtml)
+                        <p class="tich-caption doc-viewer__swipe-hint">Swipe a table sideways to see the rest of it.</p>
                         <div class="doc-viewer__paper">
                             {!! $documentHtml !!}
                         </div>

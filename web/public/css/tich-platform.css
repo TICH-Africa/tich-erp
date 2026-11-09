@@ -9406,6 +9406,17 @@ a.tich-tabs__btn {
     margin: 0 0 1rem;
 }
 
+/* Each uploaded grid swipes sideways on its own instead of widening the page */
+.doc-viewer__doc-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 0 1rem;
+}
+
+.doc-viewer__doc-scroll .doc-viewer__doc-table {
+    margin-bottom: 0;
+}
+
 .doc-viewer__doc-table th,
 .doc-viewer__doc-table td {
     border: 1px solid #b9bec2;
@@ -9425,9 +9436,14 @@ a.tich-tabs__btn {
     color: #6b6e72;
 }
 
+.doc-viewer__swipe-hint {
+    display: none;
+}
+
 @media (max-width: 900px) {
     .doc-viewer__stage--document {
         max-height: none;
+        min-height: 0;
     }
 
     .doc-viewer__paper {
@@ -9438,6 +9454,47 @@ a.tich-tabs__btn {
     .doc-viewer__doc-table td {
         font-size: 0.75rem;
         padding: 0.3rem 0.35rem;
+    }
+}
+
+/* Phones: the sheet fills the screen, each table swipes sideways and keeps its first column */
+@media (max-width: 640px) {
+    .doc-viewer__paper {
+        margin: 0;
+        padding: 0.7rem 0.6rem;
+        border-left: 0;
+        border-right: 0;
+        font-size: 0.875rem;
+    }
+
+    .doc-viewer__doc-table {
+        width: auto;
+        min-width: 100%;
+    }
+
+    .doc-viewer__doc-table th,
+    .doc-viewer__doc-table td {
+        font-size: 0.8125rem;
+        padding: 0.35rem 0.4rem;
+        min-width: 6rem;
+    }
+
+    .doc-viewer__doc-table th:first-child,
+    .doc-viewer__doc-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        background: #fff;
+        border-left: 0;
+        min-width: 6.25rem;
+    }
+
+    .doc-viewer__doc-table thead th:first-child {
+        background: #f2f4f5;
+    }
+
+    .doc-viewer__swipe-hint {
+        display: block;
     }
 }
 
