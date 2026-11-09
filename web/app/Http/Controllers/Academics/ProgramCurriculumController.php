@@ -685,7 +685,8 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         );
 
         $cycle = $timetable->cycleLabel();
-        $audience = $timetable->isOnlineMode() ? ' for online students' : '';
+        $audienceWords = ProgramTimetable::audienceWords($timetable->delivery_mode);
+        $audience = $audienceWords === '' ? '' : ' for '.$audienceWords;
 
         return $this->timetableEditRedirect(
             $request,
@@ -877,7 +878,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ],
             'staff_id' => ['nullable', 'exists:staff,id'],
             'room_id' => ['nullable', 'exists:rooms,id'],
-            'delivery_mode' => ['nullable', 'in:physical,online'],
+            'delivery_mode' => ['nullable', 'in:'.implode(',', array_keys(ProgramTimetableSession::deliveryModes()))],
             'recurrence' => ['nullable', 'in:'.implode(',', array_keys(ProgramTimetableSession::recurrences()))],
             'week_no' => ['nullable', 'integer', 'min:1', 'max:60', 'required_with:week_to'],
             'week_to' => ['nullable', 'integer', 'min:1', 'max:60', 'after_or_equal:week_no'],
@@ -891,7 +892,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'session_type' => ['required', 'in:'.implode(',', array_keys(TimetableTemplateService::segmentTypes()))],
             'title' => ['nullable', 'string', 'max:200'],
             'venue' => [
-                \Illuminate\Validation\Rule::requiredIf(fn () => $request->string('delivery_mode')->toString() === 'online'
+                \Illuminate\Validation\Rule::requiredIf(fn () => in_array($request->string('delivery_mode')->toString(), ['online', 'both'], true)
                     && ProgramTimetableSession::needsOnlineVenue($request->string('session_type')->toString())),
                 'nullable',
                 'string',
@@ -936,7 +937,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             ],
             'staff_id' => ['nullable', 'exists:staff,id'],
             'room_id' => ['nullable', 'exists:rooms,id'],
-            'delivery_mode' => ['nullable', 'in:physical,online'],
+            'delivery_mode' => ['nullable', 'in:'.implode(',', array_keys(ProgramTimetableSession::deliveryModes()))],
             'recurrence' => ['nullable', 'in:'.implode(',', array_keys(ProgramTimetableSession::recurrences()))],
             'week_no' => ['nullable', 'integer', 'min:1', 'max:60', 'required_with:week_to'],
             'week_to' => ['nullable', 'integer', 'min:1', 'max:60', 'after_or_equal:week_no'],
@@ -949,7 +950,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
             'session_type' => ['required', 'in:'.implode(',', array_keys(TimetableTemplateService::segmentTypes()))],
             'title' => ['nullable', 'string', 'max:200'],
             'venue' => [
-                \Illuminate\Validation\Rule::requiredIf(fn () => $request->string('delivery_mode')->toString() === 'online'
+                \Illuminate\Validation\Rule::requiredIf(fn () => in_array($request->string('delivery_mode')->toString(), ['online', 'both'], true)
                     && ProgramTimetableSession::needsOnlineVenue($request->string('session_type')->toString())),
                 'nullable',
                 'string',

@@ -98,7 +98,7 @@
                                 <div class="tich-doc-session">
                                     <strong>{{ $session->displayTitle() }}</strong>
                                     @if (! in_array($session->session_type, ['break', 'lunch'], true))
-                                        <span>{{ $session->isOnline() ? 'Online students' : 'Physical students' }}</span>
+                                        <span>{{ $session->deliveryModeLabel() }}</span>
                                     @endif
                                     @if ($session->room)
                                         <span>{{ $session->room->room_code }}</span>

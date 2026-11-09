@@ -249,7 +249,7 @@
                                             <span class="tich-caption tich-timetable-session__time">{{ $session->timeLabel() }}</span>
                                         @endif
                                         @if (! in_array($session->session_type, ['break', 'lunch'], true))
-                                            <span class="tich-caption tich-timetable-session__mode"><strong>{{ $session->isOnline() ? 'Online students' : 'Physical students' }}</strong></span>
+                                            <span class="tich-caption tich-timetable-session__mode"><strong>{{ $session->deliveryModeLabel() }}</strong></span>
                                         @endif
                                         @if ($session->room)
                                             <span class="tich-caption">{{ $session->room->room_code }}</span>

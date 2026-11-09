@@ -455,11 +455,12 @@ class StudentPortalDashboardService
         }
 
         // The campus class and the remote class are posted on separate timetables for the same year
-        // and semester, so each student is shown the one their study mode has. A school that keeps
-        // a single posting is unaffected - nothing of theirs gets filtered away.
+        // and semester, or on one posting that serves both cohorts, so each student is shown what is
+        // addressed to them. A school that keeps a single posting is unaffected - nothing of theirs
+        // gets filtered away.
         $wantedMode = $student->isOnlineStudent() ? 'online' : 'physical';
         $modeMatched = $timetables->filter(
-            fn ($timetable) => ($timetable->delivery_mode ?? 'physical') === $wantedMode
+            fn ($timetable) => $timetable->servesMode($wantedMode)
         );
 
         if ($modeMatched->isNotEmpty()) {
@@ -486,6 +487,8 @@ class StudentPortalDashboardService
                     ->orderBy('start_time')
                     ->limit(48)
                     ->get();
+
+                $lessonReminderSessions = $this->sessionsForMode($lessonReminderSessions, $wantedMode);
             }
         }
 
@@ -495,6 +498,10 @@ class StudentPortalDashboardService
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values();
+
+        foreach ($timetables as $posted) {
+            $posted->setRelation('sessions', $this->sessionsForMode($posted->sessions, $wantedMode));
+        }
 
         if ($heldUnitIds->isNotEmpty()) {
             foreach ($timetables as $posted) {
@@ -518,6 +525,21 @@ class StudentPortalDashboardService
             'year_of_study' => $yearOfStudy['year'] ?? null,
             'is_provisional' => $isProvisional,
         ];
+    }
+
+    /**
+     * Keep the classes addressed to this student's cohort, unless that would empty the posting.
+     *
+     * @param  \Illuminate\Support\Collection<int, ProgramTimetableSession>  $sessions
+     * @return \Illuminate\Support\Collection<int, ProgramTimetableSession>
+     */
+    private function sessionsForMode($sessions, string $mode)
+    {
+        $addressed = $sessions->filter(
+            fn ($session) => $session->servesMode($mode)
+        )->values();
+
+        return $addressed->isEmpty() ? $sessions : $addressed;
     }
 
     /**

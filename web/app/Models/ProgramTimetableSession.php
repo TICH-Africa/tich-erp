@@ -111,7 +111,11 @@ class ProgramTimetableSession extends Model
      */
     public static function deliveryModes(): array
     {
-        return ['physical' => 'Physical students', 'online' => 'Online students'];
+        return [
+            'physical' => 'Physical students',
+            'online' => 'Online students',
+            'both' => 'Online and physical students',
+        ];
     }
 
     /**
@@ -125,6 +129,26 @@ class ProgramTimetableSession extends Model
     public function isOnline(): bool
     {
         return $this->delivery_mode === 'online';
+    }
+
+    public function isSharedRest(): bool
+    {
+        return in_array($this->session_type, ['break', 'lunch'], true);
+    }
+
+    /**
+     * A student of either study mode sits this class when it is posted for both cohorts,
+     * and rest periods belong to everybody on the timetable.
+     */
+    public function servesMode(string $mode): bool
+    {
+        if ($this->isSharedRest()) {
+            return true;
+        }
+
+        $posted = $this->delivery_mode ?: 'physical';
+
+        return $posted === 'both' || $posted === $mode;
     }
 
     public function deliveryModeLabel(): string

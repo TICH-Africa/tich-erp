@@ -9369,6 +9369,78 @@ a.tich-tabs__btn {
     background: var(--tich-surface, #fff);
 }
 
+/* Uploaded Word / Excel timetable shown as HTML instead of a download prompt */
+.doc-viewer__stage--document {
+    background: #eef0f1;
+    overflow: auto;
+    max-height: 46rem;
+}
+
+.doc-viewer__paper {
+    background: #fff;
+    margin: 1rem auto;
+    padding: 2rem 2.25rem;
+    max-width: 62rem;
+    border: 1px solid var(--tich-border, #e2e4e5);
+    color: #2f3234;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.doc-viewer__doc-para {
+    margin: 0 0 0.65rem;
+}
+
+.doc-viewer__doc-heading {
+    margin: 1.25rem 0 0.6rem;
+    font-size: 1rem;
+}
+
+.doc-viewer__doc-gap {
+    height: 0.6rem;
+}
+
+.doc-viewer__doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 1rem;
+}
+
+.doc-viewer__doc-table th,
+.doc-viewer__doc-table td {
+    border: 1px solid #b9bec2;
+    padding: 0.4rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+    font-size: 0.8125rem;
+}
+
+.doc-viewer__doc-table th {
+    background: #f2f4f5;
+    font-weight: 600;
+}
+
+.doc-viewer__doc-note {
+    font-style: italic;
+    color: #6b6e72;
+}
+
+@media (max-width: 900px) {
+    .doc-viewer__stage--document {
+        max-height: none;
+    }
+
+    .doc-viewer__paper {
+        padding: 1rem;
+    }
+
+    .doc-viewer__doc-table th,
+    .doc-viewer__doc-table td {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.35rem;
+    }
+}
+
 @media (max-width: 900px) {
     .doc-viewer {
         grid-template-columns: 1fr;

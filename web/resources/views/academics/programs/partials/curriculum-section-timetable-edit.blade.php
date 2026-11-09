@@ -870,10 +870,10 @@
                                     <label class="tich-label" for="timetable-session-mode">Which students is this class for?</label>
                                     <select name="delivery_mode" id="timetable-session-mode" class="tich-input" required>
                                         @foreach (\App\Models\ProgramTimetableSession::deliveryModes() as $modeKey => $modeLabel)
-                                            <option value="{{ $modeKey }}" @selected($modeKey === ($timetableDraft->delivery_mode ?? 'physical'))>{{ $modeLabel }}</option>
+                                            <option value="{{ $modeKey }}" @selected($modeKey === old('delivery_mode', $timetableDraft->delivery_mode ?? 'physical'))>{{ $modeLabel }}</option>
                                         @endforeach
                                     </select>
-                                    <p class="tich-caption">Pick physical students for a class the campus cohort sits in person, or online students for the remote class. Online classes take a meeting link instead of a classroom.</p>
+                                    <p class="tich-caption">Pick physical students for a class the campus cohort sits in person, online students for the remote class, or both when the same class serves the two cohorts together. Online classes take a meeting link instead of, or beside, a classroom. Students see only the classes addressed to their own study mode.</p>
                                 </div>
                                 <div class="tich-form-group" id="timetable-session-room-group">
                                     <label class="tich-label" for="timetable-session-room">Classroom</label>
@@ -983,6 +983,7 @@
                         var isLesson = @json($timetableKind === 'lesson');
                         // A class added on the online students' timetable starts as an online class.
                         var timetableMode = @json($timetableDraft->delivery_mode ?? 'physical');
+                        var modeMemoryKey = 'tich.timetable.session-mode.'+@json($timetableDraft->id ?? 0);
                         var dateField = document.getElementById('timetable-session-date');
                         var dateToField = document.getElementById('timetable-session-date-to');
                         var everyDay = document.getElementById('timetable-session-every-day');
@@ -1053,20 +1054,35 @@
                         }
 
                         function syncDelivery() {
-                            var online = mode && mode.value === 'online';
+                            var value = mode ? mode.value : 'physical';
+                            var online = value === 'online';
+                            var both = value === 'both';
 
+                            // A class for both cohorts takes the room the campus group sits in and
+                            // the link the remote group joins.
                             if (roomGroup) roomGroup.hidden = !!online;
-                            if (onlineGroup) onlineGroup.hidden = !online;
+                            if (onlineGroup) onlineGroup.hidden = !(online || both);
 
                             if (online) {
                                 if (room) room.value = '';
-                            } else if (venue) {
+                            } else if (!both && venue) {
                                 venue.value = '';
                             }
 
                             if (venue) {
-                                venue.required = !!online && sharedTypes.indexOf(type ? type.value : '') === -1;
+                                venue.required = (online || both) && sharedTypes.indexOf(type ? type.value : '') === -1;
                             }
+                        }
+
+                        function rememberMode(value) {
+                            try { window.localStorage.setItem(modeMemoryKey, value); } catch (e) {}
+                        }
+
+                        function rememberedMode() {
+                            try {
+                                var stored = window.localStorage.getItem(modeMemoryKey);
+                                return stored === 'physical' || stored === 'online' || stored === 'both' ? stored : null;
+                            } catch (e) { return null; }
                         }
 
                         function resetToAdd() {
@@ -1079,7 +1095,7 @@
                             if (removeForm) removeForm.hidden = true;
                             if (pick) pick.value = '';
                             if (everyDayGroup) everyDayGroup.hidden = false;
-                            if (mode) mode.value = timetableMode;
+                            if (mode) mode.value = rememberedMode() || timetableMode;
                             syncEveryDay();
                             syncDelivery();
                         }
@@ -1189,9 +1205,16 @@
                             syncHours();
                             syncDelivery();
                         });
-                        if (mode) mode.addEventListener('change', syncDelivery);
+                        if (mode) mode.addEventListener('change', function () {
+                            rememberMode(mode.value);
+                            syncDelivery();
+                        });
                         if (unit) unit.addEventListener('change', function () { syncHours(); });
                         if (recurrence) recurrence.addEventListener('change', syncCycle);
+                        if (mode) {
+                            var storedMode = rememberedMode();
+                            if (storedMode) mode.value = storedMode;
+                        }
                         syncUnit();
                         syncCycle();
                         syncEveryDay();

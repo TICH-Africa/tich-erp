@@ -29,17 +29,45 @@ class ProgramTimetable extends Model
      */
     public static function deliveryModes(): array
     {
-        return ['physical' => 'Physical students', 'online' => 'Online students'];
+        return [
+            'physical' => 'Physical students',
+            'online' => 'Online students',
+            'both' => 'Online and physical students',
+        ];
     }
 
-    public function isOnlineMode(): bool
+    /**
+     * One posting can serve both cohorts, so it is shown to a student of either study mode.
+     */
+    public function servesMode(string $mode): bool
     {
-        return $this->delivery_mode === 'online';
+        $posted = $this->delivery_mode ?: 'physical';
+
+        return $posted === 'both' || $posted === $mode;
     }
 
     public function deliveryModeLabel(): string
     {
         return self::deliveryModes()[$this->delivery_mode] ?? 'Physical students';
+    }
+
+    /**
+     * The words a generated timetable title carries when it is not the campus posting.
+     */
+    public static function audienceWords(?string $mode): string
+    {
+        return match ($mode) {
+            'online' => 'online students',
+            'both' => 'online and physical students',
+            default => '',
+        };
+    }
+
+    public static function audienceSuffix(?string $mode): string
+    {
+        $words = self::audienceWords($mode);
+
+        return $words === '' ? '' : ' - '.$words;
     }
 
     /**

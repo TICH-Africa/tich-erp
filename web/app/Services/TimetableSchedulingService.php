@@ -358,7 +358,7 @@ class TimetableSchedulingService
         string $deliveryMode = 'physical'
     ): ProgramTimetable {
         $timetableKind = $this->normalizeTimetableKind($timetableKind);
-        $deliveryMode = $deliveryMode === 'online' ? 'online' : 'physical';
+        $deliveryMode = $this->normalDeliveryMode($deliveryMode);
         $cycleType = array_key_exists((string) $cycleType, ProgramTimetable::cycleTypes()) ? (string) $cycleType : null;
         $cycleNo = $cycleType && $cycleType !== 'semester' ? max(1, (int) $cycleNo) : null;
 
@@ -392,9 +392,7 @@ class TimetableSchedulingService
         $kindLabel = self::timetableKinds()[$timetableKind] ?? ucfirst($timetableKind);
         $defaultTitle = $kindLabel.' - '.$program->periodLabel($teachingPeriod);
 
-        if ($deliveryMode === 'online') {
-            $defaultTitle .= ' - online students';
-        }
+        $defaultTitle .= ProgramTimetable::audienceSuffix($deliveryMode);
 
         $timetable = ProgramTimetable::query()->create([
             'program_id' => $program->id,
@@ -460,7 +458,7 @@ class TimetableSchedulingService
         string $deliveryMode = 'physical'
     ): ProgramTimetable {
         $timetableKind = $this->normalizeTimetableKind($timetableKind);
-        $deliveryMode = $deliveryMode === 'online' ? 'online' : 'physical';
+        $deliveryMode = $this->normalDeliveryMode($deliveryMode);
         $cycleType = array_key_exists((string) $cycleType, ProgramTimetable::cycleTypes()) ? (string) $cycleType : null;
         $cycleNo = $cycleType && $cycleType !== 'semester' ? max(1, (int) $cycleNo) : null;
 
@@ -490,9 +488,7 @@ class TimetableSchedulingService
         $kindLabel = self::timetableKinds()[$timetableKind] ?? ucfirst($timetableKind);
         $defaultTitle = $kindLabel.' - '.$program->periodLabel($teachingPeriod);
 
-        if ($deliveryMode === 'online') {
-            $defaultTitle .= ' - online students';
-        }
+        $defaultTitle .= ProgramTimetable::audienceSuffix($deliveryMode);
 
         if ($cycleNo) {
             $defaultTitle .= ' - '.($cycleType === 'monthly' ? 'Month' : 'Week').' '.$cycleNo;
@@ -677,7 +673,7 @@ class TimetableSchedulingService
 
         $timetableKind = $this->normalizeTimetableKind($timetableKind);
 
-        $deliveryMode = $deliveryMode === 'online' ? 'online' : 'physical';
+        $deliveryMode = $this->normalDeliveryMode($deliveryMode);
 
         if (! array_key_exists($timetableKind, self::timetableKinds())) {
 
@@ -774,7 +770,7 @@ class TimetableSchedulingService
 
 
 
-        $defaultTitle = UiText::normalizeDash($title ?: ProgramTimetable::kindLabels()[$timetableKind].' - Semester '.$teachingPeriod.($deliveryMode === 'online' ? ' - online students' : ''));
+        $defaultTitle = UiText::normalizeDash($title ?: ProgramTimetable::kindLabels()[$timetableKind].' - Semester '.$teachingPeriod.ProgramTimetable::audienceSuffix($deliveryMode));
 
 
 
@@ -907,14 +903,27 @@ class TimetableSchedulingService
     /**
      * @param  array<string, mixed>  $data
      */
+    // An unknown audience falls back to the campus cohort rather than a blank label.
+    private function normalDeliveryMode(?string $mode): string
+    {
+        $mode = (string) $mode;
+
+        return array_key_exists($mode, ProgramTimetableSession::deliveryModes()) ? $mode : 'physical';
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
     private function applyDeliveryMode(array &$data): void
     {
-        $mode = ($data['delivery_mode'] ?? 'physical') === 'online' ? 'online' : 'physical';
+        $mode = $this->normalDeliveryMode($data['delivery_mode'] ?? null);
         $data['delivery_mode'] = $mode;
 
+        // A class posted for both cohorts keeps the room the campus group sits in and the
+        // link the remote group joins, so neither field is cleared.
         if ($mode === 'online') {
             $data['room_id'] = null;
-        } else {
+        } elseif ($mode === 'physical') {
             $data['venue'] = null;
         }
     }
