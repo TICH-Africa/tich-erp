@@ -218,6 +218,9 @@ Schedule::command('attendance:remind-clock-in')
     ->between('8:00', '17:59')
     ->weekdays()
     ->timezone('Africa/Nairobi');
+Schedule::command('attendance:remind-clock-out')->weekdays()->at('17:00')->timezone('Africa/Nairobi');
+Schedule::command('attendance:remind-clock-out')->weekdays()->at('17:15')->timezone('Africa/Nairobi');
+Schedule::command('attendance:remind-clock-out')->weekdays()->at('17:30')->timezone('Africa/Nairobi');
 Schedule::command('academics:remind-upcoming-lessons')
     ->everyFiveMinutes()
     ->withoutOverlapping(600)

@@ -8,7 +8,10 @@
         :meta="'Status: '.\App\Support\StatusTone::label($report->status)"
     >
         <x-slot:actions>
-            <a href="{{ route('monitoring_evaluation.reports.index') }}" class="tich-btn tich-btn-ghost">Back</a>
+            @if ($canEdit ?? false)
+                <a href="{{ route('monitoring_evaluation.reports.edit', $report) }}" class="tich-btn tich-btn-primary">Enter achieved</a>
+            @endif
+            <a href="{{ route('monitoring_evaluation.dashboard') }}#quarterly-workspace" class="tich-btn tich-btn-ghost">Command center</a>
             <a href="{{ route('monitoring_evaluation.reports.print', $report) }}" class="tich-btn tich-btn-secondary">Print</a>
             <a href="{{ route('monitoring_evaluation.reports.pdf', $report) }}" class="tich-btn tich-btn-primary">Download PDF</a>
         </x-slot:actions>
@@ -68,7 +71,7 @@
             </form>
             <form method="POST" action="{{ route('monitoring_evaluation.reports.return', $report) }}" class="tich-card tich-form-stack">
                 @csrf
-                <h2 class="tich-h3">Return to HOD</h2>
+                <h2 class="tich-h3">Reopen for M&amp;E edit</h2>
                 <textarea name="me_notes" class="tich-input" rows="3" required placeholder="Reason">{{ old('me_notes') }}</textarea>
                 <button type="submit" class="tich-btn tich-btn-secondary">Return for revision</button>
             </form>

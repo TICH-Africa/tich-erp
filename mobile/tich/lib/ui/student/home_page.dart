@@ -33,6 +33,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
   int _unread = 0;
   Map<String, dynamic>? _nextLesson;
   DateTime? _lastTimetablePrime;
+  bool _recoverScheduled = false;
 
   Future<Map<String, dynamic>> _fetchDashboard() {
     return widget.api.dashboard().then((data) {
@@ -62,6 +63,10 @@ class _StudentHomePageState extends State<StudentHomePage> {
     );
     scheduleMicrotask(() {
       if (mounted) unawaited(_primeLessonReminders());
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _liveRefresh();
     });
   }
 
@@ -95,8 +100,10 @@ class _StudentHomePageState extends State<StudentHomePage> {
       return;
     }
     _lastTimetablePrime = now;
+    StudentPrefetch.timetable(widget.api);
     try {
-      final tt = await studentEnsure(
+      var tt = studentReadCache('student.timetable');
+      tt ??= await studentEnsure(
         'student.timetable',
         () => widget.api.timetable(),
       );
@@ -160,18 +167,16 @@ class _StudentHomePageState extends State<StudentHomePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(
-            snap,
-            _dataCache as dynamic,
+          return studentCachedMapBody(
+            snap: snap,
+            memoryCache: _dataCache,
             persistKey: _cacheKey,
-          );
-          if (tichShowLoadingSpinner(snap, merged)) {
-            return studentLoadingBody(onRefresh: () async => _reload());
-          }
-          if (merged == null && snap.hasError) {
-            return studentErrorBody(snap.error, _reload);
-          }
-          final data = merged! as Map<String, dynamic>;
+            onRetry: _reload,
+            autoRecoverOnError: true,
+            recoverScheduled: _recoverScheduled,
+            setRecoverScheduled: (v) => _recoverScheduled = v,
+            mounted: () => mounted,
+            builder: (data) {
           final student =
               Map<String, dynamic>.from(data['student'] as Map? ?? {});
           final stats =
@@ -388,6 +393,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
                   }),
               ],
             ),
+          );
+            },
           );
         },
       ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
@@ -7,6 +9,7 @@ import '../../theme/tich_theme.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_timetable_documents.dart';
 import 'student_helpers.dart';
+import 'student_prefetch.dart';
 
 class StudentTimetablePage extends StatefulWidget {
   const StudentTimetablePage({super.key, required this.api});
@@ -22,6 +25,8 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
   late Future<Map<String, dynamic>> _future;
   Object? _dataCache;
   late TabController _tabs;
+  int _visibleTab = 0;
+  bool _recoverScheduled = false;
 
   static const _cacheKey = 'student.timetable';
 
@@ -29,6 +34,7 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(_onTabChanged);
     studentPrimeScreen(
       persistKey: _cacheKey,
       setCache: (c) => _dataCache = c,
@@ -36,22 +42,35 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
       fetch: () => widget.api.timetable(),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future<void>.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-        _future.then((data) {
+      if (!mounted) return;
+      StudentPrefetch.timetableDocumentsFromCache(widget.api);
+      final cached = studentReadCache(_cacheKey);
+      if (cached != null) {
+        _dataCache = cached;
+        _warmVisibleDocument(cached);
+        scheduleMicrotask(() {
           if (!mounted) return;
-          final tt = Map<String, dynamic>.from(data['timetable'] as Map? ?? {});
-          final timetables = tt['timetables'] as List? ?? const [];
-          // ignore: unawaited_futures
-          TichNotifications.instance
-              .scheduleLessonReminders(_sessionsFor(timetables, 'lesson'));
-        }).catchError((_) {});
-      });
+          _scheduleLessonReminders(cached);
+        });
+        Future<void>.delayed(const Duration(seconds: 10), () {
+          if (!mounted) return;
+          _liveRefresh();
+        });
+        return;
+      }
+      _liveRefresh();
     });
+  }
+
+  void _onTabChanged() {
+    if (!_tabs.indexIsChanging && _tabs.index != _visibleTab) {
+      setState(() => _visibleTab = _tabs.index);
+    }
   }
 
   @override
   void dispose() {
+    _tabs.removeListener(_onTabChanged);
     _tabs.dispose();
     super.dispose();
   }
@@ -60,7 +79,11 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
         mounted: () => mounted,
         setState: setState,
         fetch: () => widget.api.timetable(),
-        onData: (data) => _dataCache = data,
+        onData: (data) {
+          _dataCache = data;
+          _warmVisibleDocument(data);
+          _scheduleLessonReminders(data);
+        },
         persistKey: _cacheKey,
       );
 
@@ -69,9 +92,42 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
       mounted: () => mounted,
       setState: setState,
       fetch: () => widget.api.timetable(),
-      onData: (data) => _dataCache = data,
+      onData: (data) {
+        _dataCache = data;
+        _warmVisibleDocument(data);
+        scheduleMicrotask(() {
+          if (!mounted) return;
+          _scheduleLessonReminders(data);
+        });
+      },
       persistKey: _cacheKey,
     );
+  }
+
+  void _scheduleLessonReminders(Map<String, dynamic> data) {
+    final tt = Map<String, dynamic>.from(data['timetable'] as Map? ?? {});
+    final reminder = tt['lesson_reminder_sessions'] as List?;
+    final sessions = reminder != null && reminder.isNotEmpty
+        ? reminder
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList()
+        : _sessionsFor(tt['timetables'] as List? ?? const [], 'lesson');
+    unawaited(TichNotifications.instance.scheduleLessonReminders(sessions));
+  }
+
+  void _warmVisibleDocument(Map<String, dynamic> data) {
+    final tt = Map<String, dynamic>.from(data['timetable'] as Map? ?? {});
+    if (tt['is_provisional'] == true) return;
+    final docs = _documentsFrom(tt);
+    final kind = _visibleTab == 0 ? 'lesson' : 'exam';
+    final doc = TichTimetableDocumentRef.forKind(docs, kind);
+    if (doc == null) return;
+    StudentPrefetch.timetablePdf(widget.api, {
+      'id': doc.id,
+      'kind': doc.kind,
+      'is_upload_document': doc.isUploadDocument,
+      'source_name': doc.sourceName,
+    });
   }
 
   List<Map<String, dynamic>> _sessionsFor(
@@ -92,8 +148,65 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
     Map<String, dynamic> timetableBlock,
   ) {
     return TichTimetableDocumentRef.parseDocuments(
-      null,
+      timetableBlock['documents'] as List?,
       timetablesFallback: timetableBlock['timetables'] as List?,
+    );
+  }
+
+  Widget _timetableBody(Map<String, dynamic> merged) {
+    final tt = Map<String, dynamic>.from(merged['timetable'] as Map? ?? {});
+    final provisional = tt['is_provisional'] == true;
+    final docs = _documentsFrom(tt);
+    final lesson = TichTimetableDocumentRef.forKind(docs, 'lesson');
+    final exam = TichTimetableDocumentRef.forKind(docs, 'exam');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (provisional)
+          MaterialBanner(
+            content: const Text('Showing provisional draft timetable.'),
+            actions: [
+              TextButton(onPressed: _reload, child: const Text('Refresh')),
+            ],
+          ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return RefreshIndicator(
+                onRefresh: () async => _reload(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: constraints.maxHeight,
+                    child: IndexedStack(
+                      index: _visibleTab,
+                      children: [
+                        TichTimetableDocumentPane(
+                          document: lesson,
+                          loadPdf: widget.api.downloadTimetablePdf,
+                          provisional: provisional,
+                          active: _visibleTab == 0,
+                          unavailableMessage:
+                              'No lesson timetable published yet.',
+                        ),
+                        TichTimetableDocumentPane(
+                          document: exam,
+                          loadPdf: widget.api.downloadTimetablePdf,
+                          provisional: provisional,
+                          active: _visibleTab == 1,
+                          unavailableMessage:
+                              'No exam timetable published yet.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -108,6 +221,13 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
             TabBar(
               controller: _tabs,
               labelColor: TichColors.green,
+              onTap: (index) {
+                setState(() => _visibleTab = index);
+                final cache = _dataCache;
+                if (cache is Map<String, dynamic>) {
+                  _warmVisibleDocument(cache);
+                }
+              },
               tabs: const [
                 Tab(text: 'Lesson'),
                 Tab(text: 'Exam'),
@@ -117,86 +237,25 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
               child: FutureBuilder<Map<String, dynamic>>(
                 future: _future,
                 builder: (context, snap) {
-                  final merged = tichMergeSnapshot(
-                    snap,
-                    _dataCache as dynamic,
+                  return studentCachedMapBody(
+                    snap: snap,
+                    memoryCache: _dataCache,
                     persistKey: _cacheKey,
-                  );
-                  if (tichShowLoadingSpinner(snap, merged)) {
-                    return studentLoadingBody(onRefresh: () async => _reload());
-                  }
-                  if (merged == null && snap.hasError) {
-                    return studentErrorBody(snap.error, _reload);
-                  }
-                  final tt = Map<String, dynamic>.from(
-                    (merged! as Map<String, dynamic>)['timetable'] as Map? ?? {},
-                  );
-                  final provisional = tt['is_provisional'] == true;
-                  final docs = _documentsFrom(tt);
-                  final lesson =
-                      TichTimetableDocumentRef.forKind(docs, 'lesson');
-                  final exam = TichTimetableDocumentRef.forKind(docs, 'exam');
-
-                  return Column(
-                    children: [
-                      if (provisional)
-                        MaterialBanner(
-                          content: const Text(
-                            'Showing provisional draft timetable.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: _reload,
-                              child: const Text('Refresh'),
-                            ),
-                          ],
-                        ),
-                      Expanded(
-                        child: TabBarView(
-                          controller: _tabs,
-                          children: [
-                            RefreshIndicator(
-                              onRefresh: () async => _reload(),
-                              child: ListView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                children: [
-                                  SizedBox(
-                                    height:
-                                        MediaQuery.sizeOf(context).height * 0.72,
-                                    child: TichTimetableDocumentPane(
-                                      document: lesson,
-                                      loadPdf: widget.api.downloadTimetablePdf,
-                                      provisional: provisional,
-                                      unavailableMessage:
-                                          'No lesson timetable published yet.',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            RefreshIndicator(
-                              onRefresh: () async => _reload(),
-                              child: ListView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                children: [
-                                  SizedBox(
-                                    height:
-                                        MediaQuery.sizeOf(context).height * 0.72,
-                                    child: TichTimetableDocumentPane(
-                                      document: exam,
-                                      loadPdf: widget.api.downloadTimetablePdf,
-                                      provisional: provisional,
-                                      unavailableMessage:
-                                          'No exam timetable published yet.',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    onRetry: _reload,
+                    autoRecoverOnError: true,
+                    recoverScheduled: _recoverScheduled,
+                    setRecoverScheduled: (v) => _recoverScheduled = v,
+                    mounted: () => mounted,
+                    builder: (merged) {
+                      if (_dataCache != merged) {
+                        scheduleMicrotask(() {
+                          if (!mounted) return;
+                          setState(() => _dataCache = merged);
+                          _warmVisibleDocument(merged);
+                        });
+                      }
+                      return _timetableBody(merged);
+                    },
                   );
                 },
               ),

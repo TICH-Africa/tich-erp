@@ -136,6 +136,7 @@ class ApiClient {
     String path, {
     Map<String, String>? query,
     String accept = 'application/pdf',
+    Duration? timeout,
   }) async {
     var uri = ApiConfig.uri(path);
     if (query != null && query.isNotEmpty) {
@@ -143,19 +144,44 @@ class ApiClient {
     }
     final headers = await _headers(json: false);
     headers['Accept'] = accept;
-    final response = await _client.get(uri, headers: headers).timeout(timeout);
+    final response = await _client
+        .get(uri, headers: headers)
+        .timeout(timeout ?? ApiClient.timeout);
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return response.bodyBytes;
     }
+    final message = _messageFromErrorBody(response.statusCode, response.body);
     throw ApiException(
-      'Request failed (${response.statusCode})',
+      message ?? 'Request failed (${response.statusCode})',
       statusCode: response.statusCode,
     );
+  }
+
+  static String? _messageFromErrorBody(int statusCode, String body) {
+    final trimmed = body.trim();
+    if (trimmed.isEmpty) {
+      return tichDescribeHttpStatus(statusCode);
+    }
+    try {
+      final decoded = jsonDecode(trimmed);
+      if (decoded is Map) {
+        final msg = decoded['message']?.toString().trim();
+        if (msg != null && msg.isNotEmpty) {
+          return msg;
+        }
+      }
+    } catch (_) {}
+    if (trimmed.length < 280 && !trimmed.startsWith('<!')) {
+      return trimmed;
+    }
+
+    return tichDescribeHttpStatus(statusCode);
   }
 
   Future<Map<String, dynamic>> get(
     String path, {
     Map<String, String>? query,
+    Duration? timeout,
   }) async {
     var uri = ApiConfig.uri(path);
     if (query != null && query.isNotEmpty) {
@@ -173,7 +199,7 @@ class ApiClient {
       return Map<String, dynamic>.from(existing.body!);
     }
 
-    final future = _performGet(uri);
+    final future = _performGet(uri, timeout: timeout);
     _getDedupe[key] = _GetDedupeEntry(inFlight: future);
     try {
       final body = await future;
@@ -188,10 +214,13 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> _performGet(Uri uri) async {
+  Future<Map<String, dynamic>> _performGet(
+    Uri uri, {
+    Duration? timeout,
+  }) async {
     final response = await _client
         .get(uri, headers: await _headers())
-        .timeout(timeout);
+        .timeout(timeout ?? ApiClient.timeout);
     return _decode(response);
   }
 

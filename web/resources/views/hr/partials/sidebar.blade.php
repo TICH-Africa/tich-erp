@@ -63,15 +63,7 @@
 
         @php
             $leaveRoutesActive = request()->routeIs('hr.leave.*');
-        @endphp
-
-        @include('partials.navigation.sidebar-group', [
-            'label' => 'Leave',
-            'icon' => 'calendar-off',
-            'open' => $leaveRoutesActive,
-            'active' => $leaveRoutesActive,
-            'badgeKey' => 'leave',
-            'items' => [
+            $leaveSidebarItems = [
                 [
                     'href' => route('hr.leave.index'),
                     'label' => 'Leave requests',
@@ -79,6 +71,16 @@
                     'active' => request()->routeIs('hr.leave.index') || request()->routeIs('hr.leave.show'),
                     'badgeKey' => 'leave.requests',
                 ],
+            ];
+            if (auth()->user()?->hasPermission('hr.manage_leave')) {
+                $leaveSidebarItems[] = [
+                    'href' => route('hr.leave.apply.create'),
+                    'label' => 'Apply for employee',
+                    'icon' => 'user-plus',
+                    'active' => request()->routeIs('hr.leave.apply.*'),
+                ];
+            }
+            $leaveSidebarItems = array_merge($leaveSidebarItems, [
                 [
                     'href' => route('hr.leave.overview'),
                     'label' => 'Leave overview',
@@ -91,7 +93,16 @@
                     'icon' => 'users',
                     'active' => request()->routeIs('hr.leave.employees'),
                 ],
-            ],
+            ]);
+        @endphp
+
+        @include('partials.navigation.sidebar-group', [
+            'label' => 'Leave',
+            'icon' => 'calendar-off',
+            'open' => $leaveRoutesActive,
+            'active' => $leaveRoutesActive,
+            'badgeKey' => 'leave',
+            'items' => $leaveSidebarItems,
         ])
 
         @include('partials.navigation.sidebar-group', [

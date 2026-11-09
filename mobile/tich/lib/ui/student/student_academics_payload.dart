@@ -11,6 +11,7 @@ class StudentAcademicsPayload {
     required this.grades,
     required this.catScores,
     required this.examResults,
+    required this.provisionalResultsBySemester,
     required this.attendance,
     required this.periods,
     required this.curriculumUnits,
@@ -26,6 +27,7 @@ class StudentAcademicsPayload {
   final List<Map<String, dynamic>> grades;
   final List<Map<String, dynamic>> catScores;
   final List<Map<String, dynamic>> examResults;
+  final List<Map<String, dynamic>> provisionalResultsBySemester;
   final List<Map<String, dynamic>> attendance;
   final List<Map<String, dynamic>> periods;
   final List<Map<String, dynamic>> curriculumUnits;
@@ -44,6 +46,8 @@ class StudentAcademicsPayload {
       grades: _listMaps(academics['grades']),
       catScores: _listMaps(academics['cat_scores']),
       examResults: _listMaps(academics['exam_results']),
+      provisionalResultsBySemester:
+          _listMaps(academics['provisional_results_by_semester']),
       attendance: _listMaps(academics['attendance']),
       periods: _listMaps(academics['periods']),
       curriculumUnits: _listMaps(academics['curriculum_units']),
@@ -73,10 +77,12 @@ class AcademicsHubSection {
     required this.icon,
     required this.badgeKey,
     required this.onTap,
+    this.onTapDown,
   });
 
   final String title;
   final IconData icon;
   final String badgeKey;
   final VoidCallback onTap;
+  final GestureTapDownCallback? onTapDown;
 }

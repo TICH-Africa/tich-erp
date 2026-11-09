@@ -29,4 +29,9 @@ return [
         'max_units' => (int) env('TICH_WORKLOAD_MAX_UNITS', 4),
     ],
 
+    'timetable_upload' => [
+        'max_kb' => (int) env('TICH_TIMETABLE_UPLOAD_MAX_KB', 15360),
+        'allowed_extensions' => ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'doc', 'docx', 'xls', 'xlsx'],
+    ],
+
 ];

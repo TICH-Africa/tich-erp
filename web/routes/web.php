@@ -74,6 +74,10 @@ Route::get('/programs/{code}', [ProgramsController::class, 'show'])->name('progr
 |--------------------------------------------------------------------------
 */
 
+Route::get('/mobile/handoff/{token}', [\App\Http\Controllers\Auth\MobileWebHandoffController::class, 'consume'])
+    ->middleware('throttle:login')
+    ->name('mobile.handoff.consume');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [WebAuthController::class, 'login'])->middleware('throttle:login');
@@ -991,6 +995,9 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/plans/{plan}/lock-baseline', [\App\Http\Controllers\MonitoringEvaluation\TechnicalPlanController::class, 'lockBaseline'])->name('monitoring_evaluation.plans.lock');
 
             Route::get('/reports', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'index'])->name('monitoring_evaluation.reports.index');
+            Route::get('/reports/{report}/edit', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'edit'])->name('monitoring_evaluation.reports.edit');
+            Route::put('/reports/{report}', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'update'])->name('monitoring_evaluation.reports.update');
+            Route::post('/reports/{report}/complete', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'complete'])->name('monitoring_evaluation.reports.complete');
             Route::get('/reports/{report}', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'show'])->name('monitoring_evaluation.reports.show');
             Route::get('/reports/{report}/print', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'print'])->name('monitoring_evaluation.reports.print');
             Route::get('/reports/{report}/pdf', [\App\Http\Controllers\MonitoringEvaluation\ReportController::class, 'pdf'])->name('monitoring_evaluation.reports.pdf');
@@ -1165,6 +1172,18 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/recruitment/{application}/send-qualified-email', [\App\Http\Controllers\HR\RecruitmentController::class, 'sendQualifiedEmail'])->name('hr.recruitment.send-qualified-email');
             Route::get('/leave/overview', [\App\Http\Controllers\HR\LeaveRequestController::class, 'overview'])->name('hr.leave.overview');
             Route::get('/leave/employees', [\App\Http\Controllers\HR\LeaveRequestController::class, 'employees'])->name('hr.leave.employees');
+            Route::get('/leave/apply', [\App\Http\Controllers\HR\LeaveRequestController::class, 'createOnBehalf'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.apply.create');
+            Route::post('/leave/apply', [\App\Http\Controllers\HR\LeaveRequestController::class, 'storeOnBehalf'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.apply.store');
+            Route::get('/leave/employees/{staff}/balances', [\App\Http\Controllers\HR\LeaveRequestController::class, 'editBalances'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.balances.edit');
+            Route::post('/leave/employees/{staff}/balances', [\App\Http\Controllers\HR\LeaveRequestController::class, 'updateBalances'])
+                ->middleware('permission:hr.manage_leave')
+                ->name('hr.leave.balances.update');
             Route::get('/leave', [\App\Http\Controllers\HR\LeaveRequestController::class, 'index'])->name('hr.leave.index');
             Route::get('/leave/carry-forward', [\App\Http\Controllers\HR\LeaveCarryForwardController::class, 'index'])
                 ->middleware('permission:hr.manage_leave')
@@ -1385,6 +1404,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
     Route::middleware('student.portal')->prefix('portal')->group(function () {
         Route::get('/sidebar-notifications', \App\Http\Controllers\Portal\SidebarNotificationController::class)->name('portal.sidebar-notifications');
 
+        Route::get('/learning-content/{content}/view', [\App\Http\Controllers\Portal\PortalUnitContentController::class, 'view'])
+            ->name('portal.learning-content.view');
+        Route::get('/learning-content/{content}/download', [\App\Http\Controllers\Portal\PortalUnitContentController::class, 'download'])
+            ->name('portal.learning-content.download');
+
         Route::get('/documents/{document}', [\App\Http\Controllers\Portal\PortalDocumentController::class, 'show'])
             ->name('portal.documents.show');
         Route::get('/documents/{document}/download', [\App\Http\Controllers\Portal\PortalDocumentController::class, 'download'])
@@ -1421,6 +1445,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('portal.fee-statement.pdf');
         Route::post('/document-requests', [\App\Http\Controllers\Portal\PortalDocumentRequestController::class, 'store'])
             ->name('portal.document-requests.store');
+        Route::post('/documents/upload', [\App\Http\Controllers\Portal\PortalDocumentUploadController::class, 'store'])
+            ->name('portal.documents.upload');
+        Route::get('/documents/submissions/{submission}', [\App\Http\Controllers\Portal\PortalDocumentSubmissionController::class, 'show'])
+            ->name('portal.documents.submission.show');
         Route::post('/exam-sitting-requests', [\App\Http\Controllers\Portal\PortalExamSittingRequestController::class, 'store'])
             ->name('portal.exam-sitting-requests.store');
         Route::get('/exam-card/print', [\App\Http\Controllers\Portal\PortalExamCardController::class, 'print'])
@@ -1463,6 +1491,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/leave', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'store'])->name('employee.leave.store');
         Route::put('/leave/{leaveRequest}', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'update'])->name('employee.leave.update');
         Route::post('/leave/{leaveRequest}/cancel', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'cancel'])->name('employee.leave.cancel');
+        Route::post('/leave/{leaveRequest}/line-manager/approve', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'managerApprove'])->name('employee.leave.manager-approve');
+        Route::post('/leave/{leaveRequest}/line-manager/reject', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'managerReject'])->name('employee.leave.manager-reject');
         Route::post('/leave/{leaveRequest}/coverages', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'updateCoverages'])->name('employee.leave.coverages.update');
         Route::post('/leave/coverages/{coverage}/accept', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'acceptCoverage'])->name('employee.leave.coverages.accept');
         Route::post('/leave/coverages/{coverage}/decline', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'declineCoverage'])->name('employee.leave.coverages.decline');

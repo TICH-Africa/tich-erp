@@ -1,9 +1,7 @@
 @php
     $moduleContext = $moduleContext ?? \App\Support\MeDepartmentReportModuleContext::forModule('monitoring_evaluation');
     $reportRoutes = $reportRoutes ?? $moduleContext['routes'];
-    $technicalPlanPdfRoute = ($moduleContext['key'] ?? '') !== ''
-        ? $moduleContext['key'].'.technical-plans.pdf'
-        : null;
+    $hodReadOnly = (bool) ($hodReadOnly ?? true);
 @endphp
 
 @extends($moduleContext['layout'])
@@ -13,45 +11,21 @@
 @section($moduleContext['content_section'])
     <x-page-toolbar
         title="M&E quarterly reports"
-        :meta="($viewAllDepartments ?? false) ? 'All departments · verification status' : ($scopeDepartment?->dept_name ?? 'This department').' - fill the standardised quarterly grid and submit to M&E'"
+        :meta="$hodReadOnly
+            ? ($scopeDepartment?->dept_name ?? 'Your department').' · view status and download PDFs (M&E compiles reports on the command center)'
+            : 'All departments · verification status'"
     />
 
     @if (session('status'))
         <div class="tich-alert tich-alert--success tich-mt-4">{{ session('status') }}</div>
     @endif
 
-    <article class="tich-card tich-mt-6">
-        <h2 class="tich-h3">Technical plans</h2>
-        <p class="tich-caption tich-mt-1">A quarter opens for reporting once M&amp;E approves it, or once the whole year is baseline locked.</p>
-        <ul class="tich-mt-4" style="margin:0;padding-left:1.25rem;">
-            @forelse ($plans as $plan)
-                <li class="tich-text tich-mt-3">
-                    <strong>{{ $plan->title }}</strong>
-                    @if ($viewAllDepartments ?? false)
-                        <span class="tich-caption">· {{ $plan->department?->dept_name }}</span>
-                    @endif
-                    <div class="tich-mt-2" style="display:flex;flex-wrap:wrap;gap:0.5rem;">
-                        @foreach ($plan->quarters as $q)
-                            @if ($plan->isQuarterReportable((int) $q->quarter_number))
-                                <a href="{{ route($reportRoutes['open'], [$plan, $q->quarter_number]) }}" class="tich-btn tich-btn-secondary">{{ $q->label() }} report</a>
-                                @if ($plan->quarterlyReports->contains('quarter_id', $q->id))
-                                    <a href="{{ route($reportRoutes['plan-pdf'], [$plan, $q->quarter_number]) }}" class="tich-btn tich-btn-ghost">Download {{ $q->label() }}</a>
-                                @endif
-                            @endif
-                        @endforeach
-                        @if ($plan->quarterlyReports->count() > 1)
-                            <a href="{{ route($reportRoutes['plan-pdf'], [$plan, 'all']) }}" class="tich-btn tich-btn-primary">Download all reports</a>
-                        @endif
-                        @if ($technicalPlanPdfRoute && Route::has($technicalPlanPdfRoute))
-                            <a href="{{ route($technicalPlanPdfRoute, ['plan' => $plan->id, 'quarter' => 'all']) }}" class="tich-btn tich-btn-ghost">Download technical plan</a>
-                        @endif
-                    </div>
-                </li>
-            @empty
-                <li class="tich-text">No quarters have been approved by M&amp;E for this department yet.</li>
-            @endforelse
-        </ul>
-    </article>
+    @if ($hodReadOnly)
+        <div class="tich-alert tich-alert--info tich-mt-4">
+            Quarterly achievement reports are prepared by the <strong>M&amp;E office</strong> after your technical plan quarters are approved.
+            You can track status and download PDFs below.
+        </div>
+    @endif
 
     <div class="tich-card tich-table-panel tich-mt-6">
         <h2 class="tich-h3">Report history</h2>
@@ -59,7 +33,9 @@
             <table class="tich-admin-table">
                 <thead>
                     <tr>
-                        <th>Department</th>
+                        @if ($viewAllDepartments ?? false)
+                            <th>Department</th>
+                        @endif
                         <th>Quarter</th>
                         <th>Status</th>
                         <th></th>
@@ -68,24 +44,30 @@
                 <tbody>
                     @forelse ($reports as $report)
                         <tr>
-                            <td>{{ $report->department?->dept_name }}</td>
+                            @if ($viewAllDepartments ?? false)
+                                <td>{{ $report->department?->dept_name }}</td>
+                            @endif
                             <td>{{ $report->quarter?->label() }}</td>
                             <td><x-status-badge :status="$report->status" /></td>
                             <td>
                                 <div class="tich-flex-wrap" style="gap:0.5rem;">
-                                    <a href="{{ route($reportRoutes['edit'], $report) }}" class="tich-link">
-                                        {{ in_array($report->status, ['draft', 'returned'], true) ? 'Edit' : 'View' }}
-                                    </a>
+                                    <a href="{{ route($reportRoutes['edit'], $report) }}" class="tich-link">View</a>
                                     <a href="{{ route($reportRoutes['pdf'], $report) }}" class="tich-btn tich-btn-ghost">Download PDF</a>
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 4, 'title' => 'No reports yet', 'icon' => 'inbox'])
+                        <tr>
+                            <td colspan="{{ ($viewAllDepartments ?? false) ? 4 : 3 }}" class="tich-text tich-text--secondary">
+                                No quarterly reports yet for this scope.
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        <div class="tich-mt-4">{{ $reports->links() }}</div>
+        @if ($reports->hasPages())
+            <div class="tich-mt-4">{{ $reports->links() }}</div>
+        @endif
     </div>
 @endsection

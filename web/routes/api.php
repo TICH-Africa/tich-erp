@@ -11,6 +11,7 @@ use App\Http\Controllers\HR\StaffController;
 use App\Http\Controllers\HR\StatusHistoryController;
 use App\Http\Controllers\HR\VacancyController;
 use App\Http\Controllers\Api\MobileRealtimeController;
+use App\Http\Controllers\Api\MobileWebHandoffController;
 use App\Http\Controllers\RBACController;
 use Illuminate\Broadcasting\BroadcastController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/realtime/config', MobileRealtimeController::class);
     Route::post('/broadcasting/auth', [BroadcastController::class, 'authenticate']);
+    Route::post('/mobile/web-handoff', [MobileWebHandoffController::class, 'store']);
 });
 
 Route::prefix('auth')->group(function () {
@@ -189,6 +191,8 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
     Route::get('/academics', \App\Http\Controllers\Api\Student\mobile\AcademicsController::class);
     Route::get('/academics/units', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'units']);
     Route::get('/academics/content', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'content']);
+    Route::get('/learning-content/{content}', [\App\Http\Controllers\Api\Student\mobile\UnitContentController::class, 'show']);
+    Route::get('/learning-content/{content}/file', [\App\Http\Controllers\Api\Student\mobile\UnitContentController::class, 'file']);
     Route::get('/academics/assessments', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'assessments']);
     Route::get('/academics/exam-card/pdf', [\App\Http\Controllers\Api\Student\mobile\ExamCardController::class, 'pdf']);
     Route::get('/timetable', \App\Http\Controllers\Api\Student\mobile\TimetableController::class);
@@ -202,7 +206,10 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
     Route::put('/profile', [\App\Http\Controllers\Api\Student\mobile\ProfileController::class, 'update']);
 
     Route::get('/documents', [\App\Http\Controllers\Api\Student\mobile\DocumentsController::class, 'index']);
+    Route::post('/documents/upload', [\App\Http\Controllers\Api\Student\mobile\DocumentsController::class, 'storeUpload']);
     Route::post('/documents/requests', [\App\Http\Controllers\Api\Student\mobile\DocumentsController::class, 'storeRequest']);
+    Route::get('/documents/{document}/file', [\App\Http\Controllers\Api\Student\mobile\DocumentsController::class, 'file']);
+    Route::get('/documents/submissions/{submission}/file', [\App\Http\Controllers\Api\Student\mobile\DocumentsController::class, 'submissionFile']);
 
     Route::get('/notifications', [\App\Http\Controllers\Api\Student\mobile\NotificationsController::class, 'index']);
     Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Api\Student\mobile\NotificationsController::class, 'markRead']);

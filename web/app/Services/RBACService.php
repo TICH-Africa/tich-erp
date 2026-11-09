@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Department;
 use App\Models\Role;
+use App\Models\Staff;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -766,6 +767,38 @@ class RBACService
         }
 
         return $this->activeUserIdsWithRoles($roles);
+    }
+
+    /**
+     * One HR Manager contact for employee-facing copy (named role only).
+     */
+    public function primaryHrManagerStaff(): ?Staff
+    {
+        return Staff::query()
+            ->excludePlatformOperators()
+            ->whereHas('user', function ($query) {
+                $query->where('is_active', 1)
+                    ->whereHas('roles', function ($roleQuery) {
+                        $roleQuery->where('roles.role_name', 'HR Manager');
+                    });
+            })
+            ->orderBy('id')
+            ->first();
+    }
+
+    public function primaryHrManagerDisplayName(): string
+    {
+        $staff = $this->primaryHrManagerStaff();
+        if ($staff === null) {
+            return 'the HR team';
+        }
+
+        $parts = array_values(array_filter([
+            trim((string) $staff->title),
+            trim($staff->fullName()),
+        ]));
+
+        return $parts === [] ? 'the HR team' : implode(' ', $parts);
     }
 
     private function userHasPermissionSlug(User $user, string $slug): bool

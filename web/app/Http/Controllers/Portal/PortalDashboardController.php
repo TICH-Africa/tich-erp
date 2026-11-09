@@ -7,6 +7,7 @@ use App\Models\CourseEvaluation;
 use App\Models\CourseEvaluationWindow;
 use App\Models\SpecialExamRequest;
 use App\Models\StudentDocumentRequest;
+use App\Services\StudentPortalDocumentService;
 use App\Models\StudentLifecycleRequest;
 use App\Models\StudentNotification;
 use App\Models\StudentProfileChangeRequest;
@@ -29,6 +30,7 @@ class PortalDashboardController extends Controller
         protected StudentPortalNavigationService $navigation,
         protected StudentPortalDashboardService $dashboard,
         protected StudentClearanceService $clearance,
+        protected StudentPortalDocumentService $portalDocuments,
     ) {}
 
     public function __invoke(Request $request): View
@@ -40,7 +42,7 @@ class PortalDashboardController extends Controller
         $biodata = $this->studentRecords->biodata360($student);
         $section = $this->navigation->resolveSection($request);
         $tab = $this->navigation->resolveTab($request, $section);
-        $portalData = $this->dashboard->forStudent($student, $biodata);
+        $portalData = $this->dashboard->forStudent($student, $biodata, $section, $tab);
 
         $profileChangeRequests = collect();
         $lifecycleRequests = collect();
@@ -155,6 +157,10 @@ class PortalDashboardController extends Controller
             'supplementaryExamRequests' => $supplementaryExamRequests,
             'lifecycleTypes' => StudentLifecycleRequest::TYPES,
             'documentTypes' => StudentDocumentRequest::TYPES,
+            'uploadDocumentTypes' => $this->portalDocuments->uploadTypeLabels(),
+            'pendingDocumentChanges' => $section === 'documents'
+                ? collect($this->portalDocuments->serializePendingChanges($student))
+                : collect(),
         ]);
     }
 }

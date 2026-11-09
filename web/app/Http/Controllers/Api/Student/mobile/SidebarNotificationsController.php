@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Sidebar\StudentSidebarNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class SidebarNotificationsController extends Controller
 {
@@ -17,7 +18,11 @@ class SidebarNotificationsController extends Controller
         StudentSidebarNotificationService $notifications,
     ): JsonResponse {
         $student = $this->portalStudent($request);
-        $counts = $notifications->countsFor($student, false);
+        $counts = Cache::remember(
+            'student.mobile.sidebar_counts.'.$student->id,
+            15,
+            fn () => $notifications->countsFor($student, false),
+        );
 
         return response()->json([
             'counts' => $counts,

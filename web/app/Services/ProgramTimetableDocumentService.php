@@ -6,7 +6,13 @@ use App\Models\ProgramTimetable;
 use App\Models\ProgramTimetableSession;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProgramTimetableDocumentService
@@ -14,6 +20,79 @@ class ProgramTimetableDocumentService
     /**
      * Timetable is shown as the uploaded file (not a generated grid PDF).
      */
+    /**
+     * @return list<string>
+     */
+    public function allowedExtensions(): array
+    {
+        return config('tich-academics.timetable_upload.allowed_extensions', ['pdf', 'png', 'jpg', 'jpeg']);
+    }
+
+    public function maxUploadKilobytes(): int
+    {
+        return (int) config('tich-academics.timetable_upload.max_kb', 15360);
+    }
+
+    public function attachUpload(ProgramTimetable $timetable, UploadedFile $file, User $user): void
+    {
+        $extension = strtolower($file->getClientOriginalExtension() ?: '');
+        $allowed = $this->allowedExtensions();
+        if (! in_array($extension, $allowed, true)) {
+            throw ValidationException::withMessages([
+                'timetable_file' => 'Upload a timetable file ('.implode(', ', $allowed).').',
+            ]);
+        }
+
+        $maxKb = $this->maxUploadKilobytes();
+        if ($file->getSize() > $maxKb * 1024) {
+            throw ValidationException::withMessages([
+                'timetable_file' => 'The file is too large (max '.(int) ($maxKb / 1024).' MB).',
+            ]);
+        }
+
+        if (filled($timetable->source_file)) {
+            $this->deleteStoredFile((string) $timetable->source_file);
+        }
+
+        $directory = 'program-timetables/'.$timetable->program_id.'/'.$timetable->id;
+        $storedName = Str::uuid()->toString().'.'.$extension;
+        $path = $file->storeAs($directory, $storedName, 'local');
+
+        $timetable->forceFill([
+            'source' => 'upload',
+            'source_file' => $path,
+            'source_name' => $file->getClientOriginalName(),
+            'source_uploaded_at' => now(),
+            'source_uploaded_by' => $user->id,
+            'updated_at' => now(),
+        ])->save();
+    }
+
+    public function deleteStoredFile(?string $path): void
+    {
+        if (! filled($path)) {
+            return;
+        }
+
+        if ($this->storage()->exists($path)) {
+            $this->storage()->delete($path);
+        }
+    }
+
+    public function detachUpload(ProgramTimetable $timetable): void
+    {
+        $this->deleteStoredFile($timetable->source_file);
+
+        $timetable->forceFill([
+            'source' => 'manual',
+            'source_file' => null,
+            'source_name' => null,
+            'source_uploaded_at' => null,
+            'source_uploaded_by' => null,
+            'updated_at' => now(),
+        ])->save();
+    }
+
     public function usesUploadedFile(ProgramTimetable $timetable): bool
     {
         if (! filled($timetable->source_file)) {
@@ -28,9 +107,7 @@ class ProgramTimetableDocumentService
             return true;
         }
 
-        $sessionCount = $timetable->relationLoaded('sessions')
-            ? $timetable->sessions->count()
-            : $timetable->sessions()->count();
+        $sessionCount = $this->sessionCount($timetable);
 
         return $sessionCount === 0;
     }
@@ -41,11 +118,7 @@ class ProgramTimetableDocumentService
             return true;
         }
 
-        $sessionCount = $timetable->relationLoaded('sessions')
-            ? $timetable->sessions->count()
-            : $timetable->sessions()->count();
-
-        return $sessionCount > 0;
+        return $this->sessionCount($timetable) > 0;
     }
 
     public function displayFileName(ProgramTimetable $timetable): string
@@ -73,6 +146,51 @@ class ProgramTimetableDocumentService
             'Content-Type' => $this->mimeType($timetable),
             'Content-Disposition' => 'inline; filename="'.$filename.'"',
         ]);
+    }
+
+    public function inlineCachedResponse(ProgramTimetable $timetable): Response
+    {
+        abort_unless($this->usesUploadedFile($timetable), 404);
+
+        $binary = $this->cachedUploadedBinary($timetable);
+        $filename = $this->safeFilename($this->displayFileName($timetable));
+
+        return response($binary, 200, [
+            'Content-Type' => $this->mimeType($timetable),
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+        ]);
+    }
+
+    public function cachedUploadedBinary(ProgramTimetable $timetable): string
+    {
+        abort_unless($this->usesUploadedFile($timetable), 404);
+
+        $path = (string) $timetable->source_file;
+        $stamp = sha1($path.'|'.(string) ($timetable->source_uploaded_at ?? '').'|'.$this->storage()->lastModified($path));
+
+        return Cache::remember(
+            'program.timetable.upload.v1.'.$timetable->id.'.'.$stamp,
+            now()->addHours(6),
+            fn () => $this->storage()->get($path)
+        );
+    }
+
+    public function pdfCacheStamp(ProgramTimetable $timetable): string
+    {
+        if ($this->usesUploadedFile($timetable)) {
+            $path = (string) $timetable->source_file;
+
+            return sha1('upload|'.$path.'|'.(string) ($timetable->source_uploaded_at ?? '').'|'.$this->storage()->lastModified($path));
+        }
+
+        $sessionStamp = $timetable->relationLoaded('sessions')
+            ? $timetable->sessions->max('id')
+            : $timetable->sessions()->max('id');
+
+        return sha1(
+            'grid|'.(string) ($timetable->updated_at ?? '').'|'.(string) ($timetable->published_at ?? '')
+            .'|'.(string) $sessionStamp
+        );
     }
 
     public function downloadResponse(ProgramTimetable $timetable): StreamedResponse
@@ -110,11 +228,14 @@ class ProgramTimetableDocumentService
      */
     public function mobileDocumentMeta(ProgramTimetable $timetable): array
     {
+        $isUpload = $this->usesUploadedFile($timetable);
+
         return [
             'source' => $timetable->source,
             'source_name' => $timetable->source_name,
-            'is_upload_document' => $this->usesUploadedFile($timetable),
+            'is_upload_document' => $isUpload,
             'has_document' => $this->hasViewableDocument($timetable),
+            'mime_type' => $isUpload ? $this->mimeType($timetable) : 'application/pdf',
         ];
     }
 
@@ -190,5 +311,18 @@ class ProgramTimetableDocumentService
     private function safeFilename(string $name): string
     {
         return str_replace(['"', "\r", "\n"], '', $name);
+    }
+
+    private function sessionCount(ProgramTimetable $timetable): int
+    {
+        if ($timetable->relationLoaded('sessions')) {
+            return $timetable->sessions->count();
+        }
+
+        if (isset($timetable->sessions_count)) {
+            return (int) $timetable->sessions_count;
+        }
+
+        return (int) $timetable->sessions()->count();
     }
 }

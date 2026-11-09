@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart' show ChangeNotifierProvider;
 
 import '../models/auth_user.dart';
 import '../navigation/tich_root_nav.dart';
@@ -43,16 +44,19 @@ class TichApiScope extends StatelessWidget {
       );
     }
 
+    Widget scoped = child;
+
+    if (user.canAccessEmployeePortal) {
+      scoped = ChangeNotifierProvider<EmployeeBadgeService>(
+        create: (ctx) => EmployeeBadgeService(ctx.read<EmployeeApi>())..start(),
+        child: scoped,
+      );
+    }
+
     return MultiRepositoryProvider(
       providers: [
-        if (user.canAccessEmployeePortal) ...[
+        if (user.canAccessEmployeePortal)
           RepositoryProvider<EmployeeApi>(create: (_) => EmployeeApi(client)),
-          RepositoryProvider<EmployeeBadgeService>(
-            create: (ctx) =>
-                EmployeeBadgeService(ctx.read<EmployeeApi>())..start(),
-            dispose: (service) => service.dispose(),
-          ),
-        ],
         if (user.canAccessStaffPortal)
           RepositoryProvider<StaffApi>(create: (_) => StaffApi(client)),
         if (user.canAccessProcurementPortal)
@@ -60,7 +64,7 @@ class TichApiScope extends StatelessWidget {
             create: (_) => ProcurementApi(client),
           ),
       ],
-      child: child,
+      child: scoped,
     );
   }
 }

@@ -16,6 +16,19 @@ class StudentApi {
   Future<Map<String, dynamic>> academicsContent() =>
       _client.get('/student/academics/content');
 
+  Future<Map<String, dynamic>> learningContent(int id) =>
+      _client.get('/student/learning-content/$id');
+
+  Future<List<int>> downloadLearningContentFile(
+    int id, {
+    bool download = false,
+  }) =>
+      _client.getBytes(
+        '/student/learning-content/$id/file',
+        query: download ? {'disposition': 'download'} : null,
+        accept: '*/*',
+      );
+
   Future<Map<String, dynamic>> academicsAssessments() =>
       _client.get('/student/academics/assessments');
 
@@ -23,14 +36,26 @@ class StudentApi {
       _client.getBytes(
         '/student/academics/exam-card/pdf',
         query: {'semester': '$semesterId'},
+        timeout: const Duration(seconds: 90),
       );
 
-  Future<Map<String, dynamic>> timetable() => _client.get('/student/timetable');
+  Future<Map<String, dynamic>> timetable() => _client.get(
+        '/student/timetable',
+        timeout: const Duration(seconds: 90),
+      );
 
   Future<List<int>> downloadTimetablePdf(int timetableId) =>
-      _client.getBytes('/student/timetable/$timetableId/pdf');
+      _client.getBytes(
+        '/student/timetable/$timetableId/pdf',
+        timeout: const Duration(seconds: 90),
+        accept: '*/*',
+      );
 
   Future<Map<String, dynamic>> finance() => _client.get('/student/finance');
+
+  /// One-time link that signs the student into the web portal (same account).
+  Future<Map<String, dynamic>> createWebHandoff({required String path}) =>
+      _client.post('/mobile/web-handoff', body: {'path': path});
 
   Future<Map<String, dynamic>> payInvoice(
     int invoiceId, {
@@ -64,6 +89,50 @@ class StudentApi {
         'document_type': documentType,
         if (notes != null) 'student_notes': notes,
       });
+
+  Future<Map<String, dynamic>> uploadDocument({
+    required String documentType,
+    required String filePath,
+    required String fileName,
+    String? notes,
+  }) =>
+      _client.multipartFiles(
+        '/student/documents/upload',
+        fields: {
+          'document_type': documentType,
+          if (notes != null && notes.isNotEmpty) 'student_notes': notes,
+        },
+        files: [
+          (
+            field: 'file',
+            path: filePath,
+            name: fileName,
+            mimeType: null,
+          ),
+        ],
+      );
+
+  Future<List<int>> downloadDocumentFile(
+    int documentId, {
+    bool download = false,
+  }) =>
+      _client.getBytes(
+        '/student/documents/$documentId/file',
+        query: download ? {'disposition': 'download'} : null,
+        accept: '*/*',
+        timeout: const Duration(seconds: 90),
+      );
+
+  Future<List<int>> downloadDocumentSubmissionFile(
+    int submissionId, {
+    bool download = false,
+  }) =>
+      _client.getBytes(
+        '/student/documents/submissions/$submissionId/file',
+        query: download ? {'disposition': 'download'} : null,
+        accept: '*/*',
+        timeout: const Duration(seconds: 90),
+      );
 
   Future<Map<String, dynamic>> notifications() =>
       _client.get('/student/notifications');

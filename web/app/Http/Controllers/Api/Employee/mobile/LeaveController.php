@@ -210,6 +210,7 @@ class LeaveController extends Controller
             'days_requested' => (float) $r->days_requested,
             'reason' => $r->reason,
             'overall_status' => $r->overall_status,
+            'status_label' => $r->statusLabel(),
             'is_emergency' => (bool) $r->is_emergency,
             'editable' => $r->isEditableByEmployee(),
             'coverage_editable' => $r->isCoverageEditableByEmployee(),

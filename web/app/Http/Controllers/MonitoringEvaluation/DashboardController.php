@@ -8,6 +8,7 @@ use App\Models\Me\MePolicy;
 use App\Models\Me\MeQuarterlyReport;
 use App\Models\Me\MeTechnicalPlan;
 use App\Services\Me\MePolicyService;
+use App\Services\Me\MeQuarterlyReportWorkspaceService;
 use App\Services\Me\MeTechnicalPlanService;
 use Illuminate\View\View;
 
@@ -16,6 +17,7 @@ class DashboardController extends Controller
     public function __invoke(
         MePolicyService $policies,
         MeTechnicalPlanService $plans,
+        MeQuarterlyReportWorkspaceService $quarterlyWorkspace,
     ): View {
         $currentPolicy = $policies->currentPublishedPolicy();
         $signoff = $currentPolicy ? $policies->signoffProgress($currentPolicy) : null;
@@ -47,6 +49,8 @@ class DashboardController extends Controller
             ->limit(8)
             ->get();
 
+        $quarterlyRows = $quarterlyWorkspace->rows();
+
         return view('monitoring-evaluation.dashboard', compact(
             'stats',
             'currentPolicy',
@@ -54,6 +58,7 @@ class DashboardController extends Controller
             'pendingPlans',
             'pendingReports',
             'health',
+            'quarterlyRows',
         ));
     }
 }

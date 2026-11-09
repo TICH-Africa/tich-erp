@@ -32,13 +32,15 @@ use App\Support\UiText;
 
 use Illuminate\Http\Request;
 
+use Illuminate\Http\UploadedFile;
+
 use Illuminate\Support\Carbon;
+
+use Illuminate\Validation\ValidationException;
 
 use Illuminate\Support\Collection;
 
 use Illuminate\Support\Facades\DB;
-
-use Illuminate\Validation\ValidationException;
 
 
 
@@ -79,24 +81,8 @@ class TimetableSchedulingService
     ): Collection {
         $kinds = array_keys(self::timetableKinds());
 
-        $timetables = ProgramTimetable::query()
-            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion'])
-            ->where('program_id', $programId)
-            ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
-            ->where('teaching_period', $teachingPeriod)
-            ->whereIn('timetable_kind', array_merge($kinds, ['special_exam']))
-            ->orderByDesc('updated_at')
-            ->orderByDesc('id')
-            ->get();
-
-        $byKind = $timetables->unique('timetable_kind')->keyBy('timetable_kind');
-
-        return collect($kinds)->mapWithKeys(function (string $kind) use ($byKind) {
-            if ($kind === 'supplementary') {
-                return [$kind => $byKind->get('supplementary') ?? $byKind->get('special_exam')];
-            }
-
-            return [$kind => $byKind->get($kind)];
+        return collect($kinds)->mapWithKeys(function (string $kind) use ($programId, $curriculumVersionId, $teachingPeriod) {
+            return [$kind => $this->activeTimetableInScope($programId, $curriculumVersionId, $teachingPeriod, $kind)];
         });
     }
 
@@ -123,10 +109,53 @@ class TimetableSchedulingService
     }
 
     /**
-     * The timetables an officer can switch between for one year and semester of an intake. A year
-     * runs more than one posting - week 1, week 2, a month, the whole semester - so each keeps its
-     * own row instead of replacing the last one.
-     *
+     * @return list<string>
+     */
+    private function kindKeysForScope(string $timetableKind): array
+    {
+        $timetableKind = $this->normalizeTimetableKind($timetableKind);
+
+        return $timetableKind === 'supplementary' ? ['supplementary', 'special_exam'] : [$timetableKind];
+    }
+
+    /**
+     * One live timetable per programme intake, teaching period, and kind (lesson / exam / supplementary).
+     */
+    public function activeTimetableInScope(
+        int $programId,
+        ?int $curriculumVersionId,
+        int $teachingPeriod,
+        string $timetableKind = 'lesson'
+    ): ?ProgramTimetable {
+        $kinds = $this->kindKeysForScope($timetableKind);
+
+        return ProgramTimetable::query()
+            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion'])
+            ->where('program_id', $programId)
+            ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
+            ->where('teaching_period', $teachingPeriod)
+            ->whereIn('timetable_kind', $kinds)
+            ->where('status', '!=', 'archived')
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    public function archiveOtherTimetablesInScope(ProgramTimetable $keep): void
+    {
+        $kinds = $this->kindKeysForScope((string) $keep->timetable_kind);
+
+        ProgramTimetable::query()
+            ->where('program_id', $keep->program_id)
+            ->where('curriculum_version_id', $keep->curriculum_version_id)
+            ->where('teaching_period', $keep->teaching_period)
+            ->whereIn('timetable_kind', $kinds)
+            ->where('id', '!=', $keep->id)
+            ->where('status', '!=', 'archived')
+            ->update(['status' => 'archived', 'updated_at' => now()]);
+    }
+
+    /**
      * @return Collection<int, ProgramTimetable>
      */
     public function timetablesInScope(
@@ -135,18 +164,9 @@ class TimetableSchedulingService
         int $teachingPeriod,
         string $timetableKind = 'lesson'
     ): Collection {
-        $timetableKind = $this->normalizeTimetableKind($timetableKind);
+        $active = $this->activeTimetableInScope($programId, $curriculumVersionId, $teachingPeriod, $timetableKind);
 
-        return ProgramTimetable::query()
-            ->where('program_id', $programId)
-            ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
-            ->where('teaching_period', $teachingPeriod)
-            ->whereIn('timetable_kind', $timetableKind === 'supplementary' ? ['supplementary', 'special_exam'] : [$timetableKind])
-            ->where('status', '!=', 'archived')
-            ->orderByRaw('cycle_no is null')
-            ->orderBy('cycle_no')
-            ->orderByDesc('id')
-            ->get();
+        return $active ? collect([$active]) : collect();
     }
 
     /**
@@ -157,16 +177,29 @@ class TimetableSchedulingService
      */
     public function timetablesForPicker(int $programId, ?int $curriculumVersionId): Collection
     {
-        return ProgramTimetable::query()
-            ->withCount('sessions')
+        $scopes = ProgramTimetable::query()
             ->where('program_id', $programId)
             ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
+            ->where('status', '!=', 'archived')
+            ->select(['teaching_period', 'timetable_kind'])
+            ->distinct()
             ->orderBy('teaching_period')
             ->orderBy('timetable_kind')
-            ->orderByRaw('cycle_no is null')
-            ->orderBy('cycle_no')
-            ->orderByDesc('id')
             ->get();
+
+        return $scopes
+            ->map(function ($row) use ($programId, $curriculumVersionId) {
+                return $this->activeTimetableInScope(
+                    $programId,
+                    $curriculumVersionId,
+                    (int) $row->teaching_period,
+                    (string) $row->timetable_kind
+                );
+            })
+            ->filter()
+            ->unique('id')
+            ->values()
+            ->each(fn (ProgramTimetable $timetable) => $timetable->loadCount('sessions'));
     }
 
     /**
@@ -181,26 +214,7 @@ class TimetableSchedulingService
         ?int $timetableId = null,
         ?string $deliveryMode = null
     ): ?ProgramTimetable {
-        if ($timetableId) {
-            $picked = ProgramTimetable::query()
-                ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion'])
-                ->whereKey($timetableId)
-                ->where('program_id', $programId)
-                ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
-                ->where('teaching_period', $teachingPeriod)
-                ->first();
-
-            if ($picked) {
-                return $picked;
-            }
-        }
-
-        $mode = in_array($deliveryMode, array_keys(ProgramTimetable::deliveryModes()), true) ? $deliveryMode : null;
-
-        // The audience that was just opened is shown, so an online posting is not swapped for the
-        // campus one of another year. A school running one posting for everybody is unaffected.
-        return $this->latestTimetable($programId, $curriculumVersionId, $teachingPeriod, $timetableKind, $mode)
-            ?? $this->latestTimetable($programId, $curriculumVersionId, $teachingPeriod, $timetableKind);
+        return $this->activeTimetableInScope($programId, $curriculumVersionId, $teachingPeriod, $timetableKind);
     }
 
     public function latestTimetable(
@@ -216,43 +230,7 @@ class TimetableSchedulingService
         ?string $deliveryMode = null
 
     ): ?ProgramTimetable {
-
-        $timetableKind = $this->normalizeTimetableKind($timetableKind);
-
-        $latest = ProgramTimetable::query()
-
-            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion'])
-
-            ->where('program_id', $programId)
-
-            ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
-
-            ->where('teaching_period', $teachingPeriod)
-
-            ->where('timetable_kind', $timetableKind)
-
-            ->when($deliveryMode, fn ($query) => $query->where('delivery_mode', $deliveryMode))
-
-            ->orderByDesc('updated_at')
-
-            ->orderByDesc('id')
-
-            ->first();
-
-        if ($latest || $timetableKind !== 'supplementary') {
-            return $latest;
-        }
-
-        return ProgramTimetable::query()
-            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion'])
-            ->where('program_id', $programId)
-            ->when($curriculumVersionId, fn ($query) => $query->where('curriculum_version_id', $curriculumVersionId))
-            ->where('teaching_period', $teachingPeriod)
-            ->where('timetable_kind', 'special_exam')
-            ->when($deliveryMode, fn ($query) => $query->where('delivery_mode', $deliveryMode))
-            ->orderByDesc('updated_at')
-            ->orderByDesc('id')
-            ->first();
+        return $this->activeTimetableInScope($programId, $curriculumVersionId, $teachingPeriod, $timetableKind);
     }
 
 
@@ -318,16 +296,24 @@ class TimetableSchedulingService
 
         ?int $curriculumVersionId,
 
-        int $teachingPeriod
+        int $teachingPeriod,
+
+        bool $withSessions = true,
 
     ): Collection {
 
         // Every posting of the semester is returned - week 1, week 2, month 1 and the
         // whole-semester timetable all stay separate so each group sees what applies to them.
 
-        return ProgramTimetable::query()
+        $query = ProgramTimetable::query();
 
-            ->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days'])
+        if ($withSessions) {
+            $query->with(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days']);
+        } else {
+            $query->withCount('sessions');
+        }
+
+        return $query
 
             ->where('program_id', $programId)
 
@@ -376,23 +362,23 @@ class TimetableSchedulingService
         $cycleType = array_key_exists((string) $cycleType, ProgramTimetable::cycleTypes()) ? (string) $cycleType : null;
         $cycleNo = $cycleType && $cycleType !== 'semester' ? max(1, (int) $cycleNo) : null;
 
-        // A cycle is its own timetable, so week 2 does not overwrite week 1. Without a cycle the
-        // officer is simply reopening the timetable this semester already has for that audience.
-        $existing = $cycleType
-            ? ProgramTimetable::query()
-                ->where('program_id', $program->id)
-                ->where('curriculum_version_id', $intake->id)
-                ->where('teaching_period', $teachingPeriod)
-                ->where('timetable_kind', $timetableKind)
-                ->where('delivery_mode', $deliveryMode)
-                ->where('cycle_type', $cycleType)
-                ->when($cycleNo, fn ($query) => $query->where('cycle_no', $cycleNo))
-                ->where('status', '!=', 'archived')
-                ->orderByDesc('id')
-                ->first()
-            : $this->latestTimetable($program->id, $intake->id, $teachingPeriod, $timetableKind, $deliveryMode);
+        $existing = $this->activeTimetableInScope($program->id, $intake->id, $teachingPeriod, $timetableKind);
 
-        if ($existing && $existing->status !== 'archived') {
+        if ($existing) {
+            $documents = app(ProgramTimetableDocumentService::class);
+            if ($documents->usesUploadedFile($existing)) {
+                $this->switchToBuilderMode($user, $existing, $request);
+            }
+
+            if ($title) {
+                $existing->title = $title;
+            }
+            $existing->delivery_mode = $deliveryMode;
+            $existing->updated_at = now();
+            $existing->save();
+
+            $this->archiveOtherTimetablesInScope($existing);
+
             return $existing->loadMissing(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion']);
         }
 
@@ -408,10 +394,6 @@ class TimetableSchedulingService
 
         if ($deliveryMode === 'online') {
             $defaultTitle .= ' - online students';
-        }
-
-        if ($cycleNo) {
-            $defaultTitle .= ' - '.($cycleType === 'monthly' ? 'Month' : 'Week').' '.$cycleNo;
         }
 
         $timetable = ProgramTimetable::query()->create([
@@ -456,7 +438,162 @@ class TimetableSchedulingService
             $request
         );
 
+        $this->archiveOtherTimetablesInScope($timetable);
+
         return $timetable->load(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion']);
+    }
+
+    /**
+     * Create or reuse a draft timetable slot and attach an uploaded document (PDF, image, Office).
+     */
+    public function startDraftFromUpload(
+        User $user,
+        AcademicProgram $program,
+        CurriculumVersion $intake,
+        int $teachingPeriod,
+        UploadedFile $file,
+        string $timetableKind = 'lesson',
+        ?string $title = null,
+        ?Request $request = null,
+        ?string $cycleType = null,
+        ?int $cycleNo = null,
+        string $deliveryMode = 'physical'
+    ): ProgramTimetable {
+        $timetableKind = $this->normalizeTimetableKind($timetableKind);
+        $deliveryMode = $deliveryMode === 'online' ? 'online' : 'physical';
+        $cycleType = array_key_exists((string) $cycleType, ProgramTimetable::cycleTypes()) ? (string) $cycleType : null;
+        $cycleNo = $cycleType && $cycleType !== 'semester' ? max(1, (int) $cycleNo) : null;
+
+        $existing = $this->activeTimetableInScope($program->id, $intake->id, $teachingPeriod, $timetableKind);
+
+        if ($existing) {
+            if ($title) {
+                $existing->title = $title;
+            }
+            $existing->delivery_mode = $deliveryMode;
+            $existing->updated_at = now();
+            $existing->save();
+
+            $timetable = $this->applyUploadToTimetable($user, $existing, $file, $request);
+            $this->archiveOtherTimetablesInScope($timetable);
+
+            return $timetable;
+        }
+
+        $template = $this->templates->templateForProgram($program->id);
+
+        if (in_array($timetableKind, ['exam', 'supplementary'], true)) {
+            $this->templates->ensureKindSegments($template, $timetableKind);
+            $template->load('segments');
+        }
+
+        $kindLabel = self::timetableKinds()[$timetableKind] ?? ucfirst($timetableKind);
+        $defaultTitle = $kindLabel.' - '.$program->periodLabel($teachingPeriod);
+
+        if ($deliveryMode === 'online') {
+            $defaultTitle .= ' - online students';
+        }
+
+        if ($cycleNo) {
+            $defaultTitle .= ' - '.($cycleType === 'monthly' ? 'Month' : 'Week').' '.$cycleNo;
+        }
+
+        $timetable = ProgramTimetable::query()->create([
+            'program_id' => $program->id,
+            'curriculum_version_id' => $intake->id,
+            'teaching_period' => $teachingPeriod,
+            'title' => $title ?: $defaultTitle,
+            'timetable_kind' => $timetableKind,
+            'delivery_mode' => $deliveryMode,
+            'cycle_type' => $cycleType,
+            'cycle_no' => $cycleNo,
+            'template_id' => $template->id,
+            'status' => 'draft',
+            'source' => 'upload',
+            'generation_notes' => 'Shown to students and staff exactly as uploaded.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $timetable = $this->applyUploadToTimetable($user, $timetable, $file, $request);
+        $this->archiveOtherTimetablesInScope($timetable);
+
+        return $timetable;
+    }
+
+    public function applyUploadToTimetable(
+        User $user,
+        ProgramTimetable $timetable,
+        UploadedFile $file,
+        ?Request $request = null
+    ): ProgramTimetable {
+        abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422);
+
+        $removedSessions = (int) $timetable->sessions()->delete();
+
+        $documents = app(ProgramTimetableDocumentService::class);
+        $documents->attachUpload($timetable, $file, $user);
+        $timetable->update([
+            'generation_notes' => 'Shown to students and staff exactly as uploaded.',
+            'updated_at' => now(),
+        ]);
+
+        $this->auditService->log(
+            'academics.timetable.uploaded',
+            'program_timetables',
+            $timetable->id,
+            null,
+            [
+                'replaced' => true,
+                'sessions_removed' => $removedSessions,
+            ],
+            'Timetable document uploaded',
+            'success',
+            $user->id,
+            $request
+        );
+
+        $this->archiveOtherTimetablesInScope($timetable);
+
+        return $timetable->fresh(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion']);
+    }
+
+    public function replaceUploadedDocument(
+        User $user,
+        ProgramTimetable $timetable,
+        UploadedFile $file,
+        ?Request $request = null
+    ): ProgramTimetable {
+        return $this->applyUploadToTimetable($user, $timetable, $file, $request);
+    }
+
+    public function switchToBuilderMode(
+        User $user,
+        ProgramTimetable $timetable,
+        ?Request $request = null
+    ): ProgramTimetable {
+        abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422);
+
+        app(ProgramTimetableDocumentService::class)->detachUpload($timetable);
+        $timetable->update([
+            'source' => 'manual',
+            'generation_notes' => 'Builder grid — add or change classes in Edit timetable.',
+            'updated_at' => now(),
+        ]);
+
+        $this->auditService->log(
+            'academics.timetable.format_changed',
+            'program_timetables',
+            $timetable->id,
+            null,
+            ['format' => 'builder'],
+            'Timetable switched to builder grid',
+            'success',
+            $user->id,
+            $request
+        );
+
+        return $timetable->fresh(['sessions.unit', 'sessions.staff', 'sessions.room', 'template.segments', 'template.days', 'curriculumVersion']);
     }
 
     /**
@@ -665,68 +802,48 @@ class TimetableSchedulingService
 
         ) {
 
-            $draftKinds = $timetableKind === 'supplementary'
-                ? ['supplementary', 'special_exam']
-                : [$timetableKind];
+            $timetable = $this->activeTimetableInScope($program->id, $intake->id, $teachingPeriod, $timetableKind);
 
-            ProgramTimetable::query()
+            $documents = app(ProgramTimetableDocumentService::class);
 
-                ->where('program_id', $program->id)
+            if ($timetable) {
+                $timetable->sessions()->delete();
+                if ($documents->usesUploadedFile($timetable)) {
+                    $documents->detachUpload($timetable);
+                }
 
-                ->where('curriculum_version_id', $intake->id)
-
-                ->where('teaching_period', $teachingPeriod)
-
-                ->whereIn('timetable_kind', $draftKinds)
-
-                // Regenerating the campus timetable leaves the online posting standing - the two
-                // audiences are filled in separately.
-
-                ->where('delivery_mode', $deliveryMode)
-
-                ->where('status', 'draft')
-
-                ->delete();
-
-
-
-            $timetable = ProgramTimetable::create([
-
-                'program_id' => $program->id,
-
-                'curriculum_version_id' => $intake->id,
-
-                'teaching_period' => $teachingPeriod,
-
-                'title' => $defaultTitle,
-
-                'timetable_kind' => $timetableKind,
-
-                'delivery_mode' => $deliveryMode,
-
-                'template_id' => $template->id,
-
-                'status' => 'draft',
-
-                'generation_notes' => $this->generationNotes($timetableKind, $units->count(), count($sessions)),
-
-                'created_at' => now(),
-
-                'updated_at' => now(),
-
-            ]);
-
-
+                $timetable->update([
+                    'title' => $defaultTitle,
+                    'delivery_mode' => $deliveryMode,
+                    'template_id' => $template->id,
+                    'status' => 'draft',
+                    'source' => 'generated',
+                    'generation_notes' => $this->generationNotes($timetableKind, $units->count(), count($sessions)),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                $timetable = ProgramTimetable::create([
+                    'program_id' => $program->id,
+                    'curriculum_version_id' => $intake->id,
+                    'teaching_period' => $teachingPeriod,
+                    'title' => $defaultTitle,
+                    'timetable_kind' => $timetableKind,
+                    'delivery_mode' => $deliveryMode,
+                    'template_id' => $template->id,
+                    'status' => 'draft',
+                    'generation_notes' => $this->generationNotes($timetableKind, $units->count(), count($sessions)),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             foreach ($sessions as $session) {
-
                 ProgramTimetableSession::create(array_merge($session, [
-
                     'program_timetable_id' => $timetable->id,
-
                 ]));
-
             }
+
+            $this->archiveOtherTimetablesInScope($timetable);
 
 
 
@@ -855,6 +972,12 @@ class TimetableSchedulingService
         // A semester timetable moves every week or two, so a published one stays editable.
         abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
 
+        $documents = app(ProgramTimetableDocumentService::class);
+        if ($documents->usesUploadedFile($timetable)) {
+            $this->switchToBuilderMode($user, $timetable, $request);
+            $timetable->refresh();
+        }
+
         $this->applyDeliveryMode($data);
 
         // A timetable that names its own week or month stamps the classes inside it, so a class
@@ -952,6 +1075,12 @@ class TimetableSchedulingService
     ): ProgramTimetableSession {
         abort_unless(in_array($timetable->status, ['draft', 'published'], true), 422, 'Only a draft or published timetable can be edited.');
         abort_unless((int) $session->program_timetable_id === (int) $timetable->id, 404);
+
+        $documents = app(ProgramTimetableDocumentService::class);
+        if ($documents->usesUploadedFile($timetable)) {
+            $this->switchToBuilderMode($user, $timetable, $request);
+            $timetable->refresh();
+        }
 
         $this->applyDeliveryMode($data);
 
@@ -1379,26 +1508,18 @@ class TimetableSchedulingService
 
 
 
+        $kinds = $this->kindKeysForScope((string) $timetable->timetable_kind);
+
         ProgramTimetable::query()
-
             ->where('program_id', $timetable->program_id)
-
             ->where('curriculum_version_id', $timetable->curriculum_version_id)
-
             ->where('teaching_period', $timetable->teaching_period)
-
-            ->where('timetable_kind', $timetable->timetable_kind)
-
-            // Publishing the campus posting must not retire the online one - they are two audiences
-            // running side by side, not two versions of the same sheet.
-
-            ->where('delivery_mode', $timetable->delivery_mode ?? 'physical')
-
+            ->whereIn('timetable_kind', $kinds)
+            ->where('id', '!=', $timetable->id)
             ->where('status', 'published')
-
             ->update(['status' => 'archived', 'updated_at' => now()]);
 
-
+        $this->archiveOtherTimetablesInScope($timetable);
 
         $timetable->update([
 

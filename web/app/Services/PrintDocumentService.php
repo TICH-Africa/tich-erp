@@ -75,12 +75,21 @@ class PrintDocumentService
      */
     public function inlinePdf(string $view, array $data, string $filename, string $orientation = 'portrait', array $options = []): Response
     {
-        $mpdf = $this->makePdf($view, $data, $orientation, $options);
+        $binary = $this->pdfBinary($view, $data, $orientation, $options);
 
-        return response($mpdf->Output('', 'S'), 200, [
+        return response($binary, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="'.$filename.'"',
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $options
+     */
+    public function pdfBinary(string $view, array $data, string $orientation = 'portrait', array $options = []): string
+    {
+        return $this->makePdf($view, $data, $orientation, $options)->Output('', 'S');
     }
 
     /**

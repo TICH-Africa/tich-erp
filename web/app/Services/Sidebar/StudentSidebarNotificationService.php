@@ -82,18 +82,27 @@ class StudentSidebarNotificationService
         return $this->formattedCounts($this->countsFor($student, $fresh));
     }
 
+    /** @var list<string> Screen cache key templates; {id} is the student id. */
+    public const MOBILE_CACHE_KEYS = [
+        'student.mobile.dashboard.{id}.v1',
+        'student.mobile.academics.hub.{id}.v5',
+        'student.mobile.academics.units.{id}.v2',
+        'student.mobile.academics.content.{id}.v2',
+        'student.mobile.academics.assessments.{id}.v1',
+        'student.mobile.timetable.{id}.v3',
+        'student.mobile.finance.{id}.v1',
+        'student.mobile.biodata.{id}.v1',
+        'student.mobile.sidebar_counts.{id}',
+    ];
+
     public function forget(Student $student): void
     {
         $id = $student->id;
         Cache::forget(self::CACHE_KEY_PREFIX.$id);
-        Cache::forget('student.mobile.dashboard.'.$id.'.v1');
-        Cache::forget('student.mobile.academics.hub.'.$id.'.v2');
-        Cache::forget('student.mobile.academics.units.'.$id.'.v1');
-        Cache::forget('student.mobile.academics.content.'.$id.'.v1');
-        Cache::forget('student.mobile.academics.assessments.'.$id.'.v1');
-        Cache::forget('student.mobile.timetable.'.$id.'.v1');
-        Cache::forget('student.mobile.finance.'.$id.'.v1');
-        Cache::forget('student.mobile.biodata.'.$id.'.v1');
+
+        foreach (self::MOBILE_CACHE_KEYS as $template) {
+            Cache::forget(str_replace('{id}', (string) $id, $template));
+        }
     }
 
     public function badgeKeyForSection(string $section): ?string

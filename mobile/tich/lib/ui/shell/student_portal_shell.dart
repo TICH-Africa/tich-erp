@@ -178,6 +178,18 @@ class _StudentPortalShellState extends State<StudentPortalShell>
 
   Future<void> _loadProfilePhoto(StudentApi api) async {
     if (_profilePhotoLoaded && _profilePhotoUrl != null) return;
+    final cached = TichScreenCache.read<Map<String, dynamic>>('student.home');
+    if (cached != null) {
+      if (!mounted) return;
+      final student =
+          Map<String, dynamic>.from(cached['student'] as Map? ?? {});
+      final url = student['photo_url']?.toString().trim();
+      setState(() {
+        _profilePhotoUrl = (url != null && url.isNotEmpty) ? url : null;
+        _profilePhotoLoaded = true;
+      });
+      return;
+    }
     try {
       final data = await TichScreenCache.ensure(
         'student.home',

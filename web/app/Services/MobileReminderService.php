@@ -80,6 +80,75 @@ class MobileReminderService
     }
 
     /**
+     * Remind staff who clocked in today but have not clocked out (17:00 / 17:15 / 17:30 EAT).
+     *
+     * @return array{checked:int, reminded:int}
+     */
+    public function remindMissingClockOuts(?Carbon $now = null): array
+    {
+        $now = ($now ?? now('Africa/Nairobi'))->timezone('Africa/Nairobi');
+        if ($now->isWeekend()) {
+            return ['checked' => 0, 'reminded' => 0];
+        }
+
+        $hour = (int) $now->format('H');
+        $minute = (int) $now->format('i');
+        if ($hour !== 17) {
+            return ['checked' => 0, 'reminded' => 0];
+        }
+
+        // Allow a few minutes of scheduler drift (17:00 / 17:15 / 17:30 jobs).
+        $slot = match (true) {
+            $minute <= 7 => '17:00',
+            $minute <= 22 => '17:15',
+            $minute <= 37 => '17:30',
+            default => null,
+        };
+        if ($slot === null) {
+            return ['checked' => 0, 'reminded' => 0];
+        }
+        $today = $now->toDateString();
+
+        $openRecords = StaffAttendance::query()
+            ->with('staff:id,user_id,first_name,surname,employee_number')
+            ->whereDate('attendance_date', $today)
+            ->whereNotNull('clock_in_time')
+            ->whereNull('clock_out_time')
+            ->get();
+
+        $reminded = 0;
+        foreach ($openRecords as $record) {
+            $member = $record->staff;
+            if (! $member || ! $member->user_id) {
+                continue;
+            }
+
+            $cacheKey = "mobile:clockout-reminder:{$member->id}:{$today}:{$slot}";
+            if (! Cache::add($cacheKey, 1, now()->addHours(12))) {
+                continue;
+            }
+
+            $name = trim(($member->first_name ?? '').' '.($member->surname ?? '')) ?: 'there';
+            $title = 'Clock-out reminder';
+            $body = "Hi {$name}, please clock out for today. Open TICH in Africa → Attendance and tap Clock out.";
+
+            $this->notifications->notifyUser(
+                (int) $member->user_id,
+                $title,
+                $body,
+                'attendance_clock_out',
+                (string) $member->id,
+                'high',
+                '/employee/attendance',
+                false,
+            );
+            $reminded++;
+        }
+
+        return ['checked' => $openRecords->count(), 'reminded' => $reminded];
+    }
+
+    /**
      * Notify students about lessons starting in ~30 minutes.
      *
      * @return array{checked:int, reminded:int}

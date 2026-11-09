@@ -104,6 +104,21 @@
                     <label for="job_title" class="tich-label">Job Title *</label>
                     <input type="text" id="job_title" name="job_title" value="{{ old('job_title', $staff->job_title) }}" required class="tich-input">
                 </div>
+                <div>
+                    <label for="line_manager_id" class="tich-label">Line manager</label>
+                    <select id="line_manager_id" name="line_manager_id" class="tich-input @error('line_manager_id') tich-input--error @enderror">
+                        <option value="">None</option>
+                        @foreach ($lineManagers as $manager)
+                            <option value="{{ $manager->id }}" {{ (string) old('line_manager_id', $staff->line_manager_id) === (string) $manager->id ? 'selected' : '' }}>
+                                {{ $manager->fullName() }}@if ($manager->employee_number) ({{ $manager->employee_number }})@endif
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="tich-caption tich-mt-2">Approvals for leave, time logs, and similar workflows go to this person.</p>
+                    @error('line_manager_id')
+                        <p class="tich-form-error tich-mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
                 <div class="tich-grid--span-2" style="grid-column:1/-1;">
                     <x-cms-basic-editor
                         name="job_description"

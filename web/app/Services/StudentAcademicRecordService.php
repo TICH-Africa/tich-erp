@@ -109,7 +109,7 @@ class StudentAcademicRecordService
                 $unitContent = UnitContent::query()
                     ->with(['unit', 'unitAllocation'])
                     ->whereIn('unit_id', $unitIds)
-                    ->where('status', 'published')
+                    ->available()
                     ->orderByDesc('display_order')
                     ->orderByDesc('created_at')
                     ->get();
@@ -140,7 +140,53 @@ class StudentAcademicRecordService
             'assessments' => $assessments,
             'my_submissions' => $mySubmissions,
             'unit_content' => $unitContent,
+            'provisional_results_by_semester' => $this->provisionalResultsBySemester(
+                $registeredUnits,
+                $grades,
+                $catScores,
+                $examResults,
+            ),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $academics
+     * @return array<string, mixed>
+     */
+    public function progressSummary(Student $student, array $academics): array
+    {
+        $registered = $academics['registered_units'] ?? collect();
+        $grades = $academics['grades'] ?? collect();
+        $programmeUnits = (int) ($academics['programme_unit_count'] ?? 0);
+        $denominator = max($programmeUnits, $registered->count(), 1);
+        $unitsWithGrades = $grades->count();
+
+        $transcriptRows = $this->transcripts->transcriptRows($student);
+
+        return [
+            'programme_unit_count' => $programmeUnits,
+            'registered_unit_count' => $registered->count(),
+            'units_with_grades' => $unitsWithGrades,
+            'completion_percent' => min(100, (int) round(($unitsWithGrades / $denominator) * 100)),
+            'cumulative_gpa' => $transcriptRows->isEmpty()
+                ? null
+                : round((float) $this->transcripts->calculateGpa($transcriptRows), 2),
+            'total_credits_earned' => round((float) $transcriptRows->sum('credit_hours'), 2),
+        ];
+    }
+
+    /**
+     * Recompute progress blocks after portal filters (registered units only).
+     *
+     * @param  array<string, mixed>  $academics
+     * @return array<string, mixed>
+     */
+    public function withPortalProgress(Student $student, array $academics): array
+    {
+        $academics['semester_performance'] = $this->semesterPerformance($student, $academics);
+        $academics['progress_summary'] = $this->progressSummary($student, $academics);
+
+        return $academics;
     }
 
     /**
@@ -217,6 +263,177 @@ class StudentAcademicRecordService
     }
 
     /**
+     * Group CAT marks, exam marks, and final grades by semester and unit for the student portal.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function provisionalResultsBySemester(
+        Collection $registeredUnits,
+        Collection $grades,
+        Collection $catScores,
+        Collection $examResults,
+    ): array {
+        $semesterMeta = [];
+
+        $rememberSemester = function (int $semesterId, ?string $label) use (&$semesterMeta): void {
+            if ($semesterId <= 0) {
+                return;
+            }
+            if (! isset($semesterMeta[$semesterId])) {
+                $semesterMeta[$semesterId] = [
+                    'semester_id' => $semesterId,
+                    'semester_label' => $label ?: 'Semester '.$semesterId,
+                ];
+            } elseif ($label && ($semesterMeta[$semesterId]['semester_label'] ?? '') === 'Semester '.$semesterId) {
+                $semesterMeta[$semesterId]['semester_label'] = $label;
+            }
+        };
+
+        foreach ($registeredUnits as $row) {
+            $rememberSemester((int) $row->semester_id, $row->semester_label ?? null);
+        }
+        foreach ($grades as $row) {
+            $rememberSemester((int) $row->semester_id, $row->semester_label ?? null);
+        }
+        foreach ($catScores as $row) {
+            $rememberSemester((int) $row->semester_id, $row->semester_label ?? null);
+        }
+        foreach ($examResults as $row) {
+            $rememberSemester((int) $row->semester_id, $row->semester_label ?? null);
+        }
+
+        if ($semesterMeta === []) {
+            return [];
+        }
+
+        krsort($semesterMeta, SORT_NUMERIC);
+
+        $out = [];
+        foreach ($semesterMeta as $semesterId => $meta) {
+            $units = [];
+
+            $rememberUnit = function (int $unitId, ?string $code, ?string $name) use (&$units): void {
+                if ($unitId <= 0) {
+                    return;
+                }
+                if (! isset($units[$unitId])) {
+                    $units[$unitId] = [
+                        'unit_id' => $unitId,
+                        'unit_code' => $code,
+                        'unit_name' => $name,
+                    ];
+                } else {
+                    if ($code && empty($units[$unitId]['unit_code'])) {
+                        $units[$unitId]['unit_code'] = $code;
+                    }
+                    if ($name && empty($units[$unitId]['unit_name'])) {
+                        $units[$unitId]['unit_name'] = $name;
+                    }
+                }
+            };
+
+            foreach ($registeredUnits->where('semester_id', $semesterId) as $row) {
+                $rememberUnit((int) $row->unit_id, $row->unit_code ?? null, $row->unit_name ?? null);
+            }
+            foreach ($grades->where('semester_id', $semesterId) as $row) {
+                $rememberUnit((int) $row->unit_id, $row->unit_code ?? null, $row->unit_name ?? null);
+            }
+            foreach ($catScores->where('semester_id', $semesterId) as $row) {
+                $rememberUnit((int) $row->unit_id, $row->unit_code ?? null, $row->unit_name ?? null);
+            }
+            foreach ($examResults->where('semester_id', $semesterId) as $row) {
+                $rememberUnit((int) $row->unit_id, $row->unit_code ?? null, $row->unit_name ?? null);
+            }
+
+            $unitRows = [];
+            foreach ($units as $unitId => $unitMeta) {
+                $cats = $catScores
+                    ->where('semester_id', $semesterId)
+                    ->where('unit_id', $unitId)
+                    ->map(fn (object $row) => [
+                        'assessment_type' => $row->assessment_type,
+                        'assessment_name' => $row->assessment_name,
+                        'score_obtained' => $row->score_obtained !== null ? (float) $row->score_obtained : null,
+                        'max_score' => $row->max_score !== null ? (float) $row->max_score : null,
+                        'percentage_score' => $row->percentage_score !== null ? (float) $row->percentage_score : null,
+                        'weight_in_final' => $row->weight_in_final !== null ? (float) $row->weight_in_final : null,
+                        'recorded_at' => $row->recorded_at,
+                    ])
+                    ->values()
+                    ->all();
+
+                $exam = $examResults
+                    ->where('semester_id', $semesterId)
+                    ->where('unit_id', $unitId)
+                    ->sortByDesc('created_at')
+                    ->first();
+
+                $grade = $grades
+                    ->where('semester_id', $semesterId)
+                    ->where('unit_id', $unitId)
+                    ->sortByDesc('recorded_at')
+                    ->first();
+
+                $unitRows[] = [
+                    'unit_id' => $unitId,
+                    'unit_code' => $unitMeta['unit_code'],
+                    'unit_name' => $unitMeta['unit_name'],
+                    'cats' => $cats,
+                    'exam' => $exam ? [
+                        'id' => $exam->id,
+                        'cat_total' => $exam->cat_total !== null ? (float) $exam->cat_total : null,
+                        'practical_total' => $exam->practical_total !== null ? (float) $exam->practical_total : null,
+                        'final_exam_score' => $exam->final_exam_score !== null ? (float) $exam->final_exam_score : null,
+                        'final_total_score' => $exam->final_total_score !== null ? (float) $exam->final_total_score : null,
+                        'grade_letter' => $exam->grade_letter,
+                        'is_published' => (bool) ($exam->is_published ?? false),
+                        'status_label' => $this->examResultStatusLabel($exam),
+                    ] : null,
+                    'final_grade' => $grade ? [
+                        'final_score' => $grade->final_score !== null ? (float) $grade->final_score : null,
+                        'grade_letter' => $grade->grade_letter,
+                        'recorded_at' => $grade->recorded_at,
+                    ] : null,
+                ];
+            }
+
+            usort($unitRows, fn (array $a, array $b) => strcmp(
+                (string) ($a['unit_code'] ?? ''),
+                (string) ($b['unit_code'] ?? ''),
+            ));
+
+            $meta['units'] = $unitRows;
+            $out[] = $meta;
+        }
+
+        return $out;
+    }
+
+    private function examResultStatusLabel(object $row): string
+    {
+        if ((bool) ($row->is_special_exam ?? false)) {
+            return 'Special exam';
+        }
+        if ((bool) ($row->is_supplementary ?? false)) {
+            return 'Supplementary';
+        }
+
+        $didNotPass = ((int) ($row->theory_pass_check ?? 1) === 0)
+            || ((int) ($row->supplementary_triggered ?? 0) === 1)
+            || in_array(strtoupper((string) ($row->grade_letter ?? '')), ['E', 'F'], true);
+
+        if ($didNotPass) {
+            return 'Did not pass';
+        }
+
+        if ((bool) ($row->is_published ?? false)) {
+            return 'Published';
+        }
+
+        return 'Provisional';
+    }
+
+    /**
      * Mobile portal academics payload: capped lists and lighter assessment/content queries.
      *
      * @return array<string, mixed>
@@ -226,7 +443,6 @@ class StudentAcademicRecordService
         $hub = $this->academicsHubForMobile($student, $allowProvisionalCurriculum);
         $units = $this->mobileUnitsForStudent($student, $allowProvisionalCurriculum);
         $hub['registered_units'] = $units['registered_units'];
-        $hub['curriculum_units'] = $units['curriculum_units'];
         $hub['unit_content'] = $this->mobileContentForStudent($student, $allowProvisionalCurriculum)['unit_content'];
         $assessmentsPayload = $this->mobileAssessmentsForStudent($student, $allowProvisionalCurriculum);
         $hub['assessments'] = $assessmentsPayload['assessments'];
@@ -256,6 +472,7 @@ class StudentAcademicRecordService
         $data['cat_scores'] = collect($data['cat_scores'])->take(40)->values();
         $data['exam_results'] = collect($data['exam_results'])->take(40)->values();
         $data['attendance'] = collect($data['attendance'])->take(40)->values();
+        $data = $this->withPortalProgress($student, $data);
 
         return $data;
     }
@@ -265,13 +482,78 @@ class StudentAcademicRecordService
      */
     public function mobileUnitsForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
     {
-        $data = $this->onlyRegisteredUnits($this->forStudent($student, $allowProvisionalCurriculum, false));
+        $student->loadMissing(['program']);
+
+        $registeredUnits = $this->registeredUnitsForStudents([$student->id], withLecturers: false)
+            ->get($student->id, collect());
+        $count = $registeredUnits->count();
 
         return [
-            'registered_units' => $data['registered_units'],
-            'curriculum_units' => $data['curriculum_units'],
-            'registered_unit_count' => $data['registered_unit_count'],
-            'programme_unit_count' => $data['programme_unit_count'],
+            'registered_units' => $registeredUnits,
+            'registered_unit_count' => $count,
+            'programme_unit_count' => $count,
+        ];
+    }
+
+    /**
+     * Web portal "My units" tab: curriculum + registrations only (no grades, exams, content, or assessments).
+     *
+     * @return array<string, mixed>
+     */
+    public function academicsUnitsPageForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
+    {
+        $student->loadMissing(['applicant', 'program', 'campus']);
+
+        $curriculum = $this->resolveCurriculum($student, $allowProvisionalCurriculum);
+        $curriculumUnits = $curriculum
+            ? $curriculum->items->sortBy(['semester', 'display_order', 'priority'])->values()
+            : collect();
+
+        $periods = $curriculum
+            ? $curriculum->periods->sortBy('semester')->values()
+            : collect();
+
+        $currentPeriod = $this->resolveCurrentPeriod($periods, $curriculumUnits);
+        $currentPeriodUnits = $currentPeriod
+            ? $curriculumUnits->filter(function ($mapping) use ($currentPeriod) {
+                if ($currentPeriod->block_id) {
+                    return (int) $mapping->block_id === (int) $currentPeriod->block_id;
+                }
+
+                return (int) $mapping->semester === (int) $currentPeriod->semester;
+            })->values()
+            : collect();
+
+        $registeredUnits = $this->registeredUnitsForStudents([$student->id], withLecturers: true)
+            ->get($student->id, collect());
+
+        $currentSemester = $student->current_semester_id
+            ? Semester::query()->with('academicYear')->find($student->current_semester_id)
+            : Semester::query()->with('academicYear')->where('is_current', 1)->first();
+
+        return [
+            'curriculum' => $curriculum,
+            'curriculum_is_published' => $curriculum?->isPublished() ?? false,
+            'curriculum_units' => $curriculumUnits,
+            'curriculum_by_semester' => collect($curriculumUnits->groupBy('semester')),
+            'periods' => $periods,
+            'periods_by_semester' => $periods->keyBy('semester'),
+            'current_period' => $currentPeriod,
+            'current_period_units' => $currentPeriodUnits,
+            'current_period_status' => $this->periodStatus($currentPeriod),
+            'registrations' => collect(),
+            'registered_units' => $registeredUnits,
+            'registered_unit_count' => $registeredUnits->count(),
+            'programme_unit_count' => $curriculumUnits->count(),
+            'current_semester' => $currentSemester,
+            'grades' => collect(),
+            'cat_scores' => collect(),
+            'exam_results' => collect(),
+            'attendance' => collect(),
+            'exam_portal' => ['available' => false],
+            'assessments' => collect(),
+            'my_submissions' => collect(),
+            'unit_content' => collect(),
         ];
     }
 
@@ -280,11 +562,12 @@ class StudentAcademicRecordService
      */
     public function mobileContentForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
     {
-        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
-        $registeredUnitIds = $data['registered_units']->pluck('unit_id')->filter()->unique()->values()->all();
+        $unitIds = $this->registeredUnitIds($student);
 
         return [
-            'unit_content' => $this->publishedUnitContentQuery($registeredUnitIds)->get(),
+            'unit_content' => $unitIds === []
+                ? collect()
+                : $this->publishedUnitContentQuery($unitIds)->limit(40)->get(),
         ];
     }
 
@@ -293,8 +576,7 @@ class StudentAcademicRecordService
      */
     public function mobileAssessmentsForStudent(Student $student, bool $allowProvisionalCurriculum = true): array
     {
-        $data = $this->forStudent($student, $allowProvisionalCurriculum, false);
-        $registeredUnitIds = $data['registered_units']->pluck('unit_id')->filter()->unique()->values()->all();
+        $registeredUnitIds = $this->registeredUnitIds($student);
 
         $assessments = collect();
         $mySubmissions = collect();
@@ -374,13 +656,9 @@ class StudentAcademicRecordService
     private function publishedUnitContentQuery(array $unitIds)
     {
         return UnitContent::query()
-            ->select([
-                'id', 'unit_id', 'unit_allocation_id', 'title', 'content_type',
-                'file_path', 'original_filename', 'status', 'published_at', 'created_at', 'display_order',
-            ])
             ->with(['unit:id,unit_code,unit_name', 'unitAllocation'])
             ->whereIn('unit_id', $unitIds)
-            ->where('status', 'published')
+            ->available()
             ->orderByDesc('display_order')
             ->orderByDesc('created_at')
             ->limit(40);
@@ -395,16 +673,17 @@ class StudentAcademicRecordService
     {
         $student->loadMissing(['applicant', 'program', 'campus']);
 
-        $curriculum = $this->resolveCurriculum($student, $allowProvisionalCurriculum);
-        $curriculumUnits = $curriculum
-            ? $curriculum->items->sortBy(['semester', 'display_order', 'priority'])->values()
-            : collect();
+        $curriculum = $this->resolveCurriculum(
+            $student,
+            $allowProvisionalCurriculum,
+            ['periods'],
+        );
 
         $periods = $curriculum
             ? $curriculum->periods->sortBy('semester')->values()
             : collect();
 
-        $currentPeriod = $this->resolveCurrentPeriod($periods, $curriculumUnits);
+        $currentPeriod = $this->resolveCurrentPeriod($periods, collect());
 
         $registrations = DB::table('student_semester_registrations as ssr')
             ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
@@ -428,7 +707,7 @@ class StudentAcademicRecordService
 
         return [
             'curriculum' => $curriculum,
-            'curriculum_units' => $curriculumUnits,
+            'curriculum_units' => collect(),
             'periods' => $periods,
             'current_period' => $currentPeriod,
             'current_semester' => $currentSemester,
@@ -624,7 +903,7 @@ class StudentAcademicRecordService
             ->all();
     }
 
-    private function registeredUnitsForStudents(array $studentIds): Collection
+    private function registeredUnitsForStudents(array $studentIds, bool $withLecturers = true): Collection
     {
         if ($studentIds === []) {
             return collect();
@@ -655,13 +934,17 @@ class StudentAcademicRecordService
             ])
             ->get();
 
-        $lecturers = $this->lecturersByUnitSemester($rows);
+        if ($withLecturers) {
+            $lecturers = $this->lecturersByUnitSemester($rows);
 
-        return $rows->map(function (object $row) use ($lecturers) {
-            $row->lecturer_names = $lecturers->get(((int) $row->unit_id).'-'.((int) $row->semester_id));
+            $rows = $rows->map(function (object $row) use ($lecturers) {
+                $row->lecturer_names = $lecturers->get(((int) $row->unit_id).'-'.((int) $row->semester_id));
 
-            return $row;
-        })->groupBy('student_id');
+                return $row;
+            });
+        }
+
+        return $rows->groupBy('student_id');
     }
 
     /**
@@ -845,15 +1128,21 @@ class StudentAcademicRecordService
             ->groupBy('student_id');
     }
 
-    private function resolveCurriculum(Student $student, bool $allowProvisionalCurriculum = true): ?CurriculumVersion
-    {
+    /**
+     * @param  list<string>  $with
+     */
+    private function resolveCurriculum(
+        Student $student,
+        bool $allowProvisionalCurriculum = true,
+        array $with = ['items.unit', 'periods'],
+    ): ?CurriculumVersion {
         if (! $student->program_id) {
             return null;
         }
 
         $applicant = $student->applicant;
         $programId = (int) $student->program_id;
-        $relations = ['items.unit', 'periods'];
+        $relations = $with;
 
         if ($applicant?->intake_year && $applicant?->intake_month) {
             $publishedIntake = CurriculumVersion::query()

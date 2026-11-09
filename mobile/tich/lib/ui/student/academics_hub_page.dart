@@ -8,16 +8,22 @@ import 'package:path_provider/path_provider.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/student_api.dart';
+import '../../data/tich_pdf_cache.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../shell/portal_nav_counts_scope.dart';
 import '../widgets/tich_more_row_trailing.dart';
+import '../widgets/tich_generated_document_viewer.dart';
 import '../widgets/tich_widgets.dart';
 import 'student_academics_lazy_section.dart';
 import 'student_academics_payload.dart';
 import 'student_helpers.dart';
+import 'learning_content_page.dart';
+import 'student_academic_calendar_section.dart';
+import 'student_academic_progress_section.dart';
+import 'student_provisional_results_section.dart';
 import 'student_module_nav.dart';
 import 'student_prefetch.dart';
 import '../../data/tich_screen_cache.dart';
@@ -37,6 +43,7 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
   Object? _payloadSource;
   StudentAcademicsPayload? _payload;
   List<AcademicsHubSection>? _hubSections;
+  bool _recoverScheduled = false;
 
   void _applyAcademicsData(Map<String, dynamic> data) {
     if (identical(_payloadSource, data) && _hubSections != null) return;
@@ -67,6 +74,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       fetch: () => widget.api.academics(),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _liveRefresh();
       StudentPrefetch.academicsSubsections(widget.api);
     });
   }
@@ -135,15 +144,15 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
   List<AcademicsHubSection> _buildHubSections(StudentAcademicsPayload p) {
     return [
       AcademicsHubSection(
-        title: 'My units',
+        title: 'My Units',
         icon: Icons.menu_book_outlined,
         badgeKey: 'academics.units',
+        onTapDown: (_) => StudentPrefetch.academicsUnits(widget.api),
         onTap: () {
-          StudentPrefetch.academicsUnits(widget.api);
           Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StudentAcademicsLazySection(
-              title: 'My units',
+              title: 'My Units',
               cacheKey: 'student.academics.units',
               fetch: () => widget.api.academicsUnits(),
               builder: (data) {
@@ -159,15 +168,15 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         },
       ),
       AcademicsHubSection(
-        title: 'Learning content',
+        title: 'Learning Content',
         icon: Icons.folder_open_outlined,
         badgeKey: 'academics.content',
+        onTapDown: (_) => StudentPrefetch.academicsContent(widget.api),
         onTap: () {
-          StudentPrefetch.academicsContent(widget.api);
           Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StudentAcademicsLazySection(
-              title: 'Learning content',
+              title: 'Learning Content',
               cacheKey: 'student.academics.content',
               fetch: () => widget.api.academicsContent(),
               builder: (data) {
@@ -178,24 +187,38 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                 return _listSection(
                   empty: 'No published content yet.',
                   items: items,
-                  tile: (c) => TichCard(
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        c['title']?.toString() ?? 'Content',
-                        style: tichUi(fontWeight: FontWeight.w600),
+                  tile: (c) {
+                    final hasFile = c['has_file'] == true;
+                    final hasLink = (c['external_url']?.toString() ?? '')
+                        .trim()
+                        .isNotEmpty;
+                    return TichCard(
+                      onTap: () => openStudentLearningContent(
+                        context,
+                        widget.api,
+                        c,
                       ),
-                      subtitle: Text(
-                        [
-                          c['unit_code'],
-                          c['content_type'],
-                          formatDateTime(c['published_at']),
-                        ]
-                            .where((e) => e != null && '$e'.isNotEmpty)
-                            .join(' · '),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          c['title']?.toString() ?? 'Content',
+                          style: tichUi(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          [
+                            c['unit_code'],
+                            c['content_type'],
+                            if (hasFile) 'Attachment',
+                            if (hasLink) 'Link',
+                            formatDateTime(c['published_at']),
+                          ]
+                              .where((e) => e != null && '$e'.isNotEmpty)
+                              .join(' · '),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -207,8 +230,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         title: 'Assessments',
         icon: Icons.quiz_outlined,
         badgeKey: 'academics.assessments',
+        onTapDown: (_) => StudentPrefetch.academicsAssessments(widget.api),
         onTap: () {
-          StudentPrefetch.academicsAssessments(widget.api);
           Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StudentAcademicsLazySection(
@@ -282,128 +305,168 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         },
       ),
       AcademicsHubSection(
-        title: 'Exams & grades',
+        title: 'Exams & Grades',
         icon: Icons.grade_outlined,
         badgeKey: 'academics.exams',
+        onTapDown: (_) => StudentPrefetch.academics(widget.api),
         onTap: () => _openPayloadSection(
-          'Exams & grades',
+          'Exams & Grades',
           (payload) {
-            final grades = payload.grades;
-            final cats = payload.catScores;
-            final exams = payload.examResults;
             return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    const TichSectionHeader('Grades'),
-                    if (grades.isEmpty)
-                      const TichCard(child: TichEmpty('No grades yet.'))
-                    else
-                      for (final g in grades)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: TichCard(
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                '${g['unit_code'] ?? ''} · ${g['unit_name'] ?? ''}',
-                                style: tichUi(fontWeight: FontWeight.w600),
-                              ),
-                              subtitle: Text(
-                                '${g['semester_label'] ?? ''} · ${g['grade_letter'] ?? '-'}'
-                                ' (${g['final_score'] ?? '-'})',
-                              ),
-                            ),
-                          ),
-                        ),
-                    const SizedBox(height: 12),
-                    const TichSectionHeader('CAT scores'),
-                    if (cats.isEmpty)
-                      const TichCard(child: TichEmpty('No CAT scores yet.'))
-                    else
-                      for (final c in cats.take(20))
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: TichCard(
-                            child: Text(
-                              '${c['unit_code']} · ${c['assessment_name'] ?? c['assessment_type']}'
-                              ' - ${c['score_obtained']}/${c['max_score']}',
-                              style: tichUi(fontSize: 13),
-                            ),
-                          ),
-                        ),
-                    const SizedBox(height: 12),
-                    const TichSectionHeader('Exam results'),
-                    if (exams.isEmpty)
-                      const TichCard(child: TichEmpty('No exam results yet.'))
-                    else
-                      for (final e in exams.take(20))
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: TichCard(
-                            child: Text(
-                              '${e['unit_code']} · ${e['score_obtained'] ?? e['marks'] ?? '-'}'
-                              ' (${e['semester_label'] ?? ''})',
-                              style: tichUi(fontSize: 13),
-                            ),
-                          ),
-                        ),
-                    const SizedBox(height: 16),
-                    AdaptiveFilledButton(
-                      onPressed: () async {
-                        final method = await showDialog<String>(
-                          context: context,
-                          builder: (ctx) => TichFormDialog(
-                            title: const Text('Request transcript'),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                for (final m in ['download', 'email', 'collect'])
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: OutlinedButton(
-                                      onPressed: () => Navigator.pop(ctx, m),
-                                      child: Text(m),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text('Cancel'),
+              padding: const EdgeInsets.all(16),
+              children: [
+                StudentProvisionalResultsSemesterList(
+                  semesters: payload.provisionalResultsBySemester,
+                  onSemesterTap: (sem) {
+                    final label =
+                        sem['semester_label']?.toString() ?? 'Results';
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AdaptiveScaffold(
+                          title: label,
+                          body: ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              StudentProvisionalResultsSection(
+                                semester: sem,
                               ),
                             ],
                           ),
-                        );
-                        if (method == null) return;
-                        try {
-                          final res = await widget.api.requestTranscript(
-                            deliveryMethod: method,
-                          );
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(res['message']?.toString() ?? 'Submitted')),
-                          );
-                          _reload();
-                        } on ApiException catch (e) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.message)),
-                          );
-                        }
-                      },
-                      child: const Text('Request official transcript'),
-                    ),
-                  ],
-                );
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                AdaptiveFilledButton(
+                  onPressed: () async {
+                    final method = await showDialog<String>(
+                      context: context,
+                      builder: (ctx) => TichFormDialog(
+                        title: const Text('Request transcript'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (final m in ['download', 'email', 'collect'])
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: OutlinedButton(
+                                  onPressed: () => Navigator.pop(ctx, m),
+                                  child: Text(m),
+                                ),
+                              ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Cancel'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (method == null) return;
+                    try {
+                      final res = await widget.api.requestTranscript(
+                        deliveryMethod: method,
+                      );
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            res['message']?.toString() ?? 'Submitted',
+                          ),
+                        ),
+                      );
+                      _reload();
+                    } on ApiException catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.message)),
+                      );
+                    }
+                  },
+                  child: const Text('Request official transcript'),
+                ),
+              ],
+            );
           },
+        ),
+      ),
+      AcademicsHubSection(
+        title: 'Supplementary & Special Exams',
+        icon: Icons.edit_note_outlined,
+        badgeKey: 'academics.exam-requests',
+        onTapDown: (_) => StudentPrefetch.academics(widget.api),
+        onTap: () => _openPayloadSection(
+          'Supplementary & Special Exams',
+          (payload) => _ExamRequestsInteractive(
+            api: widget.api,
+            units: payload.registeredUnits,
+            special: payload.specialExamRequests,
+            supplementary: payload.supplementaryExamRequests,
+            onChanged: _reload,
+          ),
+        ),
+      ),
+      AcademicsHubSection(
+        title: 'Academic progress',
+        icon: Icons.timeline_outlined,
+        badgeKey: 'academics.progress',
+        onTapDown: (_) => StudentPrefetch.academics(widget.api),
+        onTap: () => _openPayloadSection(
+          'Academic progress',
+          (payload) => ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              StudentAcademicProgressSection(academics: payload.academics),
+            ],
+          ),
+        ),
+      ),
+      AcademicsHubSection(
+        title: 'Exam eligibility',
+        icon: Icons.verified_outlined,
+        badgeKey: 'academics.eligibility',
+        onTapDown: (_) => StudentPrefetch.academics(widget.api),
+        onTap: () => _openPayloadSection(
+          'Exam eligibility',
+          (payload) => _StudentExamEligibilitySection(
+            api: widget.api,
+            academics: payload.academics,
+            feeClearanceStatus:
+                payload.student['fee_clearance_status']?.toString(),
+          ),
+        ),
+      ),
+      AcademicsHubSection(
+        title: 'Academic calendar',
+        icon: Icons.calendar_month_outlined,
+        badgeKey: 'academics.calendar',
+        onTapDown: (_) => StudentPrefetch.academics(widget.api),
+        onTap: () => _openPayloadSection(
+          'Academic calendar',
+          (payload) => StudentAcademicCalendarSection(
+            academics: payload.academics,
+          ),
+        ),
+      ),
+      AcademicsHubSection(
+        title: 'Unit registration',
+        icon: Icons.app_registration_outlined,
+        badgeKey: 'academics.registration',
+        onTapDown: (_) => StudentPrefetch.academics(widget.api),
+        onTap: () => _openPayloadSection(
+          'Unit registration',
+          (payload) => _StudentUnitsSection(units: payload.registeredUnits),
         ),
       ),
       AcademicsHubSection(
         title: 'Attendance',
         icon: Icons.how_to_reg_outlined,
         badgeKey: 'academics.attendance',
+        onTapDown: (_) => StudentPrefetch.academics(widget.api),
         onTap: () => _openPayloadSection(
           'Attendance',
           (payload) => _listSection(
@@ -429,77 +492,6 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
           ),
         ),
       ),
-      AcademicsHubSection(
-        title: 'Academic progress',
-        icon: Icons.timeline_outlined,
-        badgeKey: 'academics.progress',
-        onTap: () => _openPayloadSection(
-          'Academic progress',
-          (payload) {
-            final academics = payload.academics;
-            final periods = payload.periods;
-            final curriculum = payload.curriculumUnits;
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                TichCard(
-                  child: Text(
-                    'Registered units: ${academics['registered_unit_count'] ?? 0}\n'
-                    'Curriculum units: ${curriculum.length}\n'
-                    'Current period: ${academics['current_period'] is Map ? (academics['current_period'] as Map)['label'] ?? '-' : '-'}',
-                    style: tichUi(fontSize: 13, height: 1.5),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const TichSectionHeader('Periods'),
-                if (periods.isEmpty)
-                  const TichCard(child: TichEmpty('No curriculum periods.'))
-                else
-                  for (final period in periods)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: TichCard(
-                        child: Text(
-                          '${period['label']?.toString().isNotEmpty == true ? period['label'] : 'Semester ${period['semester'] ?? ''}'} · '
-                          '${formatDateTime(period['starts_at'])} → ${formatDateTime(period['ends_at'])}',
-                          style: tichUi(fontSize: 13),
-                        ),
-                      ),
-                    ),
-              ],
-            );
-          },
-        ),
-      ),
-      AcademicsHubSection(
-        title: 'Exam eligibility',
-        icon: Icons.verified_outlined,
-        badgeKey: 'academics.eligibility',
-        onTap: () => _openPayloadSection(
-          'Exam eligibility',
-          (payload) => _StudentExamEligibilitySection(
-            api: widget.api,
-            academics: payload.academics,
-            feeClearanceStatus:
-                payload.student['fee_clearance_status']?.toString(),
-          ),
-        ),
-      ),
-      AcademicsHubSection(
-        title: 'Supp / special exams',
-        icon: Icons.edit_note_outlined,
-        badgeKey: 'academics.exam-requests',
-        onTap: () => _openPayloadSection(
-          'Supp / special exams',
-          (payload) => _ExamRequestsInteractive(
-            api: widget.api,
-            units: payload.registeredUnits,
-            special: payload.specialExamRequests,
-            supplementary: payload.supplementaryExamRequests,
-            onChanged: _reload,
-          ),
-        ),
-      ),
     ];
   }
 
@@ -512,18 +504,16 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         body: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snap) {
-            final merged = tichMergeSnapshot(
-              snap,
-              _dataCache as dynamic,
+            return studentCachedMapBody(
+              snap: snap,
+              memoryCache: _dataCache,
               persistKey: 'student.academics',
-            );
-            if (tichShowLoadingSpinner(snap, merged)) {
-              return studentLoadingBody(onRefresh: () async => _reload());
-            }
-            if (merged == null && snap.hasError) {
-              return studentErrorBody(snap.error, _reload);
-            }
-            final data = merged! as Map<String, dynamic>;
+              onRetry: _reload,
+              autoRecoverOnError: true,
+              recoverScheduled: _recoverScheduled,
+              setRecoverScheduled: (v) => _recoverScheduled = v,
+              mounted: () => mounted,
+              builder: (data) {
             _applyAcademicsData(data);
             final sections = _hubSections ?? const <AcademicsHubSection>[];
             return RefreshIndicator(
@@ -535,7 +525,9 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                 itemBuilder: (context, i) {
                   final s = sections[i];
                   final badge = _sectionBadge(context, s.badgeKey);
-                  return Card(
+                  return TichCard(
+                    onTapDown: s.onTapDown,
+                    onTap: s.onTap,
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: TichColors.blueLight,
@@ -546,11 +538,12 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                         style: tichUi(fontWeight: FontWeight.w600),
                       ),
                       trailing: TichMoreRowTrailing(badgeCount: badge),
-                      onTap: s.onTap,
                     ),
                   );
                 },
               ),
+            );
+              },
             );
           },
         ),
@@ -681,11 +674,45 @@ class _StudentExamEligibilitySectionState
     extends State<_StudentExamEligibilitySection> {
   bool _downloading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _warmExamCardPdf());
+  }
+
+  void _warmExamCardPdf() {
+    final portal = widget.academics['exam_portal'] is Map
+        ? Map<String, dynamic>.from(widget.academics['exam_portal'] as Map)
+        : null;
+    final semesterId = (portal?['semester_id'] as num?)?.toInt();
+    final canDownload =
+        portal?['can_view_exam_card'] == true && semesterId != null;
+    if (!canDownload) return;
+    StudentPrefetch.examCardPdf(widget.api, semesterId);
+  }
+
+  Future<List<int>> _loadExamCardPdf(int semesterId) {
+    return TichPdfCache.load(
+      StudentPrefetch.examCardPdfKey(semesterId),
+      () => widget.api.downloadExamCardPdf(semesterId: semesterId),
+    );
+  }
+
+  Future<void> _viewExamCard(int semesterId) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => TichGeneratedDocumentViewer(
+          cacheFileName: 'student-exam-card-$semesterId.pdf',
+          loadPdf: () => _loadExamCardPdf(semesterId),
+        ),
+      ),
+    );
+  }
+
   Future<void> _downloadExamCard(int semesterId) async {
     setState(() => _downloading = true);
     try {
-      final bytes =
-          await widget.api.downloadExamCardPdf(semesterId: semesterId);
+      final bytes = await _loadExamCardPdf(semesterId);
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/exam-card-$semesterId.pdf');
       await file.writeAsBytes(bytes, flush: true);
@@ -752,14 +779,24 @@ class _StudentExamEligibilitySectionState
                 AdaptiveFilledButton(
                   onPressed: _downloading
                       ? null
-                      : () => _downloadExamCard(semesterId),
+                      : () => _viewExamCard(semesterId),
+                  child: const Text('View examination card'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: _downloading
+                      ? null
+                      : () {
+                          StudentPrefetch.examCardPdf(widget.api, semesterId);
+                          _downloadExamCard(semesterId);
+                        },
                   child: _downloading
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: AdaptiveProgress(color: Colors.white),
+                          child: AdaptiveProgress(),
                         )
-                      : const Text('Download examination card'),
+                      : const Text('Download PDF'),
                 ),
                 if (examCard?['exam_card_number'] != null)
                   Padding(

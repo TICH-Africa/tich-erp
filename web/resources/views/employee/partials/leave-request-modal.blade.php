@@ -10,6 +10,8 @@
     $eligibleCoverStaff = $eligibleCoverStaff ?? collect();
     $leaveTypeMeta = $leaveTypeMeta ?? [];
     $staff = $staff ?? null;
+    $hrManagerDisplay = $hrManagerDisplay ?? 'the HR team';
+    $leaveApplicationNotice = $leaveApplicationNotice ?? null;
     $existingCovers = $editing
         ? $editRequest->coverages->pluck('cover_staff_id', 'department_id')->all()
         : [];
@@ -59,9 +61,18 @@
                 </div>
             @endif
 
+            @if ($leaveApplicationNotice)
+                <div class="tich-alert tich-alert--info tich-mb-4">
+                    {{ $leaveApplicationNotice }}
+                    <p class="tich-caption tich-mt-2" style="margin-bottom:0;">
+                        After you submit, check status in <a href="{{ route('employee.leave.index') }}#leave-requests-section">My leave &rarr; Leave requests</a>.
+                    </p>
+                </div>
+            @endif
+
             <div class="tich-leave-app-form__letterhead">
                 <strong>Tropical Institute of Community Health and Development</strong>
-                <p>Leave application form - submitted to Human Resource for recording of leave days available.</p>
+                <p>Leave application — your line manager reviews first; HR completes approval after that.</p>
             </div>
 
             <section class="tich-leave-app-form__section">
@@ -252,7 +263,7 @@
             </section>
 
             <p class="tich-caption tich-leave-app-form__footnote">
-                Submitted electronically to HR for approval and recording of leave days. Leave of officers heading a college unit may require Director confirmation as per policy.
+                Submitted electronically: your line manager approves first, then {{ $hrManagerDisplay }} (HR) records final approval and leave days. Leave of officers heading a college unit may require Director confirmation as per policy.
             </p>
 
             <script>
@@ -400,7 +411,7 @@
             <footer class="tich-modal__footer tich-mt-4">
                 <button type="button" class="tich-btn tich-btn-secondary" data-close-modal="{{ $modalId }}">Cancel</button>
                 <button type="submit" class="tich-btn tich-btn-primary">
-                    {{ $editing ? 'Resubmit to HR' : 'Submit to HR' }}
+                    {{ $editing ? 'Resubmit for line manager review' : 'Submit for line manager review' }}
                 </button>
             </footer>
         </form>

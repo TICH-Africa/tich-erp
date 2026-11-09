@@ -26,7 +26,11 @@ const _deviceIdKey = 'tich_push_device_id';
 const _shownIdsKey = 'tich_shown_notification_ids';
 const _lastClockInNudgeKey = 'tich_last_clockin_nudge_ms';
 const _clockInIdsKey = 'tich_clockin_notification_ids';
+const _clockOutIdsKey = 'tich_clockout_notification_ids';
 const _clockInScheduleDays = 14;
+const _clockOutScheduleDays = 14;
+const _clockOutHour = 17;
+const _clockOutMinutes = [0, 15, 30];
 
 @pragma('vm:entry-point')
 void tichNotificationDispatcherCallback() {
@@ -55,8 +59,10 @@ class TichNotifications {
   bool get isReady => _ready;
   String? _deviceId;
   Future<void>? _clockInInflight;
+  Future<void>? _clockOutInflight;
   Future<void>? _lessonInflight;
   final List<int> _clockInIds = [];
+  final List<int> _clockOutIds = [];
   final List<int> _lessonIds = [];
   DateTime? _lastClockInScheduleAt;
   DateTime? _lastNotificationSyncAt;
@@ -242,10 +248,17 @@ class TichNotifications {
           today is Map && today['clock_in_at'] != null;
       final status = data['clock_in_status'];
       final needsClockIn = status is Map && status['needs_clock_in'] == true;
-      final skip = clockedIn || !needsClockIn;
-      await scheduleClockInReminders(alreadyClockedIn: skip);
+      final needsClockOut = status is Map && status['needs_clock_out'] == true;
+      final clockedOut =
+          today is Map && today['clock_out_at'] != null;
+      final skipIn = clockedIn || !needsClockIn;
+      await scheduleClockInReminders(alreadyClockedIn: skipIn);
+      await scheduleClockOutReminders(
+        needsClockOut: needsClockOut && !clockedOut,
+      );
     } catch (_) {
       await scheduleClockInReminders(alreadyClockedIn: false);
+      await scheduleClockOutReminders(needsClockOut: false);
     } finally {
       _lastClockInScheduleAt = DateTime.now();
     }
@@ -424,6 +437,89 @@ class TichNotifications {
     await _loadPersistedClockInIds();
     await _cancelTracked(_clockInIds);
     await _persistClockInIds();
+  }
+
+  Future<void> scheduleClockOutReminders({required bool needsClockOut}) {
+    _clockOutInflight ??=
+        _scheduleClockOutReminders(needsClockOut).whenComplete(() {
+      _clockOutInflight = null;
+    });
+    return _clockOutInflight!;
+  }
+
+  Future<void> _scheduleClockOutReminders(bool needsClockOut) async {
+    if (!_ready) await init();
+    if (!await _ensureNotificationPermissions()) return;
+    await _loadPersistedClockOutIds();
+    await _cancelTracked(_clockOutIds);
+    if (!needsClockOut) {
+      await _persistClockOutIds();
+      return;
+    }
+
+    final now = tz.TZDateTime.now(tz.local);
+    const title = 'Clock-out reminder';
+    const body =
+        'Please clock out for today. Open TICH in Africa → Attendance.';
+
+    var id = 7000;
+    for (var dayOffset = 0; dayOffset < _clockOutScheduleDays; dayOffset++) {
+      final day = now.add(Duration(days: dayOffset));
+      if (day.weekday == DateTime.saturday || day.weekday == DateTime.sunday) {
+        continue;
+      }
+      for (final minute in _clockOutMinutes) {
+        if (id > 7090) break;
+        final slot = tz.TZDateTime(
+          tz.local,
+          day.year,
+          day.month,
+          day.day,
+          _clockOutHour,
+          minute,
+        );
+        if (!slot.isAfter(now)) continue;
+        await _plugin.zonedSchedule(
+          id: id,
+          scheduledDate: slot,
+          notificationDetails: _details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          title: title,
+          body: body,
+          payload: TichNotificationRouter.instance.payloadForLocal(
+            target: 'attendance',
+            actionUrl: '/employee/attendance',
+            entityType: 'attendance_clock_out',
+          ),
+        );
+        _clockOutIds.add(id);
+        id++;
+      }
+    }
+    await _persistClockOutIds();
+  }
+
+  Future<void> cancelClockOutReminders() async {
+    await _loadPersistedClockOutIds();
+    await _cancelTracked(_clockOutIds);
+    await _persistClockOutIds();
+  }
+
+  Future<void> _loadPersistedClockOutIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_clockOutIds.isNotEmpty) return;
+    final raw = prefs.getStringList(_clockOutIdsKey) ?? const [];
+    _clockOutIds
+      ..clear()
+      ..addAll(raw.map((e) => int.tryParse(e)).whereType<int>());
+  }
+
+  Future<void> _persistClockOutIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _clockOutIdsKey,
+      _clockOutIds.map((e) => e.toString()).toList(),
+    );
   }
 
   Future<void> _loadPersistedClockInIds() async {

@@ -30,11 +30,13 @@ return Application::configure(basePath: dirname(__DIR__))
         }
 
         $middleware->web(prepend: [
+            \App\Http\Middleware\RetryDatabaseConnection::class,
             \App\Http\Middleware\ForceHttps::class,
             \App\Http\Middleware\RestrictAdminIp::class,
         ]);
 
         $middleware->api(prepend: [
+            \App\Http\Middleware\RetryDatabaseConnection::class,
             \App\Http\Middleware\ForceHttps::class,
             \App\Http\Middleware\RestrictAdminIp::class,
         ]);
@@ -157,6 +159,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Never expose SQL / connection internals to end users (especially production).
         // Use a DB-free view so rendering the error cannot re-trigger the same failure.
         $exceptions->report(function (\Illuminate\Database\QueryException $e) {
+            if (DatabaseAvailability::isUnavailable($e)) {
+                return;
+            }
+
             try {
                 app(\App\Services\Ict\PlatformPerformanceService::class)->recordQueryFailure();
             } catch (\Throwable) {
@@ -185,11 +191,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 503);
             }
 
+            $isProduction = config('app.env') === 'production';
+
             return response()->view('errors.unavailable', [
                 'code' => '503',
                 'title' => 'Service unavailable',
                 'message' => 'The platform is temporarily unavailable while we reconnect to the database.',
-                'hint' => 'Please try again in a few minutes. If you manage this server, check that MariaDB/MySQL is running and allows local connections.',
+                'hint' => $isProduction
+                    ? 'This page will retry automatically. If it continues, contact ICT — your data is safe.'
+                    : 'Please try again in a few minutes. If you manage this server, check that MariaDB/MySQL is running and allows local connections.',
+                'autoRetrySeconds' => $isProduction ? 15 : null,
             ], 503);
         });
     })->create();

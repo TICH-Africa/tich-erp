@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../data/api_client.dart';
@@ -61,6 +63,39 @@ Widget studentErrorBody(Object? error, VoidCallback onRetry) {
     message: tichDescribeError(error),
     onRetry: onRetry,
   );
+}
+
+/// Loading skeleton while fetching; on error without cache, auto-retry once.
+Widget studentCachedMapBody({
+  required AsyncSnapshot<Map<String, dynamic>> snap,
+  required Object? memoryCache,
+  required String persistKey,
+  required Widget Function(Map<String, dynamic> data) builder,
+  Future<void> Function()? onRetry,
+  bool autoRecoverOnError = false,
+  required bool recoverScheduled,
+  required void Function(bool value) setRecoverScheduled,
+  required bool Function() mounted,
+}) {
+  final merged = tichMergeSnapshot(
+    snap,
+    memoryCache as dynamic,
+    persistKey: persistKey,
+  );
+  if (tichShowLoadingSpinner(snap, merged)) {
+    return studentLoadingBody(onRefresh: onRetry);
+  }
+  if (merged == null && snap.hasError) {
+    if (autoRecoverOnError && !recoverScheduled && onRetry != null) {
+      setRecoverScheduled(true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted()) unawaited(onRetry());
+      });
+      return studentLoadingBody(onRefresh: onRetry);
+    }
+    return studentErrorBody(snap.error, () => onRetry?.call());
+  }
+  return builder(merged! as Map<String, dynamic>);
 }
 
 String money(dynamic value) {

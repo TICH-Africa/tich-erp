@@ -29,11 +29,16 @@
     @endif
 
     @if ($item->file_path)
-        <div class="tich-mt-2">
-            <a href="{{ asset('storage/' . $item->file_path) }}" target="_blank" class="tich-btn tich-btn-secondary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">
-                Download {{ $item->original_filename ?: 'File' }}
+        <div class="tich-mt-2" style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+            <a href="{{ route('portal.learning-content.view', $item) }}" target="_blank" rel="noopener" class="tich-btn tich-btn-secondary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">
+                View {{ $item->original_filename ?: 'file' }}
             </a>
-            <span class="tich-caption tich-ml-2">{{ $item->mime_type }} · {{ number_format($item->file_size / 1024, 1) }} KB</span>
+            <a href="{{ route('portal.learning-content.download', $item) }}" class="tich-btn tich-btn-ghost" style="font-size:0.875rem; padding:0.35rem 0.75rem;">
+                Download
+            </a>
+            @if ($item->mime_type || $item->file_size)
+                <span class="tich-caption">{{ $item->mime_type }}@if ($item->file_size) · {{ number_format($item->file_size / 1024, 1) }} KB @endif</span>
+            @endif
         </div>
     @endif
 

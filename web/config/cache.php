@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'default' => env('CACHE_STORE', 'database'),
+    'default' => \App\Support\HostingDefaults::cacheStore(),
 
     /*
     |--------------------------------------------------------------------------

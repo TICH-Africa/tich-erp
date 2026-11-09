@@ -9,6 +9,7 @@ use App\Http\Controllers\Academics\CourseEvaluationWindowController;
 use App\Http\Controllers\Academics\DashboardController as AcademicsDashboardController;
 use App\Http\Controllers\Academics\DepartmentController as AcademicsDepartmentController;
 use App\Http\Controllers\Academics\DocumentRequestController;
+use App\Http\Controllers\Academics\StudentDocumentSubmissionController;
 use App\Http\Controllers\Academics\ExaminationPaperController;
 use App\Http\Controllers\Academics\LessonPlanController;
 use App\Http\Controllers\Academics\LifecycleRequestController;
@@ -78,6 +79,9 @@ return function (bool $named = true): void {
         $register('get', '/evaluation-windows', [CourseEvaluationWindowController::class, 'index'], 'departments.academics.evaluation-windows.index');
         $register('get', '/document-requests', [DocumentRequestController::class, 'index'], 'departments.academics.document-requests.index');
         $register('get', '/document-requests/{documentRequest}', [DocumentRequestController::class, 'show'], 'departments.academics.document-requests.show');
+        $register('get', '/document-submissions', [StudentDocumentSubmissionController::class, 'index'], 'departments.academics.document-submissions.index');
+        $register('get', '/document-submissions/{submission}', [StudentDocumentSubmissionController::class, 'show'], 'departments.academics.document-submissions.show');
+        $register('get', '/document-submissions/{submission}/preview', [StudentDocumentSubmissionController::class, 'preview'], 'departments.academics.document-submissions.preview');
         $register('get', '/special-exam-requests', [SpecialExamRequestController::class, 'index'], 'departments.academics.special-exam-requests.index');
         $register('get', '/special-exam-requests/{specialExamRequest}', [SpecialExamRequestController::class, 'show'], 'departments.academics.special-exam-requests.show');
         $register('get', '/special-exam-requests/{specialExamRequest}/attachments/{index}', [SpecialExamRequestController::class, 'viewAttachment'], 'departments.academics.special-exam-requests.attachments.view');
@@ -138,6 +142,8 @@ return function (bool $named = true): void {
         $register('put', '/evaluation-windows/{evaluationWindow}', [CourseEvaluationWindowController::class, 'update'], 'departments.academics.evaluation-windows.update');
         $register('post', '/document-requests/{documentRequest}/issue', [DocumentRequestController::class, 'issue'], 'departments.academics.document-requests.issue');
         $register('post', '/document-requests/{documentRequest}/reject', [DocumentRequestController::class, 'reject'], 'departments.academics.document-requests.reject');
+        $register('post', '/document-submissions/{submission}/approve', [StudentDocumentSubmissionController::class, 'approve'], 'departments.academics.document-submissions.approve');
+        $register('post', '/document-submissions/{submission}/reject', [StudentDocumentSubmissionController::class, 'reject'], 'departments.academics.document-submissions.reject');
         $register('post', '/special-exam-requests/{specialExamRequest}/approve', [SpecialExamRequestController::class, 'approve'], 'departments.academics.special-exam-requests.approve');
         $register('post', '/special-exam-requests/{specialExamRequest}/reject', [SpecialExamRequestController::class, 'reject'], 'departments.academics.special-exam-requests.reject');
         $register('post', '/special-exam-requests/{specialExamRequest}/hold', [SpecialExamRequestController::class, 'hold'], 'departments.academics.special-exam-requests.hold');
@@ -167,6 +173,9 @@ return function (bool $named = true): void {
         $register('put', '/programs/{program}/timetable/slots', [ProgramCurriculumController::class, 'syncTimetableKindSlots'], 'departments.academics.programs.timetable.sync-kind-slots');
         $register('post', '/programs/{program}/intakes/{version}/timetable/generate', [ProgramCurriculumController::class, 'generateTimetable'], 'departments.academics.programs.timetable.generate');
         $register('post', '/programs/{program}/intakes/{version}/timetable/start', [ProgramCurriculumController::class, 'startTimetable'], 'departments.academics.programs.timetable.start');
+        $register('post', '/programs/{program}/intakes/{version}/timetable/upload', [ProgramCurriculumController::class, 'uploadTimetable'], 'departments.academics.programs.timetable.upload');
+        $register('post', '/programs/{program}/timetables/{timetable}/upload', [ProgramCurriculumController::class, 'replaceTimetableUpload'], 'departments.academics.programs.timetable.replace-upload');
+        $register('post', '/programs/{program}/timetables/{timetable}/use-builder', [ProgramCurriculumController::class, 'useBuilderTimetable'], 'departments.academics.programs.timetable.use-builder');
         $register('post', '/programs/{program}/timetables/{timetable}/sessions', [ProgramCurriculumController::class, 'addTimetableSession'], 'departments.academics.programs.timetable.add-session');
         $register('put', '/programs/{program}/timetables/{timetable}/progress', [ProgramCurriculumController::class, 'saveTimetableProgress'], 'departments.academics.programs.timetable.save-progress');
         $register('put', '/programs/{program}/timetables/{timetable}/sessions/{session}', [ProgramCurriculumController::class, 'updateTimetableSession'], 'departments.academics.programs.timetable.update-session');

@@ -45,6 +45,19 @@ class LeaveRequestService
     }
 
     /**
+     * @return Collection<int, LeaveRequest>
+     */
+    public function requestsPendingLineManagerFor(Staff $manager): Collection
+    {
+        return LeaveRequest::query()
+            ->with(['leaveType', 'staff.department'])
+            ->where('overall_status', 'pending_hod')
+            ->whereHas('staff', fn ($q) => $q->where('line_manager_id', $manager->id))
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator<int, LeaveRequest>
      */
     public function hrInbox(?string $status = null, ?string $search = null, int $perPage = 20)
@@ -79,12 +92,21 @@ class LeaveRequestService
             ->count();
     }
 
-    public function submit(Staff $staff, array $data, ?UploadedFile $certificate = null): LeaveRequest
+    /**
+     * @param  bool  $skipLineManagerStep  When true (e.g. HR recording leave), request goes straight to HR review.
+     */
+    public function submit(Staff $staff, array $data, ?UploadedFile $certificate = null, bool $skipLineManagerStep = false): LeaveRequest
     {
         $leaveType = LeaveType::query()->findOrFail($data['leave_type_id']);
         $def = $this->catalog->definitionForType($leaveType);
         if (($def['available'] ?? true) !== true) {
             throw new \InvalidArgumentException('This leave type is not available.');
+        }
+
+        if (! $skipLineManagerStep && ! (int) ($staff->line_manager_id ?? 0)) {
+            throw new \InvalidArgumentException(
+                'Your profile does not have a line manager assigned. Ask HR to set your line manager before applying for leave.'
+            );
         }
 
         $this->assertGenderAllowed($staff, $def);
@@ -109,7 +131,17 @@ class LeaveRequestService
 
         $coverMap = is_array($data['cover_staff_id'] ?? null) ? $data['cover_staff_id'] : [];
 
-        return DB::transaction(function () use ($staff, $data, $leaveType, $startDate, $endDate, $returnDate, $days, $certificatePath, $sickSplit, $coverMap, $certificate) {
+        return DB::transaction(function () use ($staff, $data, $leaveType, $startDate, $endDate, $returnDate, $days, $certificatePath, $sickSplit, $coverMap, $certificate, $skipLineManagerStep) {
+            if ($skipLineManagerStep) {
+                $hodStatus = 'not_required';
+                $hrStatus = 'pending';
+                $overallStatus = 'pending_hr';
+            } else {
+                $hodStatus = 'pending';
+                $hrStatus = 'not_required';
+                $overallStatus = 'pending_hod';
+            }
+
             $leaveRequest = LeaveRequest::create([
                 'leave_number' => $this->generateLeaveNumber(),
                 'staff_id' => $staff->id,
@@ -126,9 +158,9 @@ class LeaveRequestService
                 'medical_certificate_path' => $leaveType->leave_code === 'SICK' ? $certificatePath : $certificatePath,
                 'supporting_document_path' => $leaveType->leave_code !== 'SICK' ? $certificatePath : null,
                 'supporting_document_name' => $certificate?->getClientOriginalName(),
-                'hod_approval_status' => 'not_required',
-                'hr_approval_status' => 'pending',
-                'overall_status' => 'pending_hr',
+                'hod_approval_status' => $hodStatus,
+                'hr_approval_status' => $hrStatus,
+                'overall_status' => $overallStatus,
                 'handover_notes' => $data['handover_notes'] ?? null,
                 'contact_mobile' => $data['contact_mobile'] ?? null,
                 'contact_email' => $data['contact_email'] ?? null,
@@ -146,7 +178,11 @@ class LeaveRequestService
                 $this->auditSnapshot($leaveRequest),
             );
 
-            $this->notifyHrOfSubmission($leaveRequest, $staff);
+            if ($skipLineManagerStep) {
+                $this->notifyHrOfSubmission($leaveRequest->fresh(['leaveType']), $staff);
+            } else {
+                $this->notifyLineManagerOfSubmission($leaveRequest->fresh(['leaveType']), $staff);
+            }
 
             return $leaveRequest->fresh(['leaveType', 'coverages.coverStaff', 'coverages.department']);
         });
@@ -195,28 +231,66 @@ class LeaveRequestService
 
             $oldSnapshot = $this->auditSnapshot($leaveRequest);
 
-            $leaveRequest->update([
-                'leave_type_id' => $leaveType->id,
-                'start_date' => $startDate,
-                'end_date' => $endDate,
-                'return_date' => $returnDate,
-                'days_requested' => $days,
-                'sick_full_pay_days' => $sickSplit['full'],
-                'sick_half_pay_days' => $sickSplit['half'],
-                'reason' => $data['reason'],
-                'family_relation' => $data['family_relation'] ?? null,
-                'is_emergency' => ! empty($data['is_emergency']),
-                'medical_certificate_path' => $leaveType->leave_code === 'SICK' ? $certificatePath : $leaveRequest->medical_certificate_path,
-                'supporting_document_path' => $leaveType->leave_code !== 'SICK' ? $certificatePath : $leaveRequest->supporting_document_path,
-                'supporting_document_name' => $certificate?->getClientOriginalName() ?? $leaveRequest->supporting_document_name,
-                'hr_approval_status' => 'pending',
-                'overall_status' => 'pending_hr',
-                'hr_review_notes' => null,
-                'handover_notes' => $data['handover_notes'] ?? null,
-                'contact_mobile' => $data['contact_mobile'] ?? null,
-                'contact_email' => $data['contact_email'] ?? null,
-                'contact_postal_address' => $data['contact_postal_address'] ?? null,
-            ]);
+            $returnedToHr = $leaveRequest->overall_status === 'returned' && $leaveRequest->hod_approval_status === 'approved';
+
+            if (! $returnedToHr && ! (int) ($staff->line_manager_id ?? 0)) {
+                throw new \InvalidArgumentException(
+                    'Your profile does not have a line manager assigned. Ask HR to set your line manager before resubmitting.'
+                );
+            }
+
+            if ($returnedToHr) {
+                $statusUpdate = [
+                    'leave_type_id' => $leaveType->id,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'return_date' => $returnDate,
+                    'days_requested' => $days,
+                    'sick_full_pay_days' => $sickSplit['full'],
+                    'sick_half_pay_days' => $sickSplit['half'],
+                    'reason' => $data['reason'],
+                    'family_relation' => $data['family_relation'] ?? null,
+                    'is_emergency' => ! empty($data['is_emergency']),
+                    'medical_certificate_path' => $leaveType->leave_code === 'SICK' ? $certificatePath : $leaveRequest->medical_certificate_path,
+                    'supporting_document_path' => $leaveType->leave_code !== 'SICK' ? $certificatePath : $leaveRequest->supporting_document_path,
+                    'supporting_document_name' => $certificate?->getClientOriginalName() ?? $leaveRequest->supporting_document_name,
+                    'hr_approval_status' => 'pending',
+                    'overall_status' => 'pending_hr',
+                    'hr_review_notes' => null,
+                    'handover_notes' => $data['handover_notes'] ?? null,
+                    'contact_mobile' => $data['contact_mobile'] ?? null,
+                    'contact_email' => $data['contact_email'] ?? null,
+                    'contact_postal_address' => $data['contact_postal_address'] ?? null,
+                ];
+            } else {
+                $statusUpdate = [
+                    'leave_type_id' => $leaveType->id,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'return_date' => $returnDate,
+                    'days_requested' => $days,
+                    'sick_full_pay_days' => $sickSplit['full'],
+                    'sick_half_pay_days' => $sickSplit['half'],
+                    'reason' => $data['reason'],
+                    'family_relation' => $data['family_relation'] ?? null,
+                    'is_emergency' => ! empty($data['is_emergency']),
+                    'medical_certificate_path' => $leaveType->leave_code === 'SICK' ? $certificatePath : $leaveRequest->medical_certificate_path,
+                    'supporting_document_path' => $leaveType->leave_code !== 'SICK' ? $certificatePath : $leaveRequest->supporting_document_path,
+                    'supporting_document_name' => $certificate?->getClientOriginalName() ?? $leaveRequest->supporting_document_name,
+                    'hod_approval_status' => 'pending',
+                    'hod_approved_by' => null,
+                    'hod_approved_at' => null,
+                    'hr_approval_status' => 'not_required',
+                    'overall_status' => 'pending_hod',
+                    'hr_review_notes' => null,
+                    'handover_notes' => $data['handover_notes'] ?? null,
+                    'contact_mobile' => $data['contact_mobile'] ?? null,
+                    'contact_email' => $data['contact_email'] ?? null,
+                    'contact_postal_address' => $data['contact_postal_address'] ?? null,
+                ];
+            }
+
+            $leaveRequest->update($statusUpdate);
 
             $leaveRequest->coverages()->delete();
             $this->coverages->assignCoverages($leaveRequest->fresh(), $staff, $coverMap);
@@ -230,7 +304,12 @@ class LeaveRequestService
                 $this->auditSnapshot($leaveRequest->fresh()),
             );
 
-            $this->notifyHrOfSubmission($leaveRequest->fresh(['leaveType']), $staff, resubmitted: true);
+            $fresh = $leaveRequest->fresh(['leaveType']);
+            if ($returnedToHr) {
+                $this->notifyHrOfSubmission($fresh, $staff, resubmitted: true);
+            } else {
+                $this->notifyLineManagerOfSubmission($fresh, $staff, resubmitted: true);
+            }
 
             return $leaveRequest->fresh(['leaveType', 'coverages']);
         });
@@ -271,11 +350,17 @@ class LeaveRequestService
                 'remove_pending'
             );
 
+            $hodStatus = $leaveRequest->hod_approval_status === 'pending' ? 'cancelled' : $leaveRequest->hod_approval_status;
+            $hrStatus = in_array($leaveRequest->hr_approval_status, ['pending', 'not_required'], true)
+                ? 'cancelled'
+                : $leaveRequest->hr_approval_status;
+
             $leaveRequest->update([
                 'overall_status' => 'cancelled',
                 'is_cancelled' => true,
                 'cancellation_reason' => $reason,
-                'hr_approval_status' => 'cancelled',
+                'hod_approval_status' => $hodStatus,
+                'hr_approval_status' => $hrStatus,
             ]);
 
             $this->coverages->revokeAccessForLeave($leaveRequest);
@@ -293,10 +378,130 @@ class LeaveRequestService
         });
     }
 
-    public function approve(LeaveRequest $leaveRequest, Staff $hrStaff, array $data = []): LeaveRequest
+    /**
+     * HR records leave for an employee (optionally approving immediately).
+     */
+    public function submitOnBehalfByHr(
+        Staff $employee,
+        Staff $hrStaff,
+        array $data,
+        ?UploadedFile $certificate = null,
+        bool $approveImmediately = true,
+    ): LeaveRequest {
+        $leaveRequest = $this->submit($employee, $data, $certificate, skipLineManagerStep: true);
+
+        if (! $approveImmediately) {
+            return $leaveRequest;
+        }
+
+        return $this->approve($leaveRequest, $hrStaff, [], skipCoverageCheck: true);
+    }
+
+    public function approveByLineManager(LeaveRequest $leaveRequest, Staff $manager): LeaveRequest
     {
-        return DB::transaction(function () use ($leaveRequest, $hrStaff, $data) {
-            $this->coverages->assertAllCoveragesAccepted($leaveRequest);
+        $leaveRequest->loadMissing('staff.lineManager', 'leaveType');
+        $employee = $leaveRequest->staff;
+        abort_unless($employee, 404);
+
+        if ((int) ($employee->line_manager_id ?? 0) !== (int) $manager->id) {
+            abort(403, 'You are not the line manager for this employee.');
+        }
+
+        if ($leaveRequest->overall_status !== 'pending_hod' || $leaveRequest->hod_approval_status !== 'pending') {
+            throw new \InvalidArgumentException('This leave request is not awaiting line manager review.');
+        }
+
+        return DB::transaction(function () use ($leaveRequest, $manager, $employee) {
+            $oldSnapshot = $this->auditSnapshot($leaveRequest);
+
+            $leaveRequest->update([
+                'hod_approval_status' => 'approved',
+                'hod_approved_by' => $manager->id,
+                'hod_approved_at' => now(),
+                'overall_status' => 'pending_hr',
+                'hr_approval_status' => 'pending',
+            ]);
+
+            $fresh = $leaveRequest->fresh(['leaveType', 'staff']);
+            $this->auditService->log(
+                'leave.line_manager.approved',
+                'leave_request',
+                $leaveRequest->id,
+                $oldSnapshot,
+                $this->auditSnapshot($fresh),
+            );
+
+            $this->notifyHrOfSubmission($fresh, $employee);
+            $this->notifyEmployeeLineManagerDecision($fresh, 'approved');
+
+            return $fresh;
+        });
+    }
+
+    public function rejectByLineManager(LeaveRequest $leaveRequest, Staff $manager, ?string $reason = null): LeaveRequest
+    {
+        $leaveRequest->loadMissing('staff.lineManager', 'leaveType');
+        $employee = $leaveRequest->staff;
+        abort_unless($employee, 404);
+
+        if ((int) ($employee->line_manager_id ?? 0) !== (int) $manager->id) {
+            abort(403, 'You are not the line manager for this employee.');
+        }
+
+        if ($leaveRequest->overall_status !== 'pending_hod' || $leaveRequest->hod_approval_status !== 'pending') {
+            throw new \InvalidArgumentException('This leave request is not awaiting line manager review.');
+        }
+
+        return DB::transaction(function () use ($leaveRequest, $manager, $employee, $reason) {
+            $oldSnapshot = $this->auditSnapshot($leaveRequest);
+
+            $this->adjustBalance(
+                (int) $employee->id,
+                (int) $leaveRequest->leave_type_id,
+                (int) $leaveRequest->days_requested,
+                'remove_pending'
+            );
+
+            $leaveRequest->update([
+                'hod_approval_status' => 'rejected',
+                'hod_approved_by' => $manager->id,
+                'hod_approved_at' => now(),
+                'overall_status' => 'rejected',
+                'hr_approval_status' => 'not_required',
+                'cancellation_reason' => $reason,
+            ]);
+
+            $this->coverages->revokeAccessForLeave($leaveRequest);
+
+            $this->auditService->log(
+                'leave.line_manager.rejected',
+                'leave_request',
+                $leaveRequest->id,
+                $oldSnapshot,
+                $this->auditSnapshot($leaveRequest->fresh()),
+                $reason,
+            );
+
+            $this->notifyEmployeeLineManagerDecision($leaveRequest->fresh(['leaveType', 'staff']), 'rejected', $reason);
+
+            return $leaveRequest->fresh(['leaveType', 'staff']);
+        });
+    }
+
+    public function approve(
+        LeaveRequest $leaveRequest,
+        Staff $hrStaff,
+        array $data = [],
+        bool $skipCoverageCheck = false,
+    ): LeaveRequest {
+        return DB::transaction(function () use ($leaveRequest, $hrStaff, $data, $skipCoverageCheck) {
+            if ($leaveRequest->overall_status !== 'pending_hr' && ! ($leaveRequest->overall_status === 'returned' && $leaveRequest->hr_approval_status === 'pending')) {
+                throw new \InvalidArgumentException('This request is not pending HR approval.');
+            }
+
+            if (! $skipCoverageCheck) {
+                $this->coverages->assertAllCoveragesAccepted($leaveRequest);
+            }
 
             $oldSnapshot = $this->auditSnapshot($leaveRequest);
             $previousDays = (int) $leaveRequest->days_requested;
@@ -354,6 +559,10 @@ class LeaveRequestService
     public function reject(LeaveRequest $leaveRequest, Staff $hrStaff, string $reason): LeaveRequest
     {
         return DB::transaction(function () use ($leaveRequest, $hrStaff, $reason) {
+            if (! in_array($leaveRequest->overall_status, ['pending_hr', 'returned'], true) || $leaveRequest->hr_approval_status !== 'pending') {
+                throw new \InvalidArgumentException('This request is not pending HR review.');
+            }
+
             $oldSnapshot = $this->auditSnapshot($leaveRequest);
 
             $this->adjustBalance(
@@ -391,6 +600,10 @@ class LeaveRequestService
     public function returnForChanges(LeaveRequest $leaveRequest, Staff $hrStaff, string $notes): LeaveRequest
     {
         return DB::transaction(function () use ($leaveRequest, $hrStaff, $notes) {
+            if ($leaveRequest->overall_status !== 'pending_hr' || $leaveRequest->hr_approval_status !== 'pending') {
+                throw new \InvalidArgumentException('Only requests awaiting HR review can be returned for changes.');
+            }
+
             $oldSnapshot = $this->auditSnapshot($leaveRequest);
 
             $this->adjustBalance(
@@ -560,6 +773,73 @@ class LeaveRequestService
             (string) $leaveRequest->id,
             'normal',
             route('hr.leave.show', $leaveRequest),
+        );
+    }
+
+    private function notifyLineManagerOfSubmission(LeaveRequest $leaveRequest, Staff $applicant, bool $resubmitted = false): void
+    {
+        $managerId = (int) ($applicant->line_manager_id ?? 0);
+        if ($managerId <= 0) {
+            return;
+        }
+
+        $manager = Staff::query()->find($managerId);
+        $userId = $manager?->user_id;
+        if (! $userId) {
+            return;
+        }
+
+        $title = $resubmitted ? 'Leave request updated' : 'Leave request needs your review';
+        $body = sprintf(
+            '%s (%s) %s leave request %s for %s–%s (%s days). Approve or reject in My leave.',
+            $applicant->fullName(),
+            $applicant->employee_number,
+            $resubmitted ? 'updated' : 'submitted',
+            $leaveRequest->leave_number,
+            $leaveRequest->start_date->format('d M Y'),
+            $leaveRequest->end_date->format('d M Y'),
+            number_format((int) $leaveRequest->days_requested)
+        );
+
+        $this->notifications->notifyUser(
+            (int) $userId,
+            $title,
+            $body,
+            'leave_request',
+            (string) $leaveRequest->id,
+            'normal',
+            route('employee.leave.index'),
+        );
+    }
+
+    private function notifyEmployeeLineManagerDecision(LeaveRequest $leaveRequest, string $decision, ?string $notes = null): void
+    {
+        $employeeUserId = $leaveRequest->staff?->user_id;
+        if (! $employeeUserId) {
+            return;
+        }
+
+        $title = match ($decision) {
+            'approved' => 'Line manager approved your leave request',
+            'rejected' => 'Line manager declined your leave request',
+            default => 'Leave request updated',
+        };
+
+        $body = match ($decision) {
+            'approved' => "Your line manager approved leave request {$leaveRequest->leave_number}. It has been sent to HR for final review.",
+            'rejected' => 'Your line manager declined leave request '.$leaveRequest->leave_number
+                .($notes ? ". Reason: {$notes}" : '.'),
+            default => "Your leave request {$leaveRequest->leave_number} was updated.",
+        };
+
+        $this->notifications->notifyUser(
+            (int) $employeeUserId,
+            $title,
+            $body,
+            'leave_request',
+            (string) $leaveRequest->id,
+            $decision === 'rejected' ? 'high' : 'normal',
+            route('employee.leave.index'),
         );
     }
 

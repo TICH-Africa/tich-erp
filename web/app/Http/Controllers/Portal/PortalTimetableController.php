@@ -45,7 +45,7 @@ class PortalTimetableController extends Controller
         $this->authorizeStudentTimetable($request, $timetable);
 
         if ($this->timetableDocuments->usesUploadedFile($timetable)) {
-            return $this->timetableDocuments->inlineResponse($timetable);
+            return $this->timetableDocuments->inlineCachedResponse($timetable);
         }
 
         $data = $this->documentData($request, $timetable, includeActions: false);

@@ -19,7 +19,7 @@
     @endphp
     @include('partials.navigation.sidebar-link', [
         'href' => route($reportsRoute),
-        'label' => $label ?? 'M&E quarterly reports',
+        'label' => $label ?? 'M&E report status',
         'icon' => $icon ?? 'bar-chart',
         'active' => $isActive,
         'badgeKey' => $badgeKey ?? null,

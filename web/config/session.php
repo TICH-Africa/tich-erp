@@ -18,7 +18,7 @@ return [
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'database'),
+    'driver' => \App\Support\HostingDefaults::sessionDriver(),
 
     /*
     |--------------------------------------------------------------------------

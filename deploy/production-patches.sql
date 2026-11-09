@@ -2645,5 +2645,62 @@ PREPARE stmt_fee_add FROM @sql_fee_add;
 EXECUTE stmt_fee_add;
 DEALLOCATE PREPARE stmt_fee_add;
 
+-- Timetable cycle columns (week/month postings within a semester).
+SET @pt_has_cycle_type := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'program_timetables'
+      AND column_name = 'cycle_type'
+);
+SET @sql_pt_cycle_type := IF(@pt_has_cycle_type = 0,
+    'ALTER TABLE `program_timetables` ADD COLUMN `cycle_type` varchar(20) NULL AFTER `timetable_kind`',
+    'SELECT 1');
+PREPARE stmt_pt_cycle_type FROM @sql_pt_cycle_type;
+EXECUTE stmt_pt_cycle_type;
+DEALLOCATE PREPARE stmt_pt_cycle_type;
+
+SET @pt_has_cycle_no := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'program_timetables'
+      AND column_name = 'cycle_no'
+);
+SET @sql_pt_cycle_no := IF(@pt_has_cycle_no = 0,
+    'ALTER TABLE `program_timetables` ADD COLUMN `cycle_no` smallint unsigned NULL AFTER `cycle_type`',
+    'SELECT 1');
+PREPARE stmt_pt_cycle_no FROM @sql_pt_cycle_no;
+EXECUTE stmt_pt_cycle_no;
+DEALLOCATE PREPARE stmt_pt_cycle_no;
+
+CREATE TABLE IF NOT EXISTS `student_application_document_submissions` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `student_id` bigint(20) unsigned NOT NULL,
+    `applicant_id` bigint(20) unsigned NOT NULL,
+    `application_document_id` bigint(20) unsigned DEFAULT NULL,
+    `document_type` varchar(50) NOT NULL,
+    `file_path` varchar(500) NOT NULL,
+    `original_filename` varchar(255) NOT NULL,
+    `mime_type` varchar(100) NOT NULL,
+    `status` varchar(30) NOT NULL DEFAULT 'pending',
+    `student_notes` text DEFAULT NULL,
+    `reviewer_notes` text DEFAULT NULL,
+    `uploaded_by_user_id` bigint(20) unsigned NOT NULL,
+    `reviewed_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `reviewed_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `student_app_doc_sub_status_created_index` (`status`, `created_at`),
+    KEY `student_app_doc_sub_student_status_index` (`student_id`, `status`),
+    KEY `student_app_doc_sub_student_id_foreign` (`student_id`),
+    KEY `student_app_doc_sub_applicant_id_foreign` (`applicant_id`),
+    KEY `student_app_doc_sub_application_document_id_foreign` (`application_document_id`),
+    KEY `student_app_doc_sub_uploaded_by_user_id_foreign` (`uploaded_by_user_id`),
+    KEY `student_app_doc_sub_reviewed_by_user_id_foreign` (`reviewed_by_user_id`),
+    CONSTRAINT `student_app_doc_sub_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `student_app_doc_sub_applicant_id_foreign` FOREIGN KEY (`applicant_id`) REFERENCES `applicants` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `student_app_doc_sub_application_document_id_foreign` FOREIGN KEY (`application_document_id`) REFERENCES `application_documents` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `student_app_doc_sub_uploaded_by_user_id_foreign` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`),
+    CONSTRAINT `student_app_doc_sub_reviewed_by_user_id_foreign` FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

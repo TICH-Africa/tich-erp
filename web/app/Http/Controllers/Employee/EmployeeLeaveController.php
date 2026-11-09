@@ -11,6 +11,7 @@ use App\Services\Leave\LeaveCatalogService;
 use App\Services\Leave\LeaveCoverageService;
 use App\Services\LeaveCarryForwardService;
 use App\Services\LeaveRequestService;
+use App\Services\RBACService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -28,7 +29,7 @@ class EmployeeLeaveController extends Controller
     public function index(Request $request): View
     {
         $staff = $this->staff($request);
-        $staff->loadMissing('department');
+        $staff->loadMissing(['department', 'lineManager']);
         $editRequest = null;
 
         if ($request->filled('edit')) {
@@ -72,6 +73,26 @@ class EmployeeLeaveController extends Controller
         $leaveRequests = $this->leaveRequests->requestsForStaff($staff);
         $leaveRequests->loadMissing(['coverages.coverStaff', 'coverages.department']);
 
+        $teamLeavePending = $this->leaveRequests->requestsPendingLineManagerFor($staff);
+
+        $hrManagerDisplay = app(RBACService::class)->primaryHrManagerDisplayName();
+        $lineManager = $staff->lineManager;
+        $lineManagerDisplay = $lineManager
+            ? trim(implode(' ', array_filter([
+                (string) $lineManager->title,
+                $lineManager->fullName(),
+            ])))
+            : null;
+
+        $leaveApplicationNoticeParts = [];
+        if ($lineManagerDisplay) {
+            $leaveApplicationNoticeParts[] = 'Your request is reviewed first by your line manager ('.$lineManagerDisplay.').';
+        } else {
+            $leaveApplicationNoticeParts[] = 'Your request is reviewed first by your line manager once HR has assigned one on your profile.';
+        }
+        $leaveApplicationNoticeParts[] = 'After they approve it, '.$hrManagerDisplay.' (HR) will complete the final review.';
+        $leaveApplicationNoticeParts[] = 'Track progress anytime in the list below.';
+
         return view('employee.leave.index', [
             'portalTitle' => 'Leave requests',
             'staff' => $staff,
@@ -85,6 +106,9 @@ class EmployeeLeaveController extends Controller
             'coverageDepartments' => $coverageDepartments,
             'eligibleCoverStaff' => $eligibleCoverStaff,
             'pendingCoverages' => $this->coverages->pendingForCoverStaff($staff),
+            'teamLeavePending' => $teamLeavePending,
+            'hrManagerDisplay' => $hrManagerDisplay,
+            'leaveApplicationNotice' => implode(' ', $leaveApplicationNoticeParts),
         ]);
     }
 
@@ -137,7 +161,7 @@ class EmployeeLeaveController extends Controller
 
         return redirect()
             ->route('employee.leave.index')
-            ->with('success', 'Your leave request has been submitted to HR for review.');
+            ->with('success', 'Your leave request has been submitted to your line manager for review.');
     }
 
     public function update(Request $request, LeaveRequest $leaveRequest): RedirectResponse
@@ -155,7 +179,40 @@ class EmployeeLeaveController extends Controller
 
         return redirect()
             ->route('employee.leave.index')
-            ->with('success', 'Your leave request has been updated and sent back to HR.');
+            ->with('success', 'Your leave request has been updated and sent back to HR for review.');
+    }
+
+    public function managerApprove(Request $request, LeaveRequest $leaveRequest): RedirectResponse
+    {
+        $manager = $this->staff($request);
+
+        try {
+            $this->leaveRequests->approveByLineManager($leaveRequest, $manager);
+        } catch (\InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('employee.leave.index')
+            ->with('success', 'Leave approved. It has been sent to HR for final review.');
+    }
+
+    public function managerReject(Request $request, LeaveRequest $leaveRequest): RedirectResponse
+    {
+        $manager = $this->staff($request);
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            $this->leaveRequests->rejectByLineManager($leaveRequest, $manager, $validated['reason'] ?? null);
+        } catch (\InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('employee.leave.index')
+            ->with('success', 'Leave request declined.');
     }
 
     public function updateCoverages(Request $request, LeaveRequest $leaveRequest): RedirectResponse

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
-import '../../data/api_client.dart';
+import '../../bloc/auth/auth_bloc.dart';
+import '../../bloc/auth/auth_state.dart';
 import '../../data/student_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
-import '../widgets/tich_form_dialog.dart';
 import '../widgets/tich_live_refresh.dart';
 import 'student_helpers.dart';
+import 'student_web_handoff.dart';
 
 class StudentFinancePage extends StatefulWidget {
   const StudentFinancePage({super.key, required this.api});
@@ -22,7 +24,7 @@ class StudentFinancePage extends StatefulWidget {
 class _StudentFinancePageState extends State<StudentFinancePage> {
   late Future<Map<String, dynamic>> _future;
   Object? _dataCache;
-  bool _paying = false;
+  bool _recoverScheduled = false;
 
   @override
   void initState() {
@@ -33,6 +35,10 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
       setFuture: (f) => _future = f,
       fetch: () => widget.api.finance(),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _liveRefresh();
+    });
   }
 
   Future<void> _reload() => studentCachedReload(
@@ -53,91 +59,25 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
     );
   }
 
-  Future<void> _pay(Map<String, dynamic> invoice, Map finance) async {
-    final balance = (invoice['balance'] as num?)?.toDouble() ?? 0;
-    if (balance <= 0) return;
-    final phoneCtrl = TextEditingController(
-      text: finance['default_phone']?.toString() ?? '',
-    );
-    final amountCtrl = TextEditingController(text: balance.toStringAsFixed(2));
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => TichFormDialog(
-        title: Text('Pay ${invoice['invoice_number'] ?? 'invoice'}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: amountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Amount'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'M-Pesa phone'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Pay')),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    final amount = double.tryParse(amountCtrl.text.trim());
-    if (amount == null || amount <= 0) return;
-
-    setState(() => _paying = true);
-    try {
-      final res = await widget.api.payInvoice(
-        (invoice['id'] as num).toInt(),
-        amount: amount,
-        paymentMethod: 'mpesa',
-        phoneNumber: phoneCtrl.text.trim(),
-      );
-      if (!mounted) return;
+  void _openPaymentOnWeb({int? invoiceId}) {
+    final auth = context.read<AuthBloc>().state;
+    final user = switch (auth) {
+      AuthAuthenticated(:final user) => user,
+      AuthLocked(:final user) => user,
+      _ => null,
+    };
+    if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['message']?.toString() ?? 'Payment started')),
+        const SnackBar(content: Text('Sign in again to pay on the web portal.')),
       );
-      final stkId = (res['stk_request_id'] as num?)?.toInt();
-      if (stkId != null) {
-        await _pollStk(stkId);
-      }
-      _reload();
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-    } finally {
-      if (mounted) setState(() => _paying = false);
+      return;
     }
-  }
-
-  Future<void> _pollStk(int id) async {
-    for (var i = 0; i < 12; i++) {
-      await Future<void>.delayed(const Duration(seconds: 3));
-      try {
-        final status = await widget.api.stkStatus(id);
-        if (status['is_complete'] == true) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                status['is_success'] == true
-                    ? 'Payment successful${status['mpesa_receipt_number'] != null ? ' · ${status['mpesa_receipt_number']}' : ''}.'
-                    : (status['result_desc']?.toString() ?? 'Payment not completed.'),
-              ),
-            ),
-          );
-          return;
-        }
-      } catch (_) {
-        return;
-      }
-    }
+    studentOpenFinancePaymentOnWeb(
+      context,
+      user: user,
+      api: widget.api,
+      invoiceId: invoiceId,
+    );
   }
 
   @override
@@ -149,12 +89,16 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'student.finance');
-          if (tichShowLoadingSpinner(snap, merged)) { return studentLoadingBody(onRefresh: () async => _reload()); }
-          if (merged == null && snap.hasError) {
-            return studentErrorBody(snap.error, _reload);
-          }
-          final data = merged! as Map<String, dynamic>;
+          return studentCachedMapBody(
+            snap: snap,
+            memoryCache: _dataCache,
+            persistKey: 'student.finance',
+            onRetry: _reload,
+            autoRecoverOnError: true,
+            recoverScheduled: _recoverScheduled,
+            setRecoverScheduled: (v) => _recoverScheduled = v,
+            mounted: () => mounted,
+            builder: (data) {
           final finance =
               Map<String, dynamic>.from(data['finance'] as Map? ?? {});
           final summary =
@@ -163,6 +107,8 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
           final payments = finance['payments'] as List? ?? const [];
           final payable = finance['payable_invoices'] as List? ?? const [];
           final statement = finance['statement'] as List? ?? const [];
+          final hasBalance =
+              ((summary['outstanding_balance'] as num?)?.toDouble() ?? 0) > 0;
 
           return RefreshIndicator(
             onRefresh: () async => _reload(),
@@ -198,6 +144,26 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
                           ),
                         ],
                       ),
+                      if (hasBalance) ...[
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: () => _openPaymentOnWeb(),
+                            icon: const Icon(Icons.open_in_browser),
+                            label: const Text('Pay on student portal'),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'M-Pesa and other payments are completed on the web student portal.',
+                          style: tichUi(
+                            fontSize: 12,
+                            color: TichColors.neutralMuted,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -206,6 +172,7 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
                   const TichSectionHeader('Pay now'),
                   ...payable.map((raw) {
                     final inv = Map<String, dynamic>.from(raw as Map);
+                    final invoiceId = (inv['id'] as num?)?.toInt();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TichCard(
@@ -219,7 +186,9 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
                             '${money(inv['balance'])} · ${inv['status'] ?? ''}',
                           ),
                           trailing: FilledButton(
-                            onPressed: _paying ? null : () => _pay(inv, finance),
+                            onPressed: () => _openPaymentOnWeb(
+                              invoiceId: invoiceId,
+                            ),
                             child: const Text('Pay'),
                           ),
                         ),
@@ -319,6 +288,8 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
                   }),
               ],
             ),
+          );
+            },
           );
         },
       ),

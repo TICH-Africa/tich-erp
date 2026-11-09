@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Student\mobile\Concerns;
 
 use App\Models\Student;
+use App\Models\UnitContent;
 use App\Services\ProgramTimetableDocumentService;
 use Illuminate\Support\Collection;
 
@@ -82,6 +83,9 @@ trait SerializesStudentPortal
             'grades' => $this->mapRows($a['grades'] ?? []),
             'cat_scores' => $this->mapRows($a['cat_scores'] ?? []),
             'exam_results' => $this->mapRows($a['exam_results'] ?? []),
+            'provisional_results_by_semester' => $a['provisional_results_by_semester'] ?? [],
+            'progress_summary' => $a['progress_summary'] ?? [],
+            'semester_performance' => $a['semester_performance'] ?? [],
             'attendance' => $this->serializeAttendance($a['attendance'] ?? []),
             'registrations' => $this->mapRows($a['registrations'] ?? []),
             'periods' => collect($a['periods'] ?? [])->map(fn ($p) => [
@@ -91,15 +95,10 @@ trait SerializesStudentPortal
                 'starts_at' => optional($p->starts_at ?? null)?->format('Y-m-d'),
                 'ends_at' => optional($p->ends_at ?? null)?->format('Y-m-d'),
             ])->values()->all(),
-            'unit_content' => collect($a['unit_content'] ?? [])->map(fn ($c) => [
-                'id' => $c->id,
-                'title' => $c->title,
-                'content_type' => $c->content_type,
-                'unit_code' => $c->unit?->unit_code,
-                'unit_name' => $c->unit?->unit_name,
-                'status' => $c->status,
-                'published_at' => optional($c->published_at ?? $c->created_at)?->toIso8601String(),
-            ])->values()->all(),
+            'unit_content' => collect($a['unit_content'] ?? [])
+                ->map(fn ($c) => $this->serializeUnitContentItem($c))
+                ->values()
+                ->all(),
             'assessments' => collect($a['assessments'] ?? [])->map(function ($assessment) use ($a) {
                 $submission = ($a['my_submissions'] ?? collect())->get($assessment->id);
 
@@ -127,54 +126,116 @@ trait SerializesStudentPortal
      * @param  array<string, mixed>  $portalData
      * @return array<string, mixed>
      */
-    protected function serializeTimetable(array $portalData): array
+    protected function serializeTimetable(array $portalData, bool $mobile = false): array
     {
         $t = $portalData['timetable'] ?? [];
         $timetables = collect($t['timetables'] ?? []);
         $documents = app(ProgramTimetableDocumentService::class);
+        $currentId = (int) ($t['timetable']?->id ?? 0);
 
-        return [
+        $serializeSession = fn ($s) => [
+            'id' => $s->id,
+            'day_of_week' => $s->day_of_week,
+            'start_time' => $s->start_time,
+            'end_time' => $s->end_time,
+            'unit_code' => $s->unit?->unit_code,
+            'unit_name' => $s->unit?->unit_name,
+            'staff_name' => $s->staff?->fullName(),
+            'room' => $s->room?->room_name ?? $s->room?->name,
+            'session_type' => $s->session_type,
+            'session_date' => $s->session_date?->format('Y-m-d'),
+            'session_date_to' => $s->session_date_to?->format('Y-m-d'),
+            'date_span' => $s->dateLabel(),
+            'week_no' => $s->week_no,
+            'week_to' => $s->week_to,
+            'recurrence' => $s->recurrence,
+        ];
+
+        $documentRow = function ($tt) use ($t, $documents, $currentId, $mobile, $serializeSession) {
+            $row = array_merge([
+                'id' => $tt->id,
+                'kind' => $tt->timetable_kind,
+                'status' => $tt->status,
+                'title' => $tt->title ?? ucfirst((string) $tt->timetable_kind).' timetable',
+                'display_title' => $tt->displayTitle(),
+                'cycle_type' => $tt->cycle_type,
+                'cycle_no' => $tt->cycle_no,
+                'cycle_label' => $tt->cycleLabel(),
+                'delivery_mode' => $tt->delivery_mode ?? 'physical',
+                'audience' => $tt->deliveryModeLabel(),
+                'is_current' => (int) $tt->id === $currentId,
+                'teaching_period' => $tt->teaching_period,
+                'sessions' => $mobile
+                    ? []
+                    : collect($tt->sessions ?? [])->map($serializeSession)->values()->all(),
+            ], $documents->mobileDocumentMeta($tt));
+
+            return $row;
+        };
+
+        $lessonPick = $this->pickMobileTimetableDocument($timetables, $currentId, 'lesson', $documents);
+        $examPick = $this->pickMobileTimetableDocument($timetables, $currentId, 'exam', $documents);
+
+        $payload = [
             'teaching_period' => $t['teaching_period'] ?? null,
             'period_label' => $t['period_label'] ?? null,
             'year_of_study' => $t['year_of_study'] ?? null,
             'is_provisional' => (bool) ($t['is_provisional'] ?? false),
             'current_timetable_id' => $t['timetable']?->id ?? null,
-            'day_labels' => $t['day_labels'] ?? [],
-            'active_days' => $t['active_days'] ?? [1, 2, 3, 4, 5],
-            'timetables' => $timetables->map(function ($tt) use ($t, $documents) {
-                return array_merge([
-                    'id' => $tt->id,
-                    'kind' => $tt->timetable_kind,
-                    'status' => $tt->status,
-                    'title' => $tt->title ?? ucfirst((string) $tt->timetable_kind).' timetable',
-                    'display_title' => $tt->displayTitle(),
-                    'cycle_type' => $tt->cycle_type,
-                    'cycle_no' => $tt->cycle_no,
-                    'cycle_label' => $tt->cycleLabel(),
-                    'delivery_mode' => $tt->delivery_mode ?? 'physical',
-                    'audience' => $tt->deliveryModeLabel(),
-                    'is_current' => (int) $tt->id === (int) ($t['timetable']?->id ?? 0),
-                    'teaching_period' => $tt->teaching_period,
-                    'sessions' => collect($tt->sessions ?? [])->map(fn ($s) => [
-                        'id' => $s->id,
-                        'day_of_week' => $s->day_of_week,
-                        'start_time' => $s->start_time,
-                        'end_time' => $s->end_time,
-                        'unit_code' => $s->unit?->unit_code,
-                        'unit_name' => $s->unit?->unit_name,
-                        'staff_name' => $s->staff?->fullName(),
-                        'room' => $s->room?->room_name ?? $s->room?->name,
-                        'session_type' => $s->session_type,
-                        'session_date' => $s->session_date?->format('Y-m-d'),
-                        'session_date_to' => $s->session_date_to?->format('Y-m-d'),
-                        'date_span' => $s->dateLabel(),
-                        'week_no' => $s->week_no,
-                        'week_to' => $s->week_to,
-                        'recurrence' => $s->recurrence,
-                    ])->values()->all(),
-                ], $documents->mobileDocumentMeta($tt));
-            })->values()->all(),
+            'day_labels' => $mobile ? [] : ($t['day_labels'] ?? []),
+            'active_days' => $mobile ? [] : ($t['active_days'] ?? [1, 2, 3, 4, 5]),
+            'timetables' => $mobile
+                ? []
+                : $timetables->map($documentRow)->values()->all(),
         ];
+
+        if ($mobile) {
+            $reminderSessions = collect($t['lesson_reminder_sessions'] ?? []);
+            $payload['lesson_reminder_sessions'] = $reminderSessions->map($serializeSession)->values()->all();
+            $payload['documents'] = array_values(array_filter([
+                $lessonPick ? $documentRow($lessonPick) : null,
+                $examPick ? $documentRow($examPick) : null,
+            ]));
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, \App\Models\ProgramTimetable>  $timetables
+     */
+    protected function pickMobileTimetableDocument(
+        Collection $timetables,
+        int $currentId,
+        string $tabKind,
+        ProgramTimetableDocumentService $documents,
+    ): ?\App\Models\ProgramTimetable {
+        $filtered = $timetables->filter(function ($tt) use ($tabKind, $documents) {
+            if (! $documents->hasViewableDocument($tt)) {
+                return false;
+            }
+
+            if ($tabKind === 'lesson') {
+                return $tt->timetable_kind === 'lesson';
+            }
+
+            return in_array($tt->timetable_kind, ['exam', 'supplementary', 'special_exam'], true);
+        });
+
+        if ($filtered->isEmpty()) {
+            return null;
+        }
+
+        return $filtered
+            ->sortByDesc(function ($tt) use ($currentId, $tabKind) {
+                $score = (int) $tt->id === $currentId ? 100 : 0;
+                if ($tabKind === 'exam' && $tt->timetable_kind === 'exam') {
+                    $score += 10;
+                }
+
+                return $score;
+            })
+            ->first();
     }
 
     /**
@@ -293,6 +354,29 @@ trait SerializesStudentPortal
                 'exam_type' => $exam->exam_type ?? null,
                 'eligible_for_exams' => (bool) ($exam->eligible_for_exams ?? false),
             ])->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function serializeUnitContentItem(UnitContent $c): array
+    {
+        return [
+            'id' => $c->id,
+            'unit_id' => $c->unit_id,
+            'title' => $c->title,
+            'content_type' => $c->content_type,
+            'content_text' => $c->content_text,
+            'unit_code' => $c->unit?->unit_code,
+            'unit_name' => $c->unit?->unit_name,
+            'status' => $c->status,
+            'published_at' => optional($c->published_at ?? $c->created_at)?->toIso8601String(),
+            'has_file' => filled($c->file_path),
+            'file_name' => $c->original_filename,
+            'mime_type' => $c->mime_type,
+            'file_size' => $c->file_size,
+            'external_url' => $c->external_url,
         ];
     }
 }

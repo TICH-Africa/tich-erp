@@ -4,12 +4,20 @@ namespace App\Services;
 
 use App\Models\Semester;
 use App\Models\Student;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentExamCardService
 {
+    public function __construct(
+        protected PrintDocumentService $printDocuments,
+    ) {}
+
     /**
      * @return array{
      *     semester_id: ?int,
@@ -72,6 +80,123 @@ class StudentExamCardService
             'units' => $units,
             'program' => $student->program,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function printViewData(array $document, bool $includeActions = true, ?int $semesterId = null): array
+    {
+        $student = $document['student'];
+        $semester = $document['semester'];
+        $examCard = $document['exam_card'];
+        $semesterId ??= (int) $semester->id;
+
+        return array_merge($document, [
+            'documentTitle' => 'Examination card',
+            'documentSubtitle' => $semester->semester_label,
+            'documentRef' => $this->printDocuments->documentRef('EC', $examCard->exam_card_number),
+            'paperOrientation' => 'portrait',
+            'metaRows' => [
+                ['label' => 'Student name', 'value' => e($student->applicant?->fullName() ?? $student->registration_number)],
+                ['label' => 'Registration number', 'value' => e($student->registration_number)],
+                ['label' => 'Examination number', 'value' => e($examCard->examination_number ?? $student->registration_number)],
+                ['label' => 'Programme', 'value' => e($student->program?->program_name ?? '-')],
+                ['label' => 'Semester', 'value' => e($semester->semester_label)],
+                ['label' => 'Card number', 'value' => e($examCard->exam_card_number)],
+            ],
+            'backUrl' => $includeActions
+                ? route('portal.dashboard', ['section' => 'academics', 'tab' => 'exams'])
+                : null,
+            'pdfUrl' => $includeActions
+                ? route('portal.exam-card.pdf', ['semester' => $semesterId])
+                : null,
+        ]);
+    }
+
+    public function cachedPdfBinary(Student $student, int $semesterId): string
+    {
+        $document = $this->buildDocument($student, $semesterId);
+        $examCard = $document['exam_card'];
+        $scheduleStamp = $this->examScheduleCacheStamp($student->id, $semesterId);
+        $issuedStamp = $this->timestampFromDbValue($examCard->issued_at ?? null);
+
+        $cacheKey = sprintf(
+            'student.exam_card.pdf.v1.%d.%d.%d.%s.%s',
+            $student->id,
+            $semesterId,
+            (int) ($examCard->id ?? 0),
+            $issuedStamp,
+            $scheduleStamp,
+        );
+
+        return Cache::remember($cacheKey, now()->addHours(6), function () use ($document) {
+            $data = $this->printViewData($document, includeActions: false);
+
+            return $this->printDocuments->pdfBinary(
+                'portal.exam-card.print',
+                $data,
+                'portrait',
+            );
+        });
+    }
+
+    public function inlinePdfResponse(Student $student, int $semesterId, string $filename): Response
+    {
+        $binary = $this->cachedPdfBinary($student, $semesterId);
+
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
+
+    public function downloadPdfResponse(Student $student, int $semesterId, string $filename): StreamedResponse
+    {
+        $binary = $this->cachedPdfBinary($student, $semesterId);
+
+        return response()->streamDownload(function () use ($binary) {
+            echo $binary;
+        }, $filename, [
+            'Content-Type' => 'application/pdf',
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
+
+    private function timestampFromDbValue(mixed $value): int
+    {
+        if ($value === null || $value === '') {
+            return 0;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->getTimestamp();
+        }
+
+        $parsed = strtotime((string) $value);
+
+        return $parsed ?: 0;
+    }
+
+    private function examScheduleCacheStamp(int $studentId, int $semesterId): string
+    {
+        $unitIds = $this->registeredUnitIds($studentId, $semesterId);
+        if ($unitIds === []) {
+            return '0';
+        }
+
+        $row = DB::table('exam_schedules')
+            ->where('semester_id', $semesterId)
+            ->whereIn('unit_id', $unitIds)
+            ->selectRaw('COUNT(*) as c, MAX(id) as max_id')
+            ->first();
+
+        if (! $row || (int) $row->c === 0) {
+            return '0';
+        }
+
+        return (int) $row->c.'-'.(int) $row->max_id;
     }
 
     /**
@@ -148,42 +273,40 @@ class StudentExamCardService
             return [];
         }
 
-        $eligibility = DB::table('exam_eligibility_matrix')
-            ->where('student_id', $student->id)
-            ->where('semester_id', $semesterId)
-            ->whereIn('unit_id', $unitIds)
-            ->get()
-            ->keyBy('unit_id');
-
-        $schedules = DB::table('exam_schedules')
-            ->where('semester_id', $semesterId)
-            ->whereIn('unit_id', $unitIds)
-            ->get()
-            ->keyBy('unit_id');
-
-        return DB::table('units')
-            ->whereIn('id', $unitIds)
-            ->orderBy('unit_code')
-            ->get(['id', 'unit_code', 'unit_name'])
-            ->map(function ($unit) use ($eligibility, $schedules) {
-                $elig = $eligibility->get($unit->id);
-                $schedule = $schedules->get($unit->id);
-
-                if ($elig && ! $elig->eligible_for_exams) {
-                    return null;
-                }
-
-                return (object) [
-                    'unit_code' => $unit->unit_code,
-                    'unit_name' => $unit->unit_name,
-                    'exam_date' => $schedule?->exam_date,
-                    'start_time' => $schedule?->start_time,
-                    'end_time' => $schedule?->end_time,
-                    'venue' => $schedule?->venue,
-                    'exam_type' => $schedule?->exam_type,
-                ];
+        return DB::table('units as u')
+            ->leftJoin('exam_eligibility_matrix as eem', function ($join) use ($student, $semesterId) {
+                $join->on('eem.unit_id', '=', 'u.id')
+                    ->where('eem.student_id', '=', $student->id)
+                    ->where('eem.semester_id', '=', $semesterId);
             })
-            ->filter()
+            ->leftJoin('exam_schedules as es', function ($join) use ($semesterId) {
+                $join->on('es.unit_id', '=', 'u.id')
+                    ->where('es.semester_id', '=', $semesterId);
+            })
+            ->whereIn('u.id', $unitIds)
+            ->where(function ($query) {
+                $query->whereNull('eem.eligible_for_exams')
+                    ->orWhere('eem.eligible_for_exams', 1);
+            })
+            ->orderBy('u.unit_code')
+            ->get([
+                'u.unit_code',
+                'u.unit_name',
+                'es.exam_date',
+                'es.start_time',
+                'es.end_time',
+                'es.venue',
+                'es.exam_type',
+            ])
+            ->map(fn ($row) => (object) [
+                'unit_code' => $row->unit_code,
+                'unit_name' => $row->unit_name,
+                'exam_date' => $row->exam_date,
+                'start_time' => $row->start_time,
+                'end_time' => $row->end_time,
+                'venue' => $row->venue,
+                'exam_type' => $row->exam_type,
+            ])
             ->values()
             ->all();
     }
@@ -246,15 +369,19 @@ class StudentExamCardService
 
         $cardNumber = 'EC-'.now()->format('Y').'-'.strtoupper(Str::random(6));
 
-        $id = DB::table('exam_cards')->insertGetId([
-            'exam_card_number' => $cardNumber,
-            'student_id' => $student->id,
-            'semester_id' => $semesterId,
-            'examination_number' => $student->registration_number,
-            'qr_code_data' => $cardNumber,
-            'issued_at' => now(),
-            'is_voided' => 0,
-        ]);
+        try {
+            $id = DB::table('exam_cards')->insertGetId([
+                'exam_card_number' => $cardNumber,
+                'student_id' => $student->id,
+                'semester_id' => $semesterId,
+                'examination_number' => $student->registration_number,
+                'qr_code_data' => $cardNumber,
+                'issued_at' => now(),
+                'is_voided' => 0,
+            ]);
+        } catch (QueryException) {
+            return $this->findExamCard($student->id, $semesterId);
+        }
 
         return DB::table('exam_cards')->where('id', $id)->first();
     }

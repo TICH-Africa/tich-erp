@@ -36,9 +36,17 @@ class _AttendancePageState extends State<AttendancePage> {
     final data = await widget.api.attendance();
     final today = data['today'] as Map?;
     final clockedIn = today != null && today['clock_in_at'] != null;
+    final clockedOut = today != null && today['clock_out_at'] != null;
+    final status = data['clock_in_status'];
+    final needsClockOut =
+        status is Map && status['needs_clock_out'] == true;
     // ignore: unawaited_futures
     TichNotifications.instance
         .scheduleClockInReminders(alreadyClockedIn: clockedIn);
+    // ignore: unawaited_futures
+    TichNotifications.instance.scheduleClockOutReminders(
+      needsClockOut: needsClockOut && !clockedOut,
+    );
     return data;
   }
 
@@ -161,6 +169,9 @@ class _AttendancePageState extends State<AttendancePage> {
       await widget.api.clockIn(payload);
       await TichNotifications.instance
           .scheduleClockInReminders(alreadyClockedIn: true);
+      await TichNotifications.instance.scheduleClockOutReminders(
+        needsClockOut: true,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Clocked in.')),
@@ -185,6 +196,9 @@ class _AttendancePageState extends State<AttendancePage> {
     setState(() => _busy = true);
     try {
       await widget.api.clockOut();
+      await TichNotifications.instance.scheduleClockOutReminders(
+        needsClockOut: false,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Clocked out.')),
