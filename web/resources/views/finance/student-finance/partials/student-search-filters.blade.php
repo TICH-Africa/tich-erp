@@ -2,11 +2,16 @@
     $action = $action ?? url()->current();
     $search = $search ?? '';
     $programId = (int) ($programId ?? 0);
+    $preserve = $preserve ?? [];
     $hasFilters = $search !== '' || $programId > 0;
+    $clearUrl = $preserve === [] ? $action : $action.'?'.http_build_query($preserve);
 @endphp
 
 <div class="tich-live-filter-bar">
     <form method="get" action="{{ $action }}" class="tich-live-filter-bar__form" data-live-filter>
+        @foreach ($preserve as $name => $value)
+            <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+        @endforeach
         @include('partials.search-field', [
             'placeholder' => $searchPlaceholder ?? 'Search name, reg no, programme…',
             'value' => $search,
@@ -21,7 +26,7 @@
             @endforeach
         </select>
         @if ($hasFilters)
-            <a href="{{ $action }}" class="tich-btn tich-btn-ghost tich-btn--sm tich-live-filter-bar__clear">Clear</a>
+            <a href="{{ $clearUrl }}" class="tich-btn tich-btn-ghost tich-btn--sm tich-live-filter-bar__clear">Clear</a>
         @endif
     </form>
 </div>

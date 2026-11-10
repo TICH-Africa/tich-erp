@@ -24,6 +24,8 @@ use App\Services\PrintDocumentService;
 use App\Support\SafeWrite;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
@@ -398,6 +400,11 @@ class StudentFinanceController extends Controller
         $search = trim((string) $request->query('search', ''));
         $programId = (int) ($request->query('program_id', 0) ?: 0);
         $programs = $this->activeProgramsForFilter();
+        $groupedByStudent = $request->query('view') !== 'invoices';
+
+        // One row per student; null keeps the list of every bill.
+        $grouped = null;
+        $invoices = collect();
 
         if (! Schema::hasTable('invoices') || Invoice::count() === 0) {
             $mockStudent1 = new class {
@@ -456,33 +463,103 @@ class StudentFinanceController extends Controller
                 ],
             ]);
         } else {
-            $invoiceRelations = ['student', 'studentAccount'];
-            if (Schema::hasTable('invoice_items')) {
-                $invoiceRelations[] = 'items';
+            if ($groupedByStudent) {
+                $grouped = $this->studentInvoiceRollup($search, $programId);
+            } else {
+                $invoiceRelations = ['student', 'studentAccount'];
+                if (Schema::hasTable('invoice_items')) {
+                    $invoiceRelations[] = 'items';
+                }
+
+                $query = Invoice::query()->with(array_merge($invoiceRelations, ['student.program']));
+
+                if ($search !== '') {
+                    $query->where(function (Builder $q) use ($search) {
+                        $q->where('invoice_number', 'like', "%{$search}%")
+                            ->orWhereHas('student', fn (Builder $sq) => $this->applyStudentSearchOnQuery($sq, $search));
+                    });
+                }
+
+                if ($programId > 0) {
+                    $query->whereHas('student', fn (Builder $sq) => $sq->where('program_id', $programId));
+                }
+
+                $invoices = $query->orderByDesc('issue_date')->paginate(20)->withQueryString();
             }
-
-            $query = Invoice::query()->with(array_merge($invoiceRelations, ['student.program']));
-
-            if ($search !== '') {
-                $query->where(function (Builder $q) use ($search) {
-                    $q->where('invoice_number', 'like', "%{$search}%")
-                        ->orWhereHas('student', fn (Builder $sq) => $this->applyStudentSearchOnQuery($sq, $search));
-                });
-            }
-
-            if ($programId > 0) {
-                $query->whereHas('student', fn (Builder $sq) => $sq->where('program_id', $programId));
-            }
-
-            $invoices = $query->orderByDesc('issue_date')->paginate(20)->withQueryString();
         }
 
         return $this->view($request, 'finance.student-finance.invoices.index', $department, [
             'invoices' => $invoices,
+            'grouped' => $grouped,
             'search' => $search,
             'programId' => $programId,
             'programs' => $programs,
         ]);
+    }
+
+    /**
+     * Every bill a student has folded into one row, so a person no longer spreads
+     * down the table. "View" opens the account page, which lists all their
+     * invoices and payments together.
+     *
+     * @return LengthAwarePaginator<int, object>
+     */
+    private function studentInvoiceRollup(string $search, int $programId): LengthAwarePaginator
+    {
+        $query = Invoice::query()
+            ->selectRaw(
+                'student_id, COUNT(*) as bill_count,'
+                .'SUM(amount) as billed_total, SUM(amount_paid) as paid_total, SUM(balance) as balance_total,'
+                ."SUM(CASE WHEN status IN ('issued','partial','overdue') THEN 1 ELSE 0 END) as open_count,"
+                .'MAX(issue_date) as last_billed, MAX(due_date) as next_due'
+            )
+            ->whereNotNull('student_id')
+            ->groupBy('student_id');
+
+        if ($search !== '') {
+            $query->where(function (Builder $q) use ($search) {
+                $q->whereHas('student', fn (Builder $sq) => $this->applyStudentSearchOnQuery($sq, $search))
+                    ->orWhere('invoice_number', 'like', "%{$search}%");
+            });
+        }
+
+        if ($programId > 0) {
+            $query->whereHas('student', fn (Builder $sq) => $sq->where('program_id', $programId));
+        }
+
+        $rollup = $query->orderByDesc('last_billed')->orderByDesc('student_id')->paginate(20)->withQueryString();
+        $ids = collect($rollup->items())->map(fn (Invoice $row): int => (int) $row->student_id)->all();
+
+        $students = $ids === []
+            ? collect()
+            : Student::query()->with('program:id,program_name')->whereIn('id', $ids)->get()->keyBy('id');
+        // Ascending id so keyBy keeps each student's newest account; that page shows
+        // every year's bills anyway, the account id only has to exist.
+        $accounts = $ids === []
+            ? collect()
+            : StudentAccount::query()->whereIn('student_id', $ids)->orderBy('id')->get()->keyBy('student_id');
+
+        return $rollup->through(function (Invoice $row) use ($students, $accounts): object {
+            $student = $students->get((int) $row->student_id);
+            $account = $accounts->get((int) $row->student_id);
+            $lastBilled = $row->getAttribute('last_billed');
+            $nextDue = $row->getAttribute('next_due');
+
+            return (object) [
+                'student_id' => (int) $row->student_id,
+                'account_id' => $account?->id,
+                'name' => $student?->fullName() ?? 'Student #'.$row->student_id,
+                'registration_number' => $student->registration_number ?? null,
+                'program_name' => $student?->program?->program_name ?? null,
+                'bill_count' => (int) $row->getAttribute('bill_count'),
+                'open_count' => (int) $row->getAttribute('open_count'),
+                'billed_total' => (float) $row->getAttribute('billed_total'),
+                'paid_total' => (float) $row->getAttribute('paid_total'),
+                'balance_total' => (float) $row->getAttribute('balance_total'),
+                'last_billed' => $lastBilled === null ? null : Carbon::parse($lastBilled)->format('d M Y'),
+                'next_due' => $nextDue === null ? null : Carbon::parse($nextDue)->format('d M Y'),
+            ];
+        });
     }
 
     public function invoiceCreate(Request $request, Department $department): View
