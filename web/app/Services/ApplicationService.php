@@ -111,7 +111,11 @@ class ApplicationService
                 $request
             );
 
-            $this->dataProtectionConsent->recordApplicantApplicationConsent($applicant, $request);
+            try {
+                $this->dataProtectionConsent->recordApplicantApplicationConsent($applicant, $request);
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             $this->clearDraft();
 
