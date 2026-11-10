@@ -64,6 +64,11 @@ Route::get('/sponsor', [\App\Http\Controllers\Public\DonationController::class, 
 Route::post('/sponsor', [\App\Http\Controllers\Public\DonationController::class, 'storeSponsorship'])->name('sponsor.store');
 
 Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
+Route::get('/privacy/data-request', [\App\Http\Controllers\Public\DataSubjectRequestController::class, 'create'])
+    ->name('privacy.data-request');
+Route::post('/privacy/data-request', [\App\Http\Controllers\Public\DataSubjectRequestController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('privacy.data-request.store');
 Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
 Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.index');
 Route::get('/programs/{code}', [ProgramsController::class, 'show'])->name('programs.show');
@@ -349,6 +354,14 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/export', [AuditController::class, 'export'])->name('admin.audit-logs.export');
             Route::get('/verify', AuditVerifyController::class)->name('admin.audit-logs.verify');
             Route::get('/{id}', [AuditController::class, 'show'])->name('admin.audit-logs.show');
+        });
+
+        Route::prefix('data-protection')->middleware(['permission:audit_logs.read'])->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\DataProtectionController::class, 'index'])->name('admin.data-protection.index');
+            Route::post('/dsr/{dataSubjectRequest}/progress', [\App\Http\Controllers\Admin\DataProtectionController::class, 'progressDsr'])
+                ->name('admin.data-protection.dsr.progress');
+            Route::post('/dsr/{dataSubjectRequest}/complete', [\App\Http\Controllers\Admin\DataProtectionController::class, 'completeDsr'])
+                ->name('admin.data-protection.dsr.complete');
         });
     });
 

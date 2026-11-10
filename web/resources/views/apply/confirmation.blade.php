@@ -28,6 +28,12 @@
                 @endif
             @endif
 
+            <p class="tich-caption tich-mt-6">
+                Your consent to our privacy notice (version {{ config('data-protection.policy_version') }}) is on file.
+                To access or correct your data later, use the
+                <a href="{{ route('privacy.data-request') }}" class="tich-link">data subject request form</a>.
+            </p>
+
             <div class="tich-flex-wrap tich-mt-8" style="justify-content: center;">
                 <a href="{{ route('apply.status', ['application_number' => $applicationNumber, 'email' => $email]) }}" class="tich-btn tich-btn-primary">Check application status</a>
                 <a href="{{ route('programs.index') }}" class="tich-btn tich-btn-blue">Back to programmes</a>

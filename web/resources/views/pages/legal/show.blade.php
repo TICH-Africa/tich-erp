@@ -20,7 +20,9 @@
 
                 <p class="tich-caption tich-mt-10">
                     @if (($page->slug ?? '') === 'privacy')
-                        Also see our <a href="{{ route('terms') }}" class="tich-link">Terms and Conditions</a>.
+                        Also see our <a href="{{ route('terms') }}" class="tich-link">Terms and Conditions</a>
+                        and <a href="{{ route('privacy.data-request') }}" class="tich-link">data subject request form</a>
+                        (Kenya Data Protection Act, 2019).
                     @else
                         Also see our <a href="{{ route('privacy') }}" class="tich-link">Privacy Policy</a>.
                     @endif

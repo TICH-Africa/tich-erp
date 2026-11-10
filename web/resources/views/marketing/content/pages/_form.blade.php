@@ -4,6 +4,15 @@
     $bodyValue = old('body', $page->body ?? '');
 @endphp
 
+@if (($page->slug ?? '') === 'privacy')
+    <p class="tich-caption tich-mb-4">
+        Kenya DPA: keep a clear link to the
+        <a href="{{ route('privacy.data-request') }}" class="tich-link" target="_blank" rel="noopener">data subject request form</a>.
+        Current policy version: <strong>{{ config('data-protection.policy_version') }}</strong>
+        (update <code>DATA_PROTECTION_POLICY_VERSION</code> when you publish material changes).
+    </p>
+@endif
+
 <div class="tich-blog-compose__meta tich-card">
     <div class="tich-form-grid tich-form-grid--2">
         <div class="tich-form-group" style="grid-column:1/-1;">

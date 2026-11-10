@@ -109,13 +109,7 @@ class AdmissionsReviewService
     public function findForAdministration(int $id): Applicant
     {
         return Applicant::query()
-            ->with([
-                'program.department',
-                'preferredCampus',
-                'documents',
-                'handlingDepartment',
-                'student',
-            ])
+            ->with($this->applicantDetailRelations())
             ->findOrFail($id);
     }
 
@@ -150,16 +144,29 @@ class AdmissionsReviewService
 
     public function findForReview(User $user, int $id): Applicant
     {
-        $applicant = $this->scopedQuery($user)
-            ->with([
-                'program.department',
-                'preferredCampus',
-                'documents',
-                'handlingDepartment',
-            ])
+        return $this->scopedQuery($user)
+            ->with($this->applicantDetailRelations())
             ->findOrFail($id);
+    }
 
-        return $applicant;
+    /**
+     * @return list<string|\Illuminate\Contracts\Database\Eloquent\Builder>
+     */
+    private function applicantDetailRelations(): array
+    {
+        $relations = [
+            'program.department',
+            'preferredCampus',
+            'documents',
+            'handlingDepartment',
+            'student',
+        ];
+
+        if (Schema::hasTable('personal_data_consent_records')) {
+            $relations[] = 'personalDataConsents';
+        }
+
+        return $relations;
     }
 
     public function canReview(User $user, Applicant $applicant): bool

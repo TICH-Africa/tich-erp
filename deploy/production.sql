@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-11-06 11:46:48 EAT
+-- Generated: 2026-11-10 15:09:44 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -1154,6 +1154,8 @@ CREATE TABLE IF NOT EXISTS `applicants` (
   `reviewed_at` datetime DEFAULT NULL,
   `academic_reviewer_id` bigint(20) unsigned DEFAULT NULL,
   `application_source` varchar(50) NOT NULL DEFAULT 'online',
+  `privacy_notice_version` varchar(30) DEFAULT NULL,
+  `privacy_consented_at` datetime DEFAULT NULL,
   `is_offline_cached` tinyint(4) NOT NULL DEFAULT 0,
   `offline_sync_id` varchar(100) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
@@ -1226,6 +1228,8 @@ CALL `tich_ensure_column`('applicants', 'rejection_reason', 'varchar(500) NULL D
 CALL `tich_ensure_column`('applicants', 'reviewed_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'academic_reviewer_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'application_source', 'varchar(50) NOT NULL DEFAULT \'\\\'online\\\'\'');
+CALL `tich_ensure_column`('applicants', 'privacy_notice_version', 'varchar(30) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('applicants', 'privacy_consented_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'is_offline_cached', 'tinyint(4) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('applicants', 'offline_sync_id', 'varchar(100) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('applicants', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
@@ -2995,6 +2999,143 @@ CALL `tich_ensure_column`('curriculum_version_units', 'total_learning_hours', 'i
 CALL `tich_ensure_index`('curriculum_version_units', 'curriculum_version_units_block_id_foreign', '`block_id`');
 CALL `tich_ensure_index`('curriculum_version_units', 'curriculum_version_units_unit_id_foreign', '`unit_id`');
 CALL `tich_ensure_unique`('curriculum_version_units', 'cv_unit_unique', '`curriculum_version_id`, `unit_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `data_breach_incidents`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `data_breach_incidents` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `incident_number` varchar(50) NOT NULL,
+  `discovered_at` datetime NOT NULL,
+  `reported_odpc_at` datetime DEFAULT NULL,
+  `affected_subjects_count` int(10) unsigned DEFAULT NULL,
+  `data_categories` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`data_categories`)),
+  `description` text NOT NULL,
+  `containment_actions` text DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'open',
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `data_breach_incidents_incident_number_unique` (`incident_number`),
+  KEY `data_breach_incidents_created_by_foreign` (`created_by`),
+  CONSTRAINT `data_breach_incidents_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `data_breach_incidents` (add only if missing)
+CALL `tich_ensure_column`('data_breach_incidents', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('data_breach_incidents', 'incident_number', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('data_breach_incidents', 'discovered_at', 'datetime NOT NULL');
+CALL `tich_ensure_column`('data_breach_incidents', 'reported_odpc_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_breach_incidents', 'affected_subjects_count', 'int(10) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_breach_incidents', 'data_categories', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_breach_incidents', 'description', 'text NOT NULL');
+CALL `tich_ensure_column`('data_breach_incidents', 'containment_actions', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_breach_incidents', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'open\\\'\'');
+CALL `tich_ensure_column`('data_breach_incidents', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_breach_incidents', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('data_breach_incidents', 'updated_at', 'datetime NULL DEFAULT NULL');
+
+-- Indexes for `data_breach_incidents` (add only if missing)
+CALL `tich_ensure_index`('data_breach_incidents', 'data_breach_incidents_created_by_foreign', '`created_by`');
+CALL `tich_ensure_unique`('data_breach_incidents', 'data_breach_incidents_incident_number_unique', '`incident_number`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `data_processing_register`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `data_processing_register` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `activity_key` varchar(100) NOT NULL,
+  `name` varchar(300) NOT NULL,
+  `description` text DEFAULT NULL,
+  `data_subjects` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`data_subjects`)),
+  `data_categories` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`data_categories`)),
+  `database_tables` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`database_tables`)),
+  `lawful_basis` varchar(50) NOT NULL,
+  `purposes` text NOT NULL,
+  `retention` varchar(500) DEFAULT NULL,
+  `recipients` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`recipients`)),
+  `cross_border` tinyint(4) NOT NULL DEFAULT 0,
+  `security_measures` text DEFAULT NULL,
+  `is_active` tinyint(4) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `data_processing_register_activity_key_unique` (`activity_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `data_processing_register` (add only if missing)
+CALL `tich_ensure_column`('data_processing_register', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('data_processing_register', 'activity_key', 'varchar(100) NOT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'name', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'description', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'data_subjects', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'data_categories', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'database_tables', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'lawful_basis', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'purposes', 'text NOT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'retention', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'recipients', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'cross_border', 'tinyint(4) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('data_processing_register', 'security_measures', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_processing_register', 'is_active', 'tinyint(4) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('data_processing_register', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('data_processing_register', 'updated_at', 'datetime NULL DEFAULT NULL');
+
+-- Indexes for `data_processing_register` (add only if missing)
+CALL `tich_ensure_unique`('data_processing_register', 'data_processing_register_activity_key_unique', '`activity_key`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `data_subject_requests`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `data_subject_requests` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `request_number` varchar(50) NOT NULL,
+  `requester_name` varchar(200) NOT NULL,
+  `requester_email` varchar(255) NOT NULL,
+  `requester_phone` varchar(30) DEFAULT NULL,
+  `subject_type` varchar(50) DEFAULT NULL,
+  `subject_id` bigint(20) unsigned DEFAULT NULL,
+  `request_type` varchar(50) NOT NULL,
+  `description` text DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'received',
+  `received_at` datetime NOT NULL,
+  `due_at` datetime DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `handled_by` bigint(20) unsigned DEFAULT NULL,
+  `outcome_notes` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `data_subject_requests_request_number_unique` (`request_number`),
+  KEY `data_subject_requests_handled_by_foreign` (`handled_by`),
+  KEY `data_subject_requests_status_index` (`status`),
+  CONSTRAINT `data_subject_requests_handled_by_foreign` FOREIGN KEY (`handled_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `data_subject_requests` (add only if missing)
+CALL `tich_ensure_column`('data_subject_requests', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('data_subject_requests', 'request_number', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'requester_name', 'varchar(200) NOT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'requester_email', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'requester_phone', 'varchar(30) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'subject_type', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'subject_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'request_type', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'description', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'received\\\'\'');
+CALL `tich_ensure_column`('data_subject_requests', 'received_at', 'datetime NOT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'due_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'completed_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'handled_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'outcome_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('data_subject_requests', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('data_subject_requests', 'updated_at', 'datetime NULL DEFAULT NULL');
+
+-- Indexes for `data_subject_requests` (add only if missing)
+CALL `tich_ensure_index`('data_subject_requests', 'data_subject_requests_handled_by_foreign', '`handled_by`');
+CALL `tich_ensure_unique`('data_subject_requests', 'data_subject_requests_request_number_unique', '`request_number`');
+CALL `tich_ensure_index`('data_subject_requests', 'data_subject_requests_status_index', '`status`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `deferral_requests`
@@ -6840,6 +6981,9 @@ CREATE TABLE IF NOT EXISTS `me_quarters` (
   `period_start` date NOT NULL,
   `period_end` date NOT NULL,
   `status` varchar(50) NOT NULL DEFAULT 'open',
+  `reviewed_by` bigint(20) unsigned DEFAULT NULL,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `review_notes` text DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `me_quarters_technical_plan_id_quarter_number_unique` (`technical_plan_id`,`quarter_number`),
@@ -6853,6 +6997,9 @@ CALL `tich_ensure_column`('me_quarters', 'quarter_number', 'tinyint(3) unsigned 
 CALL `tich_ensure_column`('me_quarters', 'period_start', 'date NOT NULL');
 CALL `tich_ensure_column`('me_quarters', 'period_end', 'date NOT NULL');
 CALL `tich_ensure_column`('me_quarters', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'open\\\'\'');
+CALL `tich_ensure_column`('me_quarters', 'reviewed_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarters', 'reviewed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('me_quarters', 'review_notes', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('me_quarters', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
 
 -- Indexes for `me_quarters` (add only if missing)
@@ -8432,6 +8579,55 @@ CALL `tich_ensure_index`('personal_access_tokens', 'personal_access_tokens_token
 CALL `tich_ensure_unique`('personal_access_tokens', 'personal_access_tokens_token_unique', '`token`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `personal_data_consent_records`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `personal_data_consent_records` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `subject_type` varchar(50) NOT NULL,
+  `subject_id` bigint(20) unsigned NOT NULL,
+  `subject_email` varchar(255) DEFAULT NULL,
+  `purpose_key` varchar(80) NOT NULL,
+  `lawful_basis` varchar(50) NOT NULL,
+  `privacy_notice_version` varchar(30) NOT NULL,
+  `terms_version` varchar(30) DEFAULT NULL,
+  `consented` tinyint(4) NOT NULL DEFAULT 1,
+  `consent_method` varchar(50) NOT NULL DEFAULT 'checkbox',
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(500) DEFAULT NULL,
+  `channel` varchar(50) DEFAULT NULL,
+  `consented_at` datetime NOT NULL,
+  `withdrawn_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `personal_data_consent_records_subject_type_subject_id_index` (`subject_type`,`subject_id`),
+  KEY `personal_data_consent_records_purpose_key_index` (`purpose_key`),
+  KEY `personal_data_consent_records_consented_at_index` (`consented_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `personal_data_consent_records` (add only if missing)
+CALL `tich_ensure_column`('personal_data_consent_records', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('personal_data_consent_records', 'subject_type', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'subject_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'subject_email', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'purpose_key', 'varchar(80) NOT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'lawful_basis', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'privacy_notice_version', 'varchar(30) NOT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'terms_version', 'varchar(30) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'consented', 'tinyint(4) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('personal_data_consent_records', 'consent_method', 'varchar(50) NOT NULL DEFAULT \'\\\'checkbox\\\'\'');
+CALL `tich_ensure_column`('personal_data_consent_records', 'ip_address', 'varchar(45) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'user_agent', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'channel', 'varchar(50) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'consented_at', 'datetime NOT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'withdrawn_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('personal_data_consent_records', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
+
+-- Indexes for `personal_data_consent_records` (add only if missing)
+CALL `tich_ensure_index`('personal_data_consent_records', 'personal_data_consent_records_consented_at_index', '`consented_at`');
+CALL `tich_ensure_index`('personal_data_consent_records', 'personal_data_consent_records_purpose_key_index', '`purpose_key`');
+CALL `tich_ensure_index`('personal_data_consent_records', 'personal_data_consent_records_subject_type_subject_id_index', '`subject_type`, `subject_id`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `policy_acknowledgements`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `policy_acknowledgements` (
@@ -8877,6 +9073,7 @@ CREATE TABLE IF NOT EXISTS `program_timetables` (
   `teaching_period` tinyint(3) unsigned NOT NULL DEFAULT 1,
   `title` varchar(200) DEFAULT NULL,
   `timetable_kind` varchar(50) NOT NULL DEFAULT 'lesson',
+  `delivery_mode` varchar(20) NOT NULL DEFAULT 'physical',
   `cycle_type` varchar(20) DEFAULT NULL,
   `cycle_no` smallint(5) unsigned DEFAULT NULL,
   `template_id` bigint(20) unsigned DEFAULT NULL,
@@ -8888,6 +9085,8 @@ CREATE TABLE IF NOT EXISTS `program_timetables` (
   `source_uploaded_at` datetime DEFAULT NULL,
   `source_uploaded_by` bigint(20) unsigned DEFAULT NULL,
   `generation_notes` text DEFAULT NULL,
+  `progress_note` varchar(255) DEFAULT NULL,
+  `week_span` tinyint(3) unsigned DEFAULT NULL,
   `published_at` datetime DEFAULT NULL,
   `published_by` bigint(20) unsigned DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
@@ -8910,6 +9109,7 @@ CALL `tich_ensure_column`('program_timetables', 'curriculum_version_id', 'bigint
 CALL `tich_ensure_column`('program_timetables', 'teaching_period', 'tinyint(3) unsigned NOT NULL DEFAULT \'1\'');
 CALL `tich_ensure_column`('program_timetables', 'title', 'varchar(200) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'timetable_kind', 'varchar(50) NOT NULL DEFAULT \'\\\'lesson\\\'\'');
+CALL `tich_ensure_column`('program_timetables', 'delivery_mode', 'varchar(20) NOT NULL DEFAULT \'\\\'physical\\\'\'');
 CALL `tich_ensure_column`('program_timetables', 'cycle_type', 'varchar(20) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'cycle_no', 'smallint(5) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'template_id', 'bigint(20) unsigned NULL DEFAULT NULL');
@@ -8921,6 +9121,8 @@ CALL `tich_ensure_column`('program_timetables', 'source_name', 'varchar(255) NUL
 CALL `tich_ensure_column`('program_timetables', 'source_uploaded_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'source_uploaded_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'generation_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_timetables', 'progress_note', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_timetables', 'week_span', 'tinyint(3) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'published_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'published_by', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetables', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
@@ -8973,7 +9175,9 @@ CREATE TABLE IF NOT EXISTS `program_timetable_sessions` (
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
   `session_date` date DEFAULT NULL,
+  `session_date_to` date DEFAULT NULL,
   `week_no` tinyint(3) unsigned DEFAULT NULL,
+  `week_to` tinyint(3) unsigned DEFAULT NULL,
   `source` varchar(20) NOT NULL DEFAULT 'generated',
   `external_ref` varchar(120) DEFAULT NULL,
   `session_type` varchar(50) NOT NULL DEFAULT 'lesson',
@@ -9011,7 +9215,9 @@ CALL `tich_ensure_column`('program_timetable_sessions', 'day_of_week', 'tinyint(
 CALL `tich_ensure_column`('program_timetable_sessions', 'start_time', 'time NOT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'end_time', 'time NOT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'session_date', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_timetable_sessions', 'session_date_to', 'date NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'week_no', 'tinyint(3) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('program_timetable_sessions', 'week_to', 'tinyint(3) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'source', 'varchar(20) NOT NULL DEFAULT \'\\\'generated\\\'\'');
 CALL `tich_ensure_column`('program_timetable_sessions', 'external_ref', 'varchar(120) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('program_timetable_sessions', 'session_type', 'varchar(50) NOT NULL DEFAULT \'\\\'lesson\\\'\'');
@@ -12283,7 +12489,12 @@ CREATE TABLE IF NOT EXISTS `students` (
   `paid_program_tiers` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`paid_program_tiers`)),
   `cohort_intake` varchar(20) NOT NULL,
   `current_year` tinyint(4) DEFAULT NULL COMMENT 'Current academic year: 1, 2, 3, 4',
+  `hold_cleared_period` tinyint(3) unsigned DEFAULT NULL,
+  `graduation_year` smallint(5) unsigned DEFAULT NULL,
+  `graduation_date` date DEFAULT NULL,
+  `graduation_award` varchar(120) DEFAULT NULL,
   `enrollment_campus_id` bigint(20) unsigned NOT NULL,
+  `study_mode` varchar(20) NOT NULL DEFAULT 'physical',
   `current_semester_id` bigint(20) unsigned DEFAULT NULL,
   `current_nursing_block_id` bigint(20) unsigned DEFAULT NULL,
   `enrollment_status` varchar(50) NOT NULL DEFAULT 'pending',
@@ -12348,7 +12559,12 @@ CALL `tich_ensure_column`('students', 'program_tier_history', 'longtext NULL DEF
 CALL `tich_ensure_column`('students', 'paid_program_tiers', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('students', 'cohort_intake', 'varchar(20) NOT NULL');
 CALL `tich_ensure_column`('students', 'current_year', 'tinyint(4) NULL DEFAULT NULL COMMENT \'Current academic year: 1, 2, 3, 4\'');
+CALL `tich_ensure_column`('students', 'hold_cleared_period', 'tinyint(3) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('students', 'graduation_year', 'smallint(5) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('students', 'graduation_date', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('students', 'graduation_award', 'varchar(120) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('students', 'enrollment_campus_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('students', 'study_mode', 'varchar(20) NOT NULL DEFAULT \'\\\'physical\\\'\'');
 CALL `tich_ensure_column`('students', 'current_semester_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('students', 'current_nursing_block_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('students', 'enrollment_status', 'varchar(50) NOT NULL DEFAULT \'\\\'pending\\\'\'');
@@ -12475,6 +12691,55 @@ CALL `tich_ensure_column`('student_addresses', 'created_by', 'bigint(20) unsigne
 
 -- Indexes for `student_addresses` (add only if missing)
 CALL `tich_ensure_index`('student_addresses', 'student_addresses_student_id_foreign', '`student_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `student_application_document_submissions`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `student_application_document_submissions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `student_id` bigint(20) unsigned NOT NULL,
+  `applicant_id` bigint(20) unsigned NOT NULL,
+  `application_document_id` bigint(20) unsigned DEFAULT NULL,
+  `document_type` varchar(50) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `original_filename` varchar(255) NOT NULL,
+  `mime_type` varchar(100) NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'pending',
+  `student_notes` text DEFAULT NULL,
+  `reviewer_notes` text DEFAULT NULL,
+  `uploaded_by_user_id` bigint(20) unsigned NOT NULL,
+  `reviewed_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `student_application_document_submissions_student_id_foreign` (`student_id`),
+  KEY `student_application_document_submissions_applicant_id_foreign` (`applicant_id`),
+  CONSTRAINT `student_application_document_submissions_applicant_id_foreign` FOREIGN KEY (`applicant_id`) REFERENCES `applicants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `student_application_document_submissions_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `student_application_document_submissions` (add only if missing)
+CALL `tich_ensure_column`('student_application_document_submissions', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('student_application_document_submissions', 'student_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'applicant_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'application_document_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'document_type', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'file_path', 'varchar(500) NOT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'original_filename', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'mime_type', 'varchar(100) NOT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'status', 'varchar(30) NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('student_application_document_submissions', 'student_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'reviewer_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'uploaded_by_user_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'reviewed_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'reviewed_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('student_application_document_submissions', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `student_application_document_submissions` (add only if missing)
+CALL `tich_ensure_index`('student_application_document_submissions', 'student_application_document_submissions_applicant_id_foreign', '`applicant_id`');
+CALL `tich_ensure_index`('student_application_document_submissions', 'student_application_document_submissions_student_id_foreign', '`student_id`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `student_clearance_items`
@@ -13256,6 +13521,7 @@ CREATE TABLE IF NOT EXISTS `units` (
   `assessment_weight_cat_pct` decimal(5,2) NOT NULL DEFAULT 30.00,
   `assessment_weight_practical_pct` decimal(5,2) NOT NULL DEFAULT 0.00,
   `assessment_weight_exam_pct` decimal(5,2) NOT NULL DEFAULT 60.00,
+  `pass_mark` decimal(5,2) DEFAULT NULL,
   `status` varchar(50) NOT NULL DEFAULT 'pending_registry',
   `submitted_at` datetime DEFAULT NULL,
   `submitted_by` bigint(20) unsigned DEFAULT NULL,
@@ -13298,6 +13564,7 @@ CALL `tich_ensure_column`('units', 'assessment_weight_attendance_pct', 'decimal(
 CALL `tich_ensure_column`('units', 'assessment_weight_cat_pct', 'decimal(5,2) NOT NULL DEFAULT \'30.00\'');
 CALL `tich_ensure_column`('units', 'assessment_weight_practical_pct', 'decimal(5,2) NOT NULL DEFAULT \'0.00\'');
 CALL `tich_ensure_column`('units', 'assessment_weight_exam_pct', 'decimal(5,2) NOT NULL DEFAULT \'60.00\'');
+CALL `tich_ensure_column`('units', 'pass_mark', 'decimal(5,2) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('units', 'status', 'varchar(50) NOT NULL DEFAULT \'\\\'pending_registry\\\'\'');
 CALL `tich_ensure_column`('units', 'submitted_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('units', 'submitted_by', 'bigint(20) unsigned NULL DEFAULT NULL');
@@ -13918,6 +14185,12 @@ CALL `tich_ensure_fk`('curriculum_version_periods', 'curriculum_version_periods_
 CALL `tich_ensure_fk`('curriculum_version_units', 'curriculum_version_units_block_id_foreign', '`block_id`', 'nursing_blocks', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('curriculum_version_units', 'curriculum_version_units_curriculum_version_id_foreign', '`curriculum_version_id`', 'curriculum_versions', '`id`', 'RESTRICT', 'CASCADE');
 CALL `tich_ensure_fk`('curriculum_version_units', 'curriculum_version_units_unit_id_foreign', '`unit_id`', 'units', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `data_breach_incidents`
+CALL `tich_ensure_fk`('data_breach_incidents', 'data_breach_incidents_created_by_foreign', '`created_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `data_subject_requests`
+CALL `tich_ensure_fk`('data_subject_requests', 'data_subject_requests_handled_by_foreign', '`handled_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `deferral_requests`
 CALL `tich_ensure_fk`('deferral_requests', 'deferral_requests_effective_from_semester_id_foreign', '`effective_from_semester_id`', 'semesters', '`id`', 'RESTRICT', 'SET NULL');
@@ -14716,6 +14989,10 @@ CALL `tich_ensure_fk`('student_accounts', 'student_accounts_student_id_foreign',
 
 -- Foreign keys for `student_addresses`
 CALL `tich_ensure_fk`('student_addresses', 'student_addresses_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `student_application_document_submissions`
+CALL `tich_ensure_fk`('student_application_document_submissions', 'student_application_document_submissions_applicant_id_foreign', '`applicant_id`', 'applicants', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('student_application_document_submissions', 'student_application_document_submissions_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'CASCADE');
 
 -- Foreign keys for `student_clearance_items`
 CALL `tich_ensure_fk`('student_clearance_items', 'student_clearance_items_cleared_by_user_id_foreign', '`cleared_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');

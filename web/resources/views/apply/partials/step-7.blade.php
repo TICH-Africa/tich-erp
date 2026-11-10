@@ -112,10 +112,11 @@
     <label style="display:flex;gap:0.5rem;align-items:flex-start;">
         <input type="checkbox" name="confirm_terms" value="1" @checked(old('confirm_terms')) required>
         <span class="tich-text">
-            I agree that TICH may contact me about this application and store my data for admissions processing, in accordance with the
+            I consent to TICH collecting and processing my personal data for this admissions application, in line with the
             <a href="{{ route('privacy') }}" class="tich-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-            and
-            <a href="{{ route('terms') }}" class="tich-link" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>.
+            (Kenya Data Protection Act, 2019),
+            <a href="{{ route('terms') }}" class="tich-link" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>,
+            and understand I may use the <a href="{{ route('privacy.data-request') }}" class="tich-link" target="_blank" rel="noopener noreferrer">data subject request form</a> to exercise my rights.
         </span>
     </label>
     @error('confirm_terms')<p class="tich-field-error">{{ $message }}</p>@enderror

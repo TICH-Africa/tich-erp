@@ -21,6 +21,7 @@ class ApplicationService
         protected AuditService $auditService,
         protected ApplicationMailService $mailService,
         protected StoredFileService $files,
+        protected DataProtectionConsentService $dataProtectionConsent,
     ) {}
 
     public function draft(): array
@@ -109,6 +110,8 @@ class ApplicationService
                 null,
                 $request
             );
+
+            $this->dataProtectionConsent->recordApplicantApplicationConsent($applicant, $request);
 
             $this->clearDraft();
 

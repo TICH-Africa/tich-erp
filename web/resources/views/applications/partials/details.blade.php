@@ -134,6 +134,8 @@
     </dl>
 </article>
 
+@include('applications.partials.data-protection-consent', ['applicant' => $applicant])
+
 @if ($applicant->review_notes || $applicant->rejection_reason)
     <article class="tich-card tich-mt-8">
         <h2 class="tich-h3">Review notes</h2>

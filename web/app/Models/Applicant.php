@@ -59,6 +59,8 @@ class Applicant extends Model
         'reviewed_at',
         'academic_reviewer_id',
         'application_source',
+        'privacy_notice_version',
+        'privacy_consented_at',
     ];
 
     protected $casts = [
@@ -67,6 +69,7 @@ class Applicant extends Model
         'application_fee_paid_at' => 'datetime',
         'created_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'privacy_consented_at' => 'datetime',
     ];
 
     public function program(): BelongsTo
@@ -87,6 +90,13 @@ class Applicant extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(ApplicationDocument::class, 'applicant_id');
+    }
+
+    public function personalDataConsents(): HasMany
+    {
+        return $this->hasMany(PersonalDataConsentRecord::class, 'subject_id')
+            ->where('subject_type', 'applicant')
+            ->orderByDesc('consented_at');
     }
 
     public function student(): \Illuminate\Database\Eloquent\Relations\HasOne

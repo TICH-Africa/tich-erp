@@ -71,6 +71,16 @@
                 <dt class="tich-caption">Submitted</dt>
                 <dd class="tich-text" style="margin: 0;">{{ $applicant->created_at?->format('d M Y H:i') ?? '-' }}</dd>
 
+                @if ($applicant->privacy_consented_at)
+                    <dt class="tich-caption">Privacy consent</dt>
+                    <dd class="tich-text" style="margin: 0;">
+                        {{ $applicant->privacy_consented_at->format('d M Y H:i') }}
+                        @if ($applicant->privacy_notice_version)
+                            · notice v{{ $applicant->privacy_notice_version }}
+                        @endif
+                    </dd>
+                @endif
+
                 @if ($applicant->reviewed_at)
                     <dt class="tich-caption">Last reviewed</dt>
                     <dd class="tich-text" style="margin: 0;">{{ $applicant->reviewed_at->format('d M Y H:i') }}</dd>
@@ -111,6 +121,8 @@
     </div>
 
     @include('admissions.partials.document-viewer', ['applicant' => $applicant])
+
+    @include('applications.partials.data-protection-consent', ['applicant' => $applicant])
 
     @if ($portalSignupEmail)
         <article class="tich-card tich-mt-8">

@@ -10,6 +10,7 @@ use App\Models\Portal\ResearchProject;
 use App\Services\AboutContentService;
 use App\Services\HomepageService;
 use App\Services\PrintDocumentService;
+use App\Support\KenyaDataProtectionNotice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -155,13 +156,19 @@ class HomeController extends Controller
         }
 
         if (! $page) {
+            $body = $slug === CmsPage::SLUG_PRIVACY
+                ? KenyaDataProtectionNotice::htmlBody()
+                : '<p>This page is being updated. Please check back shortly.</p>';
+
             $page = (object) [
                 'slug' => $slug,
                 'title' => $fallbackTitle,
-                'body' => '<p>This page is being updated. Please check back shortly.</p>',
+                'body' => $body,
                 'seo_meta_title' => $fallbackTitle,
-                'seo_meta_description' => null,
-                'updated_at' => null,
+                'seo_meta_description' => $slug === CmsPage::SLUG_PRIVACY
+                    ? 'How TICH processes personal data under the Kenya Data Protection Act, 2019.'
+                    : null,
+                'updated_at' => $slug === CmsPage::SLUG_PRIVACY ? now() : null,
             ];
         }
 

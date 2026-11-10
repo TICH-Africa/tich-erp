@@ -53,6 +53,14 @@
         </article>
         @endcan
 
+        @can('audit_logs.read')
+        <article class="tich-card">
+            <h3 class="tich-h3">Data protection (Kenya DPA)</h3>
+            <p class="tich-text">Processing register, consent log, and data subject requests.</p>
+            <a href="{{ route('admin.data-protection.index') }}" class="tich-btn tich-btn-primary tich-mt-4">Open dashboard</a>
+        </article>
+        @endcan
+
         @can('users.access.manage')
         <article class="tich-card">
             <h3 class="tich-h3">Users &amp; access</h3>

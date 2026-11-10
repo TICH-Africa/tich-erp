@@ -60,6 +60,12 @@
                 'active' => request()->routeIs('admin.audit-logs.*'),
                 'badgeKey' => 'audit-logs',
             ])
+            @include('partials.navigation.sidebar-link', [
+                'href' => route('admin.data-protection.index'),
+                'label' => 'Data protection (DPA)',
+                'icon' => 'lock',
+                'active' => request()->routeIs('admin.data-protection.*'),
+            ])
         @endcan
     </nav>
     <div class="tich-admin-sidebar__footer">
