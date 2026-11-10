@@ -91,7 +91,12 @@
                         <div class="uf-field">
                             <label>Payments already recorded</label>
                             @forelse ($invoice->payments as $payment)
-                                <p class="uf-hint">{{ $payment->payment_number }} · {{ $payment->payment_date?->format('d M Y') }} · KES {{ number_format((float) $payment->amount, 2) }}</p>
+                                <p class="uf-hint">
+                                    {{ $payment->payment_number }} · {{ $payment->payment_date?->format('d M Y') }} · KES {{ number_format((float) $payment->amount, 2) }}
+                                    @can('finance.payments.manage')
+                                        · <a href="{{ route('finance.payments.edit', $payment->id) }}">Edit this payment</a>
+                                    @endcan
+                                </p>
                             @empty
                                 <p class="uf-hint">None yet.</p>
                             @endforelse
