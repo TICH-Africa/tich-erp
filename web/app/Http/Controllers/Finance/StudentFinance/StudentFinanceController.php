@@ -11,6 +11,7 @@ use App\Models\Finance\FinancialAdjustment;
 use App\Models\Finance\InstallmentPlan;
 use App\Models\Finance\InstallmentPlanItem;
 use App\Models\Finance\Invoice;
+use App\Models\Finance\InvoiceItem;
 use App\Models\Finance\Payment;
 use App\Models\Finance\PaymentMilestone;
 use App\Models\Finance\Receipt;
@@ -644,9 +645,9 @@ class StudentFinanceController extends Controller
                     'academicYear' => (object) ['year_label' => '2024/2025'],
                 ],
                 'items' => collect([
-                    (object) ['fee_item' => 'Tuition', 'description' => 'Semester tuition fee', 'amount' => 45000, 'scholarship_adjustment' => 0, 'bursary_adjustment' => 0, 'waiver_adjustment' => 0, 'net_amount' => 45000],
-                    (object) ['fee_item' => 'Examination', 'description' => 'Final examination fee', 'amount' => 3000, 'scholarship_adjustment' => 0, 'bursary_adjustment' => 0, 'waiver_adjustment' => 0, 'net_amount' => 3000],
-                    (object) ['fee_item' => 'Library', 'description' => 'Library access and resources', 'amount' => 2000, 'scholarship_adjustment' => 0, 'bursary_adjustment' => 0, 'waiver_adjustment' => 0, 'net_amount' => 2000],
+                    new InvoiceItem(['fee_item' => 'tuition_fee', 'description' => 'Semester tuition fee', 'amount' => 45000, 'net_amount' => 45000]),
+                    new InvoiceItem(['fee_item' => 'examination_external_fee', 'description' => 'Final examination fee', 'amount' => 3000, 'net_amount' => 3000]),
+                    new InvoiceItem(['fee_item' => 'library_fee', 'description' => 'Library access and resources', 'amount' => 2000, 'net_amount' => 2000]),
                 ]),
                 'payments' => collect([
                     (object) [
@@ -683,6 +684,7 @@ class StudentFinanceController extends Controller
 
         return $this->view($request, 'finance.student-finance.invoices.show', $department, [
             'invoice' => $invoice,
+            'invoiceLines' => $this->invoiceLines($invoice),
         ]);
     }
 
@@ -711,9 +713,18 @@ class StudentFinanceController extends Controller
             [
                 'department' => $department,
                 'invoice' => $invoice,
+                'invoiceLines' => $this->invoiceLines($invoice),
             ],
             'invoice-'.$invoice->invoice_number.'.pdf'
         );
+    }
+
+    /** The charges making up a bill, for the screen table and the printed invoice. */
+    private function invoiceLines(object $invoice): Collection
+    {
+        return $invoice instanceof Invoice
+            ? $invoice->lineItems()
+            : collect($invoice->items ?? []);
     }
 
     public function payments(Request $request, Department $department): View

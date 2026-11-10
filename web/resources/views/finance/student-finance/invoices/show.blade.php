@@ -72,9 +72,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($invoice->items as $item)
+                    @foreach ($invoiceLines as $item)
                         <tr>
-                            <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $item->fee_item)) }}</td>
+                            <td class="tich-caption">{{ $item->label() }}</td>
                             <td>{{ $item->description }}</td>
                             <td>KES {{ number_format($item->amount, 2) }}</td>
                             <td>
@@ -90,11 +90,7 @@
                             </td>
                             <td><strong>KES {{ number_format($item->net_amount, 2) }}</strong></td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="tich-table-empty">No invoice items found.</td>
-                        </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>

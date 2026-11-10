@@ -63,9 +63,9 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($invoice->items ?? [] as $item)
+            @foreach ($invoiceLines as $item)
                 <tr>
-                    <td>{{ ucfirst(str_replace('_', ' ', $item->fee_item)) }}</td>
+                    <td>{{ $item->label() }}</td>
                     <td>{{ $item->description }}</td>
                     <td>KES {{ number_format($item->amount, 2) }}</td>
                     <td>

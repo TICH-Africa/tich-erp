@@ -7,6 +7,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InvoiceItem extends Model
 {
+    /** Charges billed on their own, which are not fee structure columns. */
+    private const EXTRA_LABELS = [
+        'application_fee' => 'Application fee',
+        'qa_annual_fee' => 'Quality assurance (annual)',
+        'indexing_nck_fee' => 'Indexing (NCK)',
+        'graduation_fee' => 'Graduation fees',
+        'supplementary_fee' => 'Supplementary examination',
+        'other_fee' => 'Other fees',
+    ];
+
     protected $table = 'invoice_items';
     public $timestamps = false;
 
@@ -32,5 +42,16 @@ class InvoiceItem extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    /** Plain-language name of the charge, e.g. "Indexing (NCK)" rather than "indexing_nck_fee". */
+    public function label(): string
+    {
+        $key = (string) $this->fee_item;
+
+        return self::EXTRA_LABELS[$key]
+            ?? \App\Models\FeeStructure::SEMESTER_CHARGES[$key]
+            ?? \App\Models\FeeStructure::OPTIONAL_SEMESTER_CHARGES[$key]
+            ?? ucfirst(str_replace('_', ' ', $key));
     }
 }

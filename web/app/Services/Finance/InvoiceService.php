@@ -4,16 +4,21 @@ namespace App\Services\Finance;
 
 use App\Mail\InvoiceIssuedMail;
 use App\Models\FeeStructure;
+use App\Models\Finance\InvoiceItem;
 use App\Models\Invoice;
 use App\Models\Student;
 use App\Support\ModuleMail;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 class InvoiceService
 {
+    /** Memoised so billing a whole cohort does not re-ask the database each time. */
+    private static ?bool $itemLinesTable = null;
+
     public function __construct(
         protected StudentAccountService $accounts,
         protected LedgerService $ledger,
@@ -21,7 +26,7 @@ class InvoiceService
     ) {}
 
     /**
-     * @param  array{invoice_type: string, description: string, amount: float, semester_id?: int|null}  $data
+     * @param  array{invoice_type: string, description: string, amount: float, semester_id?: int|null, items?: list<array{fee_item?: string, description?: string, amount?: float}>|null}  $data
      */
     public function generateForStudent(Student $student, array $data, ?int $recordedByStaffId = null, bool $dispatch = true): Invoice
     {
@@ -73,6 +78,8 @@ class InvoiceService
                     default => 'partial',
                 },
             ]);
+
+            $this->recordLines($invoice, $data['items'] ?? null, $invoiceType, $description, $amount);
 
             $this->ledger->postInvoiceRaised($amount, $invoice->invoice_number, $recordedByStaffId, $invoice->invoice_type);
             $this->accounts->recalculate($account);
@@ -138,6 +145,9 @@ class InvoiceService
                     default => 'issued',
                 },
             ]);
+
+            // Corrected figures replace the bill's lines, they never add to them.
+            $this->recordLines($locked, null, (string) $locked->invoice_type, (string) $locked->description, $newAmount);
 
             $delta = round($newAmount - $oldAmount, 2);
             if (abs($delta) >= 0.01) {
@@ -232,6 +242,7 @@ class InvoiceService
             'invoice_type' => 'tuition',
             'description' => $description,
             'amount' => $amount,
+            'items' => $feeStructure->semesterCharges($includeOptional),
         ], $recordedByStaffId);
     }
 
@@ -327,5 +338,63 @@ class InvoiceService
         }
 
         return $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Save the charges making up a bill, trusting component lines only when they add up
+     * to what is billed; anything else gets one honest line.
+     *
+     * @param  list<array{fee_item?: string, description?: string, amount?: float}>|null  $lines
+     */
+    private function recordLines(Invoice $invoice, ?array $lines, string $invoiceType, string $description, float $amount): void
+    {
+        if (! static::storesItemLines()) {
+            return;
+        }
+
+        $rows = [];
+        $sum = 0.0;
+
+        foreach ($lines ?? [] as $line) {
+            $lineAmount = round((float) ($line['amount'] ?? 0), 2);
+            if ($lineAmount <= 0) {
+                continue;
+            }
+
+            $sum = round($sum + $lineAmount, 2);
+            $rows[] = [
+                'fee_item' => (string) ($line['fee_item'] ?? $invoiceType.'_fee'),
+                'description' => static::itemDescription((string) ($line['description'] ?? '')),
+                'amount' => $lineAmount,
+                'net_amount' => $lineAmount,
+            ];
+        }
+
+        if ($rows === [] || abs($sum - $amount) >= 0.01) {
+            $rows = [[
+                'fee_item' => $invoiceType.'_fee',
+                'description' => static::itemDescription($description),
+                'amount' => $amount,
+                'net_amount' => $amount,
+            ]];
+        }
+
+        InvoiceItem::query()->where('invoice_id', $invoice->id)->delete();
+
+        foreach ($rows as $row) {
+            InvoiceItem::query()->create($row + ['invoice_id' => $invoice->id]);
+        }
+    }
+
+    private static function itemDescription(string $text): string
+    {
+        $flat = preg_replace('/\s*[\r\n]+\s*/', '; ', trim($text)) ?? '';
+
+        return mb_substr($flat === '' ? 'Billed charge' : $flat, 0, 300);
+    }
+
+    private static function storesItemLines(): bool
+    {
+        return static::$itemLinesTable ??= Schema::hasTable('invoice_items');
     }
 }

@@ -132,6 +132,39 @@ class FeeStructure extends Model
     }
 
     /**
+     * The structure's charges as billable lines, so an invoice raised from this
+     * structure can show what makes up its total.
+     *
+     * @return list<array{fee_item: string, description: string, amount: float}>
+     */
+    public function semesterCharges(bool $includeOptional = false): array
+    {
+        $charges = [];
+
+        foreach (self::SEMESTER_CHARGES as $field => $label) {
+            $amount = round((float) ($this->{$field} ?? 0), 2);
+            if ($amount > 0) {
+                $charges[] = ['fee_item' => $field, 'description' => $label, 'amount' => $amount];
+            }
+        }
+
+        if ($includeOptional) {
+            foreach (self::OPTIONAL_SEMESTER_CHARGES as $field => $label) {
+                $amount = round((float) ($this->{$field} ?? 0), 2);
+                if ($amount > 0) {
+                    $charges[] = [
+                        'fee_item' => $field,
+                        'description' => preg_replace('/\s*\(.*\)$/', '', $label).' (optional)',
+                        'amount' => $amount,
+                    ];
+                }
+            }
+        }
+
+        return $charges;
+    }
+
+    /**
      * @return list<string>
      */
     public function semesterChargeLines(bool $includeOptional = false): array

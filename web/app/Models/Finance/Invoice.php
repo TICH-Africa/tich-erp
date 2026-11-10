@@ -8,6 +8,7 @@ use App\Models\Finance\FeeStructure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class Invoice extends Model
 {
@@ -72,6 +73,26 @@ class Invoice extends Model
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
+    }
+
+    /**
+     * The bill's lines. Bills raised before lines were stored stand in with the invoice
+     * itself as one line, so the screen and the printed invoice are never empty.
+     *
+     * @return Collection<int, InvoiceItem>
+     */
+    public function lineItems(): Collection
+    {
+        if ($this->items->isNotEmpty()) {
+            return $this->items;
+        }
+
+        return collect([new InvoiceItem([
+            'fee_item' => $this->invoice_type.'_fee',
+            'description' => mb_substr((string) $this->description, 0, 300),
+            'amount' => $this->amount,
+            'net_amount' => $this->amount,
+        ])]);
     }
 
     public function payments(): HasMany
