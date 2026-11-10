@@ -29,11 +29,11 @@ return new class extends Migration
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('student_id')->references('id')->on('students')->cascadeOnDelete();
-            $table->foreign('applicant_id')->references('id')->on('applicants')->cascadeOnDelete();
-            $table->foreign('application_document_id')->references('id')->on('application_documents')->nullOnDelete();
-            $table->foreign('uploaded_by_user_id')->references('id')->on('users')->restrictOnDelete();
-            $table->foreign('reviewed_by_user_id')->references('id')->on('users')->nullOnDelete();
+            $table->foreign('student_id', 'stu_app_doc_sub_student_id_fk')->references('id')->on('students')->cascadeOnDelete();
+            $table->foreign('applicant_id', 'stu_app_doc_sub_applicant_id_fk')->references('id')->on('applicants')->cascadeOnDelete();
+            $table->foreign('application_document_id', 'stu_app_doc_sub_app_doc_id_fk')->references('id')->on('application_documents')->nullOnDelete();
+            $table->foreign('uploaded_by_user_id', 'stu_app_doc_sub_uploader_id_fk')->references('id')->on('users')->restrictOnDelete();
+            $table->foreign('reviewed_by_user_id', 'stu_app_doc_sub_reviewer_id_fk')->references('id')->on('users')->nullOnDelete();
             $table->index(['status', 'created_at']);
             $table->index(['student_id', 'status']);
         });

@@ -182,6 +182,11 @@ return [
         'hr.leave.rejected' => ['module' => 'hr', 'sensitive' => false],
         'hr.leave.returned' => ['module' => 'hr', 'sensitive' => false],
         'hr.leave.cancelled' => ['module' => 'hr', 'sensitive' => false],
+
+        'data_protection.consent.recorded' => ['module' => 'admin', 'sensitive' => true],
+        'data_protection.dsr.received' => ['module' => 'admin', 'sensitive' => true],
+        'data_protection.dsr.in_progress' => ['module' => 'admin', 'sensitive' => true],
+        'data_protection.dsr.completed' => ['module' => 'admin', 'sensitive' => true],
         'hr.attendance.clock_in' => ['module' => 'hr', 'sensitive' => false],
         'hr.attendance.clock_out' => ['module' => 'hr', 'sensitive' => false],
 

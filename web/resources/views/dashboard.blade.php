@@ -144,6 +144,14 @@
                                 <a href="{{ route('admin.audit-logs.index') }}" class="tich-portal-card__btn tich-portal-card__btn--outline">View audit logs</a>
                             </div>
                         </article>
+                        <article class="tich-portal-card tich-portal-card--unit">
+                            <p class="tich-portal-card__eyebrow">Kenya DPA</p>
+                            <h2 class="tich-portal-card__title">Data protection</h2>
+                            <p class="tich-portal-card__desc">RoPA, consent records, and data subject requests.</p>
+                            <div class="tich-portal-card__actions">
+                                <a href="{{ route('admin.data-protection.index') }}" class="tich-portal-card__btn tich-portal-card__btn--outline">Open dashboard</a>
+                            </div>
+                        </article>
                     @endcan
                 @endif
             </div>

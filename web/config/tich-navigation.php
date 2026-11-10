@@ -33,6 +33,7 @@ return [
         ['label' => 'Sponsor a Student', 'url' => '/sponsor'],
         ['label' => 'Contact', 'url' => '/contact'],
         ['label' => 'Privacy Policy', 'url' => '/privacy'],
+        ['label' => 'Data subject requests', 'url' => '/privacy/data-request'],
         ['label' => 'Terms and Conditions', 'url' => '/terms'],
     ],
 
