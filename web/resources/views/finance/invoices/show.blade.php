@@ -12,9 +12,6 @@
                 @csrf
                 <button type="submit" class="tich-btn tich-btn-ghost">Resend to portal/email</button>
             </form>
-            @can('finance.invoices.manage')
-                <a href="{{ route('finance.invoices.edit', $invoice) }}" class="tich-btn tich-btn-secondary">Edit</a>
-            @endcan
         </x-slot:actions>
     </x-page-toolbar>
 

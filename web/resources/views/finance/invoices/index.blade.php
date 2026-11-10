@@ -19,6 +19,7 @@
                     <th>Due</th>
                     <th>Portal</th>
                     <th>Status</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -32,9 +33,14 @@
                         <td>{{ $invoice->due_date?->format('d M Y') }}</td>
                         <td>{{ $invoice->is_sent_to_portal ? 'Sent' : 'Pending' }}</td>
                         <td>{{ ucfirst($invoice->status) }}</td>
+                        <td>
+                            @can('finance.invoices.manage')
+                                <a href="{{ route('finance.invoices.edit', $invoice) }}" class="tich-btn tich-btn-ghost">Edit</a>
+                            @endcan
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="tich-caption">No invoices generated yet.</td></tr>
+                    <tr><td colspan="9" class="tich-caption">No invoices generated yet.</td></tr>
                 @endforelse
             </tbody>
         </table>

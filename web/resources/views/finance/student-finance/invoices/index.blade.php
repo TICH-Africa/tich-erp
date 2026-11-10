@@ -60,6 +60,9 @@
                             <td class="tich-caption">{{ $invoice->due_date?->format('d M Y') }}</td>
                             <td>
                                 <a href="{{ route('finance.student-finance.invoices.show', ['id' => $invoice->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                @can('finance.invoices.manage')
+                                    <a href="{{ route('finance.invoices.edit', ['invoice' => $invoice->id]) }}" class="tich-btn tich-btn-ghost">Edit</a>
+                                @endcan
                             </td>
                         </tr>
                     @empty
