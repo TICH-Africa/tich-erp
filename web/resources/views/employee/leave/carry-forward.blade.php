@@ -64,7 +64,8 @@
                 <div class="uf-section-body">
                     <p class="uf-hint">
                         You may request to carry forward up to 10 unused annual leave days to the next calendar year.
-                        Approval requires your line manager first, then HR.
+                        Approval requires your line manager first, then HR. If your profile has no line
+                        manager yet, HR reviews the request directly.
                     </p>
                     <div class="uf-field">
                         <label for="days_requested">Days to carry forward (max 10) <span class="uf-req">*</span></label>

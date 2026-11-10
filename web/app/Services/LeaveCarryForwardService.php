@@ -72,7 +72,9 @@ class LeaveCarryForwardService
             'days_requested' => $daysRequested,
             'reason' => $data['reason'],
             'status' => 'pending',
-            'line_manager_status' => 'pending',
+            // With no line manager on file the request must not dead-end, so HR
+            // becomes the first reviewer instead.
+            'line_manager_status' => $staff->line_manager_id ? 'pending' : 'not_required',
             'line_manager_staff_id' => $staff->line_manager_id,
             'hr_status' => 'pending',
         ]);
@@ -87,7 +89,11 @@ class LeaveCarryForwardService
             'success'
         );
 
-        $this->notifyLineManager($request, $staff);
+        if ($staff->line_manager_id) {
+            $this->notifyLineManager($request, $staff);
+        } else {
+            $this->notifyHrOfDecisionNeeded($request->fresh(['staff', 'leaveType']), approvedByLineManager: false);
+        }
 
         return $request;
     }
@@ -119,7 +125,7 @@ class LeaveCarryForwardService
             'success'
         );
 
-        $this->notifyHrOfLmApproval($request->fresh(['staff', 'leaveType']));
+        $this->notifyHrOfDecisionNeeded($request->fresh(['staff', 'leaveType']), approvedByLineManager: true);
 
         return $request->fresh();
     }
@@ -166,7 +172,7 @@ class LeaveCarryForwardService
             ]);
         }
 
-        if (($request->line_manager_status ?? 'pending') !== 'approved') {
+        if (! in_array((string) ($request->line_manager_status ?? 'pending'), ['approved', 'not_required'], true)) {
             throw ValidationException::withMessages([
                 'status' => 'Line manager approval is required before HR can approve.',
             ]);
@@ -309,7 +315,7 @@ class LeaveCarryForwardService
         );
     }
 
-    private function notifyHrOfLmApproval(LeaveCarryForwardRequest $request): void
+    private function notifyHrOfDecisionNeeded(LeaveCarryForwardRequest $request, bool $approvedByLineManager): void
     {
         $userIds = app(RBACService::class)->hrNotifierUserIds(includeExecutives: true);
 
@@ -317,10 +323,15 @@ class LeaveCarryForwardService
             return;
         }
 
+        $who = $request->staff?->fullName() ?? 'An employee';
+        $body = $approvedByLineManager
+            ? $who."'s carry-forward request was approved by the line manager and awaits HR decision."
+            : $who."'s carry-forward request has no line manager on file, so it awaits the HR decision directly.";
+
         $this->notifications->notifyUsers(
             $userIds,
             'Carry-forward ready for HR',
-            ($request->staff?->fullName() ?? 'An employee').' carry-forward request was approved by the line manager and awaits HR decision.',
+            $body,
             'leave_carry_forward',
             (string) $request->id,
             'normal',

@@ -103,11 +103,10 @@ class LeaveRequestService
             throw new \InvalidArgumentException('This leave type is not available.');
         }
 
-        if (! $skipLineManagerStep && ! (int) ($staff->line_manager_id ?? 0)) {
-            throw new \InvalidArgumentException(
-                'Your profile does not have a line manager assigned. Ask HR to set your line manager before applying for leave.'
-            );
-        }
+        // A staff member whose profile carries no line manager still has to be
+        // able to apply, so the request goes straight to HR instead of stalling
+        // at a stage nobody can act on.
+        $goStraightToHr = $skipLineManagerStep || ! (int) ($staff->line_manager_id ?? 0);
 
         $this->assertGenderAllowed($staff, $def);
         $startDate = Carbon::parse($data['start_date'])->startOfDay();
@@ -131,8 +130,8 @@ class LeaveRequestService
 
         $coverMap = is_array($data['cover_staff_id'] ?? null) ? $data['cover_staff_id'] : [];
 
-        return DB::transaction(function () use ($staff, $data, $leaveType, $startDate, $endDate, $returnDate, $days, $certificatePath, $sickSplit, $coverMap, $certificate, $skipLineManagerStep) {
-            if ($skipLineManagerStep) {
+        return DB::transaction(function () use ($staff, $data, $leaveType, $startDate, $endDate, $returnDate, $days, $certificatePath, $sickSplit, $coverMap, $certificate, $goStraightToHr) {
+            if ($goStraightToHr) {
                 $hodStatus = 'not_required';
                 $hrStatus = 'pending';
                 $overallStatus = 'pending_hr';
@@ -178,7 +177,7 @@ class LeaveRequestService
                 $this->auditSnapshot($leaveRequest),
             );
 
-            if ($skipLineManagerStep) {
+            if ($goStraightToHr) {
                 $this->notifyHrOfSubmission($leaveRequest->fresh(['leaveType']), $staff);
             } else {
                 $this->notifyLineManagerOfSubmission($leaveRequest->fresh(['leaveType']), $staff);
@@ -233,13 +232,11 @@ class LeaveRequestService
 
             $returnedToHr = $leaveRequest->overall_status === 'returned' && $leaveRequest->hod_approval_status === 'approved';
 
-            if (! $returnedToHr && ! (int) ($staff->line_manager_id ?? 0)) {
-                throw new \InvalidArgumentException(
-                    'Your profile does not have a line manager assigned. Ask HR to set your line manager before resubmitting.'
-                );
-            }
+            // Same rule as a fresh application: with no line manager on file,
+            // the resubmitted request goes back to HR instead of dead-ending.
+            $goToHr = $returnedToHr || ! (int) ($staff->line_manager_id ?? 0);
 
-            if ($returnedToHr) {
+            if ($goToHr) {
                 $statusUpdate = [
                     'leave_type_id' => $leaveType->id,
                     'start_date' => $startDate,
@@ -254,6 +251,7 @@ class LeaveRequestService
                     'medical_certificate_path' => $leaveType->leave_code === 'SICK' ? $certificatePath : $leaveRequest->medical_certificate_path,
                     'supporting_document_path' => $leaveType->leave_code !== 'SICK' ? $certificatePath : $leaveRequest->supporting_document_path,
                     'supporting_document_name' => $certificate?->getClientOriginalName() ?? $leaveRequest->supporting_document_name,
+                    'hod_approval_status' => $leaveRequest->hod_approval_status === 'approved' ? 'approved' : 'not_required',
                     'hr_approval_status' => 'pending',
                     'overall_status' => 'pending_hr',
                     'hr_review_notes' => null,
@@ -305,7 +303,7 @@ class LeaveRequestService
             );
 
             $fresh = $leaveRequest->fresh(['leaveType']);
-            if ($returnedToHr) {
+            if ($goToHr) {
                 $this->notifyHrOfSubmission($fresh, $staff, resubmitted: true);
             } else {
                 $this->notifyLineManagerOfSubmission($fresh, $staff, resubmitted: true);

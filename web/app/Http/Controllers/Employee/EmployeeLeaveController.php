@@ -154,14 +154,17 @@ class EmployeeLeaveController extends Controller
         $data = $this->validatedLeave($request, requireFutureStart: true);
 
         try {
-            $this->leaveRequests->submit($staff, $data, $request->file('medical_certificate'));
+            $leaveRequest = $this->leaveRequests->submit($staff, $data, $request->file('medical_certificate'));
         } catch (\InvalidArgumentException $exception) {
             return back()->withInput()->with('error', $exception->getMessage());
         }
 
+        // Staff with no line manager on file go straight to HR, so say who has it.
+        $nextReview = $leaveRequest->overall_status === 'pending_hr' ? 'HR' : 'your line manager';
+
         return redirect()
             ->route('employee.leave.index')
-            ->with('success', 'Your leave request has been submitted to your line manager for review.');
+            ->with('success', "Your leave request has been submitted to {$nextReview} for review.");
     }
 
     public function update(Request $request, LeaveRequest $leaveRequest): RedirectResponse
