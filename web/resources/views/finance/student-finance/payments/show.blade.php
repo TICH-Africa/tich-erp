@@ -35,7 +35,7 @@
         <div class="tich-card">
             <h3 class="tich-h4 tich-mb-4">Payment Details</h3>
             <p class="tich-text"><strong>Date:</strong> {{ $payment->payment_date?->format('d M Y') }}</p>
-            <p class="tich-text"><strong>Method:</strong> {{ ucfirst($payment->payment_method) }}</p>
+            <p class="tich-text"><strong>Method:</strong> {{ config('finance.payment_methods.'.$payment->payment_method, ucfirst(str_replace('_', ' ', $payment->payment_method))) }}</p>
             <p class="tich-text"><strong>Reference:</strong> {{ $payment->payment_reference ?? 'N/A' }}</p>
             <p class="tich-text"><strong>Channel Ref:</strong> {{ $payment->transaction_channel_ref ?? 'N/A' }}</p>
             <p class="tich-text"><strong>Reconciled:</strong> {{ $payment->is_reconciled ? 'Yes' : 'No' }}</p>

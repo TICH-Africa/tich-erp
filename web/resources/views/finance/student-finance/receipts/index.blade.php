@@ -44,7 +44,7 @@
                             </td>
                             <td class="tich-caption">{{ $receipt->invoice->invoice_number ?? 'N/A' }}</td>
                             <td>KES {{ number_format($receipt->amount, 2) }}</td>
-                            <td class="tich-caption">{{ ucfirst($receipt->payment_method) }}</td>
+                            <td class="tich-caption">{{ config('finance.payment_methods.'.$receipt->payment_method, ucfirst(str_replace('_', ' ', $receipt->payment_method))) }}</td>
                             <td class="tich-caption">{{ $receipt->payment_reference ?? '-' }}</td>
                             <td class="tich-caption">{{ $receipt->issued_at?->format('d M Y H:i') }}</td>
                             <td>

@@ -49,9 +49,17 @@ class InvoiceItem extends Model
     {
         $key = (string) $this->fee_item;
 
-        return self::EXTRA_LABELS[$key]
-            ?? \App\Models\FeeStructure::SEMESTER_CHARGES[$key]
-            ?? \App\Models\FeeStructure::OPTIONAL_SEMESTER_CHARGES[$key]
-            ?? ucfirst(str_replace('_', ' ', $key));
+        foreach ([$key, $key.'_fee'] as $candidate) {
+            $label = self::EXTRA_LABELS[$candidate]
+                ?? \App\Models\FeeStructure::SEMESTER_CHARGES[$candidate]
+                ?? \App\Models\FeeStructure::OPTIONAL_SEMESTER_CHARGES[$candidate]
+                ?? null;
+
+            if ($label !== null) {
+                return $label;
+            }
+        }
+
+        return ucfirst(str_replace('_', ' ', $key));
     }
 }

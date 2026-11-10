@@ -32,7 +32,7 @@
     <div class="tich-grid tich-grid--2 tich-mb-8">
         <div class="tich-card">
             <h3 class="tich-h4 tich-mb-4">Payment Details</h3>
-            <p class="tich-text"><strong>Method:</strong> {{ ucfirst($receipt->payment_method) }}</p>
+            <p class="tich-text"><strong>Method:</strong> {{ config('finance.payment_methods.'.$receipt->payment_method, ucfirst(str_replace('_', ' ', $receipt->payment_method))) }}</p>
             <p class="tich-text"><strong>Reference:</strong> {{ $receipt->payment_reference ?? 'N/A' }}</p>
             <p class="tich-text"><strong>Issued At:</strong> {{ $receipt->issued_at?->format('d M Y H:i') }}</p>
         </div>

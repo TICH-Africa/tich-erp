@@ -44,7 +44,7 @@
         </div>
         <div class="info-box">
             <h4>Payment Details</h4>
-            <p><strong>Method:</strong> {{ ucfirst($receipt->payment_method) }}</p>
+            <p><strong>Method:</strong> {{ config('finance.payment_methods.'.$receipt->payment_method, ucfirst(str_replace('_', ' ', $receipt->payment_method))) }}</p>
             <p><strong>Reference:</strong> {{ $receipt->payment_reference ?? 'N/A' }}</p>
             <p><strong>Invoice:</strong> {{ $receipt->invoice->invoice_number ?? 'N/A' }}</p>
         </div>

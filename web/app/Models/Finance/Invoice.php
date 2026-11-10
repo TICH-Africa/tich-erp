@@ -76,8 +76,9 @@ class Invoice extends Model
     }
 
     /**
-     * The bill's lines. Bills raised before lines were stored stand in with the invoice
-     * itself as one line, so the screen and the printed invoice are never empty.
+     * The bill's lines. Bills raised before lines were stored stand in with the charges
+     * written into their description, so the screen and the printed invoice are never
+     * empty and never collapse the breakdown into one block of text.
      *
      * @return Collection<int, InvoiceItem>
      */
@@ -87,12 +88,60 @@ class Invoice extends Model
             return $this->items;
         }
 
+        $charges = collect($this->chargesFromDescription())
+            ->map(fn (array $charge) => new InvoiceItem($charge + ['net_amount' => $charge['amount']]));
+
+        if ($charges->isNotEmpty()) {
+            return $charges;
+        }
+
         return collect([new InvoiceItem([
             'fee_item' => $this->invoice_type.'_fee',
-            'description' => mb_substr((string) $this->description, 0, 300),
+            'description' => mb_substr($this->flatDescription(), 0, 300),
             'amount' => $this->amount,
             'net_amount' => $this->amount,
         ])]);
+    }
+
+    /**
+     * Split "Tuition fee: KES 42,560.00; Library: KES 1,500.00" back into rows, but only
+     * when those charges really add up to the billed amount.
+     *
+     * @return list<array{fee_item: string, description: string, amount: float}>
+     */
+    private function chargesFromDescription(): array
+    {
+        $text = (string) $this->description;
+        if (! str_contains($text, 'KES')) {
+            return [];
+        }
+
+        $charges = [];
+        $total = 0.0;
+
+        preg_match_all('/([^:;\r\n]+):\s*KES\s*([\d,]+(?:\.\d{1,2})?)/', $text, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as [, $label, $figure]) {
+            $amount = round((float) str_replace(',', '', $figure), 2);
+            $label = trim($label);
+            if ($amount <= 0 || $label === '') {
+                continue;
+            }
+
+            $total = round($total + $amount, 2);
+            $charges[] = [
+                'fee_item' => trim(strtolower((string) preg_replace('/[^A-Za-z0-9]+/', '_', $label)), '_'),
+                'description' => $label,
+                'amount' => $amount,
+            ];
+        }
+
+        return abs($total - round((float) $this->amount, 2)) >= 0.01 ? [] : $charges;
+    }
+
+    private function flatDescription(): string
+    {
+        return trim((string) preg_replace('/\s*[\r\n]+\s*/', ' ', (string) $this->description));
     }
 
     public function payments(): HasMany

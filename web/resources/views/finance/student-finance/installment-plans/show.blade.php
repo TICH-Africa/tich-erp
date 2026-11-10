@@ -166,7 +166,7 @@
                                 <tr>
                                     <td class="tich-caption">{{ $payment->payment_date?->format('d M Y') }}</td>
                                     <td><strong>{{ $payment->payment_number }}</strong></td>
-                                    <td class="tich-caption">{{ ucfirst($payment->payment_method) }}</td>
+                                    <td class="tich-caption">{{ config('finance.payment_methods.'.$payment->payment_method, ucfirst(str_replace('_', ' ', $payment->payment_method))) }}</td>
                                     <td>KES {{ number_format($payment->amount, 2) }}</td>
                                     <td class="tich-caption">{{ $payment->payment_reference ?? '-' }}</td>
                                     <td>
