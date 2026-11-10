@@ -540,6 +540,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/student-finance/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoices'])->name('finance.student-finance.invoices.index');
             Route::get('/student-finance/invoices/create', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceCreate'])->name('finance.student-finance.invoices.create');
             Route::post('/student-finance/invoices', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceStore'])->name('finance.student-finance.invoices.store');
+            Route::post('/student-finance/invoices/bill-all', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceBulkStore'])->name('finance.student-finance.invoices.bulk-store');
             Route::get('/student-finance/invoices/{id}', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceShow'])->name('finance.student-finance.invoices.show');
             Route::get('/student-finance/invoices/{id}/download', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'invoiceDownload'])->name('finance.student-finance.invoices.download');
             Route::get('/student-finance/payments', [\App\Http\Controllers\Finance\StudentFinance\StudentFinanceController::class, 'payments'])->name('finance.student-finance.payments.index');
@@ -651,6 +652,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::middleware('permission:finance.invoices.manage')->group(function () {
             Route::get('/invoices/create/new', [\App\Http\Controllers\Finance\InvoiceController::class, 'create'])->name('finance.invoices.create');
             Route::post('/invoices', [\App\Http\Controllers\Finance\InvoiceController::class, 'store'])->name('finance.invoices.store');
+            Route::post('/invoices/bill-all', [\App\Http\Controllers\Finance\InvoiceController::class, 'bulkStore'])->name('finance.invoices.bulk-store');
             Route::post('/invoices/{invoice}/resend', [\App\Http\Controllers\Finance\InvoiceController::class, 'resend'])->name('finance.invoices.resend');
         });
 

@@ -7,6 +7,7 @@ use App\Models\FeeStructure;
 use App\Models\Invoice;
 use App\Models\Student;
 use App\Support\ModuleMail;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -96,6 +97,56 @@ class InvoiceService
 
             return $invoice->fresh(['student.applicant', 'student.program']);
         }, 3);
+    }
+
+    /**
+     * Bill every active student, one page at a time so a single click cannot outlive
+     * the web request on a large cohort. The caller returns the cursor it must post
+     * back to carry on where this page stopped.
+     *
+     * @param  Closure(Student):Invoice  $bill
+     * @return array{raised: int, existing: int, after_id: int, remaining: int}
+     */
+    public function billActiveStudents(int $afterStudentId, int $limit, Closure $bill): array
+    {
+        $students = $this->activeStudentsQuery($afterStudentId)->limit($limit)->get();
+
+        // Anything raised by this run takes a new invoice id, so the first free id
+        // tells a fresh bill from the duplicate the guard hands back.
+        $firstNewId = (int) Invoice::query()->max('id') + 1;
+        $raised = 0;
+        $existing = 0;
+        $lastId = $afterStudentId;
+
+        foreach ($students as $student) {
+            $invoice = $bill($student);
+            $lastId = (int) $student->id;
+            if ((int) $invoice->id >= $firstNewId) {
+                $raised++;
+            } else {
+                $existing++;
+            }
+        }
+
+        return [
+            'raised' => $raised,
+            'existing' => $existing,
+            'after_id' => $lastId,
+            'remaining' => $this->activeStudentsQuery($lastId)->count(),
+        ];
+    }
+
+    public function activeStudentCount(): int
+    {
+        return $this->activeStudentsQuery(0)->count();
+    }
+
+    private function activeStudentsQuery(int $afterStudentId): \Illuminate\Database\Eloquent\Builder
+    {
+        return Student::query()
+            ->where('is_active', 1)
+            ->where('id', '>', $afterStudentId)
+            ->orderBy('id');
     }
 
     /** Semester charges invoice from an approved programme fee structure. */

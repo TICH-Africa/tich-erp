@@ -36,7 +36,7 @@
                                 <option value="">Search/select student</option>
                                 @foreach ($students as $student)
                                     <option value="{{ $student->id }}">
-                                        {{ $student->applicant?->surname ?? '' }}, {{ $student->applicant?->first_name ?? '' }} ({{ $student->registration_number }})
+                                        {{ $name = $student->displayName() }}{{ $name !== trim((string) $student->registration_number) ? ' ('.$student->registration_number.')' : '' }}
                                     </option>
                                 @endforeach
                             </select>

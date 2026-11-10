@@ -37,12 +37,13 @@
                             >
                                 <option value="">Select student</option>
                                 @foreach ($students as $student)
+                                    @php($reg = trim((string) $student->registration_number))
                                     <option
                                         value="{{ $student->id }}"
                                         data-credit="{{ (float) ($studentCredits[$student->id] ?? 0) }}"
                                         @selected(old('student_id', request('student_id')) == $student->id)
                                     >
-                                        {{ $student->registration_number }} - {{ $student->displayName() }} ({{ $student->program?->program_name }})
+                                        {{ $reg }}{{ $student->displayName() !== $reg ? ' - '.$student->displayName() : '' }} ({{ $student->program?->program_name }})
                                     </option>
                                 @endforeach
                             </select>
@@ -156,10 +157,25 @@
             <div class="uf-form-section">
                 <div class="uf-section-head">Submit</div>
                 <div class="uf-section-body">
+                    <input type="hidden" name="bulk_after_id" value="{{ (int) request('bulk_after_id') }}">
                     <div class="uf-form-actions">
                         <button type="submit" class="uf-btn uf-btn-primary">Generate &amp; dispatch</button>
+                        <button
+                            type="submit"
+                            id="bill-all-students"
+                            class="uf-btn uf-btn-secondary"
+                            formaction="{{ route('finance.invoices.bulk-store') }}"
+                        >Bill all students</button>
                         <a href="{{ route('finance.invoices.index') }}" class="uf-btn uf-btn-secondary">Cancel</a>
                     </div>
+                    <p class="uf-hint">
+                        “Bill all students” raises this same bill for every one of the
+                        {{ number_format($activeStudents) }} active students, each with their own invoice
+                        and their own excess payment deducted.
+                    </p>
+                    @if ((int) request('bulk_after_id') > 0)
+                        <p class="uf-hint">Carrying on from the last batch. Keep the details as they are and press “Bill all students” again.</p>
+                    @endif
                 </div>
             </div>
 
@@ -192,6 +208,9 @@
                 chargeRow.hidden = !fromStructure;
                 manualFields.hidden = fromStructure;
                 optionalRow.hidden = !fromStructure || chargeSelect.value !== 'semester';
+                // A hidden required field stops the form submitting, so only the branch
+                // Finance is actually filling in is demanded.
+                document.getElementById('amount').required = !fromStructure;
             }
 
             feeSelect.addEventListener('change', sync);
@@ -200,6 +219,18 @@
 
             studentSelect.addEventListener('change', syncCredit);
             syncCredit();
+
+            const billAll = document.getElementById('bill-all-students');
+            billAll?.addEventListener('click', function (event) {
+                if (! window.confirm('Raise this bill for every active student, each with their own invoice?')) {
+                    event.preventDefault();
+
+                    return;
+                }
+
+                // The batch ignores the picker, so it must not block the submit.
+                studentSelect.required = false;
+            });
         })();
     </script>
 @endsection

@@ -31,6 +31,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentFinanceController extends Controller
 {
+    /** Students billed per click; the screen keeps a cursor for the rest. */
+    private const BULK_INVOICE_BATCH = 50;
+
     public function __construct(
         protected DepartmentDashboardService $departmentDashboard,
         protected StudentFinanceService $financeService,
@@ -485,10 +488,12 @@ class StudentFinanceController extends Controller
 
     public function invoiceCreate(Request $request, Department $department): View
     {
+        // The picker labels students by name, so the name columns have to come back
+        // with the record or the list falls back to showing the ID twice.
         $students = Student::query()
-            ->select('id', 'registration_number', 'application_id')
-            ->with(['applicant:id,first_name,surname'])
-            ->orderByDesc('id')
+            ->select('id', 'first_name', 'middle_name', 'surname', 'registration_number', 'application_id')
+            ->with(['applicant:id,first_name,middle_name,surname'])
+            ->orderBy('registration_number')
             ->get();
 
         $feeStructures = FeeStructure::query()
@@ -499,6 +504,7 @@ class StudentFinanceController extends Controller
         return $this->view($request, 'finance.student-finance.invoices.create', $department, [
             'students' => $students,
             'feeStructures' => $feeStructures,
+            'activeStudents' => $this->invoiceService->activeStudentCount(),
             // What each student already paid in above their bills; the invoice spends it
             // before the student is asked for cash again.
             'studentCredits' => StudentAccount::query()
@@ -512,18 +518,80 @@ class StudentFinanceController extends Controller
 
     public function invoiceStore(Request $request, Department $department)
     {
-        $validated = $request->validate([
-            'student_id' => 'required|exists:students,id',
+        $validated = $request->validate($this->billRules() + ['student_id' => 'required|exists:students,id']);
+
+        $student = Student::findOrFail($validated['student_id']);
+        $invoice = $this->issueBill($student, $validated, $this->recordingStaffId($request));
+
+        $message = 'Invoice created and posted to the ledger.';
+        if ((float) $invoice->amount_paid > 0) {
+            $message = 'Invoice created. KES '.number_format((float) $invoice->amount_paid, 2)
+                .' of the student\'s excess payment was deducted, leaving KES '
+                .number_format((float) $invoice->balance, 2).' to pay.';
+        }
+
+        return redirect()->route('finance.student-finance.invoices.index')->with('success', $message);
+    }
+
+    /**
+     * Raise the same bill for every active student, one batch per click so the host's
+     * PHP worker is never held for the whole cohort.
+     */
+    public function invoiceBulkStore(Request $request, Department $department)
+    {
+        $validated = $request->validate($this->billRules());
+
+        // A batch is deliberately long work; the default request limit would kill it
+        // part-way through and leave the officer without the cursor to carry on.
+        set_time_limit(300);
+
+        $staffId = $this->recordingStaffId($request);
+        $result = $this->invoiceService->billActiveStudents(
+            (int) $request->input('bulk_after_id', 0),
+            self::BULK_INVOICE_BATCH,
+            fn (Student $student) => $this->issueBill($student, $validated, $staffId),
+        );
+
+        $raised = 'Bills raised for '.$result['raised'].' students.';
+        if ($result['existing'] > 0) {
+            $raised .= ' '.$result['existing'].' already had this bill open and were left alone.';
+        }
+
+        if ($result['remaining'] > 0) {
+            return redirect()
+                ->route('finance.student-finance.invoices.create', [
+                    'bill_all' => 1,
+                    'bulk_after_id' => $result['after_id'],
+                ])
+                ->withInput()
+                ->with('warning', $raised.' '.$result['remaining'].' students are still to be billed — press "Bill all students" again to carry on.');
+        }
+
+        return redirect()
+            ->route('finance.student-finance.invoices.index')
+            ->with('success', $raised.' Every student has their own invoice.');
+    }
+
+    /** @return array<string, string> */
+    private function billRules(): array
+    {
+        return [
             'fee_structure_id' => 'nullable|exists:fee_structures,id',
             'invoice_type' => 'required|string|in:tuition,application,supplementary,graduation,hostel,other',
             'description' => 'required|string|max:500',
             'due_date' => 'required|date',
             'amount' => 'nullable|numeric|min:0.01',
-        ]);
+        ];
+    }
 
-        $student = Student::findOrFail($validated['student_id']);
-        $staffId = (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id') ?? 1);
+    private function recordingStaffId(Request $request): int
+    {
+        return (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id') ?? 1);
+    }
 
+    /** @param  array<string, mixed>  $validated */
+    private function issueBill(Student $student, array $validated, int $staffId)
+    {
         $invoiceTypeMap = [
             'hostel' => 'other',
         ];
@@ -536,26 +604,19 @@ class StudentFinanceController extends Controller
                 'due_date' => $validated['due_date'],
                 'fee_structure_id' => $structure->id,
             ]);
-        } else {
-            $amount = (float) ($validated['amount'] ?? 0);
-            abort_if($amount <= 0, 422, 'Amount is required when no fee structure is selected.');
 
-            $invoice = $this->invoiceService->generateForStudent($student, [
-                'invoice_type' => $invoiceType,
-                'description' => $validated['description'],
-                'amount' => $amount,
-                'due_date' => $validated['due_date'],
-            ], $staffId);
+            return $invoice;
         }
 
-        $message = 'Invoice created and posted to the ledger.';
-        if ((float) $invoice->amount_paid > 0) {
-            $message = 'Invoice created. KES '.number_format((float) $invoice->amount_paid, 2)
-                .' of the student\'s excess payment was deducted, leaving KES '
-                .number_format((float) $invoice->balance, 2).' to pay.';
-        }
+        $amount = (float) ($validated['amount'] ?? 0);
+        abort_if($amount <= 0, 422, 'Amount is required when no fee structure is selected.');
 
-        return redirect()->route('finance.student-finance.invoices.index')->with('success', $message);
+        return $this->invoiceService->generateForStudent($student, [
+            'invoice_type' => $invoiceType,
+            'description' => $validated['description'],
+            'amount' => $amount,
+            'due_date' => $validated['due_date'],
+        ], $staffId);
     }
 
     public function invoiceShow(Request $request, int $id, Department $department): View
@@ -1394,10 +1455,11 @@ class StudentFinanceController extends Controller
 
     public function refundCreate(Request $request, Department $department): View
     {
+        // Searchable by name, so the name columns come back with the record.
         $students = \App\Models\Student::query()
-            ->select('id', 'registration_number', 'application_id')
-            ->with(['applicant:id,first_name,surname'])
-            ->orderByDesc('id')
+            ->select('id', 'first_name', 'middle_name', 'surname', 'registration_number', 'application_id')
+            ->with(['applicant:id,first_name,middle_name,surname'])
+            ->orderBy('registration_number')
             ->get();
 
         $payments = Payment::query()
@@ -1613,17 +1675,22 @@ class StudentFinanceController extends Controller
             return response()->json([]);
         }
 
+        // Searchable by name: the name columns have to be selected, and the account
+        // carries no name column, so it is only asked for by e-mail.
         $students = Student::query()
-            ->select('id', 'registration_number')
-            ->with(['applicant:id,first_name,middle_name,surname', 'user:id,name'])
-            ->orderByDesc('id')
-            ->limit(100)
+            ->select('id', 'first_name', 'middle_name', 'surname', 'registration_number', 'application_id')
+            ->with(['applicant:id,first_name,middle_name,surname', 'user:id,email'])
+            ->orderBy('registration_number')
+            ->limit(500)
             ->get()
             ->map(function ($student) {
-                $name = $student->fullName();
+                $name = $student->displayName();
+
                 return [
                     'id' => $student->id,
-                    'text' => $name . ' (' . $student->registration_number . ')',
+                    'text' => $name === trim((string) $student->registration_number)
+                        ? $name
+                        : $name.' ('.$student->registration_number.')',
                 ];
             });
 
