@@ -4,13 +4,18 @@
 
 @section('finance-content')
     <x-page-toolbar title="{{ $invoice->invoice_number }}" meta="Issued {{ $invoice->issue_date?->format('d M Y') }}">
-        @if ($invoice->isPayable())
-            <a href="{{ route('finance.payments.create', ['invoice_id' => $invoice->id]) }}" class="tich-btn tich-btn-primary">Record payment</a>
-        @endif
-        <form method="post" action="{{ route('finance.invoices.resend', $invoice) }}">
-            @csrf
-            <button type="submit" class="tich-btn tich-btn-ghost">Resend to portal/email</button>
-        </form>
+        <x-slot:actions>
+            @if ($invoice->isPayable())
+                <a href="{{ route('finance.payments.create', ['invoice_id' => $invoice->id]) }}" class="tich-btn tich-btn-primary">Record payment</a>
+            @endif
+            <form method="post" action="{{ route('finance.invoices.resend', $invoice) }}">
+                @csrf
+                <button type="submit" class="tich-btn tich-btn-ghost">Resend to portal/email</button>
+            </form>
+            @can('finance.invoices.manage')
+                <a href="{{ route('finance.invoices.edit', $invoice) }}" class="tich-btn tich-btn-secondary">Edit</a>
+            @endcan
+        </x-slot:actions>
     </x-page-toolbar>
 
     @php($excessApplied = round(max((float) $invoice->amount_paid - (float) $invoice->payments->sum('amount'), 0), 2))

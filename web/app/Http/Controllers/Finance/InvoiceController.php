@@ -199,6 +199,38 @@ class InvoiceController extends Controller
         return view('finance.invoices.show', compact('invoice'));
     }
 
+    public function edit(Invoice $invoice): View
+    {
+        $invoice->load(['student.applicant', 'student.program', 'payments']);
+
+        return view('finance.invoices.edit', [
+            'invoice' => $invoice,
+            'invoiceTypes' => config('finance.invoice_types'),
+        ]);
+    }
+
+    public function update(Request $request, Invoice $invoice): RedirectResponse
+    {
+        $validated = $request->validate([
+            'invoice_type' => 'required|string|in:'.implode(',', array_keys(config('finance.invoice_types'))),
+            'description' => 'required|string|max:500',
+            'amount' => 'required|numeric|min:0.01',
+            'due_date' => 'required|date',
+        ]);
+
+        $amended = $this->invoices->amendInvoice($invoice, $validated, $this->recordingStaffId($request));
+
+        $message = 'Invoice '.$amended->invoice_number.' updated. KES '
+            .number_format((float) $amended->balance, 2).' now remains to pay.';
+        $overdrawn = round((float) $invoice->amount_paid - (float) $amended->amount, 2);
+        if ($overdrawn > 0) {
+            $message .= ' KES '.number_format($overdrawn, 2).' already paid is more than this bill, '
+                .'so it carries to the next term or semester as an excess payment.';
+        }
+
+        return redirect()->route('finance.invoices.show', $amended)->with('success', $message);
+    }
+
     public function resend(Invoice $invoice): RedirectResponse
     {
         $this->invoices->dispatchToChannels($invoice);

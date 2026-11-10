@@ -4,7 +4,9 @@
 
 @section('finance-content')
     <x-page-toolbar title="{{ $account->student?->displayName() }}" meta="{{ $account->student?->registration_number }} · {{ $account->student?->program?->program_name }}">
-        <a href="{{ route('finance.invoices.create', ['student_id' => $account->student_id]) }}" class="tich-btn tich-btn-primary">Generate invoice</a>
+        <x-slot:actions>
+            <a href="{{ route('finance.invoices.create', ['student_id' => $account->student_id]) }}" class="tich-btn tich-btn-primary">Generate invoice</a>
+        </x-slot:actions>
     </x-page-toolbar>
 
     <div class="tich-stat-row tich-mb-8">
@@ -15,7 +17,7 @@
             <div class="tich-stat">
                 <p class="tich-stat__label">Excess payment</p>
                 <p class="tich-stat__value">KES {{ number_format((float) $account->credit_balance, 0) }}</p>
-                <p class="tich-caption">Deducted from the next invoice</p>
+                <p class="tich-caption">Carries to the next term or semester invoice</p>
             </div>
         @endif
     </div>
@@ -24,15 +26,20 @@
         <h2 class="tich-h3">Invoices</h2>
         <div class="tich-card tich-table-panel tich-mt-4">
             <table class="tich-admin-table">
-                <thead><tr><th>Number</th><th>Type</th><th>Amount</th><th>Balance</th><th>Status</th></tr></thead>
+                <thead><tr><th>Number</th><th>Type</th><th>Amount</th><th>Balance</th><th>Status</th><th></th></tr></thead>
                 <tbody>
-                    @foreach ($account->invoices as $invoice)
+                    @foreach ($account->studentInvoices as $invoice)
                         <tr>
                             <td><a href="{{ route('finance.invoices.show', $invoice) }}">{{ $invoice->invoice_number }}</a></td>
                             <td>{{ config('finance.invoice_types.'.$invoice->invoice_type, $invoice->invoice_type) }}</td>
                             <td>KES {{ number_format((float) $invoice->amount, 2) }}</td>
                             <td>KES {{ number_format((float) $invoice->balance, 2) }}</td>
                             <td>{{ ucfirst($invoice->status) }}</td>
+                            <td>
+                                @can('finance.invoices.manage')
+                                    <a href="{{ route('finance.invoices.edit', $invoice) }}" class="tich-btn tich-btn-ghost">Edit</a>
+                                @endcan
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -46,7 +53,7 @@
             <table class="tich-admin-table">
                 <thead><tr><th>Payment</th><th>Date</th><th>Amount</th><th>Method</th></tr></thead>
                 <tbody>
-                    @foreach ($account->payments as $payment)
+                    @foreach ($account->studentPayments as $payment)
                         <tr>
                             <td>{{ $payment->payment_number }}</td>
                             <td>{{ $payment->payment_date?->format('d M Y') }}</td>

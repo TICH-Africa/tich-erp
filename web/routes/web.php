@@ -651,6 +651,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/invoices/{invoice}', [\App\Http\Controllers\Finance\InvoiceController::class, 'show'])->name('finance.invoices.show');
         Route::middleware('permission:finance.invoices.manage')->group(function () {
             Route::get('/invoices/create/new', [\App\Http\Controllers\Finance\InvoiceController::class, 'create'])->name('finance.invoices.create');
+            Route::get('/invoices/{invoice}/edit', [\App\Http\Controllers\Finance\InvoiceController::class, 'edit'])->name('finance.invoices.edit');
+            Route::put('/invoices/{invoice}', [\App\Http\Controllers\Finance\InvoiceController::class, 'update'])->name('finance.invoices.update');
             Route::post('/invoices', [\App\Http\Controllers\Finance\InvoiceController::class, 'store'])->name('finance.invoices.store');
             Route::post('/invoices/bill-all', [\App\Http\Controllers\Finance\InvoiceController::class, 'bulkStore'])->name('finance.invoices.bulk-store');
             Route::post('/invoices/{invoice}/resend', [\App\Http\Controllers\Finance\InvoiceController::class, 'resend'])->name('finance.invoices.resend');

@@ -60,7 +60,7 @@
         <div class="tich-card tich-stat">
             <p class="tich-stat__label">Credit Balance</p>
             <p class="tich-stat__value">KES {{ number_format($account->credit_balance, 2) }}</p>
-            <p class="tich-caption">Excess payment, deducted from the next invoice</p>
+            <p class="tich-caption">Carries to the next term or semester invoice</p>
         </div>
         <div class="tich-card tich-stat">
             <p class="tich-stat__label">Scholarship</p>
@@ -96,7 +96,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($account->invoices as $invoice)
+                    @forelse ($account->studentInvoices as $invoice)
                         <tr>
                             <td><strong>{{ $invoice->invoice_number }}</strong></td>
                             <td class="tich-caption">{{ ucfirst($invoice->invoice_type) }}</td>
@@ -117,6 +117,9 @@
                             </td>
                             <td>
                                 <a href="{{ route('finance.student-finance.invoices.show', ['id' => $invoice->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                @can('finance.invoices.manage')
+                                    <a href="{{ route('finance.invoices.edit', ['invoice' => $invoice->id]) }}" class="tich-btn tich-btn-ghost">Edit</a>
+                                @endcan
                             </td>
                         </tr>
                     @empty
@@ -144,7 +147,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($account->payments as $payment)
+                    @forelse ($account->studentPayments as $payment)
                         <tr>
                             <td><strong>{{ $payment->payment_number }}</strong></td>
                             <td class="tich-caption">{{ $payment->payment_date?->format('d M Y') }}</td>
@@ -247,50 +250,6 @@
                     @empty
                         <tr>
                             <td colspan="6" class="tich-table-empty">No installment plans found.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="tich-card">
-        <h3 class="tich-h4 tich-mb-4">Refunds</h3>
-        <div class="tich-table-wrap">
-            <table class="tich-admin-table">
-                <thead>
-                    <tr>
-                        <th>Refund</th>
-                        <th>Amount</th>
-                        <th>Reason</th>
-                        <th>Status</th>
-                        <th>Requested By</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($account->refunds as $refund)
-                        <tr>
-                            <td><strong>{{ $refund->refund_number }}</strong></td>
-                            <td>KES {{ number_format($refund->amount, 2) }}</td>
-                            <td>{{ $refund->reason }}</td>
-                            <td>
-                                <span class="tich-badge tich-badge--{{ match($refund->status) {
-                                    'pending' => 'warning',
-                                    'approved' => 'success',
-                                    'rejected' => 'danger',
-                                    'processed' => 'info',
-                                    default => 'secondary',
-                                } }}">
-                                    {{ ucfirst($refund->status) }}
-                                </span>
-                            </td>
-                            <td class="tich-caption">{{ $refund->requestedBy?->fullName() ?? 'N/A' }}</td>
-                            <td class="tich-caption">{{ $refund->created_at?->format('d M Y') }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="tich-table-empty">No refunds found.</td>
                         </tr>
                     @endforelse
                 </tbody>

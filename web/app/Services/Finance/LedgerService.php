@@ -61,6 +61,40 @@ class LedgerService
         );
     }
 
+    /**
+     * Follow an edited bill so the ledger total matches the amount on the invoice:
+     * a rise posts like a fresh bill, a cut reverses part of the original entry.
+     */
+    public function postInvoiceAmendment(float $delta, string $invoiceNumber, ?int $recordedByStaffId = null, ?string $invoiceType = null): AccountLedger
+    {
+        $receivable = $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor'], 'FINANCE_ACCOUNTS_RECEIVABLE_ACCOUNT', 'Student Fees Receivable');
+        $revenue = $this->revenueAccountForInvoiceType($invoiceType);
+
+        return $delta >= 0
+            ? $this->postEntry(
+                'invoice_amended',
+                $receivable,
+                $revenue,
+                $delta,
+                "Invoice amended up: {$invoiceNumber}",
+                'student_fees',
+                'invoices',
+                $invoiceNumber,
+                $recordedByStaffId,
+            )
+            : $this->postEntry(
+                'invoice_amended',
+                $revenue,
+                $receivable,
+                abs($delta),
+                "Invoice amended down: {$invoiceNumber}",
+                'student_fees',
+                'invoices',
+                $invoiceNumber,
+                $recordedByStaffId,
+            );
+    }
+
     public function postStudentPayment(
         float $amount,
         string $paymentNumber,

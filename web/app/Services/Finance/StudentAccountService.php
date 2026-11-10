@@ -65,6 +65,18 @@ class StudentAccountService
     }
 
     /**
+     * What the student still owes, measured on the account rather than on one
+     * invoice: every open bill less the cash already in and the HELB, scholarship
+     * and sponsor cover. A payment above this figure is what carries forward.
+     */
+    public function amountOwed(StudentAccount $account): float
+    {
+        [$chargeable, $paid, $credits] = $this->totals($account);
+
+        return max(round($chargeable - $paid - $credits, 2), 0);
+    }
+
+    /**
      * @return array{0: float, 1: float, 2: float}
      */
     private function totals(StudentAccount $account): array

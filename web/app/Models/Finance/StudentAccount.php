@@ -57,9 +57,30 @@ class StudentAccount extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    /**
+     * Every bill the student has, whichever year's account it was raised on.
+     */
+    public function studentInvoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'student_id', 'student_id')
+            ->orderByDesc('issue_date')
+            ->orderByDesc('id');
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Every payment the student has made, whichever year's account it was booked
+     * to, so cash Finance records always shows on the student's own list.
+     */
+    public function studentPayments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'student_id', 'student_id')
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id');
     }
 
     public function receipts(): HasMany

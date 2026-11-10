@@ -7,7 +7,6 @@ use App\Models\FeeStructure;
 use App\Models\Finance\FinancialAdjustment;
 use App\Models\Finance\InstallmentPlanItem;
 use App\Models\Finance\PaymentMilestone;
-use App\Models\Finance\Refund;
 use App\Models\Invoice;
 use App\Models\MpesaStkRequest;
 use App\Models\PayrollRun;
@@ -24,7 +23,6 @@ class FinanceSidebarNotificationServiceProvider extends ServiceProvider
 
         foreach ([
             Invoice::class,
-            Refund::class,
             FinancialAdjustment::class,
             PayrollRun::class,
             FeeStructure::class,

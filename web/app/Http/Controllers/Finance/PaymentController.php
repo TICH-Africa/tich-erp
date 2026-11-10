@@ -7,6 +7,7 @@ use App\Models\ChartOfAccount;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\Finance\PaymentService;
+use App\Services\Finance\StudentAccountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -15,6 +16,7 @@ class PaymentController extends Controller
 {
     public function __construct(
         protected PaymentService $payments,
+        protected StudentAccountService $accounts,
     ) {}
 
     public function index(Request $request): View
@@ -73,17 +75,24 @@ class PaymentController extends Controller
             'payment_account_code' => 'required|string|exists:chart_of_accounts,account_code',
         ]);
 
-        $invoice = Invoice::query()->findOrFail($validated['invoice_id']);
-        $balanceDue = round((float) $invoice->balance, 2);
+        $invoice = Invoice::query()->with('studentAccount')->findOrFail($validated['invoice_id']);
         $staffId = (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id'));
+
+        // The student's own owing, not the invoice balance: an invoice can still show
+        // more than the student owes once HELB, scholarship or an earlier overpayment
+        // is counted, and quoting the invoice figure would name the wrong excess.
+        $owed = $invoice->studentAccount
+            ? $this->accounts->amountOwed($invoice->studentAccount)
+            : round((float) $invoice->balance, 2);
 
         $payment = $this->payments->recordPayment($invoice, $validated, $staffId);
 
         $message = 'Payment recorded: '.$payment->payment_number;
-        $banked = round((float) $payment->amount - $balanceDue, 2);
-        if ($banked > 0) {
-            $message .= ' KES '.number_format($banked, 2).' was above the invoice balance, so it now sits on the '
-                .$payment->student?->displayName().' account as an excess payment and comes off the next invoice.';
+        $carried = round((float) $payment->amount - $owed, 2);
+        if ($carried > 0) {
+            $message .= ' — KES '.number_format($carried, 2).' is more than the student owes, so it stays on the '
+                .$payment->student?->displayName().' account as an excess payment. It carries to the next term or '
+                .'semester and comes off their next invoice automatically.';
         }
 
         return redirect()->route('finance.payments.index')->with('success', $message);

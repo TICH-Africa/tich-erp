@@ -66,7 +66,7 @@
                             @error('amount')
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
-                            <span class="uf-hint">Enter the full amount received. Anything above this invoice balance is kept as the student's excess payment and deducted from the next invoice raised.</span>
+                            <span class="uf-hint">Enter the full amount received. Anything above what the student owes is kept as their excess payment, carries to the next term or semester and comes off the next invoice raised.</span>
                         </div>
                     </div>
                 </div>

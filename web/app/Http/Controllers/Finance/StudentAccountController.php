@@ -27,8 +27,8 @@ class StudentAccountController extends Controller
             'student.applicant',
             'student.program',
             'academicYear',
-            'invoices' => fn ($query) => $query->orderByDesc('issue_date'),
-            'payments' => fn ($query) => $query->orderByDesc('payment_date'),
+            'studentInvoices',
+            'studentPayments',
         ]);
 
         return view('finance.student-accounts.show', [

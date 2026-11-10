@@ -11,7 +11,6 @@ use App\Models\Finance\FinancialAdjustment;
 use App\Models\Finance\InstallmentPlan;
 use App\Models\Finance\InstallmentPlanItem;
 use App\Models\Finance\PaymentMilestone;
-use App\Models\Finance\Refund;
 use Illuminate\Support\Facades\DB;
 
 class StudentFinanceService
@@ -143,60 +142,6 @@ class StudentFinanceService
             }
 
             return $adjustment->fresh();
-        }, 3);
-    }
-
-    public function approveRefund(Refund $refund, int $approvedBy): Refund
-    {
-        return DB::transaction(function () use ($refund, $approvedBy) {
-            /** @var Refund $refund */
-            $refund = Refund::query()->whereKey($refund->id)->lockForUpdate()->firstOrFail();
-
-            if ($refund->status !== 'pending') {
-                return $refund;
-            }
-
-            if ($refund->requested_by === $approvedBy) {
-                return $refund;
-            }
-
-            $refund->update([
-                'status' => 'approved',
-                'approved_by' => $approvedBy,
-                'approved_at' => now(),
-            ]);
-
-            return $refund->fresh();
-        }, 3);
-    }
-
-    public function processRefund(Refund $refund, int $processedBy): Refund
-    {
-        return DB::transaction(function () use ($refund, $processedBy) {
-            /** @var Refund $refund */
-            $refund = Refund::query()->whereKey($refund->id)->lockForUpdate()->firstOrFail();
-
-            if (! in_array($refund->status, ['pending', 'approved'], true)) {
-                return $refund;
-            }
-
-            $payment = $refund->payment;
-
-            if ($payment && $payment->status === 'SUCCESS') {
-                $payment->update(['status' => 'REFUNDED']);
-            }
-
-            $refund->update([
-                'status' => 'processed',
-                'processed_by' => $processedBy,
-                'processed_at' => now(),
-            ]);
-
-            if ($refund->studentAccount) {
-                $this->recalculateAccount($refund->studentAccount);
-            }
-
-            return $refund->fresh();
         }, 3);
     }
 

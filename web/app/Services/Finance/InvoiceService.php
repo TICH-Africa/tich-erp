@@ -100,6 +100,68 @@ class InvoiceService
     }
 
     /**
+     * Overwrite a bill Finance got wrong. The edit replaces the original figures on
+     * the same invoice, the money already received stays against it, and anything the
+     * student has now overpaid drops onto their account as an excess payment.
+     *
+     * @param  array{invoice_type?: string, description?: string, amount: float, due_date?: string|null}  $data
+     */
+    public function amendInvoice(Invoice $invoice, array $data, ?int $recordedByStaffId = null): Invoice
+    {
+        return DB::transaction(function () use ($invoice, $data, $recordedByStaffId) {
+            /** @var Invoice $locked */
+            $locked = Invoice::query()->whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+            $locked->loadMissing(['studentAccount', 'student']);
+
+            $account = $locked->studentAccount ?? $this->accounts->ensureAccount($locked->student);
+
+            $oldAmount = round((float) $locked->amount, 2);
+            $newAmount = round((float) $data['amount'], 2);
+            // Money this bill already took never disappears: an edit that lowers the
+            // charge leaves the difference on the account, to be spent on the next bill.
+            $paid = round(min((float) $locked->amount_paid, $newAmount), 2);
+            $balance = round(max($newAmount - $paid, 0), 2);
+
+            $locked->update([
+                'invoice_type' => (string) ($data['invoice_type'] ?? $locked->invoice_type),
+                'description' => (string) ($data['description'] ?? $locked->description),
+                'amount' => $newAmount,
+                'amount_paid' => $paid,
+                'balance' => $balance,
+                'due_date' => isset($data['due_date']) && $data['due_date']
+                    ? \Illuminate\Support\Carbon::parse($data['due_date'])->toDateString()
+                    : $locked->due_date,
+                'status' => match (true) {
+                    $balance <= 0 => 'paid',
+                    $locked->due_date !== null && \Illuminate\Support\Carbon::parse($locked->due_date)->isPast() => 'overdue',
+                    $paid > 0 => 'partial',
+                    default => 'issued',
+                },
+            ]);
+
+            $delta = round($newAmount - $oldAmount, 2);
+            if (abs($delta) >= 0.01) {
+                $this->ledger->postInvoiceAmendment($delta, $locked->invoice_number, $recordedByStaffId, $locked->invoice_type);
+            }
+
+            $this->accounts->recalculate($account);
+
+            $this->audit->log('finance.invoice.amended', 'invoices', $locked->id, [
+                'amount' => $oldAmount,
+                'status' => $invoice->status,
+            ], [
+                'amount' => $newAmount,
+                'status' => $locked->status,
+                'balance' => $balance,
+                'invoice_type' => $locked->invoice_type,
+                'description' => $locked->description,
+            ]);
+
+            return $locked->fresh(['student.applicant', 'student.program', 'payments']);
+        }, 3);
+    }
+
+    /**
      * Bill every active student, one page at a time so a single click cannot outlive
      * the web request on a large cohort. The caller returns the cursor it must post
      * back to carry on where this page stopped.

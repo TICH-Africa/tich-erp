@@ -31,7 +31,7 @@
     <div class="tich-grid tich-grid--2">
         <div class="tich-card">
             <h3 class="tich-h4">Student Finance</h3>
-            <p class="tich-caption tich-mb-4">Fee structures, semester fees, invoices, payments, receipts, discounts, scholarships, bursaries, installment plans, refunds, credit balances and financial clearance.</p>
+            <p class="tich-caption tich-mb-4">Fee structures, semester fees, invoices, payments, receipts, discounts, scholarships, bursaries, installment plans, credit balances (an excess carries to the next term or semester) and financial clearance.</p>
             <a href="{{ route('finance.student-finance.index') }}" class="tich-btn tich-btn-ghost">Open</a>
         </div>
         <div class="tich-card">

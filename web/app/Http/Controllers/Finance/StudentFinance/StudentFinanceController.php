@@ -14,7 +14,6 @@ use App\Models\Finance\Invoice;
 use App\Models\Finance\Payment;
 use App\Models\Finance\PaymentMilestone;
 use App\Models\Finance\Receipt;
-use App\Models\Finance\Refund;
 use App\Models\Finance\StudentAccount;
 use App\Models\Student;
 use App\Services\DepartmentDashboardService;
@@ -271,7 +270,6 @@ class StudentFinanceController extends Controller
                         'requestedBy' => new class { public function fullName(): string { return 'Admin User'; } },
                     ],
                 ]),
-                'refunds' => collect([]),
                 'milestones' => collect([]),
                 'installmentPlans' => collect([]),
             ];
@@ -1353,192 +1351,6 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function refunds(Request $request, Department $department): View
-    {
-        $search = trim((string) $request->query('search', ''));
-        $semesterId = (int) ($request->query('semester_id', 0) ?: 0);
-        $academicYearId = (int) ($request->query('academic_year_id', 0) ?: 0);
-
-        if (! Schema::hasTable('refunds') || Refund::count() === 0) {
-            $mockStudent1 = new class {
-                public function fullName(): string { return 'Wanjiku Mwangi'; }
-                public $registration_number = 'STU/2024/001';
-            };
-            $mockStudent2 = new class {
-                public function fullName(): string { return 'Otieno Daniel'; }
-                public $registration_number = 'STU/2024/045';
-            };
-            $mockStudent3 = new class {
-                public function fullName(): string { return 'Achieng Faith'; }
-                public $registration_number = 'STU/2024/102';
-            };
-
-            $refunds = collect([
-                (object) [
-                    'id' => 1,
-                    'refund_number' => 'REF-2024-0001',
-                    'student' => $mockStudent1,
-                    'invoice' => new class { public $invoice_number = 'INV-2024-0002'; },
-                    'amount' => 5000,
-                    'reason' => 'Duplicate payment - student paid twice for application fee',
-                    'status' => 'approved',
-                    'requestedBy' => new class { public function fullName(): string { return 'Finance Officer'; } },
-                    'created_at' => now()->subDays(5),
-                ],
-                (object) [
-                    'id' => 2,
-                    'refund_number' => 'REF-2024-0002',
-                    'student' => $mockStudent2,
-                    'invoice' => new class { public $invoice_number = 'INV-2024-0001'; },
-                    'amount' => 10000,
-                    'reason' => 'Overpayment after scholarship adjustment applied',
-                    'status' => 'processed',
-                    'requestedBy' => new class { public function fullName(): string { return 'Jane Doe'; } },
-                    'created_at' => now()->subDays(12),
-                ],
-                (object) [
-                    'id' => 3,
-                    'refund_number' => 'REF-2024-0003',
-                    'student' => $mockStudent3,
-                    'invoice' => new class { public $invoice_number = 'INV-2024-0003'; },
-                    'amount' => 35000,
-                    'reason' => 'Withdrawal from program - full refund request',
-                    'status' => 'pending',
-                    'requestedBy' => new class { public function fullName(): string { return 'Registrar'; } },
-                    'created_at' => now()->subDays(1),
-                ],
-            ]);
-        } else {
-            $query = Refund::query()
-                ->with(['student', 'invoice', 'payment', 'requestedBy']);
-
-            if ($search !== '') {
-                $query->where(function ($q) use ($search) {
-                    $q->where('refund_number', 'like', "%{$search}%")
-                      ->orWhereHas('student', function ($sq) use ($search) {
-                          $sq->where('registration_number', 'like', "%{$search}%")
-                             ->orWhereHas('applicant', function ($sq2) use ($search) {
-                                 $sq2->where('first_name', 'like', "%{$search}%")
-                                     ->orWhere('surname', 'like', "%{$search}%");
-                             });
-                      });
-                });
-            }
-
-            if ($semesterId > 0) {
-                $query->whereHas('invoice', fn ($q) => $q->where('semester_id', $semesterId));
-            }
-
-            if ($academicYearId > 0) {
-                $query->whereHas('invoice.semester', fn ($q) => $q->where('academic_year_id', $academicYearId));
-            }
-
-            $refunds = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
-        }
-
-        $allSemesters = Schema::hasTable('semesters')
-            ? \App\Models\Semester::query()->orderBy('semester_number')->get()
-            : collect();
-        $allAcademicYears = Schema::hasTable('academic_years')
-            ? AcademicYear::query()->orderByDesc('year_label')->get()
-            : collect();
-
-        return $this->view($request, 'finance.student-finance.refunds.index', $department, [
-            'refunds' => $refunds,
-            'search' => $search,
-            'semesterId' => $semesterId,
-            'academicYearId' => $academicYearId,
-            'allSemesters' => $allSemesters,
-            'allAcademicYears' => $allAcademicYears,
-        ]);
-    }
-
-    public function refundCreate(Request $request, Department $department): View
-    {
-        // Searchable by name, so the name columns come back with the record.
-        $students = \App\Models\Student::query()
-            ->select('id', 'first_name', 'middle_name', 'surname', 'registration_number', 'application_id')
-            ->with(['applicant:id,first_name,middle_name,surname'])
-            ->orderBy('registration_number')
-            ->get();
-
-        $payments = Payment::query()
-            ->with(['invoice.student'])
-            ->orderByDesc('payment_date')
-            ->get();
-
-        $invoices = Invoice::query()
-            ->with('student')
-            ->whereIn('status', ['issued', 'partial', 'overdue', 'paid'])
-            ->orderByDesc('issue_date')
-            ->get();
-
-        return $this->view($request, 'finance.student-finance.refunds.create', $department, [
-            'students' => $students,
-            'payments' => $payments,
-            'invoices' => $invoices,
-        ]);
-    }
-
-    public function refundStore(Request $request, Department $department)
-    {
-        $validated = $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'payment_id' => 'required|exists:payments,id',
-            'invoice_id' => 'required|exists:invoices,id',
-            'amount' => 'required|numeric|min:0',
-            'reason' => 'required|string|max:500',
-        ]);
-
-        $payment = Payment::findOrFail($validated['payment_id']);
-        $invoice = Invoice::findOrFail($validated['invoice_id']);
-        $studentId = (int) $validated['student_id'];
-        $requestedBy = (int) $request->user()->id;
-
-        abort_if($payment->student_id !== $studentId || $invoice->student_id !== $studentId, 400, 'Selected payment and invoice do not belong to the chosen student.');
-
-        SafeWrite::transaction(function () use ($validated, $payment, $invoice, $studentId, $requestedBy) {
-            $openRefund = Refund::query()
-                ->where('payment_id', $payment->id)
-                ->whereIn('status', ['pending', 'approved'])
-                ->lockForUpdate()
-                ->first();
-
-            if ($openRefund) {
-                return $openRefund;
-            }
-
-            $recent = Refund::query()
-                ->where('payment_id', $payment->id)
-                ->where('amount', $validated['amount'])
-                ->where('reason', $validated['reason'])
-                ->where('requested_by', $requestedBy)
-                ->where('created_at', '>=', now()->subSeconds(90))
-                ->orderByDesc('id')
-                ->first();
-
-            if ($recent) {
-                return $recent;
-            }
-
-            $studentAccount = StudentAccount::where('student_id', $studentId)->first();
-
-            return Refund::create([
-                'refund_number' => 'REF-'.strtoupper(uniqid()),
-                'payment_id' => $payment->id,
-                'invoice_id' => $invoice->id,
-                'student_account_id' => $studentAccount?->id,
-                'student_id' => $studentId,
-                'amount' => $validated['amount'],
-                'reason' => $validated['reason'],
-                'status' => 'pending',
-                'requested_by' => $requestedBy,
-            ]);
-        });
-
-        return redirect()->route('finance.student-finance.refunds.index')->with('success', 'Refund request submitted successfully.');
-    }
-
     public function clearance(Request $request, Department $department): View
     {
         $mockStudent1 = new class {
@@ -1831,28 +1643,6 @@ class StudentFinanceController extends Controller
         return back()->with('success', 'Adjustment approved successfully.');
     }
 
-    public function refundApprove(Request $request, int $id, Department $department)
-    {
-        $refund = Schema::hasTable('refunds') && Refund::count() > 0
-            ? Refund::findOrFail($id)
-            : new Refund(['id' => $id, 'status' => 'pending']);
-
-        $this->financeService->approveRefund($refund, $request->user()->id);
-
-        return back()->with('success', 'Refund approved successfully.');
-    }
-
-    public function refundProcess(Request $request, int $id, Department $department)
-    {
-        $refund = Schema::hasTable('refunds') && Refund::count() > 0
-            ? Refund::findOrFail($id)
-            : new Refund(['id' => $id, 'status' => 'pending']);
-
-        $this->financeService->processRefund($refund, $request->user()->id);
-
-        return back()->with('success', 'Refund processed successfully.');
-    }
-
     public function feeStructureShow(Request $request, int $id, Department $department): View
     {
         if (! Schema::hasTable('fee_structures') || FeeStructure::count() === 0) {
@@ -1967,44 +1757,6 @@ class StudentFinanceController extends Controller
         ]);
     }
 
-    public function refundShow(Request $request, int $id, Department $department): View
-    {
-        if (! Schema::hasTable('refunds') || Refund::count() === 0) {
-            $mockStudent = new class {
-                public function fullName(): string { return 'Wanjiku Mwangi'; }
-                public $registration_number = 'STU/2024/001';
-            };
-
-            $refund = (object) [
-                'id' => $id,
-                'refund_number' => 'REF-2024-0001',
-                'student' => $mockStudent,
-                'invoice' => new class { public $invoice_number = 'INV-2024-0002'; },
-                'amount' => 5000,
-                'reason' => 'Duplicate payment - student paid twice for application fee',
-                'status' => 'approved',
-                'requestedBy' => new class { public function fullName(): string { return 'Finance Officer'; } },
-                'approvedBy' => new class { public function fullName(): string { return 'Admin User'; } },
-                'approved_by' => 2,
-                'approved_at' => now()->subDays(2),
-                'created_at' => now()->subDays(5),
-                'payment' => (object) [
-                    'payment_number' => 'PAY-2024-0002',
-                    'amount' => 5000,
-                    'payment_method' => 'mpesa',
-                    'payment_reference' => 'SFE123ABC456',
-                    'payment_date' => now()->subDays(10),
-                ],
-            ];
-        } else {
-            $refund = Refund::with(['student', 'invoice', 'payment', 'requestedBy'])->findOrFail($id);
-        }
-
-         return $this->view($request, 'finance.student-finance.refunds.show', $department, [
-            'refund' => $refund,
-        ]);
-    }
-
     /**
      * @return list<string>
      */
@@ -2013,8 +1765,8 @@ class StudentFinanceController extends Controller
         $relations = [
             'student',
             'academicYear',
-            'invoices.semester',
-            'payments',
+            'studentInvoices.semester',
+            'studentPayments',
         ];
 
         if (Schema::hasTable('academic_programs')) {
@@ -2022,11 +1774,11 @@ class StudentFinanceController extends Controller
         }
 
         if (Schema::hasTable('invoice_items')) {
-            $relations[] = 'invoices.items';
+            $relations[] = 'studentInvoices.items';
         }
 
         if (Schema::hasTable('receipts')) {
-            $relations[] = 'payments.receipt';
+            $relations[] = 'studentPayments.receipt';
             $relations[] = 'receipts';
         }
 
@@ -2039,10 +1791,6 @@ class StudentFinanceController extends Controller
             if (Schema::hasTable('installment_plan_items')) {
                 $relations[] = 'installmentPlans.items';
             }
-        }
-
-        if (Schema::hasTable('refunds')) {
-            $relations[] = 'refunds';
         }
 
         if (Schema::hasTable('payment_milestones')) {

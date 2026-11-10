@@ -9,6 +9,9 @@
                 <a href="{{ route('finance.payments.create', ['invoice_id' => $invoice->id]) }}" class="tich-btn tich-btn-primary">+ Record payment</a>
             @endif
             <a href="{{ route('finance.student-finance.invoices.download', ['id' => $invoice->id]) }}" class="tich-btn tich-btn-primary" target="_blank">Download PDF</a>
+            @can('finance.invoices.manage')
+                <a href="{{ route('finance.invoices.edit', ['invoice' => $invoice->id]) }}" class="tich-btn tich-btn-secondary">Edit</a>
+            @endcan
             <a href="{{ route('finance.student-finance.invoices.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
