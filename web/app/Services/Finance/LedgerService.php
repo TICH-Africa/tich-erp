@@ -609,12 +609,54 @@ class LedgerService
             return (string) $match->first()->account_code;
         }
 
+        // A configured code that is simply absent from the chart used to block
+        // every invoice of that fee type; the account the environment names is
+        // created instead, so Finance can bill and the posting stays auditable.
+        if ($postingAccountName !== null && $configured !== '') {
+            return $this->ensureConfiguredAccount($configured, $type, $postingAccountName, $environmentVariable);
+        }
+
         $candidateCodes = $match->pluck('account_code')->take(5)->implode(', ');
         $reason = $match->isEmpty()
             ? 'the configured code does not exist and no active matching leaf account was found'
             : "the configured code does not exist and matching leaf accounts are ambiguous ({$candidateCodes})";
 
         $this->throwAccountMappingError($environmentVariable, $configured, $reason);
+    }
+
+    /**
+     * Create the top-level chart account a finance environment variable names.
+     */
+    private function ensureConfiguredAccount(
+        string $configured,
+        string $type,
+        string $accountName,
+        string $environmentVariable,
+    ): string {
+        return DB::transaction(function () use ($configured, $type, $accountName, $environmentVariable): string {
+            $existing = ChartOfAccount::query()->where('account_code', $configured)->first();
+
+            if ($existing !== null) {
+                if (! $existing->is_active || $existing->account_type !== $type) {
+                    $this->throwAccountMappingError(
+                        $environmentVariable,
+                        $configured,
+                        "it is inactive or is not a {$type} account"
+                    );
+                }
+
+                return (string) $existing->account_code;
+            }
+
+            return (string) ChartOfAccount::query()->create([
+                'account_code' => $configured,
+                'account_name' => $accountName,
+                'account_type' => $type,
+                'currency' => ChartOfAccountService::DEFAULT_CURRENCY,
+                'is_active' => true,
+                'is_system_account' => true,
+            ])->account_code;
+        }, 3);
     }
 
     private function ensurePostingLeafAccount(
