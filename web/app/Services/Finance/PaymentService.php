@@ -33,8 +33,14 @@ class PaymentService
             $invoice = Invoice::query()->whereKey($invoice->id)->lockForUpdate()->firstOrFail();
             $invoice->loadMissing(['studentAccount', 'student.applicant', 'student.user']);
 
-            $amount = round(min((float) $data['amount'], (float) $invoice->balance), 2);
+            // Finance banks the money the student actually handed over. Anything above
+            // this invoice's balance is kept as the student's excess payment, and the
+            // next invoice raised deducts it before asking for cash again.
+            $amount = round((float) $data['amount'], 2);
             abort_if($amount <= 0, 422, 'Payment amount must be greater than zero.');
+
+            $applied = round(min($amount, max((float) $invoice->balance, 0)), 2);
+            $excess = round($amount - $applied, 2);
 
             $method = (string) $data['payment_method'];
             $reference = $data['payment_reference'] ?? null;
@@ -82,7 +88,7 @@ class PaymentService
                 'recorded_by' => $recordedByStaffId,
             ]);
 
-            $newPaid = round((float) $invoice->amount_paid + $amount, 2);
+            $newPaid = round((float) $invoice->amount_paid + $applied, 2);
             $newBalance = round((float) $invoice->amount - $newPaid, 2);
 
             $invoice->update([
@@ -137,6 +143,8 @@ class PaymentService
                 'payment_number' => $payment->payment_number,
                 'invoice_id' => $invoice->id,
                 'amount' => $amount,
+                'applied_to_invoice' => $applied,
+                'excess_to_student_account' => $excess,
                 'payment_method' => $payment->payment_method,
             ]);
 

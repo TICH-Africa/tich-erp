@@ -37,7 +37,11 @@
                             >
                                 <option value="">Select student</option>
                                 @foreach ($students as $student)
-                                    <option value="{{ $student->id }}" @selected(old('student_id', request('student_id')) == $student->id)>
+                                    <option
+                                        value="{{ $student->id }}"
+                                        data-credit="{{ (float) ($studentCredits[$student->id] ?? 0) }}"
+                                        @selected(old('student_id', request('student_id')) == $student->id)
+                                    >
                                         {{ $student->registration_number }} - {{ $student->displayName() }} ({{ $student->program?->program_name }})
                                     </option>
                                 @endforeach
@@ -45,6 +49,7 @@
                             @error('student_id')
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
+                            <span class="uf-hint" id="student-credit-note" hidden></span>
                         </div>
                         <div class="uf-field">
                             <label for="fee_structure_id">From approved fee structure</label>
@@ -169,6 +174,18 @@
             const optionalRow = document.getElementById('include-optional-row');
             const manualFields = document.getElementById('manual-invoice-fields');
             const chargeSelect = document.getElementById('fee_structure_charge');
+            const studentSelect = document.getElementById('student_id');
+            const creditNote = document.getElementById('student-credit-note');
+
+            function syncCredit() {
+                const option = studentSelect.selectedOptions[0];
+                const credit = parseFloat(option ? option.dataset.credit : '0') || 0;
+                creditNote.hidden = credit <= 0;
+                if (credit > 0) {
+                    creditNote.textContent = 'Excess payment on file: KES ' + credit.toFixed(2)
+                        + '. It comes off this invoice before the student pays again.';
+                }
+            }
 
             function sync() {
                 const fromStructure = feeSelect.value !== '';
@@ -180,6 +197,9 @@
             feeSelect.addEventListener('change', sync);
             chargeSelect.addEventListener('change', sync);
             sync();
+
+            studentSelect.addEventListener('change', syncCredit);
+            syncCredit();
         })();
     </script>
 @endsection

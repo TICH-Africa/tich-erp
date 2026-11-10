@@ -37,7 +37,11 @@
                             >
                                 <option value="">Select student</option>
                                 @foreach ($students as $student)
-                                    <option value="{{ $student->id }}" @selected(old('student_id') == $student->id)>
+                                    <option
+                                        value="{{ $student->id }}"
+                                        data-credit="{{ (float) ($studentCredits[$student->id] ?? 0) }}"
+                                        @selected(old('student_id') == $student->id)
+                                    >
                                         {{ $student->registration_number }} - {{ $student->displayName() }}
                                     </option>
                                 @endforeach
@@ -45,6 +49,7 @@
                             @error('student_id')
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
+                            <span class="uf-hint" id="student-credit-note" hidden></span>
                         </div>
                         <div class="uf-field">
                             <label for="fee_structure_id">Fee structure</label>
@@ -162,6 +167,22 @@
 
             feeSelect?.addEventListener('change', syncAmountField);
             syncAmountField();
+
+            var studentSelect = document.getElementById('student_id');
+            var creditNote = document.getElementById('student-credit-note');
+
+            function syncCreditNote() {
+                var option = studentSelect ? studentSelect.selectedOptions[0] : null;
+                var credit = parseFloat(option ? option.dataset.credit : '0') || 0;
+                creditNote.hidden = credit <= 0;
+                if (credit > 0) {
+                    creditNote.textContent = 'Excess payment on file: KES ' + credit.toFixed(2)
+                        + '. It comes off this invoice before the student pays again.';
+                }
+            }
+
+            studentSelect?.addEventListener('change', syncCreditNote);
+            syncCreditNote();
         })();
     </script>
 @endsection

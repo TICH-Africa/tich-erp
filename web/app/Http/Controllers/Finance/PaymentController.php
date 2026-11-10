@@ -74,10 +74,18 @@ class PaymentController extends Controller
         ]);
 
         $invoice = Invoice::query()->findOrFail($validated['invoice_id']);
+        $balanceDue = round((float) $invoice->balance, 2);
         $staffId = (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id'));
 
         $payment = $this->payments->recordPayment($invoice, $validated, $staffId);
 
-        return redirect()->route('finance.payments.index')->with('success', 'Payment recorded: '.$payment->payment_number);
+        $message = 'Payment recorded: '.$payment->payment_number;
+        $banked = round((float) $payment->amount - $balanceDue, 2);
+        if ($banked > 0) {
+            $message .= ' KES '.number_format($banked, 2).' was above the invoice balance, so it now sits on the '
+                .$payment->student?->displayName().' account as an excess payment and comes off the next invoice.';
+        }
+
+        return redirect()->route('finance.payments.index')->with('success', $message);
     }
 }

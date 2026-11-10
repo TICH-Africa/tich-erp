@@ -13,6 +13,8 @@
         </form>
     </x-page-toolbar>
 
+    @php($excessApplied = round(max((float) $invoice->amount_paid - (float) $invoice->payments->sum('amount'), 0), 2))
+
     <article class="tich-card tich-mb-8">
         <p><strong>Student:</strong> {{ $invoice->student?->displayName() }} ({{ $invoice->student?->registration_number }})</p>
         <p><strong>Programme:</strong> {{ $invoice->student?->program?->program_name }}</p>
@@ -20,6 +22,9 @@
         <p><strong>Description:</strong> {!! nl2br(e($invoice->description)) !!}</p>
         <p><strong>Amount:</strong> KES {{ number_format((float) $invoice->amount, 2) }}</p>
         <p><strong>Paid:</strong> KES {{ number_format((float) $invoice->amount_paid, 2) }}</p>
+        @if ($excessApplied > 0)
+            <p><strong>Excess payment applied:</strong> KES {{ number_format($excessApplied, 2) }}</p>
+        @endif
         <p><strong>Balance:</strong> KES {{ number_format((float) $invoice->balance, 2) }}</p>
         <p><strong>Due date:</strong> {{ $invoice->due_date?->format('d M Y') }}</p>
         <p><strong>Status:</strong> {{ ucfirst($invoice->status) }}</p>

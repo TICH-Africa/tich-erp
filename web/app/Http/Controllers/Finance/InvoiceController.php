@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FeeStructure;
 use App\Models\Invoice;
 use App\Models\Student;
+use App\Models\StudentAccount;
 use App\Services\Finance\InvoiceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,8 +40,18 @@ class InvoiceController extends Controller
 
     public function create(): View
     {
+        $students = Student::query()->with(['applicant', 'program'])->orderBy('registration_number')->limit(200)->get();
+
         return view('finance.invoices.create', [
-            'students' => Student::query()->with(['applicant', 'program'])->orderBy('registration_number')->limit(200)->get(),
+            'students' => $students,
+            // Money the student already paid in, which the invoice spends before asking
+            // for cash, so Finance sees the deduction coming.
+            'studentCredits' => StudentAccount::query()
+                ->whereIn('student_id', $students->pluck('id'))
+                ->where('credit_balance', '>', 0)
+                ->selectRaw('student_id, SUM(credit_balance) as credit_balance')
+                ->groupBy('student_id')
+                ->pluck('credit_balance', 'student_id'),
             'feeStructures' => FeeStructure::query()->with(['program', 'academicYear'])->where('is_active', 1)->where('is_approved', 1)->get(),
             'invoiceTypes' => config('finance.invoice_types'),
         ]);
@@ -87,7 +98,14 @@ class InvoiceController extends Controller
             ], $staffId);
         }
 
-        return redirect()->route('finance.invoices.show', $invoice)->with('success', 'Invoice generated and dispatched to the student portal.');
+        $message = 'Invoice generated and dispatched to the student portal.';
+        if ((float) $invoice->amount_paid > 0) {
+            $message = 'Invoice generated. KES '.number_format((float) $invoice->amount_paid, 2)
+                .' of the student\'s excess payment was deducted, leaving KES '
+                .number_format((float) $invoice->balance, 2).' to pay.';
+        }
+
+        return redirect()->route('finance.invoices.show', $invoice)->with('success', $message);
     }
 
     public function show(Invoice $invoice): View

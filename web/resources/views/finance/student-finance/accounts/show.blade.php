@@ -60,6 +60,7 @@
         <div class="tich-card tich-stat">
             <p class="tich-stat__label">Credit Balance</p>
             <p class="tich-stat__value">KES {{ number_format($account->credit_balance, 2) }}</p>
+            <p class="tich-caption">Excess payment, deducted from the next invoice</p>
         </div>
         <div class="tich-card tich-stat">
             <p class="tich-stat__label">Scholarship</p>

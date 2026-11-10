@@ -33,8 +33,42 @@ class StudentAccountService
 
     public function recalculate(StudentAccount $account): StudentAccount
     {
-        $account->loadMissing(['invoices', 'payments']);
+        [$chargeable, $paid, $credits] = $this->totals($account);
 
+        $outstanding = max(round($chargeable - $paid - $credits, 2), 0);
+
+        $account->update([
+            'total_chargeable' => round($chargeable, 2),
+            'total_paid' => round($paid, 2),
+            'outstanding_balance' => $outstanding,
+            // Money taken in over what has been billed. An invoice raised later
+            // deducts this before asking the student for cash again.
+            'credit_balance' => max(round($paid + $credits - $chargeable, 2), 0),
+            'is_cleared' => $outstanding <= 0 && $chargeable > 0,
+            'cleared_at' => $outstanding <= 0 && $chargeable > 0 ? now() : null,
+            'last_payment_date' => $account->payments()->max('payment_date'),
+        ]);
+
+        $this->syncStudentSummary($account);
+
+        return $account->fresh();
+    }
+
+    /**
+     * The excess payment the student can spend on the next invoice.
+     */
+    public function creditAvailable(StudentAccount $account): float
+    {
+        [$chargeable, $paid, $credits] = $this->totals($account);
+
+        return max(round($paid + $credits - $chargeable, 2), 0);
+    }
+
+    /**
+     * @return array{0: float, 1: float, 2: float}
+     */
+    private function totals(StudentAccount $account): array
+    {
         $chargeable = (float) $account->invoices()
             ->whereNotIn('status', ['waived'])
             ->sum('amount');
@@ -45,20 +79,7 @@ class StudentAccountService
             + (float) $account->sponsor_amount
             + (float) $account->work_study_credit;
 
-        $outstanding = max(round($chargeable - $paid - $credits, 2), 0);
-
-        $account->update([
-            'total_chargeable' => round($chargeable, 2),
-            'total_paid' => round($paid, 2),
-            'outstanding_balance' => $outstanding,
-            'is_cleared' => $outstanding <= 0 && $chargeable > 0,
-            'cleared_at' => $outstanding <= 0 && $chargeable > 0 ? now() : null,
-            'last_payment_date' => $account->payments()->max('payment_date'),
-        ]);
-
-        $this->syncStudentSummary($account);
-
-        return $account->fresh();
+        return [$chargeable, $paid, $credits];
     }
 
     /**

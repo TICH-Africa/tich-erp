@@ -20,6 +20,7 @@
                     <th>Chargeable</th>
                     <th>Paid</th>
                     <th>Balance</th>
+                    <th>Excess payment</th>
                     <th>Cleared</th>
                 </tr>
             </thead>
@@ -33,10 +34,11 @@
                         <td>KES {{ number_format((float) $account->total_chargeable, 2) }}</td>
                         <td>KES {{ number_format((float) $account->total_paid, 2) }}</td>
                         <td>KES {{ number_format((float) $account->outstanding_balance, 2) }}</td>
+                        <td>KES {{ number_format((float) $account->credit_balance, 2) }}</td>
                         <td>{{ $account->is_cleared ? 'Yes' : 'No' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="tich-caption">No student accounts found.</td></tr>
+                    <tr><td colspan="9" class="tich-caption">No student accounts found.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -499,6 +499,14 @@ class StudentFinanceController extends Controller
         return $this->view($request, 'finance.student-finance.invoices.create', $department, [
             'students' => $students,
             'feeStructures' => $feeStructures,
+            // What each student already paid in above their bills; the invoice spends it
+            // before the student is asked for cash again.
+            'studentCredits' => StudentAccount::query()
+                ->whereIn('student_id', $students->pluck('id'))
+                ->where('credit_balance', '>', 0)
+                ->selectRaw('student_id, SUM(credit_balance) as credit_balance')
+                ->groupBy('student_id')
+                ->pluck('credit_balance', 'student_id'),
         ]);
     }
 
@@ -540,7 +548,14 @@ class StudentFinanceController extends Controller
             ], $staffId);
         }
 
-        return redirect()->route('finance.student-finance.invoices.index')->with('success', 'Invoice created and posted to the ledger.');
+        $message = 'Invoice created and posted to the ledger.';
+        if ((float) $invoice->amount_paid > 0) {
+            $message = 'Invoice created. KES '.number_format((float) $invoice->amount_paid, 2)
+                .' of the student\'s excess payment was deducted, leaving KES '
+                .number_format((float) $invoice->balance, 2).' to pay.';
+        }
+
+        return redirect()->route('finance.student-finance.invoices.index')->with('success', $message);
     }
 
     public function invoiceShow(Request $request, int $id, Department $department): View

@@ -23,28 +23,36 @@ class StudentFinanceService
 
     public function recalculateAccount(StudentAccount $account): StudentAccount
     {
-        $totalChargeable = $account->invoices()
-            ->whereIn('status', ['issued', 'partial', 'overdue'])
-            ->sum('balance');
+        // Same basis the invoicing and payment screens use: everything billed against
+        // everything received, so the two writers of this row cannot disagree.
+        $totalChargeable = (float) $account->invoices()
+            ->whereNotIn('status', ['waived'])
+            ->sum('amount');
 
-        $totalPaid = $account->payments()
+        $totalPaid = (float) $account->payments()
             ->where('status', 'SUCCESS')
             ->sum('amount');
 
-        $totalAdjustments = $account->adjustments()
+        $totalBursaries = (float) $account->scholarship_amount
+            + (float) $account->helb_amount
+            + (float) $account->sponsor_amount
+            + (float) $account->work_study_credit;
+
+        $totalAdjustments = (float) $account->adjustments()
             ->where('status', 'approved')
             ->sum('amount');
 
-        $creditBalance = max(0, $totalPaid - $totalChargeable + $totalAdjustments);
-        $outstandingBalance = max(0, $totalChargeable - $totalPaid - $totalAdjustments);
+        $net = round($totalChargeable - $totalPaid - $totalBursaries - $totalAdjustments, 2);
+        $outstandingBalance = max($net, 0);
+        $creditBalance = max(-$net, 0);
 
         $account->update([
-            'total_chargeable' => $totalChargeable,
-            'total_paid' => $totalPaid,
+            'total_chargeable' => round($totalChargeable, 2),
+            'total_paid' => round($totalPaid, 2),
             'outstanding_balance' => $outstandingBalance,
             'credit_balance' => $creditBalance,
-            'is_cleared' => $outstandingBalance <= 0,
-            'cleared_at' => $outstandingBalance <= 0 ? now() : null,
+            'is_cleared' => $outstandingBalance <= 0 && $totalChargeable > 0,
+            'cleared_at' => $outstandingBalance <= 0 && $totalChargeable > 0 ? now() : null,
             'last_payment_date' => $account->payments()
                 ->where('status', 'SUCCESS')
                 ->max('payment_date'),

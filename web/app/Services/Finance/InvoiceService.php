@@ -50,6 +50,10 @@ class InvoiceService
                 ? \Illuminate\Support\Carbon::parse($data['due_date'])->toDateString()
                 : now()->addDays(config('finance.invoice_due_days', 30))->toDateString();
 
+            // Read before the new charge exists: any excess payment already on file is
+            // spent on this invoice first, so the student is only asked for the rest.
+            $creditApplied = round(min($this->accounts->creditAvailable($account), $amount), 2);
+
             $invoice = Invoice::query()->create([
                 'invoice_number' => $this->nextInvoiceNumber($student),
                 'student_account_id' => $account->id,
@@ -58,11 +62,15 @@ class InvoiceService
                 'invoice_type' => $invoiceType,
                 'description' => $description,
                 'amount' => $amount,
-                'amount_paid' => 0,
-                'balance' => $amount,
+                'amount_paid' => $creditApplied,
+                'balance' => round($amount - $creditApplied, 2),
                 'issue_date' => now()->toDateString(),
                 'due_date' => $dueDate,
-                'status' => 'issued',
+                'status' => match (true) {
+                    $creditApplied <= 0 => 'issued',
+                    $creditApplied >= $amount => 'paid',
+                    default => 'partial',
+                },
             ]);
 
             $this->ledger->postInvoiceRaised($amount, $invoice->invoice_number, $recordedByStaffId, $invoice->invoice_type);
@@ -82,6 +90,7 @@ class InvoiceService
                 'invoice_number' => $invoice->invoice_number,
                 'student_id' => $invoice->student_id,
                 'amount' => $amount,
+                'credit_applied' => $creditApplied,
                 'invoice_type' => $invoice->invoice_type,
             ]);
 

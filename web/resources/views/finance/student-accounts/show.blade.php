@@ -11,6 +11,13 @@
         <div class="tich-stat"><p class="tich-stat__label">Chargeable</p><p class="tich-stat__value">KES {{ number_format((float) $account->total_chargeable, 0) }}</p></div>
         <div class="tich-stat"><p class="tich-stat__label">Paid</p><p class="tich-stat__value">KES {{ number_format((float) $account->total_paid, 0) }}</p></div>
         <div class="tich-stat"><p class="tich-stat__label">Outstanding</p><p class="tich-stat__value">KES {{ number_format((float) $account->outstanding_balance, 0) }}</p></div>
+        @if ((float) $account->credit_balance > 0)
+            <div class="tich-stat">
+                <p class="tich-stat__label">Excess payment</p>
+                <p class="tich-stat__value">KES {{ number_format((float) $account->credit_balance, 0) }}</p>
+                <p class="tich-caption">Deducted from the next invoice</p>
+            </div>
+        @endif
     </div>
 
     <section class="tich-mb-8">
