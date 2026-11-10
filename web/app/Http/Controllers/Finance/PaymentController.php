@@ -97,4 +97,44 @@ class PaymentController extends Controller
 
         return redirect()->route('finance.payments.index')->with('success', $message);
     }
+
+    public function edit(Payment $payment): View
+    {
+        $payment->load(['invoice.student.applicant', 'student.applicant', 'studentAccount.academicYear']);
+
+        return view('finance.payments.edit', [
+            'payment' => $payment,
+            'paymentMethods' => config('finance.payment_methods'),
+        ]);
+    }
+
+    public function update(Request $request, Payment $payment): RedirectResponse
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'payment_method' => 'required|string|in:'.implode(',', array_keys(config('finance.payment_methods'))),
+            'payment_reference' => 'nullable|string|max:100',
+            'payment_date' => 'required|date',
+        ]);
+
+        $staffId = (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id'));
+        $amended = $this->payments->amendPayment($payment, $validated, $staffId);
+        $invoice = $amended->invoice;
+
+        $message = 'Payment '.$amended->payment_number.' corrected to KES '.number_format((float) $amended->amount, 2).'.';
+        if ($invoice) {
+            $message .= ' KES '.number_format((float) $invoice->balance, 2).' now remains on invoice '.$invoice->invoice_number.'.';
+        }
+
+        $account = $invoice?->studentAccount ?? $amended->studentAccount;
+        $credit = (float) ($account?->credit_balance ?? 0);
+        if ($credit > 0) {
+            $message .= ' KES '.number_format($credit, 2).' is on the student account as an excess payment; '
+                .'it carries to the next term or semester and comes off their next invoice.';
+        }
+
+        return $invoice
+            ? redirect()->route('finance.invoices.show', $invoice)->with('success', $message)
+            : redirect()->route('finance.payments.index')->with('success', $message);
+    }
 }

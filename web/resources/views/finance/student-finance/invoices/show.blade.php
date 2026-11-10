@@ -127,6 +127,9 @@
                             <td class="tich-caption">{{ $payment->payment_reference ?? '-' }}</td>
                             <td>
                                 <a href="{{ route('finance.student-finance.payments.show', ['id' => $payment->id]) }}" class="tich-btn tich-btn-ghost">View</a>
+                                @can('finance.payments.manage')
+                                    <a href="{{ route('finance.payments.edit', $payment) }}" class="tich-btn tich-btn-ghost">Edit</a>
+                                @endcan
                             </td>
                         </tr>
                     @empty

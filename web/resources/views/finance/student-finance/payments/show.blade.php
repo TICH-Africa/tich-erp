@@ -6,6 +6,9 @@
     <x-page-toolbar title="Payment" meta="Payment details">
 <x-slot:actions>
             <a href="{{ route('finance.student-finance.payments.index') }}" class="tich-btn tich-btn-ghost">Back</a>
+            @can('finance.payments.manage')
+                <a href="{{ route('finance.payments.edit', $payment->id) }}" class="tich-btn tich-btn-secondary">Edit</a>
+            @endcan
         </x-slot:actions>
     </x-page-toolbar>
 

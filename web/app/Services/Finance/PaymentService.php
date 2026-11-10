@@ -166,6 +166,95 @@ class PaymentService
         }, 3);
     }
 
+    /**
+     * Correct a payment Finance already recorded. The money stays the student's: the
+     * bill re-opens or closes to match the new figure, the ledger follows the
+     * difference, and the account is recalculated so the excess still reads right.
+     *
+     * @param  array{amount: float, payment_method: string, payment_reference?: string|null, payment_date?: string|null}  $data
+     */
+    public function amendPayment(Payment $payment, array $data, int $recordedByStaffId): Payment
+    {
+        return DB::transaction(function () use ($payment, $data, $recordedByStaffId) {
+            /** @var Payment $locked */
+            $locked = Payment::query()->whereKey($payment->id)->lockForUpdate()->firstOrFail();
+            $amount = round((float) $data['amount'], 2);
+            abort_if($amount <= 0, 422, 'Payment amount must be greater than zero.');
+
+            $previous = [
+                'amount' => round((float) $locked->amount, 2),
+                'payment_method' => (string) $locked->payment_method,
+                'payment_reference' => $locked->payment_reference,
+                'payment_date' => $locked->payment_date?->toDateString(),
+            ];
+
+            $invoice = $locked->invoice_id
+                ? Invoice::query()->whereKey($locked->invoice_id)->lockForUpdate()->firstOrFail()
+                : null;
+
+            $locked->update([
+                'amount' => $amount,
+                'payment_method' => (string) $data['payment_method'],
+                'payment_reference' => $data['payment_reference'] ?? null,
+                'payment_date' => $data['payment_date'] ?? $previous['payment_date'] ?? now()->toDateString(),
+            ]);
+
+            if ($invoice) {
+                // A bill's paid total is the cash in plus any excess the invoice absorbed
+                // when it was raised, so that credit is kept and only this payment moves.
+                $others = round((float) Payment::query()
+                    ->where('invoice_id', $invoice->id)
+                    ->where('id', '!=', $locked->id)
+                    ->where('status', 'SUCCESS')
+                    ->sum('amount'), 2);
+                $creditApplied = round(max((float) $invoice->amount_paid - round($others + $previous['amount'], 2), 0), 2);
+                $applied = round(min($amount, max((float) $invoice->amount - $creditApplied - $others, 0)), 2);
+                $paid = round($creditApplied + $others + $applied, 2);
+                $balance = round((float) $invoice->amount - $paid, 2);
+
+                $invoice->update([
+                    'amount_paid' => $paid,
+                    'balance' => max($balance, 0),
+                    'status' => match (true) {
+                        $balance <= 0 => 'paid',
+                        $paid > 0 => 'partial',
+                        default => 'issued',
+                    },
+                ]);
+
+                $this->accounts->recalculate($invoice->studentAccount ?? $locked->studentAccount);
+            } elseif ($locked->studentAccount) {
+                $this->accounts->recalculate($locked->studentAccount);
+            }
+
+            $delta = round($amount - $previous['amount'], 2);
+            if (strtolower($previous['payment_method']) !== strtolower((string) $locked->payment_method)) {
+                // The money lands in a different till, so move the whole entry and post
+                // the corrected figure rather than only the difference.
+                $this->ledger->postPaymentAmendment(-$previous['amount'], $locked->payment_number, $previous['payment_method'], $recordedByStaffId);
+                $this->ledger->postPaymentAmendment($amount, $locked->payment_number, $locked->payment_method, $recordedByStaffId);
+            } elseif (abs($delta) >= 0.01) {
+                $this->ledger->postPaymentAmendment($delta, $locked->payment_number, $locked->payment_method, $recordedByStaffId);
+            }
+
+            Receipt::query()->where('payment_id', $locked->id)->update([
+                'amount' => $amount,
+                'payment_method' => $locked->payment_method,
+                'payment_reference' => $locked->payment_reference,
+            ]);
+
+            $this->audit->log('finance.payment.amended', 'payments', $locked->id, $previous, [
+                'payment_number' => $locked->payment_number,
+                'amount' => $amount,
+                'payment_method' => $locked->payment_method,
+                'payment_reference' => $locked->payment_reference,
+                'payment_date' => $locked->payment_date?->toDateString(),
+            ]);
+
+            return $locked->fresh(['invoice', 'student.applicant', 'student.user']);
+        }, 3);
+    }
+
     public function initiateMpesaPayment(Invoice $invoice, float $amount, string $phoneNumber, int $studentId): MpesaStkRequest
     {
         abort_unless($invoice->isPayable(), 422, 'This invoice is not open for payment.');

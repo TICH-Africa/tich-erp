@@ -41,7 +41,7 @@
             <h2 class="tich-h3">Payments</h2>
             <div class="tich-card tich-table-panel tich-mt-4">
                 <table class="tich-admin-table">
-                    <thead><tr><th>Payment</th><th>Date</th><th>Amount</th><th>Method</th></tr></thead>
+                    <thead><tr><th>Payment</th><th>Date</th><th>Amount</th><th>Method</th><th></th></tr></thead>
                     <tbody>
                         @foreach ($invoice->payments as $payment)
                             <tr>
@@ -49,6 +49,11 @@
                                 <td>{{ $payment->payment_date?->format('d M Y') }}</td>
                                 <td>KES {{ number_format((float) $payment->amount, 2) }}</td>
                                 <td>{{ config('finance.payment_methods.'.$payment->payment_method, $payment->payment_method) }}</td>
+                                <td>
+                                    @can('finance.payments.manage')
+                                        <a href="{{ route('finance.payments.edit', $payment) }}" class="tich-btn tich-btn-ghost">Edit</a>
+                                    @endcan
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

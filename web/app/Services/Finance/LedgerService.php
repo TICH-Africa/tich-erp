@@ -130,6 +130,20 @@ class LedgerService
     }
 
     /**
+     * Follow an edited payment so the bank and the receivable match the corrected
+     * figure: a rise takes in the difference, a cut hands part of it back.
+     */
+    public function postPaymentAmendment(float $delta, string $paymentNumber, string $paymentMethod, ?int $recordedByStaffId = null): AccountLedger
+    {
+        $receiving = $this->cashAccountFor($paymentMethod);
+        $receivable = $this->resolveChartCode((string) config('finance.accounts.accounts_receivable'), 'asset', ['receivable', 'debtor'], 'FINANCE_ACCOUNTS_RECEIVABLE_ACCOUNT', 'Student Fees Receivable');
+
+        return $delta >= 0
+            ? $this->postEntry('payment_amended', $receiving, $receivable, $delta, "Payment amended up: {$paymentNumber}", 'student_fees', 'payments', $paymentNumber, $recordedByStaffId)
+            : $this->postEntry('payment_amended', $receivable, $receiving, abs($delta), "Payment amended down: {$paymentNumber}", 'student_fees', 'payments', $paymentNumber, $recordedByStaffId);
+    }
+
+    /**
      * Post a transaction recorded against a child chart account. The chosen direction
      * decides which side the account sits on: an increase of a debit-normal account
      * (expense, asset) and a decrease of a credit-normal one (revenue, liability, equity)

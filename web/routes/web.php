@@ -662,6 +662,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::middleware('permission:finance.payments.manage')->group(function () {
             Route::get('/payments/create/new', [\App\Http\Controllers\Finance\PaymentController::class, 'create'])->name('finance.payments.create');
             Route::post('/payments', [\App\Http\Controllers\Finance\PaymentController::class, 'store'])->name('finance.payments.store');
+            Route::get('/payments/{payment}/edit', [\App\Http\Controllers\Finance\PaymentController::class, 'edit'])->name('finance.payments.edit');
+            Route::put('/payments/{payment}', [\App\Http\Controllers\Finance\PaymentController::class, 'update'])->name('finance.payments.update');
             Route::get('/mpesa/settings', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'edit'])->name('finance.mpesa.settings');
             Route::put('/mpesa/settings', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'update'])->name('finance.mpesa.settings.update');
             Route::post('/mpesa/stk/{stkRequest}/reconcile', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'reconcile'])->name('finance.mpesa.stk.reconcile');
