@@ -4541,7 +4541,7 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
 
     /* A portal page that renders with no sidebar would otherwise land in the sidebar
        track and read as a narrow column, so a lone content column takes the full width. */
-    .tich-admin:not(:has(> .tich-admin-sidebar)) {
+    .tich-admin.tich-admin--no-sidebar {
         grid-template-columns: minmax(0, 1fr);
     }
 

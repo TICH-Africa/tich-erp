@@ -3,8 +3,9 @@
 @section('title', $portalTitle ?? 'Student portal')
 
 @section('content')
-<div class="tich-admin tich-admin--student-portal">
-    @if (isset($student) && isset($biodata) && isset($sidebarNavigation))
+@php $portalHasSidebar = isset($student) && isset($biodata) && isset($sidebarNavigation); @endphp
+<div class="tich-admin tich-admin--student-portal{{ $portalHasSidebar ? '' : ' tich-admin--no-sidebar' }}">
+    @if ($portalHasSidebar)
         @include('portal.partials.sidebar', [
             'student' => $student,
             'biodata' => $biodata,
