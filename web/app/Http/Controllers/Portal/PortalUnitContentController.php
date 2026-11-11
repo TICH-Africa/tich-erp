@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\UnitContent;
+use App\Services\StudentPortalNavigationService;
 use App\Services\StudentPortalService;
+use App\Services\StudentRecordService;
 use App\Services\StudentUnitContentAccessService;
 use App\Services\UnitContentPreviewService;
 use Illuminate\Http\Request;
@@ -17,6 +19,8 @@ class PortalUnitContentController extends Controller
         protected StudentPortalService $portalService,
         protected StudentUnitContentAccessService $contentAccess,
         protected UnitContentPreviewService $preview,
+        protected StudentRecordService $studentRecords,
+        protected StudentPortalNavigationService $navigation,
     ) {}
 
     /**
@@ -49,6 +53,12 @@ class PortalUnitContentController extends Controller
             'previewReason' => $this->preview->fallbackReason($content),
             'fileUrl' => $content->file_path ? route('portal.learning-content.view', $content) : null,
             'downloadUrl' => $content->file_path ? route('portal.learning-content.download', $content) : null,
+            'student' => $student,
+            'biodata' => $this->studentRecords->biodata360($student),
+            'sidebarNavigation' => $this->navigation->sidebarNavigation($student),
+            'section' => 'academics',
+            'tab' => 'content',
+            'portalTitle' => $content->lessonLabel(),
         ]);
     }
 

@@ -4539,6 +4539,12 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
         transition: grid-template-columns 0.34s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
+    /* A portal page that renders with no sidebar would otherwise land in the sidebar
+       track and read as a narrow column, so a lone content column takes the full width. */
+    .tich-admin:not(:has(> .tich-admin-sidebar)) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .tich-admin.is-sidebar-resizing {
         transition: none;
         user-select: none;

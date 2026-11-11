@@ -73,10 +73,10 @@
         <aside class="tich-lesson-read__side">
             <h2 class="tich-h4">Lessons on this unit</h2>
             <ol class="tich-lesson-read__index">
-                @foreach ($lessons as $index => $row)
+                @foreach ($lessons as $row)
                     <li class="{{ $row->id === $content->id ? 'is-current' : '' }}">
                         <a href="{{ route('portal.learning-content.read', $row) }}">
-                            <span class="tich-lesson-read__index-number">{{ $row->lesson_number ?: $index + 1 }}</span>
+                            <span class="tich-lesson-read__index-number">{{ $row->lesson_number ?: '–' }}</span>
                             <span>{{ $row->title }}</span>
                         </a>
                     </li>
