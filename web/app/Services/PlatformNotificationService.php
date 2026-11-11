@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\PlatformNotificationMail;
 use App\Models\User;
+use App\Support\NotificationUrl;
 use App\Support\ModuleMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +23,8 @@ class PlatformNotificationService
         ?string $actionUrl = null,
         bool $sendEmail = true,
     ): void {
+        $actionUrl = NotificationUrl::sameApp($actionUrl);
+
         $channels = ['in_app'];
 
         $row = [

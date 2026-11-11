@@ -9,6 +9,7 @@ use App\Models\Staff;
 use App\Models\StaffDocument;
 use App\Models\StaffProfileChangeRequest;
 use App\Models\User;
+use App\Support\NotificationUrl;
 use Illuminate\Support\Facades\Route;
 use Throwable;
 
@@ -17,7 +18,7 @@ class NotificationActionUrlResolver
     public function resolve(InAppNotification $notification, ?User $viewer = null): ?string
     {
         if (filled($notification->action_url)) {
-            return $notification->action_url;
+            return NotificationUrl::sameApp($notification->action_url);
         }
 
         $type = $notification->related_entity_type;

@@ -806,7 +806,7 @@ class LeaveRequestService
             'leave_request',
             (string) $leaveRequest->id,
             'normal',
-            route('employee.leave.index'),
+            route('employee.leave.review', $leaveRequest),
         );
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\StudentNotification;
+use App\Support\NotificationUrl;
 use App\Services\Sidebar\StudentSidebarNotificationService;
 use App\Services\StudentPortalService;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +29,7 @@ class PortalNotificationController extends Controller
         }
 
         if ($notification->action_url) {
-            return redirect()->to($notification->action_url);
+            return redirect()->to(NotificationUrl::sameApp($notification->action_url));
         }
 
         return redirect()

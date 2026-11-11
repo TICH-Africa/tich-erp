@@ -1511,6 +1511,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::put('/leave/{leaveRequest}', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'update'])->name('employee.leave.update');
         Route::post('/leave/{leaveRequest}/cancel', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'cancel'])->name('employee.leave.cancel');
         Route::post('/leave/{leaveRequest}/line-manager/approve', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'managerApprove'])->name('employee.leave.manager-approve');
+        Route::get('/leave/{leaveRequest}/review', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'review'])->name('employee.leave.review');
+        Route::get('/leave/{leaveRequest}/review/document', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'reviewDocument'])->name('employee.leave.review.document');
         Route::post('/leave/{leaveRequest}/line-manager/reject', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'managerReject'])->name('employee.leave.manager-reject');
         Route::post('/leave/{leaveRequest}/coverages', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'updateCoverages'])->name('employee.leave.coverages.update');
         Route::post('/leave/coverages/{coverage}/accept', [\App\Http\Controllers\Employee\EmployeeLeaveController::class, 'acceptCoverage'])->name('employee.leave.coverages.accept');

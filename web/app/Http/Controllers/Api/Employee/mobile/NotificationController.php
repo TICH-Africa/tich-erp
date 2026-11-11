@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\Employee\mobile\Concerns\ResolvesPortalStaff;
 use App\Models\InAppNotification;
 use App\Services\Sidebar\EmployeeSidebarNotificationService;
+use App\Support\NotificationUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -58,7 +59,7 @@ class NotificationController extends Controller
             'title' => $n->title,
             'body' => $n->body,
             'priority' => $n->priority,
-            'action_url' => $n->action_url,
+            'action_url' => NotificationUrl::sameApp($n->action_url),
             'is_read' => (bool) $n->is_read,
             'created_at' => optional($n->created_at)?->toIso8601String(),
             'related_entity_type' => $n->related_entity_type,

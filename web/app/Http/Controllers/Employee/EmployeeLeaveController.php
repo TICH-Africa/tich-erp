@@ -180,9 +180,63 @@ class EmployeeLeaveController extends Controller
             return back()->withInput()->with('error', $exception->getMessage());
         }
 
+        // An edited request goes back to whoever reviews it first, so name that reader.
+        $nextReview = $leaveRequest->overall_status === 'pending_hr' ? 'HR' : 'your line manager';
+
         return redirect()
             ->route('employee.leave.index')
-            ->with('success', 'Your leave request has been updated and sent back to HR for review.');
+            ->with('success', "Your leave request has been updated and sent back to {$nextReview} for review.");
+    }
+
+    public function review(Request $request, LeaveRequest $leaveRequest): View
+    {
+        $this->assertLineManagerOf($request, $leaveRequest);
+
+        $leaveRequest->load([
+            'leaveType',
+            'staff.department',
+            'staff.lineManager',
+            'coverages.department',
+            'coverages.coverStaff',
+            'hodApprovedBy',
+            'hrApprovedBy',
+        ]);
+
+        return view('employee.leave.review', [
+            'portalTitle' => 'Review leave request',
+            'leaveRequest' => $leaveRequest,
+            'staffMember' => $leaveRequest->staff,
+            'leaveBalances' => $this->employeePortal->leaveBalancesFor($leaveRequest->staff),
+            'awaitingManager' => $leaveRequest->overall_status === 'pending_hod'
+                && $leaveRequest->hod_approval_status === 'pending',
+        ]);
+    }
+
+    public function reviewDocument(Request $request, LeaveRequest $leaveRequest): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $this->assertLineManagerOf($request, $leaveRequest);
+
+        $path = $leaveRequest->supporting_document_path ?: $leaveRequest->medical_certificate_path;
+        abort_unless($path && \Illuminate\Support\Facades\Storage::disk('local')->exists($path), 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->download(
+            $path,
+            $leaveRequest->supporting_document_name ?: basename($path),
+        );
+    }
+
+    /**
+     * Only the line manager named on the applicant's profile opens this desk.
+     */
+    private function assertLineManagerOf(Request $request, LeaveRequest $leaveRequest): void
+    {
+        $manager = $this->staff($request);
+
+        abort_unless(
+            (int) ($leaveRequest->staff?->line_manager_id ?? 0) === (int) $manager->id,
+            403,
+            'This leave request is not on your desk.'
+        );
     }
 
     public function managerApprove(Request $request, LeaveRequest $leaveRequest): RedirectResponse
@@ -204,7 +258,7 @@ class EmployeeLeaveController extends Controller
     {
         $manager = $this->staff($request);
         $validated = $request->validate([
-            'reason' => ['nullable', 'string', 'max:2000'],
+            'reason' => ['required', 'string', 'max:2000'],
         ]);
 
         try {

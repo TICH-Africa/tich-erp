@@ -18,7 +18,7 @@
     @if (($teamLeavePending ?? collect())->isNotEmpty())
         <article class="tich-card tich-mb-6">
             <h2 class="tich-h3 tich-mb-4">Team leave awaiting your approval</h2>
-            <p class="tich-text tich-mb-4">These requests are from staff who report to you. Approve them to send each request to HR, or reject with an optional reason.</p>
+            <p class="tich-text tich-mb-4">These requests are from staff who report to you. Approve them to send each request to HR, or decline with a note the employee will see. Open the request number to read it in full.</p>
             <div class="tich-table-wrap">
                 <table class="tich-admin-table">
                     <thead>
@@ -38,7 +38,9 @@
                                 </td>
                                 <td>
                                     {{ $teamLeave->leaveType?->leave_name ?? 'Leave' }}
-                                    <p class="tich-caption">{{ $teamLeave->leave_number }}</p>
+                                    <p class="tich-caption">
+                                        <a href="{{ route('employee.leave.review', $teamLeave) }}">{{ $teamLeave->leave_number }}</a>
+                                    </p>
                                 </td>
                                 <td class="tich-caption">
                                     {{ $teamLeave->start_date->format('d M Y') }}
@@ -69,9 +71,14 @@
             document.querySelectorAll('form.js-line-manager-reject').forEach(function (form) {
                 form.addEventListener('submit', function (e) {
                     var num = form.getAttribute('data-leave') || 'this request';
-                    var reason = window.prompt('Optional reason to share with the employee (leave blank to skip):');
+                    var reason = window.prompt('Note for the employee on declining ' + num + ':');
                     if (reason === null) {
                         e.preventDefault();
+                        return;
+                    }
+                    if (reason.trim() === '') {
+                        e.preventDefault();
+                        window.alert('Add a note so the employee knows why.');
                         return;
                     }
                     form.querySelector('.js-line-manager-reject-reason').value = reason;
@@ -207,6 +214,11 @@
                                         ({{ $coverage->department?->dept_name ?? 'Dept' }} - {{ $coverage->statusLabel() }})@if (! $loop->last); @endif
                                     @endforeach
                                 </p>
+                            @endif
+                            @if ($request->hod_approval_status === 'rejected' && $request->cancellation_reason)
+                                <div class="tich-leave-request-item__note">
+                                    <strong>Line manager note:</strong> {{ $request->cancellation_reason }}
+                                </div>
                             @endif
                             @if ($request->hr_review_notes && $request->overall_status === 'returned')
                                 <div class="tich-leave-request-item__note">
