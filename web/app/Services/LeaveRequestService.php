@@ -58,6 +58,21 @@ class LeaveRequestService
     }
 
     /**
+     * @return Collection<int, LeaveRequest>
+     */
+    public function requestsDecidedByLineManagerFor(Staff $manager, int $limit = 20): Collection
+    {
+        return LeaveRequest::query()
+            ->with(['leaveType', 'staff.department'])
+            ->whereHas('staff', fn ($q) => $q->where('line_manager_id', $manager->id))
+            ->whereIn('hod_approval_status', ['approved', 'rejected'])
+            ->orderByDesc('hod_approved_at')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator<int, LeaveRequest>
      */
     public function hrInbox(?string $status = null, ?string $search = null, int $perPage = 20)

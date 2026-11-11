@@ -74,6 +74,7 @@ class EmployeeLeaveController extends Controller
         $leaveRequests->loadMissing(['coverages.coverStaff', 'coverages.department']);
 
         $teamLeavePending = $this->leaveRequests->requestsPendingLineManagerFor($staff);
+        $teamLeaveDecided = $this->leaveRequests->requestsDecidedByLineManagerFor($staff);
 
         $hrManagerDisplay = app(RBACService::class)->primaryHrManagerDisplayName();
         $lineManager = $staff->lineManager;
@@ -107,6 +108,7 @@ class EmployeeLeaveController extends Controller
             'eligibleCoverStaff' => $eligibleCoverStaff,
             'pendingCoverages' => $this->coverages->pendingForCoverStaff($staff),
             'teamLeavePending' => $teamLeavePending,
+            'teamLeaveDecided' => $teamLeaveDecided,
             'hrManagerDisplay' => $hrManagerDisplay,
             'leaveApplicationNotice' => implode(' ', $leaveApplicationNoticeParts),
         ]);
