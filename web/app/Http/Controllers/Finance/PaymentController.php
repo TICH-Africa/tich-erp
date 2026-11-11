@@ -87,6 +87,18 @@ class PaymentController extends Controller
 
         $payment = $this->payments->recordPayment($invoice, $validated, $staffId);
 
+        // The service answers a repeated submission with the payment already on file
+        // instead of booking the money twice, so say which payment it found rather
+        // than claiming a new one was recorded.
+        if (! $payment->wasRecentlyCreated) {
+            return redirect()->route('finance.payments.index')->with('error', 'Nothing was added: KES '
+                .number_format((float) $payment->amount, 2).' is already booked as payment '
+                .$payment->payment_number.' on '.($payment->payment_date?->format('d M Y') ?? 'an earlier date')
+                .($payment->payment_reference ? ' under reference '.$payment->payment_reference : '')
+                .'. If this is different money, record it with its own reference. If the figure is wrong, edit '
+                .$payment->payment_number.' instead.');
+        }
+
         $message = 'Payment recorded: '.$payment->payment_number;
         $carried = round((float) $payment->amount - $owed, 2);
         if ($carried > 0) {
