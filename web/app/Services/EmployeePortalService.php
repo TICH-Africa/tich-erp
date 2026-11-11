@@ -97,8 +97,14 @@ class EmployeePortalService
      */
     private function contractSummary(Staff $staff, ?\App\Models\StaffContract $currentContract): array
     {
-        $endDate = $currentContract?->end_date ?? $staff->contract_end_date;
-        $startDate = $currentContract?->start_date ?? $staff->employment_start_date;
+        $isPermanent = $currentContract?->contract_type === 'permanent';
+        $institutionStart = $this->leaveAccrual->resolveEmploymentStart($staff);
+        $startDate = $institutionStart ?? $currentContract?->start_date ?? $staff->employment_start_date;
+
+        $endDate = null;
+        if (! $isPermanent) {
+            $endDate = $currentContract?->end_date ?? $staff->contract_end_date;
+        }
 
         $daysRemaining = null;
         if ($endDate) {
@@ -106,7 +112,9 @@ class EmployeePortalService
         }
 
         $status = 'active';
-        if ($endDate && $daysRemaining !== null && $daysRemaining < 0) {
+        if ($isPermanent) {
+            $status = 'permanent';
+        } elseif ($endDate && $daysRemaining !== null && $daysRemaining < 0) {
             $status = 'expired';
         } elseif ($endDate && $daysRemaining !== null && $daysRemaining <= 30) {
             $status = 'expiring_soon';
@@ -122,6 +130,7 @@ class EmployeePortalService
             'end_date' => $endDate,
             'days_remaining' => $daysRemaining,
             'status' => $status,
+            'is_permanent' => $isPermanent,
             'is_signed' => (bool) ($currentContract?->is_signed ?? false),
             'signed_date' => $currentContract?->signed_date,
             'probation_end_date' => $staff->probation_end_date ?? $currentContract?->probation_end_date,
@@ -216,11 +225,13 @@ class EmployeePortalService
 
     private function employmentDurationLabel(Staff $staff): ?string
     {
-        if (! $staff->employment_start_date) {
+        $start = $this->leaveAccrual->resolveEmploymentStart($staff);
+
+        if (! $start) {
             return null;
         }
 
-        return $staff->employment_start_date->diffForHumans(now(), true);
+        return $start->diffForHumans(now(), true);
     }
 
     /**

@@ -12,6 +12,26 @@ class ContractService
 {
     public function __construct(protected AuditService $auditService) {}
 
+    /**
+     * Permanent employment has no fixed end date; it ends only on separation.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function applyPermanentContractRules(array $data): array
+    {
+        if (($data['contract_type'] ?? null) !== 'permanent') {
+            return $data;
+        }
+
+        $data['end_date'] = null;
+        unset($data['duration']);
+        $data['is_renewable'] = false;
+        $data['probation_status'] = $data['probation_status'] ?? 'not_applicable';
+
+        return $data;
+    }
+
     public function calculateEndDate(string $startDate, ?string $duration): ?string
     {
         if (! $duration) {
@@ -45,6 +65,8 @@ class ContractService
                 'Super Admin / platform administrator accounts cannot be issued employment contracts.'
             );
         }
+
+        $data = $this->applyPermanentContractRules($data);
 
         $contract = DB::transaction(function () use ($staffId, $data, $createdBy) {
             $contractNumber = $this->generateContractNumber();
@@ -86,6 +108,9 @@ class ContractService
     {
         $contract = StaffContract::findOrFail($contractId);
 
+        $mergedType = $data['contract_type'] ?? $contract->contract_type;
+        $data = $this->applyPermanentContractRules(array_merge(['contract_type' => $mergedType], $data));
+
         $oldValues = $contract->only(array_keys($data));
 
         DB::transaction(function () use ($contract, $data, $updatedBy) {
@@ -124,6 +149,11 @@ class ContractService
         if ($contract->renewal_status === 'terminated') {
             throw new \InvalidArgumentException('A terminated contract cannot be renewed.');
         }
+
+        $renewalData = $this->applyPermanentContractRules(array_merge(
+            ['contract_type' => $renewalData['contract_type'] ?? $contract->contract_type],
+            $renewalData,
+        ));
 
         $newContract = DB::transaction(function () use ($contract, $renewalData, $renewedBy) {
             $contractType = $renewalData['contract_type'] ?? $contract->contract_type;

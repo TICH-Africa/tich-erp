@@ -286,12 +286,20 @@ class _DashboardPageState extends State<DashboardPage> {
                                 contract['start_date'],
                           ),
                         ),
-                        _EmploymentKvRow(
-                          label: 'Contract end',
-                          value: contract['end_date'] != null
-                              ? _formatEmploymentDate(contract['end_date'])
-                              : 'Open-ended / permanent',
-                        ),
+                        if (contract['is_permanent'] == true)
+                          _EmploymentKvRow(
+                            label: 'Time with TICH',
+                            value: employmentDuration?.isNotEmpty == true
+                                ? employmentDuration!
+                                : '-',
+                          )
+                        else
+                          _EmploymentKvRow(
+                            label: 'Contract end',
+                            value: contract['end_date'] != null
+                                ? _formatEmploymentDate(contract['end_date'])
+                                : 'Open-ended',
+                          ),
                         _EmploymentKvRow(
                           label: 'Contract no.',
                           value: contract['number']?.toString(),
@@ -353,7 +361,9 @@ String _labelContractType(String? raw) {
 }
 
 String _contractSummaryLabel(Map<String, dynamic> contract) {
+  if (contract['is_permanent'] == true) return 'Permanent';
   final status = contract['status']?.toString();
+  if (status == 'permanent') return 'Permanent';
   if (status == 'open_ended') return 'Open-ended';
   final days = (contract['days_remaining'] as num?)?.toInt();
   if (days != null && days >= 0) return '$days days left';
@@ -528,9 +538,12 @@ class _ContractHistoryTile extends StatelessWidget {
     final number = item['contract_number']?.toString() ?? 'Contract';
     final type = _labelContractType(item['contract_type']?.toString());
     final start = _formatEmploymentDate(item['start_date']);
-    final end = item['end_date'] != null
-        ? _formatEmploymentDate(item['end_date'])
-        : 'Ongoing';
+    final isPermanent = item['contract_type']?.toString() == 'permanent';
+    final end = isPermanent
+        ? 'No fixed end date'
+        : (item['end_date'] != null
+            ? _formatEmploymentDate(item['end_date'])
+            : 'Ongoing');
     final expired = item['is_expired'] == true;
     final expiringSoon = item['is_expiring_soon'] == true;
 

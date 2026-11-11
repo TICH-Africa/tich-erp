@@ -142,21 +142,24 @@
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
                         </div>
-                        <div class="uf-field">
+                        <div class="uf-field js-contract-term-field">
                             <label for="duration">Duration in months</label>
                             <input type="number" id="duration" name="duration" value="{{ old('duration') }}" min="1" step="1" placeholder="e.g. 12">
                             <span class="uf-hint">Enter the number of months only.</span>
                         </div>
-                        <div class="uf-field">
+                        <div class="uf-field js-contract-term-field">
                             <label for="end_date">End Date</label>
                             <input type="date" id="end_date" name="end_date" value="{{ old('end_date') }}" readonly>
                             <span class="uf-hint">Auto-calculated from start date and duration (ends the day before the anniversary).</span>
                         </div>
+                        <p class="uf-hint js-contract-permanent-hint" style="display:none; grid-column: 1 / -1;">
+                            Permanent contracts have no end date — employment continues until resignation, layoff, or other separation.
+                        </p>
                         <div class="uf-field">
                             <label for="probation_end_date">Probation End Date</label>
                             <input type="date" id="probation_end_date" name="probation_end_date" value="{{ old('probation_end_date') }}">
                         </div>
-                        <div class="uf-field">
+                        <div class="uf-field" id="contract-renewable-wrap">
                             <label class="tich-checkbox">
                                 <input type="checkbox" id="is_renewable" name="is_renewable" value="1" @checked(old('is_renewable', true))>
                                 <span>Renewable</span>
@@ -299,4 +302,12 @@
             }
         })();
     </script>
+    @include('hr.contracts.partials.permanent-term-toggle', [
+        'contractTypeSelectId' => 'contract_type',
+        'termFieldSelector' => '.js-contract-term-field',
+        'durationInputId' => 'duration',
+        'endInputId' => 'end_date',
+        'renewableWrapId' => 'contract-renewable-wrap',
+        'permanentHintSelector' => '.js-contract-permanent-hint',
+    ])
 @endsection

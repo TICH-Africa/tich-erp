@@ -63,7 +63,8 @@ class DashboardController extends Controller
                     'contract_number' => $item->contract_number,
                     'contract_type' => $item->contract_type,
                     'start_date' => $start,
-                    'end_date' => $end,
+                    'end_date' => $item->contract_type === 'permanent' ? null : $end,
+                    'is_permanent' => $item->contract_type === 'permanent',
                     'is_expired' => $item->isExpired(),
                     'is_expiring_soon' => $item->isExpiringSoon(),
                 ];

@@ -79,9 +79,14 @@ class StaffContract extends Model
         return $this->hasMany(StaffContract::class, 'new_contract_id');
     }
 
+    public function isPermanent(): bool
+    {
+        return $this->contract_type === 'permanent';
+    }
+
     public function isExpired(): bool
     {
-        if (! $this->end_date) {
+        if ($this->isPermanent() || ! $this->end_date) {
             return false;
         }
 
@@ -116,11 +121,13 @@ class StaffContract extends Model
 
     public function scopeExpiringSoon($query, int $days = 30)
     {
-        return $query->where(function ($q) use ($days) {
-            $q->whereNotNull('end_date')
-                ->where('end_date', '<=', now()->addDays($days))
-                ->where('end_date', '>=', now());
-        });
+        return $query
+            ->where('contract_type', '!=', 'permanent')
+            ->where(function ($q) use ($days) {
+                $q->whereNotNull('end_date')
+                    ->where('end_date', '<=', now()->addDays($days))
+                    ->where('end_date', '>=', now());
+            });
     }
 
     public function scopeExpired($query)
