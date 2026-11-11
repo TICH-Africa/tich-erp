@@ -1423,6 +1423,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
     Route::middleware('student.portal')->prefix('portal')->group(function () {
         Route::get('/sidebar-notifications', \App\Http\Controllers\Portal\SidebarNotificationController::class)->name('portal.sidebar-notifications');
 
+        Route::get('/learning-content/{content}', [\App\Http\Controllers\Portal\PortalUnitContentController::class, 'read'])
+            ->name('portal.learning-content.read');
         Route::get('/learning-content/{content}/view', [\App\Http\Controllers\Portal\PortalUnitContentController::class, 'view'])
             ->name('portal.learning-content.view');
         Route::get('/learning-content/{content}/download', [\App\Http\Controllers\Portal\PortalUnitContentController::class, 'download'])
@@ -1636,6 +1638,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::patch('/grading/objective/{objective_assessment}/availability', [StaffPortalActionController::class, 'updateObjectiveAvailability'])->name('staff.grading.objective.availability');
         Route::patch('/grading/objective/{objective_assessment}/answers', [StaffPortalActionController::class, 'updateObjectiveAnswers'])->name('staff.grading.objective.answers.update');
         Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
+        Route::get('/content/{content}/view', [StaffPortalActionController::class, 'viewContent'])->name('staff.content.view');
+        Route::get('/content/{content}/download', [StaffPortalActionController::class, 'downloadContent'])->name('staff.content.download');
         Route::post('/exam-papers', [StaffPortalActionController::class, 'storeExamPaper'])->name('staff.exam-papers.store');
         Route::post('/exam-papers/{examinationPaper}/table', [StaffPortalActionController::class, 'tableExamPaper'])->name('staff.exam-papers.table');
         Route::post('/exam-papers/{examinationPaper}/moderate', [StaffPortalActionController::class, 'moderateExamPaper'])->name('staff.exam-papers.moderate');

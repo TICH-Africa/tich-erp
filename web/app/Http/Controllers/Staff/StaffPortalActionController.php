@@ -19,10 +19,12 @@ use App\Services\StaffPortalDashboardService;
 use App\Services\StaffPortalService;
 use App\Services\StaffTeachingService;
 use App\Services\StoredFileService;
+use App\Services\StudentUnitContentAccessService;
 use App\Services\UnitLearningContentNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StaffPortalActionController extends Controller
 {
@@ -549,6 +551,8 @@ class StaffPortalActionController extends Controller
         $validated = $request->validate([
             'unit_id' => ['required', 'integer'],
             'title' => ['required', 'string', 'max:300'],
+            'section_title' => ['nullable', 'string', 'max:300'],
+            'lesson_number' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'content_text' => ['nullable', 'string', 'max:5000'],
             'file' => ['required', 'file', 'max:20480'],
             'available_from' => ['nullable', 'date'],
@@ -572,6 +576,8 @@ class StaffPortalActionController extends Controller
             'unit_allocation_id' => $allocation?->id,
             'created_by' => $staff->id,
             'title' => $validated['title'],
+            'section_title' => trim((string) ($validated['section_title'] ?? '')) ?: null,
+            'lesson_number' => isset($validated['lesson_number']) ? (int) $validated['lesson_number'] : null,
             'content_type' => 'document',
             'content_text' => $validated['content_text'],
             'file_path' => $filePath,
@@ -753,5 +759,41 @@ class StaffPortalActionController extends Controller
         abort_unless($path && \Illuminate\Support\Facades\Storage::disk('public')->exists($path), 404);
 
         return \Illuminate\Support\Facades\Storage::disk('public')->download($path, basename($path));
+    }
+
+    public function viewContent(Request $request, UnitContent $content): StreamedResponse
+    {
+        $this->authorizeStaffContent($request, $content);
+
+        return app(StudentUnitContentAccessService::class)->inlineFileResponse($content);
+    }
+
+    public function downloadContent(Request $request, UnitContent $content): StreamedResponse
+    {
+        $this->authorizeStaffContent($request, $content);
+
+        return app(StudentUnitContentAccessService::class)->downloadFileResponse($content);
+    }
+
+    /**
+     * A posted note is only readable by the lecturer who posted it or a colleague teaching the same unit.
+     */
+    private function authorizeStaffContent(Request $request, UnitContent $content): void
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        abort_unless($staff, 403);
+
+        if ((int) $content->created_by === (int) $staff->id) {
+            return;
+        }
+
+        abort_unless(
+            UnitAllocation::query()
+                ->where('staff_id', $staff->id)
+                ->where('unit_id', $content->unit_id)
+                ->where('is_active', 1)
+                ->exists(),
+            403
+        );
     }
 }

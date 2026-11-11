@@ -258,6 +258,10 @@ class StaffMobilePortalSerializer
                 return [
                     'id' => $c->id,
                     'title' => $c->title ?? $c->content_title ?? 'Content',
+                    'section_title' => $c->section_title ?? null,
+                    'section_label' => $c->sectionLabel(),
+                    'lesson_number' => $c->lesson_number ?? null,
+                    'lesson_label' => $c->lessonLabel(),
                     'content_type' => $c->content_type ?? $c->type ?? null,
                     'unit_code' => $c->unit?->unit_code,
                     'unit_name' => $c->unit?->unit_name,

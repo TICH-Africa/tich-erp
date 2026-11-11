@@ -446,15 +446,16 @@ class StaffPortalDashboardService
 
         return UnitContent::query()
             ->select([
-                'id', 'unit_id', 'unit_allocation_id', 'title', 'content_type',
-                'file_path', 'original_filename', 'created_at', 'published_at',
+                'id', 'unit_id', 'unit_allocation_id', 'title', 'section_title', 'lesson_number',
+                'content_type', 'content_text', 'file_path', 'original_filename', 'mime_type', 'file_size',
+                'created_at', 'published_at',
             ])
             ->with([
                 'unit:id,unit_code,unit_name',
                 'unitAllocation.semester.academicYear',
             ])
             ->whereIn('unit_id', $unitIds)
-            ->orderByDesc('created_at')
+            ->inLessonOrder()
             ->limit($limit)
             ->get();
     }

@@ -17,6 +17,19 @@
                     </select>
                 </div>
                 <div class="tich-form-group">
+                    <label class="tich-label">Section or module name</label>
+                    <input type="text" name="section_title" class="tich-input" maxlength="300"
+                           value="{{ old('section_title') }}"
+                           placeholder="e.g. Module 2 - Web Application Developing">
+                    <p class="tich-caption tich-mt-1">Optional. Notes with the same name are read together by students.</p>
+                </div>
+                <div class="tich-form-group">
+                    <label class="tich-label">Lesson number</label>
+                    <input type="number" name="lesson_number" class="tich-input" min="1" max="9999"
+                           value="{{ old('lesson_number') }}" placeholder="e.g. 3">
+                    <p class="tich-caption tich-mt-1">Optional. Leave blank and the note sits below the numbered lessons, oldest first.</p>
+                </div>
+                <div class="tich-form-group">
                     <label class="tich-label">Title</label>
                     <input type="text" name="title" class="tich-input" required>
                 </div>
@@ -38,41 +51,31 @@
         @if ($portalData['learning_content']->isEmpty())
             <p class="tich-text tich-mt-4">No materials uploaded yet.</p>
         @else
-            <div class="tich-table-panel tich-mt-4">
-                <table class="tich-admin-table">
-                    <thead>
-                        <tr>
-                            <th>Unit</th>
-                            <th>Title</th>
-                            <th>Type</th>
-                            <th>Posted</th>
-                            <th>File</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($portalData['learning_content'] as $item)
-                            <tr>
-                                <td>{{ $item->unit->unit_code ?? '-' }} {{ $item->unit->unit_name ?? '' }}</td>
-                                <td>
-                                    <strong>{{ $item->title }}</strong>
-                                    @if ($item->content_text)
-                                        <div class="tich-caption tich-mt-1">{{ Str::limit($item->content_text, 80) }}</div>
-                                    @endif
-                                </td>
-                                <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $item->content_type)) }}</td>
-                                <td class="tich-caption">{{ $item->published_at?->format('d M Y') ?? $item->created_at->format('d M Y') }}</td>
-                                <td>
-                                    @if ($item->file_path)
-                                        <a href="{{ asset('storage/' . $item->file_path) }}" target="_blank" class="tich-link">Download</a>
-                                        <span class="tich-caption">{{ number_format($item->file_size / 1024, 1) }} KB</span>
-                                    @else
-                                        <span class="tich-caption">Notes only</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+            @php
+                // Students read a unit section by section, so the lecturer sees the same order they set.
+                $byUnit = $portalData['learning_content']
+                    ->groupBy(fn ($item) => ($item->unit?->unit_code ?? 'Unit').' - '.($item->unit?->unit_name ?? 'Learning content'))
+                    ->map(fn ($items) => App\Models\UnitContent::arrange($items)
+                        ->groupBy(fn ($item) => $item->sectionLabel()));
+            @endphp
+
+            <div class="tich-unit-modules tich-mt-4">
+                @foreach ($byUnit as $unitLabel => $sections)
+                    <details class="tich-unit-module" @if($loop->first) open @endif>
+                        <summary class="tich-unit-module__head">
+                            <span class="tich-unit-module__title">{{ $unitLabel }}</span>
+                            <span class="tich-unit-module__count">{{ $sections->sum(fn ($items) => $items->count()) }} posted</span>
+                        </summary>
+                        <div class="tich-unit-module__panel">
+                            @include('partials.learning-lessons', [
+                                'sections' => $sections,
+                                'rowMode' => 'actions',
+                                'viewRoute' => 'staff.content.view',
+                                'downloadRoute' => 'staff.content.download',
+                            ])
+                        </div>
+                    </details>
+                @endforeach
             </div>
         @endif
     </article>

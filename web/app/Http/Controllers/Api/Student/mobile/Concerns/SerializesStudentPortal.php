@@ -95,7 +95,7 @@ trait SerializesStudentPortal
                 'starts_at' => optional($p->starts_at ?? null)?->format('Y-m-d'),
                 'ends_at' => optional($p->ends_at ?? null)?->format('Y-m-d'),
             ])->values()->all(),
-            'unit_content' => collect($a['unit_content'] ?? [])
+            'unit_content' => collect($this->sortUnitContent($a['unit_content'] ?? []))
                 ->map(fn ($c) => $this->serializeUnitContentItem($c))
                 ->values()
                 ->all(),
@@ -360,12 +360,32 @@ trait SerializesStudentPortal
     /**
      * @return array<string, mixed>
      */
+    /**
+     * Posts arrive newest first; the app reads them the way the lecturer numbered them.
+     *
+     * @param  iterable<mixed>  $items
+     * @return list<mixed>
+     */
+    protected function sortUnitContent(iterable $items): array
+    {
+        return collect($items)
+            ->sortBy('unit_id')
+            ->groupBy('unit_id')
+            ->flatMap(fn ($rows) => UnitContent::arrange($rows->sortBy('id')->values()))
+            ->values()
+            ->all();
+    }
+
     protected function serializeUnitContentItem(UnitContent $c): array
     {
         return [
             'id' => $c->id,
             'unit_id' => $c->unit_id,
             'title' => $c->title,
+            'section_title' => $c->section_title,
+            'section_label' => $c->sectionLabel(),
+            'lesson_number' => $c->lesson_number,
+            'lesson_label' => $c->lessonLabel(),
             'content_type' => $c->content_type,
             'content_text' => $c->content_text,
             'unit_code' => $c->unit?->unit_code,

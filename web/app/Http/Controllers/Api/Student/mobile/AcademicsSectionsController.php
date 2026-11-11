@@ -88,7 +88,7 @@ class AcademicsSectionsController extends Controller
             fn () => $this->dashboard->academicsContentForMobile($student),
         );
 
-        $items = collect($payload['unit_content'] ?? [])
+        $items = collect($this->sortUnitContent($payload['unit_content'] ?? []))
             ->map(fn ($c) => $this->serializeUnitContentItem($c))
             ->values()
             ->all();

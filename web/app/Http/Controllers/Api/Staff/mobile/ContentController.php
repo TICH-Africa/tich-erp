@@ -34,6 +34,8 @@ class ContentController extends Controller
         $validated = $request->validate([
             'unit_id' => ['required', 'integer'],
             'title' => ['required', 'string', 'max:300'],
+            'section_title' => ['nullable', 'string', 'max:300'],
+            'lesson_number' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'content_text' => ['nullable', 'string', 'max:5000'],
             'file' => ['required', 'file', 'max:20480'],
         ]);
@@ -65,6 +67,8 @@ class ContentController extends Controller
             'unit_allocation_id' => $allocation?->id,
             'created_by' => $staff->id,
             'title' => $validated['title'],
+            'section_title' => trim((string) ($validated['section_title'] ?? '')) ?: null,
+            'lesson_number' => isset($validated['lesson_number']) ? (int) $validated['lesson_number'] : null,
             'content_type' => 'document',
             'content_text' => $validated['content_text'] ?? null,
             'file_path' => $filePath,
