@@ -48,6 +48,16 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
       }),
       fetch: _load,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_dataCache != null) {
+        Future<void>.delayed(const Duration(seconds: 12), () {
+          if (mounted) _liveRefresh();
+        });
+        return;
+      }
+      _liveRefresh();
+    });
   }
 
   Future<Map<String, dynamic>> _load() {

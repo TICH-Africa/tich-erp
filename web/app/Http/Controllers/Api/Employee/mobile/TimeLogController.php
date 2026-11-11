@@ -9,6 +9,7 @@ use App\Models\StaffWeeklyTimeLog;
 use App\Services\WeeklyTimeLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class TimeLogController extends Controller
@@ -31,26 +32,29 @@ class TimeLogController extends Controller
             ]);
         }
 
-        $current = $this->timeLogs->currentWeekMeta();
+        $cacheKey = 'employee.mobile.time_logs.index.'.$staff->id;
 
-        $logs = StaffWeeklyTimeLog::query()
-            ->where('staff_id', $staff->id)
-            ->orderByDesc('log_year')
-            ->orderByDesc('log_month')
-            ->orderByDesc('week_number')
-            ->limit(40)
-            ->get();
+        return response()->json(Cache::remember($cacheKey, 15, function () use ($staff) {
+            $current = $this->timeLogs->currentWeekMeta();
 
-        return response()->json([
-            'weeks' => $logs->map(fn (StaffWeeklyTimeLog $log) => $this->serializeListItem($log))->values(),
-            'meta' => [
-                'current_year' => $current['year'],
-                'current_month' => $current['month'],
-                'current_week_number' => $current['week']['week_number'] ?? 1,
-                'week_options' => $this->timeLogs->weeksForMonth($current['year'], $current['month']),
-                'can_self_endorse' => $this->timeLogs->canSelfEndorse($staff),
-            ],
-        ]);
+            $logs = StaffWeeklyTimeLog::query()
+                ->where('staff_id', $staff->id)
+                ->orderByDesc('log_year')
+                ->orderByDesc('log_month')
+                ->orderByDesc('week_number')
+                ->limit(40)
+                ->get(['id', 'log_code', 'week_ref', 'period_start', 'period_end', 'log_year', 'log_month', 'week_number', 'status', 'total_hours', 'employee_signed_at']);
+
+            return [
+                'weeks' => $logs->map(fn (StaffWeeklyTimeLog $log) => $this->serializeListItem($log))->values(),
+                'meta' => [
+                    'current_year' => $current['year'],
+                    'current_month' => $current['month'],
+                    'current_week_number' => $current['week']['week_number'] ?? 1,
+                    'can_self_endorse' => $this->timeLogs->canSelfEndorse($staff),
+                ],
+            ];
+        }));
     }
 
     public function weeks(Request $request): JsonResponse
@@ -85,6 +89,8 @@ class TimeLogController extends Controller
 
         $log = $this->timeLogs->pruneWeekendDays($log->load(['days', 'staff.department', 'manager']));
 
+        Cache::forget('employee.mobile.time_logs.index.'.$staff->id);
+
         return response()->json([
             'message' => 'Weekly time sheet opened.',
             'log' => $this->serializeLog($log, $staff),
@@ -100,9 +106,11 @@ class TimeLogController extends Controller
             $timeLog->load(['days', 'staff.department', 'manager', 'hrReviewer'])
         );
 
-        return response()->json([
+        $cacheKey = 'employee.mobile.time_logs.show.'.$timeLog->id.'.'.$staff->id;
+
+        return response()->json(Cache::remember($cacheKey, 10, fn () => [
             'log' => $this->serializeLog($timeLog, $staff),
-        ]);
+        ]));
     }
 
     public function update(Request $request, StaffWeeklyTimeLog $timeLog): JsonResponse
@@ -127,6 +135,9 @@ class TimeLogController extends Controller
         } catch (\RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
+
+        Cache::forget('employee.mobile.time_logs.show.'.$timeLog->id.'.'.$staff->id);
+        Cache::forget('employee.mobile.time_logs.index.'.$staff->id);
 
         $timeLog = $this->timeLogs->pruneWeekendDays($timeLog->fresh(['days', 'staff.department', 'manager']));
 
@@ -160,6 +171,9 @@ class TimeLogController extends Controller
         } catch (\RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
+
+        Cache::forget('employee.mobile.time_logs.show.'.$timeLog->id.'.'.$staff->id);
+        Cache::forget('employee.mobile.time_logs.index.'.$staff->id);
 
         $timeLog = $this->timeLogs->pruneWeekendDays($timeLog->fresh(['days', 'staff.department', 'manager']));
 

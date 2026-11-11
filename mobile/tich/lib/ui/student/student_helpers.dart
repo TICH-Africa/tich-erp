@@ -29,6 +29,14 @@ Future<void> studentCachedReload({
 Map<String, dynamic>? studentReadCache(String key) =>
     TichScreenCache.read<Map<String, dynamic>>(key);
 
+bool tichBytesLookLikePdf(List<int> bytes) {
+  if (bytes.length < 4) return false;
+  return bytes[0] == 0x25 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x44 &&
+      bytes[3] == 0x46;
+}
+
 Future<Map<String, dynamic>> studentEnsure(
   String key,
   Future<Map<String, dynamic>> Function() fetch,

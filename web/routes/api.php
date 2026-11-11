@@ -194,6 +194,7 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
     Route::get('/learning-content/{content}', [\App\Http\Controllers\Api\Student\mobile\UnitContentController::class, 'show']);
     Route::get('/learning-content/{content}/file', [\App\Http\Controllers\Api\Student\mobile\UnitContentController::class, 'file']);
     Route::get('/academics/assessments', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'assessments']);
+    Route::get('/academics/exam-requests', [\App\Http\Controllers\Api\Student\mobile\AcademicsSectionsController::class, 'examRequests']);
     Route::get('/academics/exam-card/pdf', [\App\Http\Controllers\Api\Student\mobile\ExamCardController::class, 'pdf']);
     Route::get('/timetable', \App\Http\Controllers\Api\Student\mobile\TimetableController::class);
     Route::get('/timetable/{timetable}/pdf', \App\Http\Controllers\Api\Student\mobile\TimetablePdfController::class);

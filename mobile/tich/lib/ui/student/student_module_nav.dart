@@ -12,6 +12,7 @@ import 'lifecycle_page.dart';
 import 'notifications_page.dart';
 import 'profile_page.dart';
 import 'student_prefetch.dart';
+import 'student_exam_requests_page.dart';
 import 'suggestions_page.dart';
 import 'timetable_page.dart';
 
@@ -83,6 +84,11 @@ void openStudentEvaluationsFromMore(StudentApi api) {
 void openStudentLifecycleFromMore(StudentApi api) {
   StudentPrefetch.lifecycle(api);
   studentPushFromRoot(api, StudentLifecyclePage(api: api));
+}
+
+void openStudentExamRequests(StudentApi api) {
+  StudentPrefetch.examRequests(api);
+  studentPushFromRoot(api, StudentExamRequestsPage(api: api));
 }
 
 Future<void> openStudentSuggestions(BuildContext context, StudentApi api) {

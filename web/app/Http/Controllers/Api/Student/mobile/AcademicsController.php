@@ -31,8 +31,8 @@ class AcademicsController extends Controller
         $biodata = $this->mobileBiodata($student);
 
         $cached = Cache::remember(
-            'student.mobile.academics.hub.'.$student->id.'.v5',
-            20,
+            'student.mobile.academics.hub.'.$student->id.'.v6',
+            90,
             function () use ($student) {
                 $portalData = $this->dashboard->academicsForMobile($student);
 

@@ -50,7 +50,7 @@ class MorePage extends StatelessWidget {
         onTap: () => TichRootNav.push(const WfhPage()),
       ),
       TichMoreItem(
-        label: 'Time sheets',
+        label: 'Weekly time sheets',
         icon: Icons.schedule_outlined,
         onTapDown: (_) => EmployeePrefetch.timeLogs(api),
         onTap: () => openEmployeeTimeLogs(api),

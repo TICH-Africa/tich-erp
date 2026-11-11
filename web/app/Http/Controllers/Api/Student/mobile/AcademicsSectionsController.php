@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api\Student\mobile;
 use App\Http\Controllers\Api\Student\mobile\Concerns\ResolvesPortalStudent;
 use App\Http\Controllers\Api\Student\mobile\Concerns\SerializesStudentPortal;
 use App\Http\Controllers\Controller;
+use App\Models\SpecialExamRequest;
+use App\Models\SupplementaryExamRequest;
 use App\Services\StudentPortalDashboardService;
+use App\Support\SchemaProbe;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -125,5 +128,66 @@ class AcademicsSectionsController extends Controller
         })->values()->all();
 
         return response()->json(['assessments' => $items]);
+    }
+
+    public function examRequests(Request $request): JsonResponse
+    {
+        $student = $this->portalStudent($request);
+
+        $payload = Cache::remember(
+            'student.mobile.academics.exam_requests.'.$student->id.'.v1',
+            60,
+            function () use ($student) {
+                $unitsPayload = $this->dashboard->academicsUnitsForMobile($student);
+                $special = [];
+                $supplementary = [];
+
+                if (SchemaProbe::hasTable('special_exam_requests')) {
+                    $special = SpecialExamRequest::query()
+                        ->with(['unit:id,unit_code,unit_name', 'semester:id,semester_label'])
+                        ->where('student_id', $student->id)
+                        ->orderByDesc('created_at')
+                        ->limit(30)
+                        ->get()
+                        ->map(fn ($r) => [
+                            'id' => $r->id,
+                            'status' => $r->status,
+                            'reason' => $r->reason,
+                            'unit_code' => $r->unit?->unit_code,
+                            'unit_name' => $r->unit?->unit_name,
+                            'semester_label' => $r->semester?->semester_label,
+                            'created_at' => optional($r->created_at)?->toIso8601String(),
+                        ])
+                        ->all();
+                }
+
+                if (SchemaProbe::hasTable('supplementary_requests')) {
+                    $supplementary = SupplementaryExamRequest::query()
+                        ->with(['unit:id,unit_code,unit_name', 'semester:id,semester_label'])
+                        ->where('student_id', $student->id)
+                        ->orderByDesc('created_at')
+                        ->limit(30)
+                        ->get()
+                        ->map(fn ($r) => [
+                            'id' => $r->id,
+                            'status' => $r->status,
+                            'reason' => $r->reason,
+                            'unit_code' => $r->unit?->unit_code,
+                            'unit_name' => $r->unit?->unit_name,
+                            'semester_label' => $r->semester?->semester_label,
+                            'created_at' => optional($r->created_at)?->toIso8601String(),
+                        ])
+                        ->all();
+                }
+
+                return [
+                    'registered_units' => $this->serializeRegisteredUnits($unitsPayload['registered_units'] ?? []),
+                    'special_exam_requests' => $special,
+                    'supplementary_exam_requests' => $supplementary,
+                ];
+            },
+        );
+
+        return response()->json($payload);
     }
 }

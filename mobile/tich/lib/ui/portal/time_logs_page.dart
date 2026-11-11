@@ -30,6 +30,16 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
     super.initState();
     _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.time_logs');
     _future = TichScreenCache.ensure('portal.time_logs', () => widget.api.timeLogs());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_dataCache != null) {
+        Future<void>.delayed(const Duration(seconds: 12), () {
+          if (mounted) _liveRefresh();
+        });
+        return;
+      }
+      _liveRefresh();
+    });
   }
 
   Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
@@ -63,12 +73,16 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
             ? (weekOptions.first['week_number'] as num?)?.toInt() ?? 1
             : 1);
 
+    if (!mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setModal) {
+            var loadingWeeks = weekOptions.isEmpty;
+
             Future<void> refreshWeeks() async {
+              setModal(() => loadingWeeks = true);
               try {
                 final res = await widget.api.timeLogWeeks(
                   year: year,
@@ -83,13 +97,19 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                         (weekOptions.first['week_number'] as num?)?.toInt() ??
                             weekNumber;
                   }
+                  loadingWeeks = false;
                 });
               } on ApiException catch (e) {
                 if (ctx.mounted) {
                   ScaffoldMessenger.of(ctx)
                       .showSnackBar(SnackBar(content: Text(e.message)));
                 }
+                setModal(() => loadingWeeks = false);
               }
+            }
+
+            if (weekOptions.isEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) => refreshWeeks());
             }
 
             return TichFormDialog(
@@ -131,7 +151,12 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                       },
                     ),
                     const SizedBox(height: 8),
-                    if (weekOptions.isEmpty)
+                    if (loadingWeeks && weekOptions.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Center(child: AdaptiveProgress()),
+                      )
+                    else if (weekOptions.isEmpty)
                       const Text('No weeks for this month.')
                     else
                       TichDropdownFormField<int>(
@@ -158,7 +183,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
-                  onPressed: weekOptions.isEmpty
+                  onPressed: weekOptions.isEmpty || loadingWeeks
                       ? null
                       : () => Navigator.pop(ctx, true),
                   child: const Text('Open week'),
@@ -227,7 +252,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
     return TichLiveRefreshBinder(
       onLiveRefresh: _liveRefresh,
       child: AdaptiveScaffold(
-        title: 'Time sheets',
+        title: 'Weekly time sheets',
         floatingActionButton: FloatingActionButton.extended(
           heroTag: 'portal-time-logs',
           onPressed: _openWeek,
@@ -271,7 +296,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
                 itemCount: weeks.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, i) {
                   final w = Map<String, dynamic>.from(weeks[i] as Map);
                   final id = (w['id'] as num?)?.toInt();

@@ -13,6 +13,7 @@ use App\Services\StaffMobilePortalSerializer;
 use App\Services\StaffTeachingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AttendanceController extends Controller
 {
@@ -27,7 +28,13 @@ class AttendanceController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        return response()->json($this->serializer->attendanceIndex($this->portalStaff($request)));
+        $staff = $this->portalStaff($request);
+
+        return response()->json(Cache::remember(
+            'staff.mobile.attendance.index.'.$staff->id,
+            20,
+            fn () => $this->serializer->attendanceIndex($staff),
+        ));
     }
 
     public function show(Request $request, AttendanceSession $session): JsonResponse
@@ -42,6 +49,8 @@ class AttendanceController extends Controller
     {
         $staff = $this->portalStaff($request);
         $result = $this->attendanceGeneration->syncForStaff($staff);
+
+        Cache::forget('staff.mobile.attendance.index.'.$staff->id);
 
         return response()->json([
             'message' => ($result['created'] ?? 0) > 0
@@ -73,6 +82,8 @@ class AttendanceController extends Controller
         }
 
         $session = $this->teaching->createAttendanceSession($staff, $allocation, $validated);
+
+        Cache::forget('staff.mobile.attendance.index.'.$staff->id);
 
         return response()->json($this->serializer->attendanceShow($session), 201);
     }
