@@ -33,15 +33,19 @@ class _PayslipsPageState extends State<PayslipsPage> {
     final compensation = TichScreenCache.read<Map<String, dynamic>>(
       'portal.dashboard',
     )?['compensation'];
+    final dashboard = TichScreenCache.read<Map<String, dynamic>>('portal.dashboard');
+    final payrollBreakdown = dashboard?['monthly_payroll_breakdown'];
     if (compensation is Map) {
       return {
         'payslips': payslips['payslips'],
         'compensation': compensation,
+        if (payrollBreakdown is Map) 'monthly_payroll_breakdown': payrollBreakdown,
       };
     }
     return {
       'payslips': payslips['payslips'],
       'compensation': const <String, dynamic>{},
+      if (payrollBreakdown is Map) 'monthly_payroll_breakdown': payrollBreakdown,
     };
   }
 
@@ -55,8 +59,12 @@ class _PayslipsPageState extends State<PayslipsPage> {
         TichScreenCache.write('portal.dashboard', dashboard);
         setState(() {
           if (_dataCache is Map<String, dynamic>) {
-            (_dataCache as Map<String, dynamic>)['compensation'] =
-                dashboard['compensation'] ?? {};
+            final cache = _dataCache as Map<String, dynamic>;
+            cache['compensation'] = dashboard['compensation'] ?? {};
+            final breakdown = dashboard['monthly_payroll_breakdown'];
+            if (breakdown is Map) {
+              cache['monthly_payroll_breakdown'] = breakdown;
+            }
           }
         });
       }).catchError((_) {}),
@@ -139,6 +147,11 @@ class _PayslipsPageState extends State<PayslipsPage> {
             final compensation = Map<String, dynamic>.from(
               data['compensation'] as Map? ?? {},
             );
+            final payrollBreakdown = data['monthly_payroll_breakdown'] is Map
+                ? Map<String, dynamic>.from(
+                    data['monthly_payroll_breakdown'] as Map,
+                  )
+                : null;
 
             final payslipCount = items.isEmpty ? 1 : items.length;
             const fixedLeading = 3;
@@ -177,8 +190,49 @@ class _PayslipsPageState extends State<PayslipsPage> {
                                 amount: compensation['total_monthly'],
                                 revealed: revealed,
                                 onToggle: toggle,
-                                showDivider: false,
+                                showDivider: payrollBreakdown == null,
                               ),
+                              if (payrollBreakdown != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Estimated statutory deductions',
+                                  style: tichUi(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                _CompensationRow(
+                                  label: 'PAYE',
+                                  amount: payrollBreakdown['paye'],
+                                  revealed: revealed,
+                                  onToggle: toggle,
+                                ),
+                                _CompensationRow(
+                                  label: 'NSSF',
+                                  amount: payrollBreakdown['nssf'],
+                                  revealed: revealed,
+                                  onToggle: toggle,
+                                ),
+                                _CompensationRow(
+                                  label: 'SHA / SHIF',
+                                  amount: payrollBreakdown['sha'],
+                                  revealed: revealed,
+                                  onToggle: toggle,
+                                ),
+                                _CompensationRow(
+                                  label: 'Affordable Housing Levy',
+                                  amount: payrollBreakdown['ahl'],
+                                  revealed: revealed,
+                                  onToggle: toggle,
+                                ),
+                                _CompensationRow(
+                                  label: 'Estimated net pay',
+                                  amount: payrollBreakdown['net_salary'],
+                                  revealed: revealed,
+                                  onToggle: toggle,
+                                  showDivider: false,
+                                ),
+                              ],
                             ],
                           ),
                         );

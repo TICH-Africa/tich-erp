@@ -77,17 +77,24 @@
                             <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $member->employment_status)) }}</td>
                             @if ($breakdown)
                                 <td class="tich-caption">
-                                    {{ $member->usesWithholdingPayroll() ? 'Withholding' : 'Employee' }}
-                                    @if ($member->usesWithholdingPayroll())
+                                    @if ($member->usesUnpaidPayroll())
+                                        Unpaid (volunteer)
+                                    @elseif ($member->usesStipendPayroll())
+                                        Stipend (no deductions)
+                                    @elseif ($member->usesWithholdingPayroll())
+                                        Withholding
                                         <span class="tich-caption">({{ rtrim(rtrim(number_format($withholdingRate, 2), '0'), '.') }}%)</span>
+                                    @else
+                                        Employee (PAYE + statutory)
                                     @endif
                                 </td>
                                 <td>{{ number_format($breakdown['gross_salary'], 2) }}</td>
-                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'paye') ?? 0, 2) }}</td>
+                                @php $noStatutory = $member->usesStipendPayroll() || $member->usesUnpaidPayroll(); @endphp
+                                <td>{{ ($member->usesWithholdingPayroll() || $noStatutory) ? '-' : number_format($deductionAmount($breakdown, 'paye') ?? 0, 2) }}</td>
                                 <td>{{ $member->usesWithholdingPayroll() ? number_format($deductionAmount($breakdown, 'withholding_tax') ?? 0, 2) : '-' }}</td>
-                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'nssf') ?? 0, 2) }}</td>
-                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'sha') ?? 0, 2) }}</td>
-                                <td>{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'ahl') ?? 0, 2) }}</td>
+                                <td>{{ $noStatutory ? '-' : number_format($deductionAmount($breakdown, 'nssf') ?? 0, 2) }}</td>
+                                <td>{{ $noStatutory ? '-' : number_format($deductionAmount($breakdown, 'sha') ?? 0, 2) }}</td>
+                                <td>{{ $noStatutory ? '-' : number_format($deductionAmount($breakdown, 'ahl') ?? 0, 2) }}</td>
                                 <td>{{ number_format($breakdown['total_deductions'], 2) }}</td>
                                 <td><strong>{{ number_format($breakdown['net_salary'], 2) }}</strong></td>
                                 <td>{{ number_format($breakdown['total_employer_cost'], 2) }}</td>

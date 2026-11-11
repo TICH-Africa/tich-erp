@@ -50,6 +50,7 @@
                         <th>Department</th>
                         <th>Job title</th>
                         <th>Status</th>
+                        <th>Employment type</th>
                         <th>Payroll</th>
                         <th data-financial-col="gross">Consolidated Gross Pay (KES)</th>
                         <th data-financial-col="paye">PAYE</th>
@@ -80,17 +81,28 @@
                             <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $member->employment_status)) }}</td>
                             @if ($breakdown)
                                 <td class="tich-caption">
-                                    {{ $member->usesWithholdingPayroll() ? 'Withholding' : 'Employee' }}
+                                    {{ config('tich-payroll.employment_categories.'.$member->employment_category, ucfirst(str_replace('_', ' ', (string) $member->employment_category)) ?: '-') }}
+                                </td>
+                                <td class="tich-caption">
+                                    @if ($member->usesUnpaidPayroll())
+                                        Unpaid (volunteer)
+                                    @elseif ($member->usesStipendPayroll())
+                                        Stipend (no deductions)
+                                    @elseif ($member->usesWithholdingPayroll())
+                                        Withholding
+                                    @else
+                                        Employee (PAYE + statutory)
+                                    @endif
                                     @if ($member->usesWithholdingPayroll())
                                         <span class="tich-caption">({{ rtrim(rtrim(number_format($withholdingRate, 2), '0'), '.') }}%)</span>
                                     @endif
                                 </td>
                                 <td data-financial-col="gross"><span class="tich-financial-cell">{{ number_format($breakdown['gross_salary'], 2) }}</span></td>
-                                <td data-financial-col="paye"><span class="tich-financial-cell">{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'paye') ?? 0, 2) }}</span></td>
+                                <td data-financial-col="paye"><span class="tich-financial-cell">{{ ($member->usesWithholdingPayroll() || $member->usesStipendPayroll() || $member->usesUnpaidPayroll()) ? '-' : number_format($deductionAmount($breakdown, 'paye') ?? 0, 2) }}</span></td>
                                 <td data-financial-col="wht"><span class="tich-financial-cell">{{ $member->usesWithholdingPayroll() ? number_format($deductionAmount($breakdown, 'withholding_tax') ?? 0, 2) : '-' }}</span></td>
-                                <td data-financial-col="nssf"><span class="tich-financial-cell">{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'nssf') ?? 0, 2) }}</span></td>
-                                <td data-financial-col="sha"><span class="tich-financial-cell">{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'sha') ?? 0, 2) }}</span></td>
-                                <td data-financial-col="ahl"><span class="tich-financial-cell">{{ $member->usesWithholdingPayroll() ? '-' : number_format($deductionAmount($breakdown, 'ahl') ?? 0, 2) }}</span></td>
+                                <td data-financial-col="nssf"><span class="tich-financial-cell">{{ ($member->usesWithholdingPayroll() || $member->usesStipendPayroll() || $member->usesUnpaidPayroll()) ? '-' : number_format($deductionAmount($breakdown, 'nssf') ?? 0, 2) }}</span></td>
+                                <td data-financial-col="sha"><span class="tich-financial-cell">{{ ($member->usesWithholdingPayroll() || $member->usesStipendPayroll() || $member->usesUnpaidPayroll()) ? '-' : number_format($deductionAmount($breakdown, 'sha') ?? 0, 2) }}</span></td>
+                                <td data-financial-col="ahl"><span class="tich-financial-cell">{{ ($member->usesWithholdingPayroll() || $member->usesStipendPayroll() || $member->usesUnpaidPayroll()) ? '-' : number_format($deductionAmount($breakdown, 'ahl') ?? 0, 2) }}</span></td>
                                 <td data-financial-col="deductions"><span class="tich-financial-cell">{{ number_format($breakdown['total_deductions'], 2) }}</span></td>
                                 <td data-financial-col="net"><strong><span class="tich-financial-cell">{{ number_format($breakdown['net_salary'], 2) }}</span></strong></td>
                                 <td data-financial-col="employer"><span class="tich-financial-cell">{{ number_format($breakdown['total_employer_cost'], 2) }}</span></td>
@@ -105,18 +117,18 @@
                                     <a href="{{ route('hr.payroll.report.pdf', ['staff_id' => $member->id]) }}" class="tich-btn tich-btn-ghost" title="Download payslip">Download</a>
                                 </td>
                             @else
-                                <td colspan="9" class="tich-caption">No consolidated gross pay set</td>
+                                <td colspan="10" class="tich-caption">No consolidated gross pay set</td>
                                 <td></td>
                             @endif
                         </tr>
                     @empty
-                        <tr><td colspan="15" class="tich-table-empty">No staff found.</td></tr>
+                        <tr><td colspan="16" class="tich-table-empty">No staff found.</td></tr>
                     @endforelse
                 </tbody>
                 @if ($rows->contains(fn ($row) => $row['breakdown'] !== null))
                     <tfoot>
                         <tr>
-                            <td colspan="6"><strong>Totals</strong></td>
+                            <td colspan="7"><strong>Totals</strong></td>
                             <td data-financial-col="gross"><strong><span class="tich-financial-cell">{{ number_format($totals['gross_salary'], 2) }}</span></strong></td>
                             <td data-financial-col="paye"><strong><span class="tich-financial-cell">{{ number_format($totals['paye'], 2) }}</span></strong></td>
                             <td data-financial-col="wht"><strong><span class="tich-financial-cell">{{ number_format($totals['wht'], 2) }}</span></strong></td>

@@ -63,7 +63,8 @@ class DashboardController extends Controller
                     'contract_number' => $item->contract_number,
                     'contract_type' => $item->contract_type,
                     'start_date' => $start,
-                    'end_date' => $end,
+                    'end_date' => $item->contract_type === 'permanent' ? null : $end,
+                    'is_permanent' => $item->contract_type === 'permanent',
                     'is_expired' => $item->isExpired(),
                     'is_expiring_soon' => $item->isExpiringSoon(),
                 ];
@@ -99,6 +100,7 @@ class DashboardController extends Controller
                 'overall_status' => $r->overall_status,
             ])->values(),
             'employment_duration' => $data['employmentDuration'],
+            'monthly_payroll_breakdown' => $data['monthlyPayrollBreakdown'],
             'pending_profile_changes' => (int) $data['pendingProfileChanges'],
             'trainings' => collect($data['trainings'])->map(fn ($t) => [
                 'id' => $t->id,

@@ -3,6 +3,7 @@
 @section('document-content')
     @php
         $isWithholding = ($breakdown['payroll_scheme'] ?? 'employee') === 'withholding';
+        $isStipend = ($breakdown['payroll_scheme'] ?? 'employee') === 'stipend';
         $activeBandLines = collect($breakdown['band_breakdown'] ?? [])->filter(
             fn ($line) => ($line['tax'] ?? 0) > 0 || ($line['taxable_amount'] ?? 0) > 0
         );
@@ -23,6 +24,15 @@
                 <strong>{{ $payPeriod ?? now()->format('F Y') }}</strong>
             </div>
         </div>
+
+        @if ($isStipend)
+            <div class="tich-payslip__employee">
+                <div>
+                    <span class="tich-payslip__label">Payroll scheme</span>
+                    <strong>Intern / stipend (no statutory deductions)</strong>
+                </div>
+            </div>
+        @endif
 
         @if ($isWithholding)
             <div class="tich-payslip__employee">
@@ -86,7 +96,28 @@
             <strong>KES {{ number_format($breakdown['net_salary'], 2) }}</strong>
         </div>
 
-        @if (! $isWithholding && $activeBandLines->isNotEmpty())
+        @if (! $isWithholding && ! $isStipend)
+            @php
+                $statutoryCodes = ['paye' => 'PAYE (KRA)', 'nssf' => 'NSSF', 'sha' => 'SHA / SHIF', 'ahl' => 'Affordable Housing Levy'];
+                $statutoryRows = collect($breakdown['deductions'] ?? [])->keyBy('code');
+            @endphp
+            <section class="tich-payslip__detail">
+                <h2 class="tich-payslip__detail-title">Statutory deductions summary</h2>
+                <table class="tich-payslip__table tich-payslip__table--compact">
+                    <tbody>
+                        @foreach ($statutoryCodes as $code => $label)
+                            @php $amount = (float) (($statutoryRows[$code]['amount'] ?? null) ?: 0); @endphp
+                            <tr>
+                                <th>{{ $label }}</th>
+                                <td class="num">KES {{ number_format($amount, 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </section>
+        @endif
+
+        @if (! $isWithholding && ! $isStipend && $activeBandLines->isNotEmpty())
             <section class="tich-payslip__detail">
                 <h2 class="tich-payslip__detail-title">PAYE band summary</h2>
                 <table class="tich-payslip__table tich-payslip__table--compact">
@@ -148,6 +179,8 @@
         <p class="tich-payslip__note">
             @if ($isWithholding)
                 Computer-generated payment statement for consultant or independent contractor fees at the configured withholding tax rate only.
+            @elseif ($isStipend)
+                Stipend payment — no PAYE, NSSF, SHA/SHIF, or Affordable Housing Levy deductions.
             @else
                 Computer-generated payslip per configured KRA PAYE bands and statutory rates.
             @endif
