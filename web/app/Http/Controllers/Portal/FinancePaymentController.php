@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Services\Finance\MpesaSettingsService;
 use App\Services\Finance\PaymentService;
 use App\Services\StudentPortalService;
@@ -40,12 +41,19 @@ class FinancePaymentController extends Controller
                         ->withErrors(['mpesa' => 'M-Pesa payments are not available right now. Please contact the finance office.']);
                 }
 
-                $this->payments->recordPayment($invoice, [
+                $simRef = 'SIM-'.strtoupper(substr(sha1((string) microtime(true)), 0, 10));
+
+                $payment = $this->payments->recordPayment($invoice, [
                     'amount' => (float) $validated['amount'],
                     'payment_method' => 'mpesa',
-                    'payment_reference' => $validated['payment_reference'] ?? 'SIM-MPESA',
-                    'transaction_channel_ref' => 'SIM-'.strtoupper(substr(sha1((string) microtime(true)), 0, 10)),
+                    'payment_reference' => $validated['payment_reference'] ?? $simRef,
+                    'transaction_channel_ref' => $simRef,
                 ], $staffId);
+
+                if (! $payment->wasRecentlyCreated) {
+                    return redirect()->route('portal.dashboard', ['section' => 'finance'])
+                        ->with('error', $this->duplicateMessage($payment));
+                }
 
                 return redirect()->route('portal.dashboard', ['section' => 'finance'])
                     ->with('success', 'Payment recorded successfully. Your balance has been updated.');
@@ -68,13 +76,32 @@ class FinancePaymentController extends Controller
                 ->with('status', 'M-Pesa prompt sent to '.$stkRequest->phone.'. Enter your PIN on your phone to complete payment.');
         }
 
-        $this->payments->recordPayment($invoice, [
+        $payment = $this->payments->recordPayment($invoice, [
             'amount' => (float) $validated['amount'],
             'payment_method' => $validated['payment_method'],
             'payment_reference' => $validated['payment_reference'] ?? null,
         ], $staffId);
 
+        if (! $payment->wasRecentlyCreated) {
+            return redirect()->route('portal.dashboard', ['section' => 'finance'])
+                ->with('error', $this->duplicateMessage($payment));
+        }
+
         return redirect()->route('portal.dashboard', ['section' => 'finance'])
             ->with('success', 'Payment submitted successfully.');
+    }
+
+    /**
+     * The service answers a repeated submission with the payment already on file instead of
+     * booking the money twice, so name that payment rather than claiming new money arrived.
+     */
+    private function duplicateMessage(Payment $payment): string
+    {
+        return 'Nothing was added: KES '.number_format((float) $payment->amount, 2)
+            .' is already on your account as payment '.$payment->payment_number
+            .' dated '.($payment->payment_date?->format('d M Y') ?? 'an earlier date')
+            .($payment->payment_reference ? ' under reference '.$payment->payment_reference : '')
+            .'. If this is different money, send it with its own reference. If the figure is '
+            .'wrong, contact the finance office.';
     }
 }

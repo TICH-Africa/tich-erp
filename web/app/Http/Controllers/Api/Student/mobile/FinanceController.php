@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Student\mobile\Concerns\ResolvesPortalStudent;
 use App\Http\Controllers\Api\Student\mobile\Concerns\SerializesStudentPortal;
 use App\Models\Invoice;
 use App\Models\MpesaStkRequest;
+use App\Models\Payment;
 use App\Models\Staff;
 use App\Services\Finance\MpesaSettingsService;
 use App\Services\Finance\MpesaStkCallbackService;
@@ -70,14 +71,24 @@ class FinanceController extends Controller
                     ], 422);
                 }
 
-                $this->payments->recordPayment($invoice, [
+                $simRef = 'SIM-'.strtoupper(substr(sha1((string) microtime(true)), 0, 10));
+
+                $payment = $this->payments->recordPayment($invoice, [
                     'amount' => (float) $validated['amount'],
                     'payment_method' => 'mpesa',
-                    'payment_reference' => $validated['payment_reference'] ?? 'SIM-MPESA',
-                    'transaction_channel_ref' => 'SIM-'.strtoupper(substr(sha1((string) microtime(true)), 0, 10)),
+                    'payment_reference' => $validated['payment_reference'] ?? $simRef,
+                    'transaction_channel_ref' => $simRef,
                 ], $staffId);
 
                 app(StudentSidebarNotificationService::class)->forget($student);
+
+                if (! $payment->wasRecentlyCreated) {
+                    return response()->json([
+                        'message' => $this->duplicateMessage($payment),
+                        'recorded' => false,
+                        'simulated' => true,
+                    ], 422);
+                }
 
                 return response()->json([
                     'message' => 'Payment recorded successfully. Your balance has been updated.',
@@ -103,7 +114,7 @@ class FinanceController extends Controller
             ]);
         }
 
-        $this->payments->recordPayment($invoice, [
+        $payment = $this->payments->recordPayment($invoice, [
             'amount' => (float) $validated['amount'],
             'payment_method' => $validated['payment_method'],
             'payment_reference' => $validated['payment_reference'] ?? null,
@@ -111,7 +122,28 @@ class FinanceController extends Controller
 
         app(StudentSidebarNotificationService::class)->forget($student);
 
+        if (! $payment->wasRecentlyCreated) {
+            return response()->json([
+                'message' => $this->duplicateMessage($payment),
+                'recorded' => false,
+            ], 422);
+        }
+
         return response()->json(['message' => 'Payment submitted successfully.']);
+    }
+
+    /**
+     * The service answers a repeated submission with the payment already on file instead of
+     * booking the money twice, so name that payment rather than claiming new money arrived.
+     */
+    private function duplicateMessage(Payment $payment): string
+    {
+        return 'Nothing was added: KES '.number_format((float) $payment->amount, 2)
+            .' is already on your account as payment '.$payment->payment_number
+            .' dated '.($payment->payment_date?->format('d M Y') ?? 'an earlier date')
+            .($payment->payment_reference ? ' under reference '.$payment->payment_reference : '')
+            .'. If this is different money, send it with its own reference. If the figure is '
+            .'wrong, contact the finance office.';
     }
 
     public function stkStatus(Request $request, MpesaStkRequest $stkRequest): JsonResponse
