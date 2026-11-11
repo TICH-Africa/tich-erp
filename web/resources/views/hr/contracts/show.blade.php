@@ -52,10 +52,22 @@
                 <div class="tich-dl__row"><dt class="tich-dl__label">Type</dt><dd class="tich-dl__value">{{ ucfirst($contract->contract_type) }}</dd></div>
                 <div class="tich-dl__row">
                     <dt class="tich-dl__label">Gross salary</dt>
-                    <dd class="tich-dl__value"><x-financial-value :value="number_format($contract->gross_salary, 2)" /></dd>
+                    <dd class="tich-dl__value">
+                        @if ($contract->isVolunteer())
+                            Unpaid (volunteer)
+                        @else
+                            <x-financial-value :value="number_format($contract->gross_salary, 2)" />
+                        @endif
+                    </dd>
                 </div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Start date</dt><dd class="tich-dl__value">{{ $contract->start_date?->format('d M Y') ?? '-' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">End date</dt><dd class="tich-dl__value">{{ $contract->end_date?->format('d M Y') ?? 'Ongoing' }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">End date</dt><dd class="tich-dl__value">
+                    @if ($contract->contract_type === 'permanent')
+                        No fixed end date (until separation)
+                    @else
+                        {{ $contract->end_date?->format('d M Y') ?? 'Ongoing' }}
+                    @endif
+                </dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Probation end</dt><dd class="tich-dl__value">{{ $contract->probation_end_date?->format('d M Y') ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Renewable</dt><dd class="tich-dl__value">{{ $contract->is_renewable ? 'Yes' : 'No' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Signed</dt><dd class="tich-dl__value">{{ $contract->is_signed ? 'Yes (' . $contract->signed_date?->format('d M Y') . ')' : 'No' }}</dd></div>
@@ -94,11 +106,11 @@
                             <label for="renew_start_date" class="tich-label">Start date *</label>
                             <input type="date" id="renew_start_date" name="start_date" value="{{ old('start_date', $contract->end_date?->copy()->addDay()->format('Y-m-d') ?? $contract->start_date?->format('Y-m-d')) }}" required class="tich-input">
                         </div>
-                        <div>
+                        <div class="js-contract-term-field">
                             <label for="renew_duration" class="tich-label">Duration</label>
                             <input type="text" id="renew_duration" name="duration" value="{{ old('duration') }}" class="tich-input" placeholder="e.g. 6 months, 1 year">
                         </div>
-                        <div>
+                        <div class="js-contract-term-field">
                             <label for="renew_end_date" class="tich-label">End date</label>
                             <input type="date" id="renew_end_date" name="end_date" value="{{ old('end_date') }}" class="tich-input" readonly>
                         </div>
@@ -109,7 +121,7 @@
                         <div>
                             <label for="renew_contract_type" class="tich-label">Contract type</label>
                             <select id="renew_contract_type" name="contract_type" class="tich-input">
-                                @foreach (['permanent' => 'Permanent', 'contract' => 'Contract', 'intern' => 'Intern', 'visiting' => 'Visiting', 'casual' => 'Casual', 'probation' => 'Probation', 'consultancy' => 'Consultancy'] as $value => $label)
+                                @foreach (config('tich-payroll.contract_types', []) as $value => $label)
                                     <option value="{{ $value }}" {{ old('contract_type', $contract->contract_type) == $value ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>
@@ -188,4 +200,12 @@
             durationInput.addEventListener('input', calculateEnd);
         })();
     </script>
+    @include('hr.contracts.partials.permanent-term-toggle', [
+        'contractTypeSelectId' => 'renew_contract_type',
+        'termFieldSelector' => '.js-contract-term-field',
+        'durationInputId' => 'renew_duration',
+        'endInputId' => 'renew_end_date',
+        'renewableWrapId' => null,
+        'permanentHintSelector' => null,
+    ])
 @endsection

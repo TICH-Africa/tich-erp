@@ -22,6 +22,14 @@ class KenyaPayrollTaxService
             'payroll_scheme' => $staff->resolvedPayrollScheme(),
         ], $options);
 
+        if (($options['payroll_scheme'] ?? 'employee') === 'unpaid') {
+            return $this->calculateUnpaidVolunteer($options);
+        }
+
+        if (($options['payroll_scheme'] ?? 'employee') === 'stipend') {
+            return $this->calculateStipendFromGross($gross, $options);
+        }
+
         if (($options['payroll_scheme'] ?? 'employee') === 'withholding') {
             return $this->calculateWithholdingFromGross($gross, $options);
         }
@@ -33,6 +41,85 @@ class KenyaPayrollTaxService
      * @param  array{allowances?: float, other_deductions?: float, employee_name?: string, employee_number?: string}  $options
      * @return array<string, mixed>
      */
+    /**
+     * @param  array{employee_name?: string, employee_number?: string}  $options
+     * @return array<string, mixed>
+     */
+    public function calculateUnpaidVolunteer(array $options = []): array
+    {
+        return [
+            'mode' => 'unpaid',
+            'payroll_scheme' => 'unpaid',
+            'employee_name' => $options['employee_name'] ?? null,
+            'employee_number' => $options['employee_number'] ?? null,
+            'basic_salary' => 0.0,
+            'allowances' => 0.0,
+            'gross_salary' => 0.0,
+            'taxable_income' => 0.0,
+            'paye_before_relief' => 0.0,
+            'personal_relief' => 0.0,
+            'paye' => 0.0,
+            'net_salary' => 0.0,
+            'total_deductions' => 0.0,
+            'total_employer_cost' => 0.0,
+            'deductions' => [],
+            'employer_contributions' => [],
+            'band_breakdown' => [],
+            'bands' => [],
+            'deduction_types' => [],
+        ];
+    }
+
+    /**
+     * Intern / stipend: gross pay with no PAYE or statutory deductions.
+     *
+     * @param  array{allowances?: float, other_deductions?: float, employee_name?: string, employee_number?: string}  $options
+     * @return array<string, mixed>
+     */
+    public function calculateStipendFromGross(float $gross, array $options = []): array
+    {
+        $allowances = max(0, (float) ($options['allowances'] ?? 0));
+        $otherDeductions = max(0, (float) ($options['other_deductions'] ?? 0));
+        $grossTotal = round($gross + $allowances, 2);
+
+        $employeeDeductions = collect();
+
+        if ($otherDeductions > 0) {
+            $employeeDeductions->push([
+                'code' => 'other',
+                'label' => (string) ($options['other_deductions_label'] ?? 'Other deductions'),
+                'amount' => round($otherDeductions, 2),
+                'base' => null,
+                'rate' => null,
+            ]);
+        }
+
+        $totalDeductions = round($employeeDeductions->sum('amount'), 2);
+        $netSalary = round($grossTotal - $totalDeductions, 2);
+
+        return [
+            'mode' => 'stipend',
+            'payroll_scheme' => 'stipend',
+            'employee_name' => $options['employee_name'] ?? null,
+            'employee_number' => $options['employee_number'] ?? null,
+            'basic_salary' => round($gross, 2),
+            'allowances' => $allowances,
+            'gross_salary' => $grossTotal,
+            'taxable_income' => 0.0,
+            'paye_before_relief' => 0.0,
+            'personal_relief' => 0.0,
+            'paye' => 0.0,
+            'net_salary' => $netSalary,
+            'total_deductions' => $totalDeductions,
+            'total_employer_cost' => $grossTotal,
+            'deductions' => $employeeDeductions->values()->all(),
+            'employer_contributions' => [],
+            'band_breakdown' => [],
+            'bands' => [],
+            'deduction_types' => [],
+        ];
+    }
+
     public function calculateWithholdingFromGross(float $gross, array $options = []): array
     {
         $allowances = max(0, (float) ($options['allowances'] ?? 0));
@@ -103,6 +190,10 @@ class KenyaPayrollTaxService
      */
     public function calculateFromGross(float $gross, array $options = []): array
     {
+        if (($options['payroll_scheme'] ?? 'employee') === 'stipend') {
+            return $this->calculateStipendFromGross($gross, $options);
+        }
+
         if (($options['payroll_scheme'] ?? 'employee') === 'withholding') {
             return $this->calculateWithholdingFromGross($gross, $options);
         }
@@ -246,6 +337,15 @@ class KenyaPayrollTaxService
      */
     public function calculateFromNet(float $targetNet, array $options = []): array
     {
+        if (($options['payroll_scheme'] ?? 'employee') === 'stipend') {
+            $result = $this->calculateStipendFromGross($targetNet, $options);
+            $result['mode'] = 'net';
+            $result['target_net'] = round($targetNet, 2);
+            $result['computed_gross'] = $result['basic_salary'];
+
+            return $result;
+        }
+
         if (($options['payroll_scheme'] ?? 'employee') === 'withholding') {
             $rate = $this->withholdingTaxRate();
             $factor = max(0.01, 1 - ($rate / 100));

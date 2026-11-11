@@ -67,7 +67,7 @@ class ContractViewController extends Controller
     {
         return match ($category) {
             'consultant', 'independent_contractor' => 'consultancy',
-            'permanent', 'contract', 'intern', 'visiting', 'casual', 'probation', 'consultancy' => $category,
+            'permanent', 'contract', 'intern', 'visiting', 'casual', 'probation', 'consultancy', 'volunteer' => $category,
             default => null,
         };
     }
@@ -76,7 +76,7 @@ class ContractViewController extends Controller
     {
         $validated = $request->validate([
             'staff_id' => 'required|exists:staff,id',
-            'contract_type' => 'required|string|in:permanent,contract,intern,visiting,casual,probation,consultancy',
+            'contract_type' => 'required|string|in:permanent,contract,intern,visiting,casual,probation,consultancy,volunteer',
             'job_title' => 'required|string|max:200',
             'department_id' => 'required|exists:departments,id',
             'campus_id' => 'nullable|exists:campuses,id',
@@ -94,7 +94,9 @@ class ContractViewController extends Controller
             'contract_document_path' => 'nullable|string|max:500',
         ]);
 
-        if (empty($validated['end_date']) && ! empty($validated['duration'])) {
+        if ($validated['contract_type'] !== 'permanent'
+            && empty($validated['end_date'])
+            && ! empty($validated['duration'])) {
             $calculated = app(\App\Services\ContractService::class)->calculateEndDate($validated['start_date'], $validated['duration']);
             if ($calculated) {
                 $validated['end_date'] = $calculated;
@@ -145,7 +147,7 @@ class ContractViewController extends Controller
         $contract = StaffContract::findOrFail($id);
 
         $validated = $request->validate([
-            'contract_type' => 'sometimes|string|in:permanent,contract,intern,visiting,casual,probation,consultancy',
+            'contract_type' => 'sometimes|string|in:permanent,contract,intern,visiting,casual,probation,consultancy,volunteer',
             'job_title' => 'sometimes|string|max:200',
             'department_id' => 'sometimes|exists:departments,id',
             'campus_id' => 'nullable|exists:campuses,id',
@@ -167,7 +169,12 @@ class ContractViewController extends Controller
             'witnessed_by' => 'nullable|string|max:200',
         ]);
 
-        if (empty($validated['end_date']) && ! empty($validated['duration']) && ! empty($validated['start_date'])) {
+        $contractType = $validated['contract_type'] ?? $contract->contract_type;
+
+        if ($contractType !== 'permanent'
+            && empty($validated['end_date'])
+            && ! empty($validated['duration'])
+            && ! empty($validated['start_date'])) {
             $startDate = $validated['start_date'] ?? $contract->start_date;
             if ($startDate) {
                 $calculated = app(\App\Services\ContractService::class)->calculateEndDate($startDate, $validated['duration']);
@@ -175,7 +182,10 @@ class ContractViewController extends Controller
                     $validated['end_date'] = $calculated;
                 }
             }
-        } elseif (empty($validated['end_date']) && ! empty($validated['duration']) && ! empty($contract->start_date)) {
+        } elseif ($contractType !== 'permanent'
+            && empty($validated['end_date'])
+            && ! empty($validated['duration'])
+            && ! empty($contract->start_date)) {
             $calculated = app(\App\Services\ContractService::class)->calculateEndDate($contract->start_date, $validated['duration']);
             if ($calculated) {
                 $validated['end_date'] = $calculated;
@@ -195,10 +205,14 @@ class ContractViewController extends Controller
             'end_date' => 'nullable|date',
             'gross_salary' => 'required|numeric|min:0',
             'job_title' => 'sometimes|string|max:200',
-            'contract_type' => 'sometimes|string|in:permanent,contract,intern,visiting,casual,probation,consultancy',
+            'contract_type' => 'sometimes|string|in:permanent,contract,intern,visiting,casual,probation,consultancy,volunteer',
         ]);
 
-        if (empty($validated['end_date']) && ! empty($validated['duration'])) {
+        $contractType = $validated['contract_type'] ?? StaffContract::findOrFail($id)->contract_type;
+
+        if ($contractType !== 'permanent'
+            && empty($validated['end_date'])
+            && ! empty($validated['duration'])) {
             $calculated = app(\App\Services\ContractService::class)->calculateEndDate($validated['start_date'], $validated['duration']);
             if ($calculated) {
                 $validated['end_date'] = $calculated;
