@@ -58,7 +58,7 @@
                 <input id="cover_image" type="file" name="cover_image" accept="image/jpeg,image/png,image/webp,image/gif">
                 @if ($activity?->coverUrl())
                     <div class="uf-field--check tich-mt-2" style="flex-wrap:nowrap;">
-                        <img src="{{ $activity->coverUrl() }}" alt="" style="width:4.5rem;height:3rem;object-fit:cover;border-radius:4px;flex-shrink:0;">
+                        <img src="{{ $activity->coverUrl() }}" alt="" style="width:4.5rem;height:3rem;object-fit:contain;border-radius:4px;flex-shrink:0;background:#e8eaed;">
                         <input type="checkbox" id="remove_cover" name="remove_cover" value="1" class="tich-checkbox">
                         <label for="remove_cover">Remove current image</label>
                     </div>

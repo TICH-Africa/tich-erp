@@ -66,7 +66,7 @@ class ResearchActivityController extends Controller
     public function show(ResearchProject $activity): View
     {
         $this->activities->syncLifecycleStatus($activity);
-        $activity->load(['documents', 'leadResearcher']);
+        $activity->load('documents');
 
         return view('research.activities.show', [
             'activity' => $activity,

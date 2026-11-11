@@ -13,8 +13,10 @@
     $subtitle = $project->subtitle ?? null;
 
     $durationLabel = null;
-    if (! empty($project->duration_value) && ! empty($project->duration_unit)) {
-        $durationLabel = $project->duration_value . ' ' . $project->duration_unit;
+    if ($isModel) {
+        $durationLabel = $project->durationLabel();
+    } elseif (! empty($project->duration_value) && ! empty($project->duration_unit)) {
+        $durationLabel = $project->duration_value.' '.$project->duration_unit;
     }
 
     $startLabel = null;
@@ -24,15 +26,6 @@
             : \Illuminate\Support\Str::limit((string) $project->start_date, 20);
     }
 
-    $leadName = null;
-    if ($isModel && $project->relationLoaded('leadResearcher') && $project->leadResearcher) {
-        $lead = $project->leadResearcher;
-        $leadName = trim(implode(' ', array_filter([
-            $lead->first_name ?? null,
-            $lead->surname ?? null,
-        ]))) ?: null;
-    }
-
     $searchBlob = strtolower(trim(implode(' ', array_filter([
         $project->title ?? null,
         $summary,
@@ -40,11 +33,10 @@
         $status,
         $durationLabel,
         $startLabel,
-        $leadName,
     ]))));
 @endphp
 <article
-    class="tich-course-card{{ $extraClass ? ' ' . $extraClass : '' }}"
+    class="tich-course-card tich-research-card-cover{{ $extraClass ? ' '.$extraClass : '' }}"
     data-live-search-item
     data-search="{{ $searchBlob }}"
 >
@@ -69,7 +61,7 @@
             <p class="tich-course-card__excerpt">{{ \Illuminate\Support\Str::limit(strip_tags($subtitle), $excerptLimit) }}</p>
         @endif
 
-        @if ($durationLabel || $startLabel || $leadName)
+        @if ($durationLabel || $startLabel)
             <dl class="tich-course-card__details">
                 @if ($durationLabel)
                     <div>
@@ -81,12 +73,6 @@
                     <div>
                         <dt>Started</dt>
                         <dd>{{ $startLabel }}</dd>
-                    </div>
-                @endif
-                @if ($leadName)
-                    <div>
-                        <dt>Lead</dt>
-                        <dd>{{ $leadName }}</dd>
                     </div>
                 @endif
             </dl>

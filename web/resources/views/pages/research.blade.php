@@ -21,6 +21,39 @@
                     </div>
                 @endif
 
+                @if ($projects->isNotEmpty())
+                    <x-animated-section animation="bottom">
+                        <div class="tich-mt-10" data-live-search>
+                            <div class="tich-flex-wrap" style="gap: 1rem; align-items: end; justify-content: space-between;">
+                                <h2 class="tich-h2" style="margin: 0;">Research activities</h2>
+                                <div class="tich-form-group" style="margin: 0; min-width: min(100%, 16rem);">
+                                    <label for="research-search" class="tich-label">Search activities</label>
+                                    <input
+                                        type="search"
+                                        id="research-search"
+                                        data-live-search-input
+                                        placeholder="Title, status, keyword..."
+                                        class="tich-input"
+                                        autocomplete="off"
+                                    >
+                                </div>
+                            </div>
+                            <div class="tich-course-grid tich-mt-6">
+                                @foreach ($projects as $project)
+                                    @include('research.partials.project-card', [
+                                        'project' => $project,
+                                        'headingTag' => 'h3',
+                                        'excerptLimit' => 180,
+                                    ])
+                                @endforeach
+                            </div>
+                            <p class="tich-text tich-mt-6" data-live-search-empty hidden>No research activities match your search.</p>
+                        </div>
+                    </x-animated-section>
+                @else
+                    <p class="tich-text tich-mt-10">Research activities will appear here once published.</p>
+                @endif
+
                 <div class="tich-grid tich-grid--2" style="gap: 2rem; align-items: start;">
                     <x-animated-card animation="left">
                         <div>
@@ -196,39 +229,6 @@
                         </div>
                     </x-animated-card>
                 </div>
-
-                @if ($projects->isNotEmpty())
-                    <x-animated-section animation="bottom">
-                        <div class="tich-mt-10" data-live-search>
-                            <div class="tich-flex-wrap" style="gap: 1rem; align-items: end; justify-content: space-between;">
-                                <h2 class="tich-h2" style="margin: 0;">Research activities</h2>
-                                <div class="tich-form-group" style="margin: 0; min-width: min(100%, 16rem);">
-                                    <label for="research-search" class="tich-label">Search activities</label>
-                                    <input
-                                        type="search"
-                                        id="research-search"
-                                        data-live-search-input
-                                        placeholder="Title, status, keyword..."
-                                        class="tich-input"
-                                        autocomplete="off"
-                                    >
-                                </div>
-                            </div>
-                            <div class="tich-course-grid tich-mt-6">
-                                @foreach ($projects as $project)
-                                    @include('research.partials.project-card', [
-                                        'project' => $project,
-                                        'headingTag' => 'h3',
-                                        'excerptLimit' => 180,
-                                    ])
-                                @endforeach
-                            </div>
-                            <p class="tich-text tich-mt-6" data-live-search-empty hidden>No research activities match your search.</p>
-                        </div>
-                    </x-animated-section>
-                @else
-                    <p class="tich-text tich-mt-10">Research activities will appear here once published.</p>
-                @endif
             </div>
         </section>
     </x-animated-section>

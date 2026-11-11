@@ -46,7 +46,7 @@ class HomeController extends Controller
         if (Schema::hasTable('research_projects')) {
             $projects = ResearchProject::query()
                 ->published()
-                ->with('leadResearcher')
+                ->orderByRaw("case when status in ('upcoming','ongoing') then 0 else 1 end")
                 ->orderByDesc('is_featured')
                 ->orderByDesc('start_date')
                 ->orderByDesc('id')
