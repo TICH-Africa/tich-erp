@@ -3,7 +3,7 @@
 @section('title', 'Work from home')
 
 @section('hr-content')
-    <x-page-toolbar title="Work from home" meta="Staff WFH requests · Independent of leave · 1 day/week with in-month carry" />
+    <x-page-toolbar title="Work from home" meta="Tue–Thu only · 2-day advance rule · 1 day/week monthly bank" />
 
     @if (session('status'))
         <div class="tich-alert tich-alert--success tich-mt-4">{{ session('status') }}</div>

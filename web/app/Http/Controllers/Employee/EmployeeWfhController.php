@@ -8,6 +8,7 @@ use App\Models\WorkFromHomeRequest;
 use App\Services\EmployeePortalService;
 use App\Services\WorkFromHomeRequestService;
 use App\Support\WorkFromHomePortal;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -56,6 +57,8 @@ class EmployeeWfhController extends Controller
             'portalTitle' => 'Apply for work from home',
             'staff' => $staff,
             'entitlement' => $entitlement,
+            'earliestBookable' => $this->wfh->firstBookableDate(),
+            'minAdvanceDays' => $this->wfh->minimumAdvanceDays(),
         ]);
     }
 
@@ -66,7 +69,17 @@ class EmployeeWfhController extends Controller
         $staff = $this->staff($request);
 
         $validated = $request->validate([
-            'work_date' => ['required', 'date', 'after_or_equal:today'],
+            'work_date' => [
+                'required',
+                'date',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    try {
+                        $this->wfh->assertBookableWorkDate(Carbon::parse((string) $value));
+                    } catch (\RuntimeException $e) {
+                        $fail($e->getMessage());
+                    }
+                },
+            ],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'total_hours' => ['nullable', 'numeric', 'min:0.5', 'max:24'],

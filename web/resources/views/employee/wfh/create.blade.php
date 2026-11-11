@@ -1,7 +1,7 @@
 @extends('layouts.employee')
 
 @section('employee-content')
-    <x-page-toolbar title="Apply for work from home" meta="Separate from leave · Max 1 day per week · Unused days carry within the month only">
+    <x-page-toolbar title="Apply for work from home" meta="Tue–Thu only · Apply at least {{ $minAdvanceDays }} day(s) ahead · 1 day per week (monthly bank)">
         <x-slot:actions>
             <a href="{{ route('employee.wfh.index') }}" class="tich-btn tich-btn-ghost">← Back</a>
         </x-slot:actions>
@@ -58,13 +58,19 @@
             <div class="uf-form-section">
                 <div class="uf-section-head">3. Request details</div>
                 <div class="uf-section-body">
-                    <p class="uf-hint">Arrangement type is fixed as <strong>Work from home</strong>. Working days are Monday–Friday only.</p>
+                    <p class="uf-hint">
+                        Arrangement type is <strong>Work from home</strong>.
+                        You may only request <strong>Tuesday, Wednesday, or Thursday</strong>
+                        (not Monday or Friday), and the date must be at least
+                        <strong>{{ $minAdvanceDays }} full day(s)</strong> after today.
+                        Earliest available: <strong>{{ $earliestBookable->format('l, j F Y') }}</strong>.
+                    </p>
                     <div class="uf-form-grid-2">
                         <div class="uf-field">
                             <label for="work_date">Work from home date <span class="uf-req">*</span></label>
                             <input type="date" id="work_date" name="work_date" required
                                    value="{{ old('work_date') }}"
-                                   min="{{ now()->toDateString() }}"
+                                   min="{{ $earliestBookable->toDateString() }}"
                                    class="{{ $errors->has('work_date') ? 'is-invalid' : '' }}">
                             @error('work_date')
                                 <span class="uf-error">{{ $message }}</span>
@@ -79,7 +85,7 @@
             </div>
 
             <div class="uf-form-section">
-                <div class="uf-section-head">4. Proposed schedule (Mon–Fri)</div>
+                <div class="uf-section-head">4. Proposed schedule (Tue–Thu WFH day)</div>
                 <div class="uf-section-body">
                     <div class="uf-form-grid-2">
                         <div class="uf-field">
@@ -150,12 +156,22 @@
         (function () {
             const workDate = document.getElementById('work_date');
             if (!workDate) return;
+            const allowedIso = @json([2, 3, 4]);
+            const minAdvance = @json($minAdvanceDays);
             workDate.addEventListener('change', function () {
                 const d = new Date(this.value + 'T12:00:00');
                 if (Number.isNaN(d.getTime())) return;
-                const day = d.getDay();
-                if (day === 0 || day === 6) {
-                    alert('Work from home is Monday to Friday only.');
+                const iso = d.getDay() === 0 ? 7 : d.getDay();
+                if (!allowedIso.includes(iso)) {
+                    alert('Work from home is only available Tuesday, Wednesday, or Thursday.');
+                    this.value = '';
+                    return;
+                }
+                const today = new Date();
+                today.setHours(12, 0, 0, 0);
+                const diffDays = Math.floor((d - today) / 86400000);
+                if (diffDays < minAdvance) {
+                    alert('Apply at least ' + minAdvance + ' full day(s) before the WFH date.');
                     this.value = '';
                 }
             });
