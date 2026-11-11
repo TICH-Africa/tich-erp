@@ -52,7 +52,13 @@
                 <div class="tich-dl__row"><dt class="tich-dl__label">Type</dt><dd class="tich-dl__value">{{ ucfirst($contract->contract_type) }}</dd></div>
                 <div class="tich-dl__row">
                     <dt class="tich-dl__label">Gross salary</dt>
-                    <dd class="tich-dl__value"><x-financial-value :value="number_format($contract->gross_salary, 2)" /></dd>
+                    <dd class="tich-dl__value">
+                        @if ($contract->isVolunteer())
+                            Unpaid (volunteer)
+                        @else
+                            <x-financial-value :value="number_format($contract->gross_salary, 2)" />
+                        @endif
+                    </dd>
                 </div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Start date</dt><dd class="tich-dl__value">{{ $contract->start_date?->format('d M Y') ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">End date</dt><dd class="tich-dl__value">
@@ -115,7 +121,7 @@
                         <div>
                             <label for="renew_contract_type" class="tich-label">Contract type</label>
                             <select id="renew_contract_type" name="contract_type" class="tich-input">
-                                @foreach (['permanent' => 'Permanent', 'contract' => 'Contract', 'intern' => 'Intern', 'visiting' => 'Visiting', 'casual' => 'Casual', 'probation' => 'Probation', 'consultancy' => 'Consultancy'] as $value => $label)
+                                @foreach (config('tich-payroll.contract_types', []) as $value => $label)
                                     <option value="{{ $value }}" {{ old('contract_type', $contract->contract_type) == $value ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>

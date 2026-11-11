@@ -100,6 +100,7 @@ class DashboardController extends Controller
                 'overall_status' => $r->overall_status,
             ])->values(),
             'employment_duration' => $data['employmentDuration'],
+            'monthly_payroll_breakdown' => $data['monthlyPayrollBreakdown'],
             'pending_profile_changes' => (int) $data['pendingProfileChanges'],
             'trainings' => collect($data['trainings'])->map(fn ($t) => [
                 'id' => $t->id,

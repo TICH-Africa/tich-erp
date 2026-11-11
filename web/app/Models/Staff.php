@@ -520,6 +520,43 @@ class Staff extends Model
         return $user?->isPlatformOperator() ?? false;
     }
 
+    public function requiresEmployeeStatutoryPayroll(): bool
+    {
+        return in_array(
+            (string) $this->employment_category,
+            config('tich-payroll.employee_statutory_employment_categories', ['permanent', 'contract']),
+            true
+        );
+    }
+
+    public function isUnpaidVolunteer(): bool
+    {
+        return in_array(
+            (string) $this->employment_category,
+            config('tich-payroll.unpaid_employment_categories', ['volunteer']),
+            true
+        );
+    }
+
+    public function isStipendEmployment(): bool
+    {
+        return in_array(
+            (string) $this->employment_category,
+            config('tich-payroll.stipend_employment_categories', ['intern']),
+            true
+        );
+    }
+
+    public function usesUnpaidPayroll(): bool
+    {
+        return $this->resolvedPayrollScheme() === 'unpaid';
+    }
+
+    public function usesStipendPayroll(): bool
+    {
+        return $this->resolvedPayrollScheme() === 'stipend';
+    }
+
     public function usesWithholdingPayroll(): bool
     {
         return $this->resolvedPayrollScheme() === 'withholding';
@@ -527,6 +564,18 @@ class Staff extends Model
 
     public function resolvedPayrollScheme(): string
     {
+        if ($this->isUnpaidVolunteer()) {
+            return 'unpaid';
+        }
+
+        if ($this->isStipendEmployment()) {
+            return 'stipend';
+        }
+
+        if ($this->requiresEmployeeStatutoryPayroll()) {
+            return 'employee';
+        }
+
         if ($this->payroll_scheme) {
             return $this->payroll_scheme;
         }

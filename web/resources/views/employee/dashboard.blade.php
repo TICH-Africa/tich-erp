@@ -135,11 +135,28 @@
 
             <article class="tich-card">
                 <h2 class="tich-h3">Compensation</h2>
+                @if ($staff->usesUnpaidPayroll())
+                    <p class="tich-caption tich-mt-2">You are on an unpaid volunteer placement — no salary or statutory payroll deductions apply.</p>
+                @elseif ($staff->usesStipendPayroll())
+                    <p class="tich-caption tich-mt-2">Intern / stipend placement — no PAYE, NSSF, SHA/SHIF, or Affordable Housing Levy deductions apply.</p>
+                @endif
                 <div class="tich-kv-grid tich-mt-4">
-                    <div><span class="tich-kv-grid__label">Consolidated Gross Pay</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($pay['gross_monthly_salary'], 2)" /></span></div>
+                    <div><span class="tich-kv-grid__label">Consolidated Gross Pay</span><span class="tich-kv-grid__value">@if ($staff->usesUnpaidPayroll()) — @else<x-financial-value :value="number_format($pay['gross_monthly_salary'], 2)" />@endif</span></div>
                     <div><span class="tich-kv-grid__label">Allowances</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($pay['allowances_total'], 2)" /></span></div>
                     <div><span class="tich-kv-grid__label">Total package</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($pay['total_monthly'], 2)" /></span></div>
                 </div>
+                @if (! empty($monthlyPayrollBreakdown))
+                    <h3 class="tich-h3 tich-mt-6">Estimated monthly statutory deductions</h3>
+                    <p class="tich-caption tich-mt-1">Based on your current gross pay and configured KRA / statutory rates (permanent &amp; contract employees).</p>
+                    <div class="tich-kv-grid tich-mt-4">
+                        <div><span class="tich-kv-grid__label">PAYE</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($monthlyPayrollBreakdown['paye'], 2)" /></span></div>
+                        <div><span class="tich-kv-grid__label">NSSF</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($monthlyPayrollBreakdown['nssf'], 2)" /></span></div>
+                        <div><span class="tich-kv-grid__label">SHA / SHIF</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($monthlyPayrollBreakdown['sha'], 2)" /></span></div>
+                        <div><span class="tich-kv-grid__label">Affordable Housing Levy</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($monthlyPayrollBreakdown['ahl'], 2)" /></span></div>
+                        <div><span class="tich-kv-grid__label">Total deductions</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($monthlyPayrollBreakdown['total_deductions'], 2)" /></span></div>
+                        <div><span class="tich-kv-grid__label">Estimated net pay</span><span class="tich-kv-grid__value"><x-financial-value :value="number_format($monthlyPayrollBreakdown['net_salary'], 2)" /></span></div>
+                    </div>
+                @endif
                 @if ($pay['allowances']->isNotEmpty())
                     <h3 class="tich-h3 tich-mt-6">Allowance breakdown</h3>
                     <ul class="tich-mt-2" style="list-style:none; padding:0;">

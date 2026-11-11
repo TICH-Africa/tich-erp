@@ -16,6 +16,7 @@ class EmployeePortalService
     public function __construct(
         protected StaffPortalService $staffPortal,
         protected LeaveAccrualService $leaveAccrual,
+        protected KenyaPayrollTaxService $payrollTax,
     ) {}
 
     public function hasEmployeeProfile(User $user): bool
@@ -84,6 +85,7 @@ class EmployeePortalService
             'leaveBalances' => $this->leaveBalances($staff),
             'recentLeaveRequests' => $this->recentLeaveRequests($staff),
             'employmentDuration' => $this->employmentDurationLabel($staff),
+            'monthlyPayrollBreakdown' => $this->monthlyPayrollBreakdown($staff),
             'trainings' => $this->staffTrainings($staff),
             'pendingProfileChanges' => StaffProfileChangeRequest::query()
                 ->where('staff_id', $staff->id)
@@ -155,6 +157,7 @@ class EmployeePortalService
                 'tich-payroll.employment_categories.'.$staff->employment_category,
                 ucfirst(str_replace('_', ' ', (string) $staff->employment_category))
             ),
+            'uses_statutory_payroll' => $staff->requiresEmployeeStatutoryPayroll(),
             'allowances' => $allowances,
             'masked_account_number' => $this->maskAccountNumber($staff->bankAccount?->account_number),
         ];
@@ -232,6 +235,54 @@ class EmployeePortalService
         }
 
         return $start->diffForHumans(now(), true);
+    }
+
+    /**
+     * Estimated monthly PAYE + statutory deductions for permanent / contract staff.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function monthlyPayrollBreakdown(Staff $staff): ?array
+    {
+        if (! $staff->requiresEmployeeStatutoryPayroll()) {
+            return null;
+        }
+
+        $basic = (float) $staff->gross_monthly_salary;
+        $allowances = (float) $staff->activeAllowances->sum('amount');
+
+        if ($basic <= 0 && $allowances <= 0) {
+            return null;
+        }
+
+        $breakdown = $this->payrollTax->calculateForStaff($staff, $basic, [
+            'allowances' => $allowances,
+        ]);
+
+        return [
+            'payroll_scheme' => 'employee',
+            'gross_salary' => (float) ($breakdown['gross_salary'] ?? 0),
+            'paye' => $this->payrollDeductionAmount($breakdown, 'paye'),
+            'nssf' => $this->payrollDeductionAmount($breakdown, 'nssf'),
+            'sha' => $this->payrollDeductionAmount($breakdown, 'sha'),
+            'ahl' => $this->payrollDeductionAmount($breakdown, 'ahl'),
+            'total_deductions' => (float) ($breakdown['total_deductions'] ?? 0),
+            'net_salary' => (float) ($breakdown['net_salary'] ?? 0),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $breakdown
+     */
+    private function payrollDeductionAmount(array $breakdown, string $code): float
+    {
+        foreach ($breakdown['deductions'] ?? [] as $row) {
+            if (($row['code'] ?? '') === $code) {
+                return (float) ($row['amount'] ?? 0);
+            }
+        }
+
+        return 0.0;
     }
 
     /**

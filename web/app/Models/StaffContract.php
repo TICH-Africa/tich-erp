@@ -84,6 +84,11 @@ class StaffContract extends Model
         return $this->contract_type === 'permanent';
     }
 
+    public function isVolunteer(): bool
+    {
+        return $this->contract_type === 'volunteer';
+    }
+
     public function isExpired(): bool
     {
         if ($this->isPermanent() || ! $this->end_date) {

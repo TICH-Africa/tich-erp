@@ -67,7 +67,7 @@ class ContractViewController extends Controller
     {
         return match ($category) {
             'consultant', 'independent_contractor' => 'consultancy',
-            'permanent', 'contract', 'intern', 'visiting', 'casual', 'probation', 'consultancy' => $category,
+            'permanent', 'contract', 'intern', 'visiting', 'casual', 'probation', 'consultancy', 'volunteer' => $category,
             default => null,
         };
     }
@@ -76,7 +76,7 @@ class ContractViewController extends Controller
     {
         $validated = $request->validate([
             'staff_id' => 'required|exists:staff,id',
-            'contract_type' => 'required|string|in:permanent,contract,intern,visiting,casual,probation,consultancy',
+            'contract_type' => 'required|string|in:permanent,contract,intern,visiting,casual,probation,consultancy,volunteer',
             'job_title' => 'required|string|max:200',
             'department_id' => 'required|exists:departments,id',
             'campus_id' => 'nullable|exists:campuses,id',
@@ -147,7 +147,7 @@ class ContractViewController extends Controller
         $contract = StaffContract::findOrFail($id);
 
         $validated = $request->validate([
-            'contract_type' => 'sometimes|string|in:permanent,contract,intern,visiting,casual,probation,consultancy',
+            'contract_type' => 'sometimes|string|in:permanent,contract,intern,visiting,casual,probation,consultancy,volunteer',
             'job_title' => 'sometimes|string|max:200',
             'department_id' => 'sometimes|exists:departments,id',
             'campus_id' => 'nullable|exists:campuses,id',
@@ -205,7 +205,7 @@ class ContractViewController extends Controller
             'end_date' => 'nullable|date',
             'gross_salary' => 'required|numeric|min:0',
             'job_title' => 'sometimes|string|max:200',
-            'contract_type' => 'sometimes|string|in:permanent,contract,intern,visiting,casual,probation,consultancy',
+            'contract_type' => 'sometimes|string|in:permanent,contract,intern,visiting,casual,probation,consultancy,volunteer',
         ]);
 
         $contractType = $validated['contract_type'] ?? StaffContract::findOrFail($id)->contract_type;

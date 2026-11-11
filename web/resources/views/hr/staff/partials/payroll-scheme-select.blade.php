@@ -10,7 +10,7 @@
             <option value="{{ $value }}" {{ $selected === $value ? 'selected' : '' }}>{{ $label }}</option>
         @endforeach
     </select>
-    <p class="tich-caption tich-mt-1">Consultants and independent contractors typically use withholding tax only (no PAYE, NSSF, SHA, or AHL).</p>
+    <p class="tich-caption tich-mt-1">Permanent and contract staff use PAYE plus NSSF, SHA/SHIF, and Affordable Housing Levy. Interns use stipend (no statutory deductions). Volunteers are unpaid. Consultants typically use withholding tax only.</p>
 </div>
 
 <script>
@@ -23,9 +23,18 @@
         }
 
         var withholdingCategories = @json(config('tich-payroll.withholding_employment_categories', []));
+        var statutoryCategories = @json(config('tich-payroll.employee_statutory_employment_categories', ['permanent', 'contract']));
+        var unpaidCategories = @json(config('tich-payroll.unpaid_employment_categories', ['volunteer']));
+        var stipendCategories = @json(config('tich-payroll.stipend_employment_categories', ['intern']));
 
         function syncPayrollScheme() {
-            if (withholdingCategories.indexOf(category.value) !== -1) {
+            if (unpaidCategories.indexOf(category.value) !== -1) {
+                scheme.value = 'unpaid';
+            } else if (stipendCategories.indexOf(category.value) !== -1) {
+                scheme.value = 'stipend';
+            } else if (statutoryCategories.indexOf(category.value) !== -1) {
+                scheme.value = 'employee';
+            } else if (withholdingCategories.indexOf(category.value) !== -1) {
                 scheme.value = 'withholding';
             }
         }

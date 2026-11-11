@@ -15,13 +15,9 @@
                     <label for="contract_type" class="tich-label">Contract Type *</label>
                     <select id="contract_type" name="contract_type" required class="tich-input">
                         <option value="">Select type</option>
-                        <option value="permanent" {{ old('contract_type', $contract->contract_type) == 'permanent' ? 'selected' : '' }}>Permanent</option>
-                        <option value="contract" {{ old('contract_type', $contract->contract_type) == 'contract' ? 'selected' : '' }}>Contract</option>
-                        <option value="intern" {{ old('contract_type', $contract->contract_type) == 'intern' ? 'selected' : '' }}>Intern</option>
-                        <option value="visiting" {{ old('contract_type', $contract->contract_type) == 'visiting' ? 'selected' : '' }}>Visiting</option>
-                        <option value="casual" {{ old('contract_type', $contract->contract_type) == 'casual' ? 'selected' : '' }}>Casual</option>
-                        <option value="probation" {{ old('contract_type', $contract->contract_type) == 'probation' ? 'selected' : '' }}>Probation</option>
-                        <option value="consultancy" {{ old('contract_type', $contract->contract_type) == 'consultancy' ? 'selected' : '' }}>Consultancy</option>
+                        @foreach (config('tich-payroll.contract_types', []) as $value => $label)
+                            <option value="{{ $value }}" {{ old('contract_type', $contract->contract_type) == $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div>
@@ -63,7 +59,8 @@
                 </div>
                 <div>
                     <label for="gross_salary" class="tich-label">Gross Salary *</label>
-                    <input type="number" step="0.01" id="gross_salary" name="gross_salary" value="{{ old('gross_salary', $contract->gross_salary) }}" required class="tich-input">
+                    <input type="number" step="0.01" min="0" id="gross_salary" name="gross_salary" value="{{ old('gross_salary', $contract->gross_salary) }}" required class="tich-input">
+                    <p class="tich-caption js-volunteer-hint tich-mt-1" style="display:none;">Volunteer placements are unpaid — gross salary is fixed at zero.</p>
                 </div>
                 <div>
                     <label for="start_date" class="tich-label">Start Date *</label>
@@ -152,5 +149,10 @@
         'endInputId' => 'end_date',
         'renewableWrapId' => 'contract-renewable-wrap',
         'permanentHintSelector' => '.js-contract-permanent-hint',
+    ])
+    @include('hr.contracts.partials.volunteer-contract-ui', [
+        'contractTypeSelectId' => 'contract_type',
+        'grossSalaryInputId' => 'gross_salary',
+        'volunteerHintSelector' => '.js-volunteer-hint',
     ])
 @endsection
