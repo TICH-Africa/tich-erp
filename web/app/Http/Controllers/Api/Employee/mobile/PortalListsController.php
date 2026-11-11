@@ -42,6 +42,11 @@ class PortalListsController extends Controller
 
         return response()->json([
             'enabled' => true,
+            'booking_rules' => [
+                'allowed_iso_weekdays' => $wfh->allowedIsoWeekdays(),
+                'min_advance_days' => $wfh->minimumAdvanceDays(),
+                'earliest_bookable_date' => $wfh->firstBookableDate()->toDateString(),
+            ],
             'entitlement' => $wfh->entitlementSnapshot($staff),
             'requests' => $requests->map(fn ($r) => [
                 'id' => $r->id,
@@ -62,7 +67,17 @@ class PortalListsController extends Controller
 
         $staff = $this->portalStaff($request);
         $validated = $request->validate([
-            'work_date' => ['required', 'date', 'after_or_equal:today'],
+            'work_date' => [
+                'required',
+                'date',
+                function (string $attribute, mixed $value, \Closure $fail) use ($wfh) {
+                    try {
+                        $wfh->assertBookableWorkDate(\Carbon\Carbon::parse((string) $value));
+                    } catch (\RuntimeException $e) {
+                        $fail($e->getMessage());
+                    }
+                },
+            ],
             'start_time' => ['nullable', 'date_format:H:i'],
             'end_time' => ['nullable', 'date_format:H:i'],
             'remote_tasks' => ['required', 'array', 'min:1', 'max:5'],

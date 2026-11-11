@@ -65,6 +65,13 @@ class StudentMorePage extends StatelessWidget {
         onTap: () => openStudentLifecycleFromMore(api),
       ),
       TichMoreItem(
+        label: 'Supplementary & special exams',
+        icon: Icons.edit_note_outlined,
+        badgeCount: badge('academics.exam-requests'),
+        onTapDown: (_) => StudentPrefetch.examRequests(api),
+        onTap: () => openStudentExamRequests(api),
+      ),
+      TichMoreItem(
         label: 'Suggestion box',
         icon: Icons.lightbulb_outline,
         badgeCount: badge('suggestions'),

@@ -9,6 +9,7 @@ abstract final class StudentPrefetch {
   static const academicsUnitsKey = 'student.academics.units';
   static const academicsContentKey = 'student.academics.content';
   static const academicsAssessmentsKey = 'student.academics.assessments';
+  static const examRequestsKey = 'student.academics.exam_requests';
   static const timetableKey = 'student.timetable';
   static const financeKey = 'student.finance';
   static const profileKey = 'student.profile';
@@ -37,6 +38,10 @@ abstract final class StudentPrefetch {
 
   static void academicsAssessments(StudentApi api) {
     studentWarm(academicsAssessmentsKey, () => api.academicsAssessments());
+  }
+
+  static void examRequests(StudentApi api) {
+    studentWarm(examRequestsKey, () => api.academicsExamRequests());
   }
 
   static void timetable(StudentApi api) {
@@ -148,6 +153,7 @@ abstract final class StudentPrefetch {
     academicsUnits(api);
     academicsContent(api);
     academicsAssessments(api);
+    examRequests(api);
   }
 
   /// Background warm for non-home tabs (staggered after shell open).

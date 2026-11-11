@@ -32,11 +32,21 @@ class StudentApi {
   Future<Map<String, dynamic>> academicsAssessments() =>
       _client.get('/student/academics/assessments');
 
-  Future<List<int>> downloadExamCardPdf({required int semesterId}) =>
+  Future<Map<String, dynamic>> academicsExamRequests() =>
+      _client.get('/student/academics/exam-requests');
+
+  Future<List<int>> downloadExamCardPdf({
+    required int semesterId,
+    bool attachment = false,
+  }) =>
       _client.getBytes(
         '/student/academics/exam-card/pdf',
-        query: {'semester': '$semesterId'},
+        query: {
+          'semester': '$semesterId',
+          if (attachment) 'disposition': 'download',
+        },
         timeout: const Duration(seconds: 90),
+        accept: 'application/pdf',
       );
 
   Future<Map<String, dynamic>> timetable() => _client.get(

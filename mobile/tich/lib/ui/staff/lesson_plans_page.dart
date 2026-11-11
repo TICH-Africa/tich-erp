@@ -28,13 +28,23 @@ class _StaffLessonPlansPageState extends State<StaffLessonPlansPage> {
   @override
   void initState() {
     super.initState();
-    StaffPrefetch.timetable(widget.api);
+    _dataCache = staffReadCache('staff.lesson_plans');
     staffPrimeScreen(
       persistKey: 'staff.lesson_plans',
       setCache: (c) => _dataCache = c,
       setFuture: (f) => _future = f,
       fetch: () => widget.api.lessonPlans(),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_dataCache != null) {
+        Future<void>.delayed(const Duration(seconds: 10), () {
+          if (mounted) _liveRefresh();
+        });
+        return;
+      }
+      _liveRefresh();
+    });
   }
 
   Future<void> _reload() => staffCachedReload(

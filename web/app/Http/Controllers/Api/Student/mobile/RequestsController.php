@@ -11,6 +11,7 @@ use App\Models\StudentTranscriptRequest;
 use App\Models\SupplementaryExamRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -215,6 +216,9 @@ class RequestsController extends Controller
                 'created_at' => now(),
             ]);
 
+            Cache::forget('student.mobile.academics.exam_requests.'.$student->id.'.v1');
+            Cache::forget('student.mobile.academics.hub.'.$student->id.'.v6');
+
             return response()->json([
                 'message' => 'Your special exam request was submitted for review.',
                 'request' => ['id' => $row->id, 'status' => $row->status],
@@ -236,6 +240,9 @@ class RequestsController extends Controller
             'supporting_docs' => $storedPaths !== [] ? $storedPaths : null,
             'created_at' => now(),
         ]);
+
+        Cache::forget('student.mobile.academics.exam_requests.'.$student->id.'.v1');
+        Cache::forget('student.mobile.academics.hub.'.$student->id.'.v6');
 
         return response()->json([
             'message' => 'Your supplementary exam request was submitted for review.',

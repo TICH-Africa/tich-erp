@@ -23,6 +23,10 @@ class WeeklyTimeLogService
 
     /** One worked hour counts as two unit hours. */
     public const UNIT_TIME_MULTIPLIER = 2.0;
+
+    /** @var array<int, Collection<int, Department>> */
+    private array $departmentsForStaffCache = [];
+
     public function __construct(
         protected PlatformNotificationService $notifications,
         protected StaffPortalService $staffPortal,
@@ -163,6 +167,11 @@ class WeeklyTimeLogService
      */
     public function departmentsForStaff(Staff $staff): Collection
     {
+        $staffId = (int) $staff->id;
+        if (isset($this->departmentsForStaffCache[$staffId])) {
+            return $this->departmentsForStaffCache[$staffId];
+        }
+
         $ids = collect([(int) $staff->department_id])->filter();
 
         if ($staff->user_id && SchemaProbe::hasTable('user_roles') && SchemaProbe::hasColumn('user_roles', 'department_id')) {
@@ -186,10 +195,10 @@ class WeeklyTimeLogService
         $ids = $ids->map(fn ($id) => (int) $id)->unique()->filter()->values();
 
         if ($ids->isEmpty()) {
-            return collect();
+            return $this->departmentsForStaffCache[$staffId] = collect();
         }
 
-        return Department::query()
+        return $this->departmentsForStaffCache[$staffId] = Department::query()
             ->whereIn('id', $ids->all())
             ->where('is_active', true)
             ->orderBy('dept_name')

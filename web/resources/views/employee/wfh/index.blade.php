@@ -1,7 +1,7 @@
 @extends('layouts.employee')
 
 @section('employee-content')
-    <x-page-toolbar title="Work from home" meta="Independent of leave · Monday to Friday · 1 day per week, carry within the month">
+    <x-page-toolbar title="Work from home" meta="Tue–Thu only · Apply 2+ days ahead · 1 day per week (monthly bank)">
         <x-slot:actions>
             <a href="{{ route('employee.wfh.create') }}" class="tich-btn tich-btn-primary">+ Apply</a>
         </x-slot:actions>

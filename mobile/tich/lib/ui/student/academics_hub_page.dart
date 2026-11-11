@@ -75,8 +75,14 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _liveRefresh();
       StudentPrefetch.academicsSubsections(widget.api);
+      if (_dataCache != null) {
+        Future<void>.delayed(const Duration(seconds: 12), () {
+          if (mounted) _liveRefresh();
+        });
+        return;
+      }
+      _liveRefresh();
     });
   }
 
@@ -398,17 +404,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
         title: 'Supplementary & Special Exams',
         icon: Icons.edit_note_outlined,
         badgeKey: 'academics.exam-requests',
-        onTapDown: (_) => StudentPrefetch.academics(widget.api),
-        onTap: () => _openPayloadSection(
-          'Supplementary & Special Exams',
-          (payload) => _ExamRequestsInteractive(
-            api: widget.api,
-            units: payload.registeredUnits,
-            special: payload.specialExamRequests,
-            supplementary: payload.supplementaryExamRequests,
-            onChanged: _reload,
-          ),
-        ),
+        onTapDown: (_) => StudentPrefetch.examRequests(widget.api),
+        onTap: () => openStudentExamRequests(widget.api),
       ),
       AcademicsHubSection(
         title: 'Academic progress',
@@ -691,11 +688,20 @@ class _StudentExamEligibilitySectionState
     StudentPrefetch.examCardPdf(widget.api, semesterId);
   }
 
-  Future<List<int>> _loadExamCardPdf(int semesterId) {
-    return TichPdfCache.load(
+  Future<List<int>> _loadExamCardPdf(int semesterId) async {
+    final bytes = await TichPdfCache.load(
       StudentPrefetch.examCardPdfKey(semesterId),
       () => widget.api.downloadExamCardPdf(semesterId: semesterId),
     );
+    if (tichBytesLookLikePdf(bytes)) return bytes;
+    final fresh =
+        await widget.api.downloadExamCardPdf(semesterId: semesterId);
+    if (!tichBytesLookLikePdf(fresh)) {
+      throw StateError(
+        'Could not load exam card PDF. Confirm fees are cleared and try again.',
+      );
+    }
+    return fresh;
   }
 
   Future<void> _viewExamCard(int semesterId) async {
@@ -712,11 +718,19 @@ class _StudentExamEligibilitySectionState
   Future<void> _downloadExamCard(int semesterId) async {
     setState(() => _downloading = true);
     try {
-      final bytes = await _loadExamCardPdf(semesterId);
-      final dir = await getTemporaryDirectory();
+      final bytes = await widget.api.downloadExamCardPdf(
+        semesterId: semesterId,
+        attachment: true,
+      );
+      if (!tichBytesLookLikePdf(bytes)) {
+        throw StateError(
+          'Could not download exam card. Confirm fee clearance and try again.',
+        );
+      }
+      final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/exam-card-$semesterId.pdf');
       await file.writeAsBytes(bytes, flush: true);
-      final result = await OpenFile.open(file.path);
+      final result = await OpenFile.open(file.path, type: 'application/pdf');
       if (!mounted) return;
       if (result.type != ResultType.done) {
         ScaffoldMessenger.of(context).showSnackBar(

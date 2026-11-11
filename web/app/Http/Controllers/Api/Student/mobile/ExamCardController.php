@@ -23,10 +23,16 @@ class ExamCardController extends Controller
         $semesterId = (int) $request->integer('semester', $student->current_semester_id ?? 0);
         abort_unless($semesterId > 0, 404);
 
+        $filename = 'exam-card-'.Str::slug($student->registration_number).'.pdf';
+
+        if ($request->query('disposition') === 'download') {
+            return $this->examCards->downloadPdfResponse($student, $semesterId, $filename);
+        }
+
         return $this->examCards->inlinePdfResponse(
             $student,
             $semesterId,
-            'exam-card-'.Str::slug($student->registration_number).'.pdf',
+            $filename,
         );
     }
 }

@@ -27,7 +27,15 @@ class LessonPlansController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        return response()->json($this->serializer->lessonPlans($this->portalStaff($request)));
+        $staff = $this->portalStaff($request);
+
+        $payload = Cache::remember(
+            'staff.mobile.lesson_plans.index.'.$staff->id,
+            25,
+            fn () => $this->serializer->lessonPlans($staff),
+        );
+
+        return response()->json($payload);
     }
 
     public function context(Request $request): JsonResponse
@@ -107,6 +115,8 @@ class LessonPlansController extends Controller
             }
         }
 
+        Cache::forget('staff.mobile.lesson_plans.index.'.$staff->id);
+
         return response()->json([
             'message' => $request->boolean('submit')
                 ? 'Lesson plan submitted for approval.'
@@ -121,6 +131,8 @@ class LessonPlansController extends Controller
         $staff = $this->portalStaff($request);
         $plan = $this->teaching->verifyLessonPlan($plan, $staff);
 
+        Cache::forget('staff.mobile.lesson_plans.index.'.$staff->id);
+
         return response()->json([
             'message' => 'Lesson plan verified. You can now submit it for approval.',
             'plan' => $this->serializePlan($plan),
@@ -132,6 +144,8 @@ class LessonPlansController extends Controller
     {
         $staff = $this->portalStaff($request);
         $plan = $this->teaching->submitLessonPlan($plan, $staff);
+
+        Cache::forget('staff.mobile.lesson_plans.index.'.$staff->id);
 
         return response()->json([
             'message' => 'Lesson plan submitted for approval.',

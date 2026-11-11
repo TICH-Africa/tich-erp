@@ -24,6 +24,61 @@ class WorkFromHomeRequestService
     ) {}
 
     /**
+     * @return list<int> ISO weekday numbers (1 = Monday)
+     */
+    public function allowedIsoWeekdays(): array
+    {
+        $configured = config('tich-wfh.allowed_iso_weekdays', [2, 3, 4]);
+
+        return array_values(array_map('intval', is_array($configured) ? $configured : [2, 3, 4]));
+    }
+
+    public function minimumAdvanceDays(): int
+    {
+        return max(0, (int) config('tich-wfh.min_advance_days', 2));
+    }
+
+    public function firstBookableDate(?CarbonInterface $asOf = null): Carbon
+    {
+        $asOf = Carbon::parse($asOf ?? now())->startOfDay();
+        $cursor = $asOf->copy()->addDays($this->minimumAdvanceDays());
+        $allowed = $this->allowedIsoWeekdays();
+        $guard = 0;
+
+        while (! in_array((int) $cursor->dayOfWeekIso, $allowed, true)) {
+            $cursor->addDay();
+            $guard++;
+            if ($guard > 21) {
+                break;
+            }
+        }
+
+        return $cursor;
+    }
+
+    public function assertBookableWorkDate(CarbonInterface $workDate, ?CarbonInterface $asOf = null): void
+    {
+        $asOf = Carbon::parse($asOf ?? now())->startOfDay();
+        $workDate = Carbon::parse($workDate)->startOfDay();
+
+        if ($workDate->isWeekend()) {
+            throw new \RuntimeException('Work from home is only available Tuesday to Thursday.');
+        }
+
+        if (! in_array((int) $workDate->dayOfWeekIso, $this->allowedIsoWeekdays(), true)) {
+            throw new \RuntimeException('Work from home cannot be scheduled on a Monday or Friday. Choose Tuesday, Wednesday, or Thursday.');
+        }
+
+        $earliest = $this->firstBookableDate($asOf);
+        if ($workDate->lt($earliest)) {
+            throw new \RuntimeException(
+                'Apply at least '.$this->minimumAdvanceDays().' full day(s) before the work from home date. '
+                .'The earliest date you can request now is '.$earliest->toFormattedDateString().'.'
+            );
+        }
+    }
+
+    /**
      * Monthly bank: 1 day per Mon–Fri week in the month, earned only up to the
      * requested week (unused earlier weeks carry forward within the same month).
      * Unused days do not roll into the next month.
@@ -43,7 +98,7 @@ class WorkFromHomeRequestService
     {
         $date = Carbon::parse($workDate)->startOfDay();
         if ($date->isWeekend()) {
-            throw new \InvalidArgumentException('Work from home is only allowed Monday to Friday.');
+            throw new \InvalidArgumentException('Work from home is not available on weekends.');
         }
 
         $year = (int) $date->year;
@@ -97,9 +152,7 @@ class WorkFromHomeRequestService
         }
 
         $workDate = Carbon::parse($data['work_date'])->startOfDay();
-        if ($workDate->isWeekend()) {
-            throw new \RuntimeException('Work from home requests are Monday to Friday only.');
-        }
+        $this->assertBookableWorkDate($workDate);
 
         if (WorkFromHomeRequest::query()
             ->where('staff_id', $staff->id)
