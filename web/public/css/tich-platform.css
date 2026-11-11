@@ -12256,6 +12256,26 @@ a.tich-tabs__btn {
     color: var(--tich-grey);
 }
 
+.research-public-show__heading {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--tich-grey);
+}
+
+.research-public-show__objective {
+    margin: 0 0 2rem;
+    padding-left: 1rem;
+    border-left: 3px solid var(--tich-blue);
+    line-height: 1.7;
+    color: var(--tich-grey);
+}
+
+.research-public-show__facts dd a {
+    color: var(--tich-blue);
+}
+
 .research-public-show__aside {
     padding: 1.25rem;
     background: #f4f5f7;
@@ -12335,6 +12355,8 @@ a.tich-tabs__btn {
 [data-theme="dark"] .research-public-show__summary,
 [data-theme="dark"] .research-public-show__body,
 [data-theme="dark"] .research-public-show__body *,
+[data-theme="dark"] .research-public-show__heading,
+[data-theme="dark"] .research-public-show__objective,
 [data-theme="dark"] .research-public-show__facts dd,
 [data-theme="dark"] .research-public-show__aside-title {
     color: #ffffff !important;
@@ -12351,6 +12373,7 @@ a.tich-tabs__btn {
 
 [data-theme="dark"] .research-public-show__body a,
 [data-theme="dark"] .research-public-show__docs a,
+[data-theme="dark"] .research-public-show__facts dd a,
 [data-theme="dark"] .research-public-show__back a {
     color: #7dd3fc !important;
 }

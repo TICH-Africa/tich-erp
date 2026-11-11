@@ -148,6 +148,8 @@ class ResearchActivityController extends Controller
             'subtitle' => ['nullable', 'string', 'max:500'],
             'summary' => ['required', 'string', 'max:5000'],
             'abstract' => ['nullable', 'string', 'max:20000'],
+            'project_url' => ['nullable', 'string', 'max:500'],
+            'objective' => ['nullable', 'string', 'max:20000'],
             'body' => ['nullable', 'string', 'max:500000'],
             'start_date' => ['required', 'date'],
             'duration_value' => ['required', 'integer', 'min:1', 'max:3650'],

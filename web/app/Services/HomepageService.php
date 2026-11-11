@@ -267,7 +267,7 @@ class HomepageService
                 return (object) [
                     'title' => $project->title,
                     'summary' => $project->summary,
-                    'status' => $project->status,
+                    'status' => $project->statusLabel(),
                     'cover_image_path' => $this->mediaUrl($project->cover_image_path),
                     'url' => $project->slug
                         ? route('research.show', $project->slug)

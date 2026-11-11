@@ -42,7 +42,15 @@
                         <p class="research-public-show__summary">{{ $activity->summary }}</p>
                     @endif
 
+                    @if ($activity->objective)
+                        <h2 class="research-public-show__heading">Objective</h2>
+                        <div class="research-public-show__objective">
+                            {!! nl2br(e($activity->objective)) !!}
+                        </div>
+                    @endif
+
                     @if ($activity->body)
+                        <h2 class="research-public-show__heading">Description</h2>
                         <div class="research-public-show__body tich-prose-article research-public-show__body--locked-font">
                             {!! \App\Support\SafeHtml::clean($activity->body) !!}
                         </div>
@@ -72,6 +80,14 @@
                             <dt>Status</dt>
                             <dd>{{ $activity->statusLabel() }}</dd>
                         </div>
+                        @if ($activity->project_url)
+                            <div>
+                                <dt>Project site</dt>
+                                <dd>
+                                    <a href="{{ $activity->project_url }}" target="_blank" rel="noopener noreferrer">Open project page</a>
+                                </dd>
+                            </div>
+                        @endif
                     </dl>
 
                     @if ($activity->documents->isNotEmpty())

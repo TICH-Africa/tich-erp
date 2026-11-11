@@ -182,6 +182,8 @@ class ResearchActivityService
             'subtitle' => $data['subtitle'] ?? null,
             'summary' => $data['summary'] ?? '',
             'abstract' => $data['abstract'] ?? null,
+            'project_url' => $this->normalizeUrl($data['project_url'] ?? null),
+            'objective' => $data['objective'] ?? null,
             'body' => $this->sanitizeBody((string) ($data['body'] ?? '')),
             'start_date' => $start,
             'duration_value' => $durationValue,
@@ -257,6 +259,17 @@ class ResearchActivityService
         $html = preg_replace("/\sstyle='\s*'/i", '', $html) ?? $html;
 
         return $html;
+    }
+
+    public function normalizeUrl(?string $url): ?string
+    {
+        $url = trim((string) $url);
+
+        if ($url === '') {
+            return null;
+        }
+
+        return preg_match('#^https?://#i', $url) === 1 ? $url : 'https://'.$url;
     }
 
     /**

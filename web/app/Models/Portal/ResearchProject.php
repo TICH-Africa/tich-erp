@@ -23,6 +23,7 @@ class ResearchProject extends Model
 
     protected $fillable = [
         'title', 'slug', 'subtitle', 'status', 'status_locked', 'focus_area_id', 'summary', 'abstract', 'body',
+        'project_url', 'objective',
         'cover_image_path', 'start_date', 'duration_value', 'duration_unit', 'end_date',
         'lead_researcher_id', 'is_featured', 'visibility', 'published_at',
         'created_by', 'updated_by', 'created_at', 'updated_at',
@@ -75,6 +76,11 @@ class ResearchProject extends Model
 
     public function statusLabel(): string
     {
+        // A project the Research portal shows is live work, so it reads Active rather than Upcoming.
+        if ($this->isPublished() && in_array($this->status, ['upcoming', 'ongoing'], true)) {
+            return 'Active';
+        }
+
         return match ($this->status) {
             'upcoming' => 'Upcoming',
             'ongoing' => 'Ongoing',

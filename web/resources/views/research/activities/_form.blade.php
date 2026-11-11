@@ -28,6 +28,12 @@
                 <textarea id="summary" name="summary" rows="3" required maxlength="5000">{{ old('summary', $activity->summary ?? '') }}</textarea>
                 <span class="uf-hint">Shown on the public Research portal cards.</span>
             </div>
+            <div class="uf-field" style="grid-column: 1 / -1;">
+                <label for="project_url">Project link</label>
+                <input id="project_url" type="text" name="project_url" maxlength="500" placeholder="https://…"
+                    value="{{ old('project_url', $activity->project_url ?? '') }}">
+                <span class="uf-hint">Optional. A page, portal or paper for this project - visitors open it from the public project.</span>
+            </div>
             <div class="uf-field">
                 <label for="visibility">Visibility <span class="uf-req">*</span></label>
                 <select id="visibility" name="visibility" required>
@@ -35,6 +41,7 @@
                         <option value="{{ $vis }}" @selected(old('visibility', $activity->visibility ?? 'draft') === $vis)>{{ ucfirst($vis) }}</option>
                     @endforeach
                 </select>
+                <span class="uf-hint">A Published project appears on the public Research portal and reads as Active.</span>
             </div>
             <div class="uf-field">
                 <label for="cover_image">Cover image</label>
@@ -94,6 +101,17 @@
                 </select>
                 <span class="uf-hint">When unchecked, status is Upcoming / Ongoing / Completed from dates.</span>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="uf-form-section">
+    <div class="uf-section-head">Objective</div>
+    <div class="uf-section-body">
+        <div class="uf-field">
+            <label for="objective">What the project sets out to achieve</label>
+            <textarea id="objective" name="objective" rows="4" maxlength="20000">{{ old('objective', $activity->objective ?? '') }}</textarea>
+            <span class="uf-hint">Kept separate from the description. Shown under "Objective" on the public project.</span>
         </div>
     </div>
 </div>

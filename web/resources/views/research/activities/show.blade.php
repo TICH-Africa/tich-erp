@@ -23,8 +23,13 @@
                 <img src="{{ $activity->coverUrl() }}" alt="" style="width:100%;max-height:16rem;object-fit:cover;border-radius:4px;">
             @endif
             <p class="tich-text tich-mt-4">{{ $activity->summary }}</p>
+            @if ($activity->objective)
+                <h2 class="tich-h3 tich-mt-6">Objective</h2>
+                <p class="tich-text tich-mt-2">{!! nl2br(e($activity->objective)) !!}</p>
+            @endif
             @if ($activity->body)
-                <div class="tich-prose-article tich-mt-6">{!! \App\Support\SafeHtml::clean($activity->body) !!}</div>
+                <h2 class="tich-h3 tich-mt-6">Description</h2>
+                <div class="tich-prose-article tich-mt-2">{!! \App\Support\SafeHtml::clean($activity->body) !!}</div>
             @endif
         </section>
         <aside>
@@ -34,6 +39,16 @@
                 <div><dt class="tich-caption">Expected completion</dt><dd>{{ $activity->end_date?->format('d M Y') ?? '-' }}</dd></div>
                 <div><dt class="tich-caption">Status</dt><dd>{{ $activity->statusLabel() }}@if($activity->status_locked) <span class="tich-caption">(manual)</span>@endif</dd></div>
                 <div><dt class="tich-caption">Visibility</dt><dd>{{ ucfirst($activity->visibility) }}</dd></div>
+                <div>
+                    <dt class="tich-caption">Project link</dt>
+                    <dd>
+                        @if ($activity->project_url)
+                            <a href="{{ $activity->project_url }}" target="_blank" rel="noopener noreferrer">{{ $activity->project_url }}</a>
+                        @else
+                            -
+                        @endif
+                    </dd>
+                </div>
             </dl>
 
             <h2 class="tich-h3 tich-mt-6">Documents</h2>
