@@ -28,7 +28,11 @@
                 <input type="hidden" name="time_taken_seconds" id="time-taken" value="0">
 
                 <div id="integrity-warning" class="tich-notice tich-notice--warning tich-mb-4" style="display:none;">
-                    <p class="tich-text" style="margin:0;"><strong>Warning:</strong> Copying, switching tabs, or opening new windows during this assessment is prohibited. Your responses may be submitted automatically if violations continue.</p>
+                    <p class="tich-text" style="margin:0;"><strong>Note:</strong> Keep this page open until you submit. Nothing is saved until you press <strong>Submit assessment</strong>.</p>
+                </div>
+
+                <div id="answer-warning" class="tich-notice tich-notice--danger tich-mb-4" style="display:none;">
+                    <p class="tich-text" style="margin:0;" id="answer-warning-text"></p>
                 </div>
 
                 @php $questions = $assessment->questions; $pages = ceil($questions->count() / 3); @endphp
@@ -37,7 +41,7 @@
                         @foreach ($pageQuestions as $question)
                             <div class="tich-question-card tich-mb-6" data-question-id="{{ $question->id }}">
                                 <div class="tich-question-card__header">
-                                    <span class="tich-question-card__number">Q{{ $question->sort_order }}</span>
+                                    <span class="tich-question-card__number">Question {{ $question->sort_order }}</span>
                                     <span class="tich-question-card__points">{{ $question->points }} {{ str('point')->plural($question->points) }}</span>
                                 </div>
                                 <div class="tich-question-card__body">
@@ -47,29 +51,29 @@
                                         <div class="tich-question-options tich-mt-4">
                                             @foreach ($question->options as $option)
                                                 <label class="tich-option-label">
-                                                    <input type="radio" name="responses[{{ $question->id }}]" value="{{ $option }}" required>
+                                                    <input type="radio" name="responses[{{ $question->id }}]" value="{{ $option }}">
+                                                    <span class="tich-option-letter">{{ chr(64 + $loop->iteration) }}</span>
                                                     <span class="tich-option-box">{{ $option }}</span>
                                                 </label>
                                             @endforeach
                                         </div>
                                     @elseif ($question->question_type === 'true_false')
                                         <div class="tich-question-options tich-mt-4">
-                                            <label class="tich-option-label">
-                                                <input type="radio" name="responses[{{ $question->id }}]" value="true" required>
-                                                <span class="tich-option-box">True</span>
-                                            </label>
-                                            <label class="tich-option-label">
-                                                <input type="radio" name="responses[{{ $question->id }}]" value="false" required>
-                                                <span class="tich-option-box">False</span>
-                                            </label>
+                                            @foreach (['true' => 'True', 'false' => 'False'] as $value => $caption)
+                                                <label class="tich-option-label">
+                                                    <input type="radio" name="responses[{{ $question->id }}]" value="{{ $value }}">
+                                                    <span class="tich-option-letter">{{ chr(65 + $loop->iteration) }}</span>
+                                                    <span class="tich-option-box">{{ $caption }}</span>
+                                                </label>
+                                            @endforeach
                                         </div>
                                     @elseif ($question->question_type === 'essay' || $question->question_type === 'long_answer')
                                         <div class="tich-form-group tich-mt-4">
-                                            <textarea name="responses[{{ $question->id }}]" rows="8" class="tich-input tich-textarea" placeholder="Type your answer here..." required></textarea>
+                                            <textarea name="responses[{{ $question->id }}]" rows="8" class="tich-input tich-textarea" placeholder="Type your answer here..."></textarea>
                                         </div>
                                     @else
                                         <div class="tich-form-group tich-mt-4">
-                                            <input type="text" name="responses[{{ $question->id }}]" class="tich-input" placeholder="Your answer" required>
+                                            <input type="text" name="responses[{{ $question->id }}]" class="tich-input" placeholder="Your answer">
                                         </div>
                                     @endif
                                 </div>
@@ -90,7 +94,7 @@
                                 <span class="tich-timer__label">Time remaining:</span>
                                 <span class="tich-timer__value" id="timer-value">{{ $timeLimit }}:00</span>
                             </div>
-                            <button type="submit" class="tich-btn tich-btn-primary" onclick="return confirm('Are you sure you want to submit? This action cannot be undone.')">Submit assessment</button>
+                            <button type="submit" class="tich-btn tich-btn-success" id="submit-btn">Submit assessment</button>
                         </div>
                     </div>
                 </div>
@@ -125,9 +129,7 @@
 
         nextBtn.addEventListener('click', function () {
             if (currentPage === totalPages - 1) {
-                if (confirm('Are you sure you want to submit? This action cannot be undone.')) {
-                    form.submit();
-                }
+                form.requestSubmit();
             } else {
                 showPage(currentPage + 1);
             }
@@ -144,36 +146,45 @@
         const totalSeconds = parseInt(timerDisplay.dataset.timeLimit, 10);
         let remaining = totalSeconds;
         let timerInterval;
-        let violationCount = 0;
-        const maxViolations = 3;
-        const warningEl = document.getElementById('integrity-warning');
+        let forceSubmit = false;
+        const noteEl = document.getElementById('integrity-warning');
+        const answerNote = document.getElementById('answer-warning');
+        const answerNoteText = document.getElementById('answer-warning-text');
 
-        function showWarning() {
-            violationCount++;
-            if (warningEl) {
-                warningEl.style.display = 'block';
-                setTimeout(() => { warningEl.style.display = 'none'; }, 4000);
-            }
-            if (violationCount >= maxViolations) {
-                alert('Multiple integrity violations detected. Your assessment will be submitted automatically.');
-                form.submit();
-            }
+        // A reminder only: nothing here ever submits the paper or blocks the browser.
+        function remind() {
+            if (!noteEl) return;
+            noteEl.style.display = 'block';
+            setTimeout(() => { noteEl.style.display = 'none'; }, 6000);
         }
 
         document.addEventListener('visibilitychange', function () {
-            if (document.hidden) {
-                showWarning();
-            }
+            if (document.hidden) remind();
         });
 
-        window.addEventListener('blur', showWarning);
-        document.addEventListener('copy', showWarning);
-        document.addEventListener('cut', showWarning);
-        document.addEventListener('paste', showWarning);
-        document.addEventListener('contextmenu', function (e) {
-            e.preventDefault();
-            showWarning();
-        });
+        function firstUnansweredCard() {
+            const cards = Array.from(form.querySelectorAll('.tich-question-card'));
+            for (const card of cards) {
+                const inputs = Array.from(card.querySelectorAll('[name^="responses["]'));
+                if (!inputs.length) continue;
+                const answered = inputs[0].type === 'radio'
+                    ? inputs.some((input) => input.checked)
+                    : inputs.some((input) => String(input.value || '').trim());
+                if (!answered) return card;
+            }
+            return null;
+        }
+
+        function revealUnanswered(card) {
+            const pageIndex = Number(card.closest('.assessment-page').dataset.page);
+            if (pageIndex !== currentPage) showPage(pageIndex);
+            answerNoteText.textContent = card.querySelector('.tich-question-card__number').textContent
+                + ' is not answered yet. Answer every question, then submit.';
+            answerNote.style.display = 'block';
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const input = card.querySelector('[name^="responses["]');
+            if (input) input.focus({ preventScroll: true });
+        }
 
         function updateTimer() {
             const mins = Math.floor(remaining / 60);
@@ -184,7 +195,7 @@
                 clearInterval(timerInterval);
                 timerValue.textContent = '0:00';
                 timerValue.classList.add('tich-timer__value--danger');
-                alert('Time has expired. Your assessment will be submitted automatically.');
+                forceSubmit = true;
                 form.submit();
             }
             remaining--;
@@ -196,7 +207,22 @@
         updateTimer();
         timerInterval = setInterval(updateTimer, 1000);
 
-        form.addEventListener('submit', function () {
+        form.addEventListener('submit', function (event) {
+            if (forceSubmit) {
+                clearInterval(timerInterval);
+                return;
+            }
+            const card = firstUnansweredCard();
+            if (card) {
+                event.preventDefault();
+                revealUnanswered(card);
+                return;
+            }
+            answerNote.style.display = 'none';
+            if (!confirm('Submit your answers now? You cannot change them after submitting.')) {
+                event.preventDefault();
+                return;
+            }
             clearInterval(timerInterval);
         });
     });

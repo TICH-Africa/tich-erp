@@ -15137,3 +15137,179 @@ input[type="time"]::-moz-calendar-picker-indicator {
     }
 }
 
+
+/* ---------------------------------------------------------------------------
+ * Student assessment paper (portal/assessments/take)
+ * Choices are stacked one per row so a phone never wraps an option under another.
+ * ------------------------------------------------------------------------- */
+.tich-notice--danger {
+    background: #fdecea;
+    border-color: #f4c7c3;
+    color: #8c2f27;
+}
+
+.tich-question-card {
+    background: var(--tich-white);
+    border: 1px solid var(--tich-border);
+    border-left: 4px solid var(--tich-blue);
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+}
+
+.tich-question-card__header {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    margin-bottom: 0.65rem;
+}
+
+.tich-question-card__number {
+    background: var(--tich-blue);
+    border-radius: 999px;
+    color: var(--tich-white);
+    flex: 0 0 auto;
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    padding: 0.25rem 0.7rem;
+    text-transform: uppercase;
+}
+
+.tich-question-card__points {
+    color: var(--tich-neutral-muted);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+}
+
+.tich-question-text {
+    color: #1a1d21;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.tich-question-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.tich-option-label {
+    align-items: center;
+    background: var(--tich-surface-muted);
+    border: 1px solid var(--tich-border);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    font-family: var(--font-ui);
+    gap: 0.8rem;
+    padding: 0.8rem 0.9rem;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.tich-option-label:hover {
+    background: var(--tich-blue-light);
+    border-color: var(--tich-blue);
+}
+
+.tich-option-label input[type="radio"] {
+    accent-color: var(--tich-blue);
+    flex: 0 0 auto;
+    height: 1.15rem;
+    width: 1.15rem;
+}
+
+.tich-option-letter {
+    align-items: center;
+    background: var(--tich-white);
+    border: 1px solid var(--tich-border);
+    border-radius: 50%;
+    color: var(--tich-neutral-muted);
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.8rem;
+    font-weight: 700;
+    height: 1.6rem;
+    justify-content: center;
+    width: 1.6rem;
+}
+
+.tich-option-box {
+    color: #1a1d21;
+    font-size: 1rem;
+    line-height: 1.45;
+}
+
+/* A picked choice is the only one that reads as selected, so the answer is obvious
+   before the student submits. */
+.tich-option-label:has(input:checked) {
+    background: var(--tich-blue-light);
+    border-color: var(--tich-blue);
+    box-shadow: inset 0 0 0 1px var(--tich-blue);
+}
+
+.tich-option-label:has(input:checked) .tich-option-letter {
+    background: var(--tich-blue);
+    border-color: var(--tich-blue);
+    color: var(--tich-white);
+}
+
+.tich-assessment-footer {
+    border-top: 1px solid var(--tich-border);
+    padding-top: 1rem;
+}
+
+.tich-timer {
+    align-items: center;
+    background: var(--tich-surface-muted);
+    border: 1px solid var(--tich-border);
+    border-radius: 8px;
+    display: inline-flex;
+    font-family: var(--font-ui);
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+}
+
+.tich-timer__label {
+    color: var(--tich-neutral-muted);
+    font-size: 0.8rem;
+}
+
+.tich-timer__value {
+    color: var(--tich-blue-dark);
+    font-size: 1rem;
+    font-weight: 700;
+    min-width: 3.2rem;
+}
+
+.tich-timer__value--danger {
+    color: #8c2f27;
+}
+
+@media (max-width: 767px) {
+    .tich-question-card {
+        padding: 0.9rem 0.95rem;
+    }
+
+    .tich-question-card__header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .tich-option-label {
+        padding: 0.7rem 0.75rem;
+    }
+
+    /* The pager and the timer would otherwise sit on one squeezed row. */
+    .tich-assessment-footer > .tich-flex {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .tich-assessment-footer .tich-btn {
+        flex: 1 1 auto;
+    }
+}
