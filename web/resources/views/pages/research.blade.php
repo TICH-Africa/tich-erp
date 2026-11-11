@@ -23,7 +23,7 @@
 
                 @if ($projects->isNotEmpty())
                     <x-animated-section animation="bottom">
-                        <div class="tich-mt-10" data-live-search>
+                        <div class="tich-mt-10 tich-mb-8" data-live-search>
                             <div class="tich-flex-wrap" style="gap: 1rem; align-items: end; justify-content: space-between;">
                                 <h2 class="tich-h2" style="margin: 0;">Research activities</h2>
                                 <div class="tich-form-group" style="margin: 0; min-width: min(100%, 16rem);">
@@ -51,7 +51,7 @@
                         </div>
                     </x-animated-section>
                 @else
-                    <p class="tich-text tich-mt-10">Research activities will appear here once published.</p>
+                    <p class="tich-text tich-mt-10 tich-mb-8">Research activities will appear here once published.</p>
                 @endif
 
                 <div class="tich-grid tich-grid--2" style="gap: 2rem; align-items: start;">
