@@ -150,11 +150,13 @@ class ResearchActivityController extends Controller
             'abstract' => ['nullable', 'string', 'max:20000'],
             'project_url' => ['nullable', 'string', 'max:500'],
             'objective' => ['nullable', 'string', 'max:20000'],
+            'objective_points' => ['nullable', 'array'],
+            'objective_points.*' => ['nullable', 'string', 'max:2000'],
             'body' => ['nullable', 'string', 'max:500000'],
             'start_date' => ['required', 'date'],
-            'duration_value' => ['required', 'integer', 'min:1', 'max:3650'],
-            'duration_unit' => ['required', 'in:'.implode(',', ResearchActivityService::DURATION_UNITS)],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'duration_value' => ['nullable', 'integer', 'min:1', 'max:3650'],
+            'duration_unit' => ['nullable', 'required_with:duration_value', 'in:'.implode(',', ResearchActivityService::DURATION_UNITS)],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'status_locked' => ['nullable', 'boolean'],
             'status' => ['nullable', 'in:'.implode(',', ResearchActivityService::LIFECYCLE_STATUSES)],
             'visibility' => ['required', 'in:'.implode(',', ResearchActivityService::VISIBILITIES)],
@@ -172,6 +174,15 @@ class ResearchActivityController extends Controller
         $data['remove_cover'] = $request->boolean('remove_cover');
         if ($request->hasFile('cover_image')) {
             $data['cover_image'] = $request->file('cover_image');
+        }
+
+        if ($request->has('objective_points')) {
+            $points = collect($request->input('objective_points', []))
+                ->map(fn ($point): string => trim((string) $point))
+                ->filter()
+                ->values();
+
+            $data['objective'] = $points->isEmpty() ? null : $points->implode("\n");
         }
 
         return $data;

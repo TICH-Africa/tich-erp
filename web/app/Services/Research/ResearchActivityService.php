@@ -139,6 +139,10 @@ class ResearchActivityService
         $start = ! empty($data['start_date']) ? Carbon::parse($data['start_date'])->startOfDay() : null;
         $durationValue = isset($data['duration_value']) ? (int) $data['duration_value'] : null;
         $durationUnit = $data['duration_unit'] ?? null;
+        if (! $durationValue) {
+            $durationValue = null;
+            $durationUnit = null;
+        }
 
         $end = ! empty($data['end_date'])
             ? Carbon::parse($data['end_date'])->startOfDay()

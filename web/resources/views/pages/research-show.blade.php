@@ -42,11 +42,13 @@
                         <p class="research-public-show__summary">{{ $activity->summary }}</p>
                     @endif
 
-                    @if ($activity->objective)
+                    @if ($activity->objectivePoints() !== [])
                         <h2 class="research-public-show__heading">Objective</h2>
-                        <div class="research-public-show__objective">
-                            {!! nl2br(e($activity->objective)) !!}
-                        </div>
+                        <ul class="research-public-show__objective">
+                            @foreach ($activity->objectivePoints() as $point)
+                                <li>{!! nl2br(e($point)) !!}</li>
+                            @endforeach
+                        </ul>
                     @endif
 
                     @if ($activity->body)
@@ -70,11 +72,11 @@
                         </div>
                         <div>
                             <dt>Duration</dt>
-                            <dd>@if($activity->duration_value){{ $activity->duration_value }} {{ $activity->duration_unit }}@else - @endif</dd>
+                            <dd>{{ $activity->durationLabel() }}</dd>
                         </div>
                         <div>
                             <dt>Expected completion</dt>
-                            <dd>{{ $activity->end_date?->format('d M Y') ?? '-' }}</dd>
+                            <dd>{{ $activity->expectedCompletionLabel() }}</dd>
                         </div>
                         <div>
                             <dt>Status</dt>

@@ -9,6 +9,16 @@
 @php
     $bodyValue = old('body', $activity->body ?? '');
     $statusLocked = (bool) old('status_locked', $activity->status_locked ?? false);
+    $oldPoints = old('objective_points');
+    $objectivePoints = is_array($oldPoints) ? $oldPoints : ($activity?->objectivePoints() ?? []);
+    $objectivePoints = collect($objectivePoints)
+        ->map(fn ($point) => trim((string) $point))
+        ->filter()
+        ->values()
+        ->all();
+    if ($objectivePoints === []) {
+        $objectivePoints = [''];
+    }
 @endphp
 
 <div class="uf-form-section">
@@ -72,12 +82,13 @@
             </div>
             <div class="uf-field" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
                 <div>
-                    <label for="duration_value">Duration <span class="uf-req">*</span></label>
-                    <input id="duration_value" type="number" name="duration_value" data-duration-value min="1" max="3650" required value="{{ old('duration_value', $activity->duration_value ?? 1) }}">
+                    <label for="duration_value">Duration</label>
+                    <input id="duration_value" type="number" name="duration_value" data-duration-value min="1" max="3650" value="{{ old('duration_value', $activity->duration_value ?? '') }}">
                 </div>
                 <div>
-                    <label for="duration_unit">Unit <span class="uf-req">*</span></label>
-                    <select id="duration_unit" name="duration_unit" data-duration-unit required>
+                    <label for="duration_unit">Unit</label>
+                    <select id="duration_unit" name="duration_unit" data-duration-unit>
+                        <option value="">Not set</option>
                         @foreach ($durationUnits as $unit)
                             <option value="{{ $unit }}" @selected(old('duration_unit', $activity->duration_unit ?? 'months') === $unit)>{{ ucfirst($unit) }}</option>
                         @endforeach
@@ -85,9 +96,9 @@
                 </div>
             </div>
             <div class="uf-field">
-                <label for="end_date">Expected completion <span class="uf-req">*</span></label>
-                <input id="end_date" type="date" name="end_date" data-end-date required value="{{ old('end_date', optional($activity?->end_date)->format('Y-m-d')) }}">
-                <span class="uf-hint">Auto-calculated from start + duration; you can override it.</span>
+                <label for="end_date">Expected completion</label>
+                <input id="end_date" type="date" name="end_date" data-end-date value="{{ old('end_date', optional($activity?->end_date)->format('Y-m-d')) }}">
+                <span class="uf-hint">Fill it from start + duration, or leave both blank when the project has no end date yet.</span>
             </div>
             <div class="uf-field">
                 <div class="uf-field--check">
@@ -99,7 +110,7 @@
                         <option value="{{ $st }}" @selected(old('status', $activity->status ?? 'upcoming') === $st)>{{ ucfirst($st) }}</option>
                     @endforeach
                 </select>
-                <span class="uf-hint">When unchecked, status is Upcoming / Ongoing / Completed from dates.</span>
+                <span class="uf-hint">When unchecked, status comes from the dates - with no end date it stays Ongoing (Active once published).</span>
             </div>
         </div>
     </div>
@@ -108,11 +119,16 @@
 <div class="uf-form-section">
     <div class="uf-section-head">Objective</div>
     <div class="uf-section-body">
-        <div class="uf-field">
-            <label for="objective">What the project sets out to achieve</label>
-            <textarea id="objective" name="objective" rows="4" maxlength="20000">{{ old('objective', $activity->objective ?? '') }}</textarea>
-            <span class="uf-hint">Kept separate from the description. Shown under "Objective" on the public project.</span>
+        <div data-objective-rows style="display:grid;gap:0.75rem;">
+            @foreach ($objectivePoints as $point)
+                <div class="uf-field" data-objective-row>
+                    <label>Objective point</label>
+                    <textarea name="objective_points[]" rows="2" maxlength="2000" placeholder="e.g. Cut clinic waiting times by 30% in the two partner counties.">{{ $point }}</textarea>
+                </div>
+            @endforeach
         </div>
+        <button type="button" class="uf-btn uf-btn-secondary tich-mt-4" data-add-objective-point>Add another point</button>
+        <span class="uf-hint">Write one point per box. They show as a bulleted list under "Objective", separate from the description.</span>
     </div>
 </div>
 

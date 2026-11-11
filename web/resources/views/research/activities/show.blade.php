@@ -23,9 +23,13 @@
                 <img src="{{ $activity->coverUrl() }}" alt="" style="width:100%;max-height:16rem;object-fit:cover;border-radius:4px;">
             @endif
             <p class="tich-text tich-mt-4">{{ $activity->summary }}</p>
-            @if ($activity->objective)
+            @if ($activity->objectivePoints() !== [])
                 <h2 class="tich-h3 tich-mt-6">Objective</h2>
-                <p class="tich-text tich-mt-2">{!! nl2br(e($activity->objective)) !!}</p>
+                <ul class="tich-text research-objective-list tich-mt-2">
+                    @foreach ($activity->objectivePoints() as $point)
+                        <li>{!! nl2br(e($point)) !!}</li>
+                    @endforeach
+                </ul>
             @endif
             @if ($activity->body)
                 <h2 class="tich-h3 tich-mt-6">Description</h2>
@@ -35,8 +39,8 @@
         <aside>
             <dl class="tich-text" style="display:grid;gap:0.75rem;">
                 <div><dt class="tich-caption">Start</dt><dd>{{ $activity->start_date?->format('d M Y') ?? '-' }}</dd></div>
-                <div><dt class="tich-caption">Duration</dt><dd>@if($activity->duration_value){{ $activity->duration_value }} {{ $activity->duration_unit }}@else - @endif</dd></div>
-                <div><dt class="tich-caption">Expected completion</dt><dd>{{ $activity->end_date?->format('d M Y') ?? '-' }}</dd></div>
+                <div><dt class="tich-caption">Duration</dt><dd>{{ $activity->durationLabel() }}</dd></div>
+                <div><dt class="tich-caption">Expected completion</dt><dd>{{ $activity->expectedCompletionLabel() }}</dd></div>
                 <div><dt class="tich-caption">Status</dt><dd>{{ $activity->statusLabel() }}@if($activity->status_locked) <span class="tich-caption">(manual)</span>@endif</dd></div>
                 <div><dt class="tich-caption">Visibility</dt><dd>{{ ucfirst($activity->visibility) }}</dd></div>
                 <div>

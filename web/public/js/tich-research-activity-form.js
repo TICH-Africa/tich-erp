@@ -78,8 +78,24 @@
             var row = wrap.querySelector('[data-doc-row]');
             if (!row) return;
             var clone = row.cloneNode(true);
-            clone.querySelectorAll('input').forEach(function (input) {
-                input.value = '';
+            clone.querySelectorAll('input, textarea').forEach(function (field) {
+                field.value = '';
+            });
+            wrap.appendChild(clone);
+        });
+    }
+
+    function bindObjectiveRows(form) {
+        var wrap = form.querySelector('[data-objective-rows]');
+        var addBtn = form.querySelector('[data-add-objective-point]');
+        if (!wrap || !addBtn) return;
+
+        addBtn.addEventListener('click', function () {
+            var row = wrap.querySelector('[data-objective-row]');
+            if (!row) return;
+            var clone = row.cloneNode(true);
+            clone.querySelectorAll('textarea').forEach(function (field) {
+                field.value = '';
             });
             wrap.appendChild(clone);
         });
@@ -92,5 +108,6 @@
             bindStatusLock(schedule);
         }
         bindDocRows(form);
+        bindObjectiveRows(form);
     });
 })();

@@ -89,4 +89,31 @@ class ResearchProject extends Model
             default => ucfirst((string) $this->status),
         };
     }
+
+    /**
+     * The objective is stored one point per line.
+     *
+     * @return list<string>
+     */
+    public function objectivePoints(): array
+    {
+        $lines = preg_split('/\R/', (string) $this->objective) ?: [];
+
+        return array_values(array_filter(
+            array_map(fn (?string $line): string => trim((string) $line), $lines),
+            fn (string $line): bool => $line !== '',
+        ));
+    }
+
+    public function durationLabel(): string
+    {
+        return $this->duration_value
+            ? $this->duration_value.' '.$this->duration_unit
+            : 'Unspecified';
+    }
+
+    public function expectedCompletionLabel(): string
+    {
+        return $this->end_date?->format('d M Y') ?? 'Unspecified';
+    }
 }
