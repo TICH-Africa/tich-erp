@@ -29,7 +29,7 @@
                                     @php
                                         $optionContractType = match ($s->employment_category) {
                                             'consultant', 'independent_contractor' => 'consultancy',
-                                            'permanent', 'contract', 'intern', 'visiting', 'casual', 'probation', 'consultancy' => $s->employment_category,
+                                            'permanent', 'contract', 'intern', 'visiting', 'casual', 'probation', 'consultancy', 'volunteer' => $s->employment_category,
                                             default => '',
                                         };
                                     @endphp
@@ -56,13 +56,9 @@
                             <label for="contract_type">Contract Type <span class="uf-req">*</span></label>
                             <select id="contract_type" name="contract_type" required class="{{ $errors->has('contract_type') ? 'is-invalid' : '' }}">
                                 <option value="">Select type</option>
-                                <option value="permanent" @selected(old('contract_type', $defaultContractType ?? '') == 'permanent')>Permanent</option>
-                                <option value="contract" @selected(old('contract_type', $defaultContractType ?? '') == 'contract')>Contract</option>
-                                <option value="intern" @selected(old('contract_type', $defaultContractType ?? '') == 'intern')>Intern</option>
-                                <option value="visiting" @selected(old('contract_type', $defaultContractType ?? '') == 'visiting')>Visiting</option>
-                                <option value="casual" @selected(old('contract_type', $defaultContractType ?? '') == 'casual')>Casual</option>
-                                <option value="probation" @selected(old('contract_type', $defaultContractType ?? '') == 'probation')>Probation</option>
-                                <option value="consultancy" @selected(old('contract_type', $defaultContractType ?? '') == 'consultancy')>Consultancy</option>
+                                @foreach (config('tich-payroll.contract_types', []) as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('contract_type', $defaultContractType ?? '') == $value)>{{ $label }}</option>
+                                @endforeach
                             </select>
                             @error('contract_type')
                                 <span class="uf-error">{{ $message }}</span>
@@ -129,8 +125,9 @@
                 <div class="uf-section-body">
                     <div class="uf-form-grid-2">
                         <div class="uf-field">
-                            <label for="gross_salary">Gross Salary <span class="uf-req">*</span></label>
-                            <input type="number" step="0.01" id="gross_salary" name="gross_salary" value="{{ old('gross_salary', $selectedStaff?->gross_monthly_salary) }}" required class="{{ $errors->has('gross_salary') ? 'is-invalid' : '' }}">
+                            <label for="gross_salary">Gross Salary <span class="uf-req" id="gross-salary-req">*</span></label>
+                            <input type="number" step="0.01" min="0" id="gross_salary" name="gross_salary" value="{{ old('gross_salary', $selectedStaff?->gross_monthly_salary) }}" required class="{{ $errors->has('gross_salary') ? 'is-invalid' : '' }}">
+                            <p class="uf-hint js-volunteer-hint" style="display:none;">Volunteer placements are unpaid — gross salary is fixed at zero.</p>
                             @error('gross_salary')
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
@@ -142,21 +139,24 @@
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
                         </div>
-                        <div class="uf-field">
+                        <div class="uf-field js-contract-term-field">
                             <label for="duration">Duration in months</label>
                             <input type="number" id="duration" name="duration" value="{{ old('duration') }}" min="1" step="1" placeholder="e.g. 12">
                             <span class="uf-hint">Enter the number of months only.</span>
                         </div>
-                        <div class="uf-field">
+                        <div class="uf-field js-contract-term-field">
                             <label for="end_date">End Date</label>
                             <input type="date" id="end_date" name="end_date" value="{{ old('end_date') }}" readonly>
                             <span class="uf-hint">Auto-calculated from start date and duration (ends the day before the anniversary).</span>
                         </div>
+                        <p class="uf-hint js-contract-permanent-hint" style="display:none; grid-column: 1 / -1;">
+                            Permanent contracts have no end date — employment continues until resignation, layoff, or other separation.
+                        </p>
                         <div class="uf-field">
                             <label for="probation_end_date">Probation End Date</label>
                             <input type="date" id="probation_end_date" name="probation_end_date" value="{{ old('probation_end_date') }}">
                         </div>
-                        <div class="uf-field">
+                        <div class="uf-field" id="contract-renewable-wrap">
                             <label class="tich-checkbox">
                                 <input type="checkbox" id="is_renewable" name="is_renewable" value="1" @checked(old('is_renewable', true))>
                                 <span>Renewable</span>
@@ -299,4 +299,17 @@
             }
         })();
     </script>
+    @include('hr.contracts.partials.permanent-term-toggle', [
+        'contractTypeSelectId' => 'contract_type',
+        'termFieldSelector' => '.js-contract-term-field',
+        'durationInputId' => 'duration',
+        'endInputId' => 'end_date',
+        'renewableWrapId' => 'contract-renewable-wrap',
+        'permanentHintSelector' => '.js-contract-permanent-hint',
+    ])
+    @include('hr.contracts.partials.volunteer-contract-ui', [
+        'contractTypeSelectId' => 'contract_type',
+        'grossSalaryInputId' => 'gross_salary',
+        'volunteerHintSelector' => '.js-volunteer-hint',
+    ])
 @endsection

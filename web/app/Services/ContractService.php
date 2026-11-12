@@ -12,6 +12,54 @@ class ContractService
 {
     public function __construct(protected AuditService $auditService) {}
 
+    /**
+     * Permanent employment has no fixed end date; it ends only on separation.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function applyPermanentContractRules(array $data): array
+    {
+        if (($data['contract_type'] ?? null) !== 'permanent') {
+            return $data;
+        }
+
+        $data['end_date'] = null;
+        unset($data['duration']);
+        $data['is_renewable'] = false;
+        $data['probation_status'] = $data['probation_status'] ?? 'not_applicable';
+
+        return $data;
+    }
+
+    /**
+     * Volunteers are unpaid: zero salary, no payroll deductions.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function applyVolunteerContractRules(array $data): array
+    {
+        if (($data['contract_type'] ?? null) !== 'volunteer') {
+            return $data;
+        }
+
+        $data['gross_salary'] = 0;
+        $data['probation_status'] = 'not_applicable';
+        $data['probation_end_date'] = null;
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function normalizeContractPayload(array $data): array
+    {
+        return $this->applyVolunteerContractRules($this->applyPermanentContractRules($data));
+    }
+
     public function calculateEndDate(string $startDate, ?string $duration): ?string
     {
         if (! $duration) {
@@ -46,8 +94,15 @@ class ContractService
             );
         }
 
+        $data = $this->normalizeContractPayload($data);
+
         $contract = DB::transaction(function () use ($staffId, $data, $createdBy) {
             $contractNumber = $this->generateContractNumber();
+
+            $contractType = $data['contract_type'] ?? '';
+            $probationStatus = in_array($contractType, ['permanent', 'volunteer'], true)
+                ? 'not_applicable'
+                : ($data['probation_status'] ?? 'active');
 
             $contract = StaffContract::create(array_merge($data, [
                 'staff_id' => $staffId,
@@ -55,7 +110,7 @@ class ContractService
                 'renewal_notice_sent' => 0,
                 'renewal_status' => 'pending',
                 'is_signed' => 0,
-                'probation_status' => $data['contract_type'] === 'permanent' ? 'not_applicable' : 'active',
+                'probation_status' => $probationStatus,
             ]));
 
             $this->auditService->log(
@@ -85,6 +140,9 @@ class ContractService
     public function updateContract(int $contractId, array $data, int $updatedBy): StaffContract
     {
         $contract = StaffContract::findOrFail($contractId);
+
+        $mergedType = $data['contract_type'] ?? $contract->contract_type;
+        $data = $this->normalizeContractPayload(array_merge(['contract_type' => $mergedType], $data));
 
         $oldValues = $contract->only(array_keys($data));
 
@@ -124,6 +182,11 @@ class ContractService
         if ($contract->renewal_status === 'terminated') {
             throw new \InvalidArgumentException('A terminated contract cannot be renewed.');
         }
+
+        $renewalData = $this->normalizeContractPayload(array_merge(
+            ['contract_type' => $renewalData['contract_type'] ?? $contract->contract_type],
+            $renewalData,
+        ));
 
         $newContract = DB::transaction(function () use ($contract, $renewalData, $renewedBy) {
             $contractType = $renewalData['contract_type'] ?? $contract->contract_type;
@@ -404,10 +467,15 @@ class ContractService
             'department_id' => $contract->department_id,
             'campus_id' => $contract->campus_id,
             'job_grade' => $contract->job_grade,
-            'payroll_scheme' => $contract->payroll_scheme ?: $contract->staff->payroll_scheme ?: 'employee',
+            'payroll_scheme' => match ($contract->contract_type) {
+                'permanent', 'contract' => 'employee',
+                'volunteer' => 'unpaid',
+                'intern' => 'stipend',
+                default => $contract->payroll_scheme ?: $contract->staff->payroll_scheme ?: 'employee',
+            },
             'salary_scale' => $contract->salary_scale,
             'line_manager_id' => $contract->line_manager_id,
-            'gross_monthly_salary' => $contract->gross_salary,
+            'gross_monthly_salary' => $contract->contract_type === 'volunteer' ? 0 : $contract->gross_salary,
             'employment_start_date' => $employmentStart,
             'contract_end_date' => $contract->end_date,
             'employment_category' => $contract->contract_type,

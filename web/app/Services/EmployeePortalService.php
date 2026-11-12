@@ -16,6 +16,7 @@ class EmployeePortalService
     public function __construct(
         protected StaffPortalService $staffPortal,
         protected LeaveAccrualService $leaveAccrual,
+        protected KenyaPayrollTaxService $payrollTax,
     ) {}
 
     public function hasEmployeeProfile(User $user): bool
@@ -84,6 +85,7 @@ class EmployeePortalService
             'leaveBalances' => $this->leaveBalances($staff),
             'recentLeaveRequests' => $this->recentLeaveRequests($staff),
             'employmentDuration' => $this->employmentDurationLabel($staff),
+            'monthlyPayrollBreakdown' => $this->monthlyPayrollBreakdown($staff),
             'trainings' => $this->staffTrainings($staff),
             'pendingProfileChanges' => StaffProfileChangeRequest::query()
                 ->where('staff_id', $staff->id)
@@ -97,8 +99,14 @@ class EmployeePortalService
      */
     private function contractSummary(Staff $staff, ?\App\Models\StaffContract $currentContract): array
     {
-        $endDate = $currentContract?->end_date ?? $staff->contract_end_date;
-        $startDate = $currentContract?->start_date ?? $staff->employment_start_date;
+        $isPermanent = $currentContract?->contract_type === 'permanent';
+        $institutionStart = $this->leaveAccrual->resolveEmploymentStart($staff);
+        $startDate = $institutionStart ?? $currentContract?->start_date ?? $staff->employment_start_date;
+
+        $endDate = null;
+        if (! $isPermanent) {
+            $endDate = $currentContract?->end_date ?? $staff->contract_end_date;
+        }
 
         $daysRemaining = null;
         if ($endDate) {
@@ -106,7 +114,9 @@ class EmployeePortalService
         }
 
         $status = 'active';
-        if ($endDate && $daysRemaining !== null && $daysRemaining < 0) {
+        if ($isPermanent) {
+            $status = 'permanent';
+        } elseif ($endDate && $daysRemaining !== null && $daysRemaining < 0) {
             $status = 'expired';
         } elseif ($endDate && $daysRemaining !== null && $daysRemaining <= 30) {
             $status = 'expiring_soon';
@@ -122,6 +132,7 @@ class EmployeePortalService
             'end_date' => $endDate,
             'days_remaining' => $daysRemaining,
             'status' => $status,
+            'is_permanent' => $isPermanent,
             'is_signed' => (bool) ($currentContract?->is_signed ?? false),
             'signed_date' => $currentContract?->signed_date,
             'probation_end_date' => $staff->probation_end_date ?? $currentContract?->probation_end_date,
@@ -146,6 +157,7 @@ class EmployeePortalService
                 'tich-payroll.employment_categories.'.$staff->employment_category,
                 ucfirst(str_replace('_', ' ', (string) $staff->employment_category))
             ),
+            'uses_statutory_payroll' => $staff->requiresEmployeeStatutoryPayroll(),
             'allowances' => $allowances,
             'masked_account_number' => $this->maskAccountNumber($staff->bankAccount?->account_number),
         ];
@@ -216,11 +228,61 @@ class EmployeePortalService
 
     private function employmentDurationLabel(Staff $staff): ?string
     {
-        if (! $staff->employment_start_date) {
+        $start = $this->leaveAccrual->resolveEmploymentStart($staff);
+
+        if (! $start) {
             return null;
         }
 
-        return $staff->employment_start_date->diffForHumans(now(), true);
+        return $start->diffForHumans(now(), true);
+    }
+
+    /**
+     * Estimated monthly PAYE + statutory deductions for permanent / contract staff.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function monthlyPayrollBreakdown(Staff $staff): ?array
+    {
+        if (! $staff->requiresEmployeeStatutoryPayroll()) {
+            return null;
+        }
+
+        $basic = (float) $staff->gross_monthly_salary;
+        $allowances = (float) $staff->activeAllowances->sum('amount');
+
+        if ($basic <= 0 && $allowances <= 0) {
+            return null;
+        }
+
+        $breakdown = $this->payrollTax->calculateForStaff($staff, $basic, [
+            'allowances' => $allowances,
+        ]);
+
+        return [
+            'payroll_scheme' => 'employee',
+            'gross_salary' => (float) ($breakdown['gross_salary'] ?? 0),
+            'paye' => $this->payrollDeductionAmount($breakdown, 'paye'),
+            'nssf' => $this->payrollDeductionAmount($breakdown, 'nssf'),
+            'sha' => $this->payrollDeductionAmount($breakdown, 'sha'),
+            'ahl' => $this->payrollDeductionAmount($breakdown, 'ahl'),
+            'total_deductions' => (float) ($breakdown['total_deductions'] ?? 0),
+            'net_salary' => (float) ($breakdown['net_salary'] ?? 0),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $breakdown
+     */
+    private function payrollDeductionAmount(array $breakdown, string $code): float
+    {
+        foreach ($breakdown['deductions'] ?? [] as $row) {
+            if (($row['code'] ?? '') === $code) {
+                return (float) ($row['amount'] ?? 0);
+            }
+        }
+
+        return 0.0;
     }
 
     /**

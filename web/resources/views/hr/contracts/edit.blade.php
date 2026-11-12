@@ -15,13 +15,9 @@
                     <label for="contract_type" class="tich-label">Contract Type *</label>
                     <select id="contract_type" name="contract_type" required class="tich-input">
                         <option value="">Select type</option>
-                        <option value="permanent" {{ old('contract_type', $contract->contract_type) == 'permanent' ? 'selected' : '' }}>Permanent</option>
-                        <option value="contract" {{ old('contract_type', $contract->contract_type) == 'contract' ? 'selected' : '' }}>Contract</option>
-                        <option value="intern" {{ old('contract_type', $contract->contract_type) == 'intern' ? 'selected' : '' }}>Intern</option>
-                        <option value="visiting" {{ old('contract_type', $contract->contract_type) == 'visiting' ? 'selected' : '' }}>Visiting</option>
-                        <option value="casual" {{ old('contract_type', $contract->contract_type) == 'casual' ? 'selected' : '' }}>Casual</option>
-                        <option value="probation" {{ old('contract_type', $contract->contract_type) == 'probation' ? 'selected' : '' }}>Probation</option>
-                        <option value="consultancy" {{ old('contract_type', $contract->contract_type) == 'consultancy' ? 'selected' : '' }}>Consultancy</option>
+                        @foreach (config('tich-payroll.contract_types', []) as $value => $label)
+                            <option value="{{ $value }}" {{ old('contract_type', $contract->contract_type) == $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div>
@@ -63,22 +59,26 @@
                 </div>
                 <div>
                     <label for="gross_salary" class="tich-label">Gross Salary *</label>
-                    <input type="number" step="0.01" id="gross_salary" name="gross_salary" value="{{ old('gross_salary', $contract->gross_salary) }}" required class="tich-input">
+                    <input type="number" step="0.01" min="0" id="gross_salary" name="gross_salary" value="{{ old('gross_salary', $contract->gross_salary) }}" required class="tich-input">
+                    <p class="tich-caption js-volunteer-hint tich-mt-1" style="display:none;">Volunteer placements are unpaid — gross salary is fixed at zero.</p>
                 </div>
                 <div>
                     <label for="start_date" class="tich-label">Start Date *</label>
                     <input type="date" id="start_date" name="start_date" value="{{ old('start_date', $contract->start_date) }}" required class="tich-input">
                 </div>
-                <div>
+                <div class="js-contract-term-field">
                     <label for="duration" class="tich-label">Duration in months</label>
                     <input type="number" id="duration" name="duration" value="{{ old('duration') }}" class="tich-input" min="1" step="1" placeholder="e.g. 12">
                     <p class="tich-caption tich-mt-1">Enter the number of months only.</p>
                 </div>
-                <div>
+                <div class="js-contract-term-field">
                     <label for="end_date" class="tich-label">End Date</label>
                     <input type="date" id="end_date" name="end_date" value="{{ old('end_date', $contract->end_date) }}" class="tich-input" readonly>
                     <p class="tich-caption tich-mt-1">Auto-calculated from start date and duration (ends the day before the anniversary).</p>
                 </div>
+                <p class="tich-caption js-contract-permanent-hint tich-grid--span-2" style="display:none;">
+                    Permanent contracts have no end date — employment continues until resignation, layoff, or other separation.
+                </p>
                 <div>
                     <label for="probation_end_date" class="tich-label">Probation End Date</label>
                     <input type="date" id="probation_end_date" name="probation_end_date" value="{{ old('probation_end_date', $contract->probation_end_date) }}" class="tich-input">
@@ -93,7 +93,7 @@
                         <option value="failed" {{ old('probation_status', $contract->probation_status) == 'failed' ? 'selected' : '' }}>Failed</option>
                     </select>
                 </div>
-                <div class="tich-flex--center">
+                <div class="tich-flex--center" id="contract-renewable-wrap">
                     <label class="tich-checkbox">
                         <input type="checkbox" id="is_renewable" name="is_renewable" value="1" {{ old('is_renewable', $contract->is_renewable) ? 'checked' : '' }}>
                         <span>Renewable</span>
@@ -142,4 +142,17 @@
             durationInput.addEventListener('input', calculateEnd);
         })();
     </script>
+    @include('hr.contracts.partials.permanent-term-toggle', [
+        'contractTypeSelectId' => 'contract_type',
+        'termFieldSelector' => '.js-contract-term-field',
+        'durationInputId' => 'duration',
+        'endInputId' => 'end_date',
+        'renewableWrapId' => 'contract-renewable-wrap',
+        'permanentHintSelector' => '.js-contract-permanent-hint',
+    ])
+    @include('hr.contracts.partials.volunteer-contract-ui', [
+        'contractTypeSelectId' => 'contract_type',
+        'grossSalaryInputId' => 'gross_salary',
+        'volunteerHintSelector' => '.js-volunteer-hint',
+    ])
 @endsection
