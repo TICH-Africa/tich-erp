@@ -8693,6 +8693,19 @@ a.tich-tabs__btn {
     background: rgba(239, 68, 68, 0.15);
 }
 
+.tich-grading-availability-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.tich-grading-availability-foot .tich-btn {
+    margin-left: auto;
+}
+
 /* Staff grading / marks terminal */
 .tich-grading-question-card {
     padding: 1rem;

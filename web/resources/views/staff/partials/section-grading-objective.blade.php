@@ -38,7 +38,7 @@
                     @csrf
                     @method('PATCH')
                     <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
-                    <div class="tich-grid tich-grid--3" style="gap:1rem; align-items:end;">
+                    <div class="tich-grid tich-grid--2" style="gap:1rem;">
                         <div class="tich-form-group" style="margin:0;">
                             <label class="tich-label">Available from (date & time)</label>
                             <input type="datetime-local" name="available_from" class="tich-input" value="{{ $selected->available_from?->format('Y-m-d\TH:i') }}">
@@ -47,14 +47,14 @@
                             <label class="tich-label">Available until (date & time)</label>
                             <input type="datetime-local" name="available_until" class="tich-input" value="{{ $selected->available_until?->format('Y-m-d\TH:i') }}">
                         </div>
-                        <div class="tich-form-group" style="margin:0;">
-                            <label class="tich-checkbox">
-                                <input type="hidden" name="show_results_immediately" value="0">
-                                <input type="checkbox" name="show_results_immediately" value="1" @checked($selected->show_results_immediately)>
-                                Allow students to review questions and correct answers
-                            </label>
-                            <button type="submit" class="tich-btn tich-btn-secondary tich-mt-4">Update availability</button>
-                        </div>
+                    </div>
+                    <div class="tich-grading-availability-foot">
+                        <label class="tich-label" style="display:flex; gap:0.5rem; align-items:center; margin:0;">
+                            <input type="hidden" name="show_results_immediately" value="0">
+                            <input type="checkbox" name="show_results_immediately" value="1" @checked($selected->show_results_immediately)>
+                            Allow students to review the questions and correct answers
+                        </label>
+                        <button type="submit" class="tich-btn tich-btn-secondary">Update availability</button>
                     </div>
                     <p class="tich-caption tich-mt-4">
                         Marks are calculated automatically from the answer key
@@ -361,7 +361,7 @@
                         </div>
                         <div class="tich-form-group">
                             <label class="tich-label">Student review</label>
-                            <label class="tich-checkbox">
+                            <label class="tich-label" style="display:flex; gap:0.5rem; align-items:center; margin:0;">
                                 <input type="hidden" name="show_results_immediately" value="0">
                                 <input type="checkbox" name="show_results_immediately" value="1">
                                 Allow review of questions and answers after marking
