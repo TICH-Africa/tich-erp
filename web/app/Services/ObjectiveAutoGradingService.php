@@ -73,7 +73,7 @@ class ObjectiveAutoGradingService
             'time_limit_minutes' => $data['time_limit_minutes'] ?? 30,
             'available_from' => $data['available_from'] ? now()->parse($data['available_from']) : null,
             'available_until' => $data['available_until'] ? now()->parse($data['available_until']) : null,
-            'show_results_immediately' => (bool) ($data['show_results_immediately'] ?? true),
+            'show_results_immediately' => (bool) ($data['show_results_immediately'] ?? false),
             'allow_multiple_attempts' => (bool) ($data['allow_multiple_attempts'] ?? false),
             'max_attempts' => $data['max_attempts'] ?? null,
         ]);
@@ -141,12 +141,36 @@ class ObjectiveAutoGradingService
     {
         abort_unless((int) $assessment->created_by === (int) $staff->id, 403);
 
+        return $this->grade($assessment, $staff, $allocation);
+    }
+
+    /**
+     * Marks a paper whose window has closed. Runs from the scheduler with no logged-in user,
+     * so the actor is the lecturer who created the paper, falling back to the unit's lecturer.
+     */
+    public function closeAndGrade(ObjectiveAssessment $assessment): int
+    {
+        $allocation = $assessment->allocation ?? UnitAllocation::query()->find($assessment->unit_allocation_id);
+        abort_if(! $allocation, 422, 'The lecturer allocation for this assessment is missing.');
+
+        $staff = Staff::query()->find($assessment->created_by) ?? Staff::query()->find($allocation->staff_id);
+        abort_if(! $staff, 422, 'No lecturer is attached to this assessment.');
+
+        return $this->grade($assessment, $staff, $allocation);
+    }
+
+    private function grade(ObjectiveAssessment $assessment, Staff $staff, UnitAllocation $allocation): int
+    {
         $assessment->load(['questions', 'submissions']);
         $questions = $assessment->questions;
         $totalPoints = (float) $questions->sum('points');
         $graded = 0;
 
         foreach ($assessment->submissions as $submission) {
+            if (! $submission->student_submitted_at) {
+                continue;
+            }
+
             $result = $this->gradeSubmission($questions, $submission->responses ?? [], $totalPoints, (float) $assessment->max_score);
 
             $submission->update([

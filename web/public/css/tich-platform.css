@@ -1055,6 +1055,12 @@ select.tich-select:focus {
     border-color: var(--tich-notice-info-border);
 }
 
+.tich-notice--success {
+    background: var(--tich-status-success-bg);
+    border-color: var(--tich-status-success-border);
+    color: var(--tich-status-success-text);
+}
+
 .tich-notice__code {
     font-family: ui-monospace, monospace;
     font-size: 1.25rem;

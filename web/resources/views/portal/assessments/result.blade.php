@@ -3,30 +3,48 @@
 @section('portal-content')
     <x-page-toolbar title="{{ $assessment->name }}" meta="Assessment result">
         <x-slot:actions>
-            <span class="tich-badge tich-badge--{{ $submission->percentage_score >= 50 ? 'success' : 'danger' }}">
-                {{ $submission->percentage_score }}%
-            </span>
+            @if ($marked)
+                <span class="tich-badge tich-badge--{{ $submission->percentage_score >= 50 ? 'success' : 'danger' }}">
+                    {{ $submission->percentage_score }}%
+                </span>
+            @else
+                <span class="tich-badge tich-badge--warning">Awaiting marks</span>
+            @endif
         </x-slot:actions>
     </x-page-toolbar>
 
     <div class="tich-card tich-mt-6">
         <div class="tich-card__body">
-            <div class="tich-result-summary">
+            <div class="tich-notice tich-notice--success">
+                <p class="tich-text" style="margin:0;">
+                    <strong>Submitted successfully.</strong>
+                    Completed on {{ $submission->student_submitted_at?->format('d M Y') }} at {{ $submission->student_submitted_at?->format('H:i') }}.
+                </p>
+            </div>
+
+            <div class="tich-result-summary tich-mt-6">
                 <div class="tich-result-summary__score">
-                    <span class="tich-result-summary__value">{{ $submission->score_obtained ?? 0 }}</span>
-                    <span class="tich-result-summary__max">/ {{ $assessment->max_score }}</span>
+                    @if ($marked)
+                        <span class="tich-result-summary__value">{{ $submission->score_obtained ?? 0 }}</span>
+                        <span class="tich-result-summary__max">/ {{ $assessment->max_score }}</span>
+                    @else
+                        <span class="tich-result-summary__value">-</span>
+                        <span class="tich-result-summary__max">/ {{ $assessment->max_score }}</span>
+                    @endif
                 </div>
                 <div class="tich-result-summary__meta">
-                    <div>Correct: {{ $submission->correct_count }} / {{ $submission->question_count }}</div>
+                    @if ($marked && $canReview)
+                        <div>Correct: {{ $submission->correct_count }} / {{ $submission->question_count }}</div>
+                    @endif
                     <div>Time taken: {{ $submission->time_taken_seconds ? floor($submission->time_taken_seconds / 60) . ' min ' . ($submission->time_taken_seconds % 60) . ' sec' : '-' }}</div>
-                    <div>Submitted: {{ $submission->student_submitted_at->format('d M Y H:i') }}</div>
+                    <div>Submitted: {{ $submission->student_submitted_at?->format('d M Y H:i') ?? '-' }}</div>
                 </div>
             </div>
 
-            @if ($assessment->show_results_immediately || $assessment->auto_graded_at)
+            @if ($canReview)
                 <div class="tich-mt-6">
                     <h3 class="tich-h4">Review</h3>
-                    @foreach ($assessment->questions as $question)
+                    @foreach ($questions as $question)
                         @php
                             $studentAnswer = $submission->responses[$question->id] ?? $submission->responses[(string) $question->id] ?? null;
                             $isCorrect = app(\App\Services\ObjectiveAutoGradingService::class)->answersMatch($question, $studentAnswer);
@@ -45,9 +63,13 @@
                         </div>
                     @endforeach
                 </div>
+            @elseif ($marked)
+                <div class="tich-notice tich-notice--info tich-mt-4">
+                    <p class="tich-text" style="margin:0;">Your lecturer has not allowed review of the questions for this assessment. Only your mark is shown.</p>
+                </div>
             @else
                 <div class="tich-notice tich-notice--info tich-mt-4">
-                    <p class="tich-text" style="margin:0;">Results will be released by your lecturer after grading is complete.</p>
+                    <p class="tich-text" style="margin:0;">Your answers are saved and marked automatically when the assessment closes. Your mark will appear here and in your CAT scores.</p>
                 </div>
             @endif
 

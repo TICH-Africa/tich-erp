@@ -416,7 +416,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
-        ])->with('status', 'Objective assessment created. Enter student responses and run auto-grade.');
+        ])->with('status', 'Objective assessment created. It marks itself when the availability window closes.');
     }
 
     public function saveObjectiveResponses(Request $request): RedirectResponse|JsonResponse
@@ -638,11 +638,13 @@ class StaffPortalActionController extends Controller
         $validated = $request->validate([
             'available_from' => ['nullable', 'date'],
             'available_until' => ['nullable', 'date', 'after_or_equal:available_from'],
+            'show_results_immediately' => ['nullable', 'boolean'],
         ]);
 
         $assessment->update([
             'available_from' => isset($validated['available_from']) ? now()->parse($validated['available_from']) : null,
             'available_until' => isset($validated['available_until']) ? now()->parse($validated['available_until']) : null,
+            'show_results_immediately' => (bool) ($validated['show_results_immediately'] ?? false),
         ]);
 
         return redirect()->route('staff.dashboard', [

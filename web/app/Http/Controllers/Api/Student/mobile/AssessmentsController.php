@@ -8,7 +8,6 @@ use App\Models\ObjectiveAssessment;
 use App\Models\ObjectiveSubmission;
 use App\Models\Student;
 use App\Services\StudentAcademicRecordService;
-use App\Services\ObjectiveAutoGradingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -29,6 +28,7 @@ class AssessmentsController extends Controller
         $this->assertRegistered($student, $assessment, $submission);
 
         $alreadySubmitted = $submission && $submission->student_submitted_at;
+        $marked = $submission && ($assessment->status === 'graded' || $submission->auto_graded_at !== null);
 
         return response()->json([
             'assessment' => [
@@ -53,10 +53,12 @@ class AssessmentsController extends Controller
             ],
             'submission' => $submission ? [
                 'id' => $submission->id,
-                'score' => $submission->score_obtained,
-                'percentage_score' => $submission->percentage_score,
-                'correct_count' => $submission->correct_count,
-                'question_count' => $submission->question_count,
+                'score' => $marked ? $submission->score_obtained : null,
+                'percentage_score' => $marked ? $submission->percentage_score : null,
+                'correct_count' => $marked ? $submission->correct_count : null,
+                'question_count' => $marked ? $submission->question_count : null,
+                'marked' => $marked,
+                'can_review' => $marked && (bool) $assessment->show_results_immediately,
                 'submitted_at' => optional($submission->student_submitted_at)?->toIso8601String(),
             ] : null,
         ]);
@@ -75,12 +77,17 @@ class AssessmentsController extends Controller
         $this->assertRegistered($student, $assessment, $submission);
 
         if ($submission && $submission->student_submitted_at) {
+            $marked = $assessment->status === 'graded' || $submission->auto_graded_at !== null;
+
             return response()->json([
                 'message' => 'You have already completed this assessment.',
                 'submission' => [
                     'id' => $submission->id,
-                    'score' => $submission->score_obtained,
-                    'percentage_score' => $submission->percentage_score,
+                    'score' => $marked ? $submission->score_obtained : null,
+                    'percentage_score' => $marked ? $submission->percentage_score : null,
+                    'marked' => $marked,
+                    'can_review' => $marked && (bool) $assessment->show_results_immediately,
+                    'submitted_at' => optional($submission->student_submitted_at)?->toIso8601String(),
                 ],
             ], 422);
         }
@@ -98,16 +105,7 @@ class AssessmentsController extends Controller
             'time_taken_seconds' => 'nullable|integer|min:0',
         ]);
 
-        $questions = $assessment->questions;
-        $totalPoints = (float) $questions->sum('points');
-
-        $gradeResult = app(ObjectiveAutoGradingService::class)->gradeSubmission(
-            $questions,
-            $validated['responses'],
-            $totalPoints,
-            (float) $assessment->max_score
-        );
-
+        // Marking waits for the availability window to close, so the answer key stays safe.
         if (! $submission) {
             $submission = ObjectiveSubmission::query()->create([
                 'objective_assessment_id' => $assessment->id,
@@ -117,23 +115,21 @@ class AssessmentsController extends Controller
 
         $submission->update([
             'responses' => $validated['responses'],
-            'score_obtained' => $gradeResult['score_obtained'],
-            'percentage_score' => $gradeResult['percentage_score'],
-            'correct_count' => $gradeResult['correct_count'],
-            'question_count' => $gradeResult['question_count'],
             'student_submitted_at' => now(),
             'time_taken_seconds' => $validated['time_taken_seconds'] ?? null,
             'updated_at' => now(),
         ]);
 
         return response()->json([
-            'message' => 'Assessment submitted successfully.',
+            'message' => 'Submitted successfully on '.now()->format('d M Y \a\t H:i').'. Your paper is marked when the assessment closes.',
             'submission' => [
                 'id' => $submission->id,
-                'score' => $submission->score_obtained,
-                'percentage_score' => $submission->percentage_score,
-                'correct_count' => $submission->correct_count,
-                'question_count' => $submission->question_count,
+                'score' => null,
+                'percentage_score' => null,
+                'correct_count' => null,
+                'question_count' => null,
+                'marked' => false,
+                'can_review' => false,
                 'submitted_at' => optional($submission->student_submitted_at)?->toIso8601String(),
             ],
         ]);

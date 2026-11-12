@@ -115,16 +115,8 @@ class StudentAssessmentController extends Controller
             'time_taken_seconds' => 'nullable|integer|min:0',
         ]);
 
-        $questions = $assessment->questions;
-        $totalPoints = (float) $questions->sum('points');
-
-        $gradeResult = app(\App\Services\ObjectiveAutoGradingService::class)->gradeSubmission(
-            $questions,
-            $validated['responses'],
-            $totalPoints,
-            (float) $assessment->max_score
-        );
-
+        // Nothing is marked at submission time. The paper is graded once the availability
+        // window closes, so nobody can answer after the deadline and see the key.
         if (! $submission) {
             $submission = ObjectiveSubmission::query()->create([
                 'objective_assessment_id' => $assessment->id,
@@ -134,17 +126,13 @@ class StudentAssessmentController extends Controller
 
         $submission->update([
             'responses' => $validated['responses'],
-            'score_obtained' => $gradeResult['score_obtained'],
-            'percentage_score' => $gradeResult['percentage_score'],
-            'correct_count' => $gradeResult['correct_count'],
-            'question_count' => $gradeResult['question_count'],
             'student_submitted_at' => now(),
             'time_taken_seconds' => $validated['time_taken_seconds'] ?? null,
             'updated_at' => now(),
         ]);
 
         return redirect()->route('portal.assessments.result', ['assessment' => $assessment->id])
-            ->with('status', 'Assessment submitted successfully.');
+            ->with('status', 'Submitted successfully on '.now()->format('d M Y \a\t H:i').'.');
     }
 
     public function result(ObjectiveAssessment $assessment): View
@@ -157,12 +145,19 @@ class StudentAssessmentController extends Controller
             ->where('student_id', $student->id)
             ->firstOrFail();
 
-        $assessment->load('questions');
+        $marked = $assessment->status === 'graded' || $submission->auto_graded_at !== null;
+
+        // Questions and the answer key only reach the student after marking, and only when
+        // the lecturer switched review on for this paper.
+        $canReview = $marked && (bool) $assessment->show_results_immediately;
 
         return view('portal.assessments.result', [
             'student' => $student,
             'assessment' => $assessment,
             'submission' => $submission,
+            'marked' => $marked,
+            'canReview' => $canReview,
+            'questions' => $canReview ? $assessment->load('questions')->questions : collect(),
             'biodata' => [],
             'sidebarNavigation' => app(\App\Services\StudentPortalNavigationService::class)->sidebarNavigation($student),
             'section' => 'academics',

@@ -36,6 +36,7 @@
                                 $isAvailable = $assessment->isAvailable();
                                 $isExpired = $assessment->available_until && now()->gt($assessment->available_until);
                                 $isUpcoming = $assessment->available_from && now()->lt($assessment->available_from);
+                                $marked = $submission && ($assessment->status === 'graded' || $submission->auto_graded_at);
                             @endphp
                             <tr>
                                 <td>
@@ -58,9 +59,13 @@
                                 </td>
                                 <td>
                                     @if ($submission && $submission->student_submitted_at)
-                                        <span class="tich-badge tich-badge--success">Completed</span>
+                                        <span class="tich-badge tich-badge--{{ $marked ? 'success' : 'warning' }}">{{ $marked ? 'Completed' : 'Submitted' }}</span>
                                         <div class="tich-caption tich-mt-1">
-                                            {{ $submission->score_obtained }} / {{ $assessment->max_score }} ({{ $submission->percentage_score }}%)
+                                            @if ($marked)
+                                                {{ $submission->score_obtained }} / {{ $assessment->max_score }} ({{ $submission->percentage_score }}%)
+                                            @else
+                                                Awaiting marks
+                                            @endif
                                         </div>
                                     @elseif ($assessment->status === 'graded')
                                         <span class="tich-badge tich-badge--info">Results available</span>

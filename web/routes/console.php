@@ -230,3 +230,9 @@ Schedule::command('academics:remind-upcoming-lessons')
 Schedule::command('academics:advance-cohorts')
     ->dailyAt('01:10')
     ->timezone('Africa/Nairobi');
+// Objective CATs mark themselves from the lecturer's answer key once their window closes,
+// so a student never sees the key while the paper is still open.
+Schedule::command('grading:close-objective-assessments')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(240)
+    ->timezone('Africa/Nairobi');

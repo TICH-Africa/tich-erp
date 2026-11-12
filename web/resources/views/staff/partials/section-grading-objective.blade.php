@@ -48,9 +48,23 @@
                             <input type="datetime-local" name="available_until" class="tich-input" value="{{ $selected->available_until?->format('Y-m-d\TH:i') }}">
                         </div>
                         <div class="tich-form-group" style="margin:0;">
-                            <button type="submit" class="tich-btn tich-btn-secondary">Update availability</button>
+                            <label class="tich-checkbox">
+                                <input type="hidden" name="show_results_immediately" value="0">
+                                <input type="checkbox" name="show_results_immediately" value="1" @checked($selected->show_results_immediately)>
+                                Allow students to review questions and correct answers
+                            </label>
+                            <button type="submit" class="tich-btn tich-btn-secondary tich-mt-4">Update availability</button>
                         </div>
                     </div>
+                    <p class="tich-caption tich-mt-4">
+                        Marks are calculated automatically from the answer key
+                        @if ($selected->available_until)
+                            at {{ $selected->available_until->format('d M Y H:i') }}, when the assessment closes.
+                        @else
+                            once you set an "Available until" time and it passes.
+                        @endif
+                        Until then students see only the assessment name and "Awaiting marks". Recorded marks appear in the CAT grid, where you can still edit them.
+                    </p>
                 </form>
             </article>
 
@@ -345,7 +359,17 @@
                             <label class="tich-label">Time limit (minutes)</label>
                             <input type="number" name="time_limit_minutes" class="tich-input" value="30" min="1" max="480">
                         </div>
+                        <div class="tich-form-group">
+                            <label class="tich-label">Student review</label>
+                            <label class="tich-checkbox">
+                                <input type="hidden" name="show_results_immediately" value="0">
+                                <input type="checkbox" name="show_results_immediately" value="1">
+                                Allow review of questions and answers after marking
+                            </label>
+                        </div>
                     </div>
+
+                    <p class="tich-caption tich-mt-2">The paper marks itself from the answer key when "Available until" passes, and each student's mark is recorded in the CAT section automatically. Students see the assessment name and their marks only - the questions stay hidden unless you allow review.</p>
 
                     <p class="tich-caption tich-mt-4">Questions - separate MCQ options with <code>|</code> (e.g. <code>A|B|C</code>). For essay/long answer questions, leave options blank. <strong>Add as many questions as the paper has</strong> - use the button under the last one.</p>
                     <div id="objective-question-list">
