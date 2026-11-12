@@ -33,10 +33,12 @@
                         @foreach ($assessments as $assessment)
                             @php
                                 $submission = $mySubmissions[$assessment->id] ?? null;
-                                $isAvailable = $assessment->isAvailable();
-                                $isExpired = $assessment->available_until && now()->gt($assessment->available_until);
-                                $isUpcoming = $assessment->available_from && now()->lt($assessment->available_from);
-                                $marked = $submission && ($assessment->status === 'graded' || $submission->auto_graded_at);
+                                $window = $assessment->windowFor($submission);
+                                $isOpen = $assessment->isOpenFor($submission);
+                                $isMarked = $assessment->isMarkedFor($submission);
+                                $isExpired = $window['until'] && now()->gt($window['until']);
+                                $isUpcoming = $window['from'] && now()->lt($window['from']);
+                                $hasSubmitted = $submission && $submission->student_submitted_at;
                             @endphp
                             <tr>
                                 <td>
@@ -48,28 +50,40 @@
                                 <td>{{ $assessment->allocation->unit->unit_code ?? '-' }}</td>
                                 <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $assessment->assessment_type)) }}</td>
                                 <td class="tich-caption">
-                                    @if ($assessment->available_from)
-                                        From {{ $assessment->available_from->format('d M Y H:i') }}
+                                    @if ($window['makeup'])
+                                        Opened for you
+                                        <br>{{ $window['from'] ? 'From '.$window['from']->format('d M Y H:i') : 'Anytime' }}
+                                        @if ($window['until'])
+                                            <br>Until {{ $window['until']->format('d M Y H:i') }}
+                                        @endif
                                     @else
-                                        Anytime
-                                    @endif
-                                    @if ($assessment->available_until)
-                                        <br>Until {{ $assessment->available_until->format('d M Y H:i') }}
+                                        @if ($window['from'])
+                                            From {{ $window['from']->format('d M Y H:i') }}
+                                        @else
+                                            Anytime
+                                        @endif
+                                        @if ($window['until'])
+                                            <br>Until {{ $window['until']->format('d M Y H:i') }}
+                                        @endif
                                     @endif
                                 </td>
                                 <td>
-                                    @if ($submission && $submission->student_submitted_at)
-                                        <span class="tich-badge tich-badge--{{ $marked ? 'success' : 'warning' }}">{{ $marked ? 'Completed' : 'Submitted' }}</span>
+                                    @if ($hasSubmitted)
+                                        <span class="tich-badge tich-badge--{{ $isMarked ? 'success' : 'warning' }}">{{ $isMarked ? 'Completed' : 'Submitted' }}</span>
                                         <div class="tich-caption tich-mt-1">
-                                            @if ($marked)
+                                            @if ($isMarked)
                                                 {{ $submission->score_obtained }} / {{ $assessment->max_score }} ({{ $submission->percentage_score }}%)
                                             @else
                                                 Awaiting marks
                                             @endif
                                         </div>
+                                    @elseif ($window['makeup'] && $isOpen)
+                                        <span class="tich-badge tich-badge--info">Make-up sitting</span>
+                                    @elseif ($window['makeup'])
+                                        <span class="tich-badge tich-badge--danger">Make-up closed</span>
                                     @elseif ($assessment->status === 'graded')
                                         <span class="tich-badge tich-badge--info">Results available</span>
-                                    @elseif ($isExpired)
+                                    @elseif ($isExpired && ! $isOpen)
                                         <span class="tich-badge tich-badge--danger">Expired</span>
                                     @elseif ($isUpcoming)
                                         <span class="tich-badge tich-badge--info">Upcoming</span>
@@ -78,12 +92,16 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if ($submission && $submission->student_submitted_at)
+                                    @if ($hasSubmitted)
                                         <a href="{{ route('portal.assessments.result', $assessment) }}" class="tich-btn tich-btn-secondary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">View result</a>
+                                    @elseif ($window['makeup'] && $isOpen)
+                                        <a href="{{ route('portal.assessments.take', $assessment) }}" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;" onclick="return confirm('You are about to start your make-up sitting of {{ $assessment->name }}. Click OK to start now.')">Sit make-up</a>
+                                    @elseif ($window['makeup'])
+                                        <span class="tich-caption">Ask your lecturer to reopen it</span>
                                     @elseif ($assessment->status === 'graded')
                                         <span class="tich-caption">Results released</span>
-                                    @elseif ($isExpired || $isUpcoming)
-                                        <span class="tich-caption">{{ $isExpired ? 'Closed' : 'Not yet open' }}</span>
+                                    @elseif (! $isOpen)
+                                        <span class="tich-caption">{{ $isUpcoming ? 'Not yet open' : 'Closed' }}</span>
                                     @else
                                         <a href="{{ route('portal.assessments.take', $assessment) }}" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;" onclick="return confirm('You are about to start {{ $assessment->name }}. Once started, your timer will begin. Click OK to start now.')">Start assessment</a>
                                     @endif

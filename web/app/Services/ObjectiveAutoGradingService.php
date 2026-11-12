@@ -74,6 +74,7 @@ class ObjectiveAutoGradingService
             'available_from' => $data['available_from'] ? now()->parse($data['available_from']) : null,
             'available_until' => $data['available_until'] ? now()->parse($data['available_until']) : null,
             'show_results_immediately' => (bool) ($data['show_results_immediately'] ?? false),
+            'shuffle_questions' => (bool) ($data['shuffle_questions'] ?? false),
             'allow_multiple_attempts' => (bool) ($data['allow_multiple_attempts'] ?? false),
             'max_attempts' => $data['max_attempts'] ?? null,
         ]);
@@ -162,8 +163,6 @@ class ObjectiveAutoGradingService
     private function grade(ObjectiveAssessment $assessment, Staff $staff, UnitAllocation $allocation): int
     {
         $assessment->load(['questions', 'submissions']);
-        $questions = $assessment->questions;
-        $totalPoints = (float) $questions->sum('points');
         $graded = 0;
 
         foreach ($assessment->submissions as $submission) {
@@ -171,36 +170,7 @@ class ObjectiveAutoGradingService
                 continue;
             }
 
-            $result = $this->gradeSubmission($questions, $submission->responses ?? [], $totalPoints, (float) $assessment->max_score);
-
-            $submission->update([
-                'score_obtained' => $result['score_obtained'],
-                'percentage_score' => $result['percentage_score'],
-                'correct_count' => $result['correct_count'],
-                'question_count' => $result['question_count'],
-                'auto_graded_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            CatScore::query()->updateOrCreate(
-                [
-                    'student_id' => $submission->student_id,
-                    'unit_id' => $allocation->unit_id,
-                    'semester_id' => $allocation->semester_id,
-                    'assessment_name' => $assessment->name,
-                ],
-                [
-                    'assessment_type' => 'objective_'.$assessment->assessment_type,
-                    'max_score' => $assessment->max_score,
-                    'score_obtained' => $result['score_obtained'],
-                    'percentage_score' => $result['percentage_score'],
-                    'weight_in_final' => $this->assessments->weightForAssessmentType('cat', $allocation->unit),
-                    'recorded_by' => $staff->id,
-                    'recorded_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
-
+            $this->markSubmission($assessment, $submission, $staff, $allocation);
             $graded++;
         }
 
@@ -224,6 +194,201 @@ class ObjectiveAutoGradingService
         );
 
         return $graded;
+    }
+
+    private function markSubmission(
+        ObjectiveAssessment $assessment,
+        ObjectiveSubmission $submission,
+        Staff $staff,
+        UnitAllocation $allocation,
+    ): void {
+        $questions = $assessment->questions;
+        $result = $this->gradeSubmission($questions, $submission->responses ?? [], (float) $questions->sum('points'), (float) $assessment->max_score);
+
+        $submission->update([
+            'score_obtained' => $result['score_obtained'],
+            'percentage_score' => $result['percentage_score'],
+            'correct_count' => $result['correct_count'],
+            'question_count' => $result['question_count'],
+            'auto_graded_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        CatScore::query()->updateOrCreate(
+            [
+                'student_id' => $submission->student_id,
+                'unit_id' => $allocation->unit_id,
+                'semester_id' => $allocation->semester_id,
+                'assessment_name' => $assessment->name,
+            ],
+            [
+                'assessment_type' => 'objective_'.$assessment->assessment_type,
+                'max_score' => $assessment->max_score,
+                'score_obtained' => $result['score_obtained'],
+                'percentage_score' => $result['percentage_score'],
+                'weight_in_final' => $this->assessments->weightForAssessmentType('cat', $allocation->unit),
+                'recorded_by' => $staff->id,
+                'recorded_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+    }
+
+    /**
+     * Marks one student's make-up paper on its own, since their window can close long after the
+     * rest of the class was graded. Nobody else's mark is touched.
+     */
+    public function gradeLateSubmission(ObjectiveSubmission $submission): bool
+    {
+        if (! $submission->student_submitted_at || $submission->auto_graded_at) {
+            return false;
+        }
+
+        $assessment = $submission->assessment ?? ObjectiveAssessment::query()->find($submission->objective_assessment_id);
+
+        if (! $assessment) {
+            return false;
+        }
+
+        $allocation = $assessment->allocation ?? UnitAllocation::query()->find($assessment->unit_allocation_id);
+        $staff = Staff::query()->find($assessment->created_by) ?? Staff::query()->find($allocation?->staff_id ?? 0);
+
+        if (! $allocation || ! $staff) {
+            return false;
+        }
+
+        $assessment->loadMissing('questions');
+
+        $this->markSubmission($assessment, $submission, $staff, $allocation);
+        $this->assessments->recalculateCumulativeScores($allocation);
+
+        $this->auditService->log(
+            'staff.grading.objective_makeup_graded',
+            'objective_submissions',
+            $submission->id,
+            null,
+            [
+                'student_id' => $submission->student_id,
+                'objective_assessment_id' => $assessment->id,
+                'score_obtained' => $submission->score_obtained,
+                'percentage_score' => $submission->percentage_score,
+            ],
+            'Make-up assessment auto-graded',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+
+        return true;
+    }
+
+    /**
+     * Opens the paper for one student on their own dates, so a missed sitting can still be taken -
+     * and a rescheduled one can be given a fresh copy of the questions.
+     */
+    public function openMakeupWindow(
+        ObjectiveAssessment $assessment,
+        Staff $staff,
+        UnitAllocation $allocation,
+        int $studentId,
+        ?string $from,
+        ?string $until,
+        bool $reshuffle,
+        bool $retake = false,
+    ): ObjectiveSubmission {
+        $this->assertMakeupAccess($staff, $allocation, $assessment, $studentId);
+
+        $submission = ObjectiveSubmission::query()->updateOrCreate(
+            [
+                'objective_assessment_id' => $assessment->id,
+                'student_id' => $studentId,
+            ],
+            [
+                'open_from' => $from ? now()->parse($from) : null,
+                'open_until' => $until ? now()->parse($until) : null,
+                'updated_at' => now(),
+            ],
+        );
+
+        if ($retake && $submission->student_submitted_at) {
+            // A rescheduled sitting replaces the attempt on file, so the old mark cannot sit
+            // beside the new one in the CAT grid.
+            $submission->update([
+                'responses' => null,
+                'student_submitted_at' => null,
+                'time_taken_seconds' => null,
+                'score_obtained' => null,
+                'percentage_score' => null,
+                'correct_count' => 0,
+                'question_count' => 0,
+                'auto_graded_at' => null,
+                'attempt_number' => (int) $submission->attempt_number + 1,
+                'updated_at' => now(),
+            ]);
+
+            CatScore::query()
+                ->where('student_id', $studentId)
+                ->where('unit_id', $allocation->unit_id)
+                ->where('semester_id', $allocation->semester_id)
+                ->where('assessment_name', $assessment->name)
+                ->delete();
+
+            $this->assessments->recalculateCumulativeScores($allocation);
+        }
+
+        if ($reshuffle) {
+            $assessment->drawShuffleSeed($submission, force: true);
+        }
+
+        $this->auditService->log(
+            'staff.grading.objective_makeup_opened',
+            'objective_assessments',
+            $assessment->id,
+            null,
+            [
+                'student_id' => $studentId,
+                'open_from' => $from,
+                'open_until' => $until,
+                'reshuffled' => $reshuffle,
+                'retake' => $retake,
+            ],
+            'Make-up assessment opened',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+
+        return $submission;
+    }
+
+    public function closeMakeupWindow(
+        ObjectiveAssessment $assessment,
+        Staff $staff,
+        UnitAllocation $allocation,
+        int $studentId,
+    ): void {
+        $this->assertMakeupAccess($staff, $allocation, $assessment, $studentId);
+
+        ObjectiveSubmission::query()
+            ->where('objective_assessment_id', $assessment->id)
+            ->where('student_id', $studentId)
+            ->update(['open_from' => null, 'open_until' => null, 'updated_at' => now()]);
+
+        $this->auditService->log(
+            'staff.grading.objective_makeup_closed',
+            'objective_assessments',
+            $assessment->id,
+            null,
+            ['student_id' => $studentId],
+            'Make-up assessment closed',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+    }
+
+    private function assertMakeupAccess(Staff $staff, UnitAllocation $allocation, ObjectiveAssessment $assessment, int $studentId): void
+    {
+        abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
+        abort_unless((int) $assessment->unit_allocation_id === (int) $allocation->id, 403);
+        app(StaffPortalDashboardService::class)->assertStudentsAreOnRoll($allocation, [$studentId]);
     }
 
     /**

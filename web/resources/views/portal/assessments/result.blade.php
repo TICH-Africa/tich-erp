@@ -51,7 +51,7 @@
                         @endphp
                         <div class="tich-review-card tich-mb-4 {{ $isCorrect ? 'tich-review-card--correct' : 'tich-review-card--incorrect' }}">
                             <div class="tich-review-card__header">
-                                <span>Q{{ $question->sort_order }}: {{ $question->question_text }}</span>
+                                <span>Q{{ $loop->iteration }}: {{ $question->question_text }}</span>
                                 <span class="tich-badge tich-badge--{{ $isCorrect ? 'success' : 'danger' }}">{{ $isCorrect ? '+' . $question->points . ' pts' : '0 pts' }}</span>
                             </div>
                             <div class="tich-review-card__body">

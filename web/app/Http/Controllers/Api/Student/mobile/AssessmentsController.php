@@ -18,7 +18,7 @@ class AssessmentsController extends Controller
     public function show(Request $request, ObjectiveAssessment $assessment): JsonResponse
     {
         $student = $this->portalStudent($request);
-        $assessment->load(['questions', 'allocation.unit']);
+        $assessment->load(['allocation.unit']);
 
         $submission = ObjectiveSubmission::query()
             ->where('objective_assessment_id', $assessment->id)
@@ -28,7 +28,22 @@ class AssessmentsController extends Controller
         $this->assertRegistered($student, $assessment, $submission);
 
         $alreadySubmitted = $submission && $submission->student_submitted_at;
-        $marked = $submission && ($assessment->status === 'graded' || $submission->auto_graded_at !== null);
+        $canTake = $assessment->isOpenFor($submission) && ! $alreadySubmitted;
+        $window = $assessment->windowFor($submission);
+
+        // The app reads the window it is given, so a make-up sitting shows as this student's dates.
+        if ($canTake) {
+            $submission ??= ObjectiveSubmission::query()->create([
+                'objective_assessment_id' => $assessment->id,
+                'student_id' => $student->id,
+                'created_at' => now(),
+            ]);
+
+            $assessment->drawShuffleSeed($submission);
+        }
+
+        $questions = $assessment->questionsFor($submission);
+        $marked = $assessment->isMarkedFor($submission);
 
         return response()->json([
             'assessment' => [
@@ -37,19 +52,20 @@ class AssessmentsController extends Controller
                 'status' => $assessment->status,
                 'max_score' => (float) $assessment->max_score,
                 'time_limit_minutes' => $assessment->time_limit_minutes,
-                'available_from' => optional($assessment->available_from)?->toIso8601String(),
-                'available_until' => optional($assessment->available_until)?->toIso8601String(),
+                'available_from' => optional($window['from'])?->toIso8601String(),
+                'available_until' => optional($window['until'])?->toIso8601String(),
+                'is_makeup' => $window['makeup'],
                 'unit_code' => $assessment->allocation?->unit?->unit_code,
                 'unit_name' => $assessment->allocation?->unit?->unit_name,
-                'can_take' => $assessment->status === 'ready' && ! $alreadySubmitted,
-                'questions' => $assessment->questions->sortBy('sort_order')->values()->map(fn ($q) => [
+                'can_take' => $canTake,
+                'questions' => $questions->map(fn ($q) => [
                     'id' => $q->id,
                     'sort_order' => $q->sort_order,
                     'question_text' => $q->question_text,
                     'question_type' => $q->question_type,
-                    'options' => $q->options ?? [],
+                    'options' => $assessment->optionsFor($q, $submission),
                     'points' => (float) $q->points,
-                ]),
+                ])->values(),
             ],
             'submission' => $submission ? [
                 'id' => $submission->id,
@@ -67,7 +83,6 @@ class AssessmentsController extends Controller
     public function submit(Request $request, ObjectiveAssessment $assessment): JsonResponse
     {
         $student = $this->portalStudent($request);
-        abort_if($assessment->status !== 'ready', 403, 'This assessment is not open.');
 
         $submission = ObjectiveSubmission::query()
             ->where('objective_assessment_id', $assessment->id)
@@ -77,7 +92,7 @@ class AssessmentsController extends Controller
         $this->assertRegistered($student, $assessment, $submission);
 
         if ($submission && $submission->student_submitted_at) {
-            $marked = $assessment->status === 'graded' || $submission->auto_graded_at !== null;
+            $marked = $assessment->isMarkedFor($submission);
 
             return response()->json([
                 'message' => 'You have already completed this assessment.',
@@ -92,11 +107,14 @@ class AssessmentsController extends Controller
             ], 422);
         }
 
-        if ($assessment->available_from && now()->lt($assessment->available_from)) {
-            return response()->json(['message' => 'This assessment is not yet available.'], 403);
-        }
-        if ($assessment->available_until && now()->gt($assessment->available_until)) {
-            return response()->json(['message' => 'This assessment has expired.'], 403);
+        if (! $assessment->isOpenFor($submission)) {
+            $window = $assessment->windowFor($submission);
+
+            return response()->json([
+                'message' => $window['from'] && now()->lt($window['from'])
+                    ? 'This assessment is not yet available.'
+                    : 'This assessment has expired. Ask your lecturer to open a make-up sitting for you.',
+            ], 403);
         }
 
         $validated = $request->validate([

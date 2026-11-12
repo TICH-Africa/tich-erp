@@ -1636,6 +1636,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/grading/objective/grade', [StaffPortalActionController::class, 'runObjectiveAutoGrade'])->name('staff.grading.objective.grade');
         Route::post('/grading/objective/manual-grade', [StaffPortalActionController::class, 'manualGradeObjectiveSubmission'])->name('staff.grading.objective.manual-grade');
         Route::patch('/grading/objective/{objective_assessment}/availability', [StaffPortalActionController::class, 'updateObjectiveAvailability'])->name('staff.grading.objective.availability');
+        Route::patch('/grading/objective/{objective_assessment}/makeup', [StaffPortalActionController::class, 'openObjectiveMakeup'])->name('staff.grading.objective.makeup');
         Route::patch('/grading/objective/{objective_assessment}/answers', [StaffPortalActionController::class, 'updateObjectiveAnswers'])->name('staff.grading.objective.answers.update');
         Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
         Route::get('/content/{content}/view', [StaffPortalActionController::class, 'viewContent'])->name('staff.content.view');

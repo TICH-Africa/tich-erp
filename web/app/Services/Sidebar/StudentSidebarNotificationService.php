@@ -311,7 +311,19 @@ class StudentSidebarNotificationService
                 ->where(function ($q) use ($now) {
                     $q->whereNull('oa.available_until')->orWhere('oa.available_until', '>=', $now);
                 })
-                ->pluck('oa.id');
+                ->pluck('oa.id')
+                ->merge(DB::table('objective_submissions as os')
+                    ->join('objective_assessments as oa2', 'oa2.id', '=', 'os.objective_assessment_id')
+                    ->join('unit_allocations as ua2', 'ua2.id', '=', 'oa2.unit_allocation_id')
+                    ->where('os.student_id', $student->id)
+                    ->whereIn('ua2.unit_id', $registeredUnitIds)
+                    ->where('ua2.is_active', 1)
+                    ->whereNull('os.student_submitted_at')
+                    ->where(fn ($q) => $q->whereNotNull('os.open_from')->orWhereNotNull('os.open_until'))
+                    ->where(fn ($q) => $q->whereNull('os.open_from')->orWhere('os.open_from', '<=', $now))
+                    ->where(fn ($q) => $q->whereNull('os.open_until')->orWhere('os.open_until', '>=', $now))
+                    ->pluck('os.objective_assessment_id'))
+                ->unique();
 
             if ($openAssessments->isNotEmpty()) {
                 $done = DB::table('objective_submissions')

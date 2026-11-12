@@ -395,6 +395,7 @@ class StaffPortalActionController extends Controller
             'available_from' => ['nullable', 'date'],
             'available_until' => ['nullable', 'date', 'after_or_equal:available_from'],
             'show_results_immediately' => ['nullable', 'boolean'],
+            'shuffle_questions' => ['nullable', 'boolean'],
             'allow_multiple_attempts' => ['nullable', 'boolean'],
             'max_attempts' => ['nullable', 'integer', 'min:1'],
             'questions' => ['required', 'array'],
@@ -639,12 +640,14 @@ class StaffPortalActionController extends Controller
             'available_from' => ['nullable', 'date'],
             'available_until' => ['nullable', 'date', 'after_or_equal:available_from'],
             'show_results_immediately' => ['nullable', 'boolean'],
+            'shuffle_questions' => ['nullable', 'boolean'],
         ]);
 
         $assessment->update([
             'available_from' => isset($validated['available_from']) ? now()->parse($validated['available_from']) : null,
             'available_until' => isset($validated['available_until']) ? now()->parse($validated['available_until']) : null,
             'show_results_immediately' => (bool) ($validated['show_results_immediately'] ?? false),
+            'shuffle_questions' => (bool) ($validated['shuffle_questions'] ?? false),
         ]);
 
         return redirect()->route('staff.dashboard', [
@@ -652,6 +655,67 @@ class StaffPortalActionController extends Controller
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
         ])->with('status', 'Assessment availability updated.');
+    }
+
+    /**
+     * Opens the paper for one student on their own dates - the missed or rescheduled sitting - and
+     * the same form ends it again.
+     */
+    public function openObjectiveMakeup(Request $request, ObjectiveAssessment $assessment): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+
+        // A lecturer can teach the same unit in more than one period, so the row the form came from
+        // wins and the unit lookup only serves as the guard.
+        $allocation = UnitAllocation::query()
+            ->where('id', (int) $request->input('allocation_id'))
+            ->where('staff_id', $staff->id)
+            ->where('is_active', 1)
+            ->first()
+            ?? UnitAllocation::query()
+                ->where('staff_id', $staff->id)
+                ->where('unit_id', $assessment->unit_id)
+                ->where('is_active', 1)
+                ->firstOrFail();
+
+        abort_if($assessment->unit_allocation_id !== $allocation->id, 403);
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'student_id' => ['required', 'integer'],
+            'open_from' => ['nullable', 'date'],
+            'open_until' => ['nullable', 'date', 'after_or_equal:open_from'],
+            'reshuffle' => ['nullable', 'boolean'],
+            'retake' => ['nullable', 'boolean'],
+        ]);
+
+        $studentId = (int) $validated['student_id'];
+
+        if ($request->boolean('close')) {
+            $this->objectiveGrading->closeMakeupWindow($assessment, $staff, $allocation, $studentId);
+            $message = 'Make-up sitting closed for that student.';
+        } else {
+            $this->objectiveGrading->openMakeupWindow(
+                $assessment,
+                $staff,
+                $allocation,
+                $studentId,
+                $validated['open_from'] ?? null,
+                $validated['open_until'] ?? null,
+                $request->boolean('reshuffle'),
+                $request->boolean('retake'),
+            );
+
+            $message = $request->boolean('retake')
+                ? 'Resit opened. Their previous attempt and its mark were cleared, and the new sitting marks itself when their window closes.'
+                : 'Make-up sitting opened. The student can sit it on those dates and it marks itself when their window closes.';
+        }
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+            'objective_assessment' => $assessment->id,
+        ])->with('status', $message);
     }
 
     public function updateObjectiveAnswers(Request $request, ObjectiveAssessment $assessment): RedirectResponse

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\ObjectiveAssessment;
+use App\Models\ObjectiveSubmission;
 use App\Services\ObjectiveAutoGradingService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -32,7 +33,31 @@ class GradeClosedObjectiveAssessments extends Command
             }
         }
 
-        $this->info("Marked {$graded} submission(s) across {$closed->count()} closed assessment(s).");
+        // Make-up sittings run on their own dates, so they mark on their own close - and a paper
+        // already marked still owes a mark to anyone who answered after it closed.
+        $waiting = ObjectiveSubmission::query()
+            ->whereNotNull('student_submitted_at')
+            ->whereNull('auto_graded_at')
+            ->where(function ($query) {
+                $query->where(fn ($makeup) => $makeup->whereNotNull('open_until')
+                        ->where('open_until', '<=', now()))
+                    ->orWhere(fn ($missed) => $missed->whereNull('open_until')
+                        ->whereHas('assessment', fn ($a) => $a->where('status', 'graded')));
+            })
+            ->orderBy('id')
+            ->get();
+
+        $marked = 0;
+
+        foreach ($waiting as $submission) {
+            try {
+                $marked += $grading->gradeLateSubmission($submission) ? 1 : 0;
+            } catch (Throwable $e) {
+                $this->warn("Submission {$submission->id} skipped: {$e->getMessage()}");
+            }
+        }
+
+        $this->info("Marked {$graded} submission(s) across {$closed->count()} closed assessment(s), plus {$marked} make-up sitting(s).");
 
         return self::SUCCESS;
     }

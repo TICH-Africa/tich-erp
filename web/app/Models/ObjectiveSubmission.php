@@ -26,6 +26,9 @@ class ObjectiveSubmission extends Model
         'student_submitted_at',
         'time_taken_seconds',
         'attempt_number',
+        'open_from',
+        'open_until',
+        'shuffle_seed',
     ];
 
     protected $casts = [
@@ -33,6 +36,8 @@ class ObjectiveSubmission extends Model
         'score_obtained' => 'float',
         'percentage_score' => 'float',
         'auto_graded_at' => 'datetime',
+        'open_from' => 'datetime',
+        'open_until' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'student_started_at' => 'datetime',

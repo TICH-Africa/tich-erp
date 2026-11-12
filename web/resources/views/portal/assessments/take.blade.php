@@ -12,10 +12,13 @@
 
     <div class="tich-card tich-mt-6">
         <div class="tich-card__body">
-            @if ($assessment->available_until)
+            @if ($window['until'])
                 <div class="tich-notice tich-notice--info tich-mb-4">
                     <p class="tich-text" style="margin:0;">
-                        This assessment closes on <strong>{{ $assessment->available_until->format('d M Y H:i') }}</strong>.
+                        This assessment closes on <strong>{{ $window['until']->format('d M Y H:i') }}</strong>.
+                        @if ($window['makeup'])
+                            <br>This is a make-up sitting your lecturer opened for you.
+                        @endif
                         @if ($assessment->time_limit_minutes)
                             You have <strong>{{ $assessment->time_limit_minutes }} minutes</strong> once you start.
                         @endif
@@ -35,13 +38,14 @@
                     <p class="tich-text" style="margin:0;" id="answer-warning-text"></p>
                 </div>
 
-                @php $questions = $assessment->questions; $pages = ceil($questions->count() / 3); @endphp
+                @php $pages = ceil($questions->count() / 3); @endphp
                 @foreach ($questions->chunk(3) as $pageIndex => $pageQuestions)
                     <div class="assessment-page" data-page="{{ $pageIndex }}" style="{{ $pageIndex > 0 ? 'display:none;' : '' }}">
                         @foreach ($pageQuestions as $question)
+                            @php $number = $pageIndex * 3 + $loop->iteration; @endphp
                             <div class="tich-question-card tich-mb-6" data-question-id="{{ $question->id }}">
                                 <div class="tich-question-card__header">
-                                    <span class="tich-question-card__number">Question {{ $question->sort_order }}</span>
+                                    <span class="tich-question-card__number">Question {{ $number }}</span>
                                     <span class="tich-question-card__points">{{ $question->points }} {{ str('point')->plural($question->points) }}</span>
                                 </div>
                                 <div class="tich-question-card__body">
@@ -49,7 +53,7 @@
 
                                     @if ($question->question_type === 'mcq' && $question->options)
                                         <div class="tich-question-options tich-mt-4">
-                                            @foreach ($question->options as $option)
+                                            @foreach ($assessment->optionsFor($question, $submission) as $option)
                                                 <label class="tich-option-label">
                                                     <input type="radio" name="responses[{{ $question->id }}]" value="{{ $option }}">
                                                     <span class="tich-option-letter">{{ chr(64 + $loop->iteration) }}</span>

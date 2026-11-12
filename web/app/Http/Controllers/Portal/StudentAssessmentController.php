@@ -59,7 +59,6 @@ class StudentAssessmentController extends Controller
         $student = auth()->user()->student;
         abort_if(! $student, 404);
         $this->assertRegistered($student, $assessment);
-        abort_if($assessment->status !== 'ready', 403);
 
         $submission = ObjectiveSubmission::query()
             ->where('objective_assessment_id', $assessment->id)
@@ -71,18 +70,24 @@ class StudentAssessmentController extends Controller
                 ->with('info', 'You have already completed this assessment.');
         }
 
-        if ($assessment->available_from && now()->lt($assessment->available_from)) {
-            abort(403, 'This assessment is not yet available.');
-        }
+        abort_unless($assessment->isOpenFor($submission), 403, $this->closedMessage($assessment, $submission));
 
-        if ($assessment->available_until && now()->gt($assessment->available_until)) {
-            abort(403, 'This assessment has expired.');
-        }
+        // The sitting needs a row of its own before it can carry the student's paper order.
+        $submission ??= ObjectiveSubmission::query()->create([
+            'objective_assessment_id' => $assessment->id,
+            'student_id' => $student->id,
+            'created_at' => now(),
+        ]);
+
+        $assessment->drawShuffleSeed($submission);
+        $questions = $assessment->questionsFor($submission);
 
         return view('portal.assessments.take', [
             'student' => $student,
-            'assessment' => $assessment->load('questions'),
+            'assessment' => $assessment,
             'submission' => $submission,
+            'questions' => $questions,
+            'window' => $assessment->windowFor($submission),
             'timeLimit' => $assessment->time_limit_minutes ?: 30,
             'biodata' => [],
             'sidebarNavigation' => app(\App\Services\StudentPortalNavigationService::class)->sidebarNavigation($student),
@@ -97,7 +102,6 @@ class StudentAssessmentController extends Controller
         $student = auth()->user()->student;
         abort_if(! $student, 404);
         $this->assertRegistered($student, $assessment);
-        abort_if($assessment->status !== 'ready', 403);
 
         $submission = ObjectiveSubmission::query()
             ->where('objective_assessment_id', $assessment->id)
@@ -108,6 +112,8 @@ class StudentAssessmentController extends Controller
             return redirect()->route('portal.assessments.result', ['assessment' => $assessment->id])
                 ->with('info', 'You have already completed this assessment.');
         }
+
+        abort_unless($assessment->isOpenFor($submission), 403, $this->closedMessage($assessment, $submission));
 
         $validated = $request->validate([
             'responses' => 'required|array',
@@ -145,7 +151,7 @@ class StudentAssessmentController extends Controller
             ->where('student_id', $student->id)
             ->firstOrFail();
 
-        $marked = $assessment->status === 'graded' || $submission->auto_graded_at !== null;
+        $marked = $assessment->isMarkedFor($submission);
 
         // Questions and the answer key only reach the student after marking, and only when
         // the lecturer switched review on for this paper.
@@ -157,13 +163,27 @@ class StudentAssessmentController extends Controller
             'submission' => $submission,
             'marked' => $marked,
             'canReview' => $canReview,
-            'questions' => $canReview ? $assessment->load('questions')->questions : collect(),
+            'questions' => $canReview ? $assessment->questionsFor($submission) : collect(),
             'biodata' => [],
             'sidebarNavigation' => app(\App\Services\StudentPortalNavigationService::class)->sidebarNavigation($student),
             'section' => 'academics',
             'tab' => 'assessments',
             'portalTitle' => 'Assessment Result',
         ]);
+    }
+
+    /**
+     * @return string
+     */
+    private function closedMessage(ObjectiveAssessment $assessment, ?ObjectiveSubmission $submission)
+    {
+        $window = $assessment->windowFor($submission);
+
+        if ($window['from'] && now()->lt($window['from'])) {
+            return 'This assessment is not yet available.';
+        }
+
+        return 'This assessment has expired. Ask your lecturer to open a make-up sitting for you.';
     }
 
     /**

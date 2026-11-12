@@ -49,11 +49,18 @@
                         </div>
                     </div>
                     <div class="tich-grading-availability-foot">
-                        <label class="tich-label" style="display:flex; gap:0.5rem; align-items:center; margin:0;">
-                            <input type="hidden" name="show_results_immediately" value="0">
-                            <input type="checkbox" name="show_results_immediately" value="1" @checked($selected->show_results_immediately)>
-                            Allow students to review the questions and correct answers
-                        </label>
+                        <div class="tich-grading-availability-flags">
+                            <label class="tich-label" style="display:flex; gap:0.5rem; align-items:center; margin:0;">
+                                <input type="hidden" name="show_results_immediately" value="0">
+                                <input type="checkbox" name="show_results_immediately" value="1" @checked($selected->show_results_immediately)>
+                                Allow students to review the questions and correct answers
+                            </label>
+                            <label class="tich-label" style="display:flex; gap:0.5rem; align-items:center; margin:0;">
+                                <input type="hidden" name="shuffle_questions" value="0">
+                                <input type="checkbox" name="shuffle_questions" value="1" @checked($selected->shuffle_questions)>
+                                Shuffle the question and answer order for every student
+                            </label>
+                        </div>
                         <button type="submit" class="tich-btn tich-btn-secondary">Update availability</button>
                     </div>
                     <p class="tich-caption tich-mt-4">
@@ -64,8 +71,77 @@
                             once you set an "Available until" time and it passes.
                         @endif
                         Until then students see only the assessment name and "Awaiting marks". Recorded marks appear in the CAT grid, where you can still edit them.
+                        Shuffling gives each student their own question and answer order, so nobody can copy another paper.
                     </p>
                 </form>
+            </article>
+
+            <article class="tich-card tich-mb-6">
+                <h3 class="tich-h3">Missed or rescheduled sitting</h3>
+                <p class="tich-caption tich-mt-1">
+                    Open this paper again for a student on their own dates, even after the class has been marked.
+                    Their sitting marks itself from the answer key when their window closes and the mark lands in the CAT grid.
+                    A fresh order is drawn for each make-up sitting, so nobody sits the copy the class already had.
+                    A student who already submitted keeps that attempt unless you tick clearing their attempt.
+                </p>
+
+                <div class="tich-mt-4">
+                    @foreach ($objectiveTerminal['roster'] as $student)
+                        @php
+                            $submission = $selected->submissions->firstWhere('student_id', $student->student_id);
+                            $hasSat = $submission && $submission->student_submitted_at;
+                            $isOpen = $submission && ($submission->open_from || $submission->open_until);
+                        @endphp
+                        <div class="tich-makeup-row">
+                            <div class="tich-makeup-row__who">
+                                <div>{{ trim($student->student_name) }}</div>
+                                <div class="tich-caption">{{ $student->registration_number }}</div>
+                                <div>
+                                    @if ($hasSat)
+                                        <span class="tich-badge tich-badge--success">Taken</span>
+                                    @elseif ($isOpen)
+                                        <span class="tich-badge tich-badge--info">Open</span>
+                                    @else
+                                        <span class="tich-badge tich-badge--warning">Not taken</span>
+                                    @endif
+                                </div>
+                                @if ($isOpen && ! $hasSat && $submission->open_until)
+                                    <div class="tich-caption">until {{ $submission->open_until->format('d M H:i') }}</div>
+                                @endif
+                            </div>
+                            <form method="POST" action="{{ route('staff.grading.objective.makeup', $selected) }}" class="tich-makeup-form">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
+                                <input type="hidden" name="student_id" value="{{ $student->student_id }}">
+                                <label class="tich-caption">
+                                    From
+                                    <input type="datetime-local" name="open_from" class="tich-input" value="{{ $submission?->open_from?->format('Y-m-d\TH:i') }}">
+                                </label>
+                                <label class="tich-caption">
+                                    Until
+                                    <input type="datetime-local" name="open_until" class="tich-input" value="{{ $submission?->open_until?->format('Y-m-d\TH:i') }}">
+                                </label>
+                                <label class="tich-label" style="display:flex; gap:0.4rem; align-items:center; margin:0;">
+                                    <input type="hidden" name="reshuffle" value="0">
+                                    <input type="checkbox" name="reshuffle" value="1" checked>
+                                    Fresh question order
+                                </label>
+                                @if ($hasSat)
+                                    <label class="tich-label" style="display:flex; gap:0.4rem; align-items:center; margin:0;">
+                                        <input type="hidden" name="retake" value="0">
+                                        <input type="checkbox" name="retake" value="1">
+                                        Clear their attempt and the mark on file, so they sit again
+                                    </label>
+                                @endif
+                                <button type="submit" class="tich-btn tich-btn-secondary">{{ $isOpen ? 'Update window' : ($hasSat ? 'Open resit for this student' : 'Open for this student') }}</button>
+                                @if ($isOpen)
+                                    <button type="submit" name="close" value="1" class="tich-btn tich-btn-ghost">Close</button>
+                                @endif
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
             </article>
 
             <article class="tich-card tich-mb-6">
@@ -365,6 +441,14 @@
                                 <input type="hidden" name="show_results_immediately" value="0">
                                 <input type="checkbox" name="show_results_immediately" value="1">
                                 Allow review of questions and answers after marking
+                            </label>
+                        </div>
+                        <div class="tich-form-group">
+                            <label class="tich-label">Question order</label>
+                            <label class="tich-label" style="display:flex; gap:0.5rem; align-items:center; margin:0;">
+                                <input type="hidden" name="shuffle_questions" value="0">
+                                <input type="checkbox" name="shuffle_questions" value="1">
+                                Shuffle the order for every student
                             </label>
                         </div>
                     </div>
