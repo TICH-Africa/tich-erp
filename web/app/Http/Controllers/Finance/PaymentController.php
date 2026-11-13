@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\Finance\PaymentService;
 use App\Services\Finance\StudentAccountService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -41,12 +42,27 @@ class PaymentController extends Controller
             ? Invoice::query()->with(['student.applicant'])->findOrFail($request->integer('invoice_id'))
             : null;
 
-        $openInvoices = Invoice::query()
-            ->with(['student.applicant'])
+        $search = trim($request->string('search')->toString());
+
+        $open = Invoice::query()
             ->whereIn('status', ['issued', 'partial', 'overdue'])
-            ->where('balance', '>', 0)
+            ->where('balance', '>', 0);
+
+        // A bill from an earlier term is still owing, so it has to be reachable from
+        // this form. Without a search the list is capped, and the officer would only
+        // ever see the newest bills.
+        if ('' !== $search) {
+            $open->where(function (Builder $query) use ($search) {
+                $query->where('invoice_number', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('student', fn (Builder $studentQuery) => $this->searchStudents($studentQuery, $search));
+            });
+        }
+
+        $openCount = (clone $open)->count();
+        $openInvoices = $open->with(['student.applicant'])
             ->orderByDesc('issue_date')
-            ->limit(100)
+            ->limit(200)
             ->get();
 
         $paymentAccounts = ChartOfAccount::query()
@@ -58,9 +74,26 @@ class PaymentController extends Controller
         return view('finance.payments.create', [
             'invoice' => $invoice,
             'openInvoices' => $openInvoices,
+            'openCount' => $openCount,
+            'search' => $search,
             'paymentMethods' => config('finance.payment_methods'),
             'paymentAccounts' => $paymentAccounts,
         ]);
+    }
+
+    /** Name, registration number or programme, the way Finance searches a student elsewhere. */
+    private function searchStudents(Builder $query, string $search): void
+    {
+        $query->where(function (Builder $inner) use ($search) {
+            $inner->where('registration_number', 'like', "%{$search}%")
+                ->orWhere('first_name', 'like', "%{$search}%")
+                ->orWhere('surname', 'like', "%{$search}%")
+                ->orWhereHas('applicant', function (Builder $applicantQuery) use ($search) {
+                    $applicantQuery->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('surname', 'like', "%{$search}%")
+                        ->orWhere('application_number', 'like', "%{$search}%");
+                });
+        });
     }
 
     public function store(Request $request): RedirectResponse

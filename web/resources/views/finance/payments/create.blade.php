@@ -15,6 +15,13 @@
         </div>
     @endif
 
+    <form method="get" action="{{ route('finance.payments.create') }}" class="tich-live-filter-bar" style="margin:0 0 1rem;">
+        @include('partials.search-field', [
+            'placeholder' => 'Find the bill by student name, registration number or invoice number…',
+            'value' => $search,
+        ])
+    </form>
+
     <div class="uf-form">
         <form method="POST" action="{{ route('finance.payments.store') }}" data-uf="ready">
             @csrf
@@ -42,10 +49,15 @@
                                 <option value="">Select invoice</option>
                                 @foreach ($openInvoices as $openInvoice)
                                     <option value="{{ $openInvoice->id }}" @selected(old('invoice_id', $invoice?->id) == $openInvoice->id)>
-                                        {{ $openInvoice->invoice_number }} - {{ $openInvoice->student?->displayName() }} - Balance KES {{ number_format((float) $openInvoice->balance, 2) }}
+                                        {{ $openInvoice->invoice_number }} - {{ $openInvoice->student?->displayName() }} - Balance KES {{ number_format((float) $openInvoice->balance, 2) }} - {{ ($openInvoice->issue_date?->format('d M Y')) ?? 'undated' }}
                                     </option>
                                 @endforeach
                             </select>
+                            <span class="uf-hint">
+                                {{ number_format((int) $openCount) }} {{ 1 === (int) $openCount ? 'bill is' : 'bills are' }} still owing.
+                                {{ count($openInvoices) < (int) $openCount ? 'This list shows the newest '.count($openInvoices).' — search above for the student or bill you need.' : '' }}
+                                {{ '' !== $search ? 'Filtered by "'.$search.'".' : '' }}
+                            </span>
                             @error('invoice_id')
                                 <span class="uf-error">{{ $message }}</span>
                             @enderror
