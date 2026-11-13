@@ -19,15 +19,20 @@
         </article>
     </div>
 
-    <form method="get" class="tich-flex tich-mt-6 tich-mb-4" style="gap:0.5rem; flex-wrap:wrap;">
-        <select name="status" class="tich-input" style="width:auto;">
-            <option value="pending" @selected('pending' === $status)>Awaiting a decision</option>
-            <option value="approved" @selected('approved' === $status)>Approved</option>
-            <option value="rejected" @selected('rejected' === $status)>Rejected</option>
-            <option value="all" @selected('all' === $status)>All waivers</option>
-        </select>
-        <button type="submit" class="tich-btn tich-btn-secondary">Filter</button>
-    </form>
+    @php
+        $tabs = [
+            'pending' => 'Awaiting a decision',
+            'approved' => 'Approved',
+            'rejected' => 'Rejected',
+            'all' => 'All waivers',
+        ];
+    @endphp
+    <nav class="tich-tabs__nav tich-mt-6" aria-label="Waiver status">
+        @foreach ($tabs as $key => $label)
+            <a href="{{ route('ceo.waivers.index', ['status' => $key]) }}"
+                class="tich-tabs__btn @if ($status === $key) is-active @endif">{{ $label }} ({{ number_format((int) ($counts[$key] ?? 0)) }})</a>
+        @endforeach
+    </nav>
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">
@@ -70,7 +75,9 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="tich-table-empty">No waivers in this queue.</td>
+                            <td colspan="7" class="tich-table-empty">
+                                {{ 'all' === $status ? 'No waiver, scholarship or bursary has been raised yet.' : 'Nothing '.ucfirst($status).' so far.' }}
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>

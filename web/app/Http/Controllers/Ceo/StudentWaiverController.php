@@ -21,6 +21,9 @@ class StudentWaiverController extends Controller
     public function index(Request $request): View
     {
         $status = $request->string('status')->toString() ?: 'pending';
+        if (! in_array($status, ['pending', 'approved', 'rejected', 'all'], true)) {
+            $status = 'pending';
+        }
 
         $adjustments = FinancialAdjustment::query()
             ->with(['student', 'requestedBy', 'approvedBy'])
@@ -29,11 +32,23 @@ class StudentWaiverController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $byStatus = FinancialAdjustment::query()
+            ->selectRaw('status, count(*) as record_count, sum(amount) as value')
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status');
+
+        $countOf = fn (string $key): int => 'all' === $key
+            ? (int) $byStatus->sum('record_count')
+            : (int) ($byStatus[$key]->record_count ?? 0);
+        $pending = $countOf('pending');
+
         return view('ceo.waivers.index', [
             'adjustments' => $adjustments,
             'status' => $status,
-            'pending' => FinancialAdjustment::query()->where('status', 'pending')->count(),
-            'pendingValue' => (float) FinancialAdjustment::query()->where('status', 'pending')->sum('amount'),
+            'pending' => $pending,
+            'pendingValue' => (float) ($byStatus['pending']->value ?? 0),
+            'counts' => ['pending' => $pending, 'approved' => $countOf('approved'), 'rejected' => $countOf('rejected'), 'all' => $countOf('all')],
         ]);
     }
 
