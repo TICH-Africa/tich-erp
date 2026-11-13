@@ -64,13 +64,56 @@ class InvoiceController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $request->validate(['student_id' => 'required|exists:students,id']);
+        $request->validate([
+            'student_ids' => 'required|array|min:1',
+            'student_ids.*' => 'integer|exists:students,id',
+        ]);
         $validated = $this->billData($request);
 
-        $student = Student::query()->findOrFail($validated['student_id']);
-        $invoice = $this->issueBill($student, $validated, $this->recordingStaffId($request));
+        $staffId = $this->recordingStaffId($request);
+        $students = Student::query()
+            ->whereIn('id', collect($request->input('student_ids'))->map(fn ($id) => (int) $id)->unique())
+            ->orderBy('registration_number')
+            ->get();
 
-        return redirect()->route('finance.invoices.show', $invoice)->with('success', $this->successMessage($invoice));
+        // Anything raised here takes a new invoice id, so the first free id tells a
+        // fresh bill from the open one the duplicate guard hands back.
+        $firstNewId = (int) Invoice::query()->max('id') + 1;
+        $raised = 0;
+        $existing = 0;
+        $deducted = 0.0;
+        $last = null;
+
+        foreach ($students as $student) {
+            $invoice = $this->issueBill($student, $validated, $staffId);
+            $last = $invoice;
+            if ((int) $invoice->id >= $firstNewId) {
+                $raised++;
+            } else {
+                $existing++;
+            }
+            $deducted += (float) $invoice->amount_paid;
+        }
+
+        if (0 === $raised) {
+            // Nothing was written, so the banner must not claim a bill was created.
+            return redirect()->route('finance.invoices.index')
+                ->with('error', 'Those students already have this bill open, so nothing new was raised.');
+        }
+
+        if (1 === $students->count()) {
+            return redirect()->route('finance.invoices.show', $last)->with('success', $this->successMessage($last));
+        }
+
+        $message = 'Invoices raised for '.$raised.' students.';
+        if ($existing > 0) {
+            $message .= ' '.$existing.' already had this bill open and were left alone.';
+        }
+        if ($deducted > 0) {
+            $message .= ' KES '.number_format($deducted, 2).' of excess payments was deducted first.';
+        }
+
+        return redirect()->route('finance.invoices.index')->with('success', $message);
     }
 
     /**

@@ -567,8 +567,8 @@ class StudentFinanceController extends Controller
         // The picker labels students by name, so the name columns have to come back
         // with the record or the list falls back to showing the ID twice.
         $students = Student::query()
-            ->select('id', 'first_name', 'middle_name', 'surname', 'registration_number', 'application_id')
-            ->with(['applicant:id,first_name,middle_name,surname'])
+            ->select('id', 'first_name', 'middle_name', 'surname', 'registration_number', 'application_id', 'program_id')
+            ->with(['applicant:id,first_name,middle_name,surname', 'program:id,program_name'])
             ->orderBy('registration_number')
             ->get();
 
@@ -594,16 +594,47 @@ class StudentFinanceController extends Controller
 
     public function invoiceStore(Request $request, Department $department)
     {
-        $validated = $request->validate($this->billRules() + ['student_id' => 'required|exists:students,id']);
+        $validated = $request->validate($this->billRules() + [
+            'student_ids' => 'required|array|min:1',
+            'student_ids.*' => 'integer|exists:students,id',
+        ]);
 
-        $student = Student::findOrFail($validated['student_id']);
-        $invoice = $this->issueBill($student, $validated, $this->recordingStaffId($request));
+        $staffId = $this->recordingStaffId($request);
+        $students = Student::query()
+            ->whereIn('id', collect($validated['student_ids'])->map(fn ($id) => (int) $id)->unique())
+            ->orderBy('registration_number')
+            ->get();
 
-        $message = 'Invoice created and posted to the ledger.';
-        if ((float) $invoice->amount_paid > 0) {
-            $message = 'Invoice created. KES '.number_format((float) $invoice->amount_paid, 2)
-                .' of the student\'s excess payment was deducted, leaving KES '
-                .number_format((float) $invoice->balance, 2).' to pay.';
+        // A fresh bill takes a new invoice id, so the first free id separates it from
+        // the open one the duplicate guard hands back.
+        $firstNewId = (int) Invoice::query()->max('id') + 1;
+        $raised = 0;
+        $existing = 0;
+        $deducted = 0.0;
+
+        foreach ($students as $student) {
+            $invoice = $this->issueBill($student, $validated, $staffId);
+            if ((int) $invoice->id >= $firstNewId) {
+                $raised++;
+            } else {
+                $existing++;
+            }
+            $deducted += (float) $invoice->amount_paid;
+        }
+
+        if (0 === $raised) {
+            // Nothing was written, so the banner must not claim a bill was created.
+            return redirect()->route('finance.student-finance.invoices.index')
+                ->with('error', 'Every one of those students already has this bill open, so nothing new was raised.');
+        }
+
+        $message = 1 === $raised ? 'Invoice created and posted to the ledger.'
+            : 'Invoices created and posted to the ledger for '.$raised.' students.';
+        if ($existing > 0) {
+            $message .= ' '.$existing.' already had this bill open and were left alone.';
+        }
+        if ($deducted > 0) {
+            $message .= ' KES '.number_format($deducted, 2).' of excess payments was deducted first.';
         }
 
         return redirect()->route('finance.student-finance.invoices.index')->with('success', $message);

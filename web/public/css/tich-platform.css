@@ -13789,6 +13789,109 @@ form > article.tich-card > .tich-mt-6:last-child {
     color: var(--uf-req, #c62828);
 }
 
+/* Student picker: tick the students one bill applies to. */
+.uf-students__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.uf-students__count {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--uf-focus, #1565c0);
+}
+
+.uf-students__search {
+    margin-top: 0.375rem;
+}
+
+.uf-students__tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.uf-students__tool {
+    font: inherit;
+    font-size: 0.78rem;
+    color: var(--uf-text, #1a1d21);
+    background: transparent;
+    border: 1px solid var(--uf-border, #d7dde6);
+    border-radius: 4px;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+}
+
+.uf-students__list {
+    max-height: 15rem;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+    border: 1px solid var(--uf-border, #d7dde6);
+    border-radius: 6px;
+    background: var(--uf-input-bg, #ffffff);
+}
+
+.uf-students__row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.65rem;
+    border-bottom: 1px solid var(--uf-border, #eef1f5);
+    cursor: pointer;
+}
+
+.uf-students__row:last-child {
+    border-bottom: 0;
+}
+
+.uf-students__row:hover {
+    background: var(--uf-input-fill, #f0f2f5);
+}
+
+.uf-students__row input[type="checkbox"] {
+    width: auto;
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.uf-students__name {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.uf-students__meta,
+.uf-students__credit {
+    font-size: 0.75rem;
+    opacity: 0.72;
+}
+
+.uf-students__credit {
+    margin-left: auto;
+    color: #1565c0;
+    opacity: 1;
+}
+
+.uf-students__empty {
+    margin: 0;
+    padding: 0.75rem;
+    font-size: 0.82rem;
+    opacity: 0.72;
+}
+
+@media (max-width: 640px) {
+    .uf-students__row {
+        flex-wrap: wrap;
+    }
+
+    .uf-students__credit {
+        margin-left: 1.4rem;
+        flex-basis: 100%;
+    }
+}
+
 .uf-form-grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;

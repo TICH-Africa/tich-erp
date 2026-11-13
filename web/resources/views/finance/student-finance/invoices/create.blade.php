@@ -24,34 +24,9 @@
             <div class="uf-form-section">
                 <div class="uf-section-head">Student &amp; Fee Structure</div>
                 <div class="uf-section-body">
+                    @include('finance.partials.student-picker')
+
                     <div class="uf-form-grid-2">
-                        <div class="uf-field">
-                            <label for="student_id">Student <span class="uf-req">*</span></label>
-                            <select
-                                id="student_id"
-                                name="student_id"
-                                required
-                                class="tich-select {{ $errors->has('student_id') ? 'is-invalid' : '' }}"
-                                data-tich-search="true"
-                                data-tich-search-placeholder="Search by name or student ID…"
-                            >
-                                <option value="">Select student</option>
-                                @foreach ($students as $student)
-                                    @php($reg = trim((string) $student->registration_number))
-                                    <option
-                                        value="{{ $student->id }}"
-                                        data-credit="{{ (float) ($studentCredits[$student->id] ?? 0) }}"
-                                        @selected(old('student_id') == $student->id)
-                                    >
-                                        {{ $reg }}{{ $student->displayName() !== $reg ? ' - '.$student->displayName() : '' }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('student_id')
-                                <span class="uf-error">{{ $message }}</span>
-                            @enderror
-                            <span class="uf-hint" id="student-credit-note" hidden></span>
-                        </div>
                         <div class="uf-field">
                             <label for="fee_structure_id">Fee structure</label>
                             <select
@@ -140,7 +115,7 @@
                 <div class="uf-section-body">
                     <input type="hidden" name="bulk_after_id" value="{{ (int) request('bulk_after_id') }}">
                     <div class="uf-form-actions">
-                        <button type="submit" class="uf-btn uf-btn-primary">Create invoice</button>
+                        <button type="submit" class="uf-btn uf-btn-primary">Create invoices</button>
                         <button
                             type="submit"
                             id="bill-all-students"
@@ -184,33 +159,10 @@
             feeSelect?.addEventListener('change', syncAmountField);
             syncAmountField();
 
-            var studentSelect = document.getElementById('student_id');
-            var creditNote = document.getElementById('student-credit-note');
-
-            function syncCreditNote() {
-                var option = studentSelect ? studentSelect.selectedOptions[0] : null;
-                var credit = parseFloat(option ? option.dataset.credit : '0') || 0;
-                creditNote.hidden = credit <= 0;
-                if (credit > 0) {
-                    creditNote.textContent = 'Excess payment on file: KES ' + credit.toFixed(2)
-                        + '. It comes off this invoice before the student pays again.';
-                }
-            }
-
-            studentSelect?.addEventListener('change', syncCreditNote);
-            syncCreditNote();
-
             var billAll = document.getElementById('bill-all-students');
             billAll?.addEventListener('click', function (event) {
                 if (! window.confirm('Raise this bill for every active student, each with their own invoice?')) {
                     event.preventDefault();
-
-                    return;
-                }
-
-                // The batch ignores the picker, so it must not block the submit.
-                if (studentSelect) {
-                    studentSelect.required = false;
                 }
             });
         })();

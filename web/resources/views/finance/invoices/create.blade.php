@@ -24,34 +24,9 @@
             <div class="uf-form-section">
                 <div class="uf-section-head">Student &amp; Fee Structure</div>
                 <div class="uf-section-body">
+                    @include('finance.partials.student-picker')
+
                     <div class="uf-form-grid-2">
-                        <div class="uf-field">
-                            <label for="student_id">Student <span class="uf-req">*</span></label>
-                            <select
-                                id="student_id"
-                                name="student_id"
-                                required
-                                class="tich-select {{ $errors->has('student_id') ? 'is-invalid' : '' }}"
-                                data-tich-search="true"
-                                data-tich-search-placeholder="Search by name or student ID…"
-                            >
-                                <option value="">Select student</option>
-                                @foreach ($students as $student)
-                                    @php($reg = trim((string) $student->registration_number))
-                                    <option
-                                        value="{{ $student->id }}"
-                                        data-credit="{{ (float) ($studentCredits[$student->id] ?? 0) }}"
-                                        @selected(old('student_id', request('student_id')) == $student->id)
-                                    >
-                                        {{ $reg }}{{ $student->displayName() !== $reg ? ' - '.$student->displayName() : '' }} ({{ $student->program?->program_name }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('student_id')
-                                <span class="uf-error">{{ $message }}</span>
-                            @enderror
-                            <span class="uf-hint" id="student-credit-note" hidden></span>
-                        </div>
                         <div class="uf-field">
                             <label for="fee_structure_id">From approved fee structure</label>
                             <select
@@ -190,18 +165,6 @@
             const optionalRow = document.getElementById('include-optional-row');
             const manualFields = document.getElementById('manual-invoice-fields');
             const chargeSelect = document.getElementById('fee_structure_charge');
-            const studentSelect = document.getElementById('student_id');
-            const creditNote = document.getElementById('student-credit-note');
-
-            function syncCredit() {
-                const option = studentSelect.selectedOptions[0];
-                const credit = parseFloat(option ? option.dataset.credit : '0') || 0;
-                creditNote.hidden = credit <= 0;
-                if (credit > 0) {
-                    creditNote.textContent = 'Excess payment on file: KES ' + credit.toFixed(2)
-                        + '. It comes off this invoice before the student pays again.';
-                }
-            }
 
             function sync() {
                 const fromStructure = feeSelect.value !== '';
@@ -217,19 +180,11 @@
             chargeSelect.addEventListener('change', sync);
             sync();
 
-            studentSelect.addEventListener('change', syncCredit);
-            syncCredit();
-
             const billAll = document.getElementById('bill-all-students');
             billAll?.addEventListener('click', function (event) {
                 if (! window.confirm('Raise this bill for every active student, each with their own invoice?')) {
                     event.preventDefault();
-
-                    return;
                 }
-
-                // The batch ignores the picker, so it must not block the submit.
-                studentSelect.required = false;
             });
         })();
     </script>
