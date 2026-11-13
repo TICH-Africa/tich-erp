@@ -68,7 +68,12 @@
                                 var message = data.message || 'Could not save changes.';
 
                                 if (data.errors) {
-                                    message = 'Could not save. Check entered values.';
+                                    var fields = Object.keys(data.errors);
+                                    var first = data.errors[fields[0]];
+
+                                    message = data.message
+                                        || (Array.isArray(first) ? first[0] : String(first))
+                                        || 'Could not save. Check entered values.';
                                 }
 
                                 throw new Error(message);

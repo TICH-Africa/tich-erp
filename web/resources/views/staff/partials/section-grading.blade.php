@@ -139,7 +139,7 @@
             <article class="tich-card">
                 <h2 class="tich-h3">{{ $allocation->unit?->unit_code }} - exam marks</h2>
                 <div class="tich-form-toolbar tich-mt-2">
-                    <p class="tich-caption">Enter final exam scores (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). CAT, practical, and attendance averages are pulled from the marks already entered - an exam mark can be recorded here whether or not the tutor has entered theirs. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
+                    <p class="tich-caption">Enter final exam scores (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). The CAT, practical and attendance averages come from the marks already entered - type your own figure into any of them and the final grade follows what you typed, for example when the CATs or attendance were taken on paper. Leave a box empty to keep the figure the system worked out, shown greyed in the box. An exam mark can be recorded here whether or not the tutor has entered theirs. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
                     <span class="tich-autosave-status" data-autosave-status="grading-exams" data-state="idle" aria-live="polite">Changes save automatically</span>
                 </div>
 
@@ -168,9 +168,39 @@
                                     <tr>
                                         <td>{{ $row['registration_number'] }}</td>
                                         <td>{{ $row['student_name'] }}</td>
-                                        <td>{{ number_format($row['cat_total'], 1) }}</td>
-                                        <td>{{ number_format($row['practical_total'], 1) }}</td>
-                                        <td>{{ number_format($row['attendance_pct'], 1) }}</td>
+                                        <td>
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   max="100"
+                                                   name="cat_averages[{{ $row['student_id'] }}]"
+                                                   value="{{ $row['cat_entered'] ? $row['cat_total'] : '' }}"
+                                                   class="tich-input"
+                                                   style="width:5.5rem;"
+                                                   placeholder="{{ number_format($row['cat_total'], 1) }}">
+                                        </td>
+                                        <td>
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   max="100"
+                                                   name="practical_averages[{{ $row['student_id'] }}]"
+                                                   value="{{ $row['practical_entered'] ? $row['practical_total'] : '' }}"
+                                                   class="tich-input"
+                                                   style="width:5.5rem;"
+                                                   placeholder="{{ number_format($row['practical_total'], 1) }}">
+                                        </td>
+                                        <td>
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   max="100"
+                                                   name="attendance_percents[{{ $row['student_id'] }}]"
+                                                   value="{{ $row['attendance_entered'] ? $row['attendance_pct'] : '' }}"
+                                                   class="tich-input"
+                                                   style="width:5.5rem;"
+                                                   placeholder="{{ number_format($row['attendance_pct'], 1) }}">
+                                        </td>
                                         <td>{{ number_format($row['continuous_total'], 1) }}</td>
                                         <td>
                                             <input type="number"

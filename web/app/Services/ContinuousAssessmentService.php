@@ -410,6 +410,30 @@ class ContinuousAssessmentService
     }
 
     /**
+     * The continuous score from three figures the lecturer stands by, instead of the ones
+     * the system captured. Same weighting, so a typed average and a recorded CAT average
+     * carry the same weight on the final grade.
+     */
+    public function cumulativeFrom(
+        float $catAvg,
+        float $practicalAvg,
+        float $attendancePct,
+        ?Unit $unit,
+    ): float {
+        $weights = $this->weightProfile($unit);
+        $continuousWeight = $weights['cat'] + $weights['practical'] + $weights['attendance'];
+
+        if ($continuousWeight <= 0) {
+            return 0.0;
+        }
+
+        return round(
+            (($catAvg * $weights['cat']) + ($practicalAvg * $weights['practical']) + ($attendancePct * $weights['attendance'])) / $continuousWeight,
+            2
+        );
+    }
+
+    /**
      * The mark a student needs on this unit. An officer can set it on the unit itself; until they
      * do, the unit grades on the mark its programme carries.
      *

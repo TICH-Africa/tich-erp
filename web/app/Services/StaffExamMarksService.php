@@ -3,11 +3,12 @@
 namespace App\Services;
 
 use App\Models\Staff;
+use App\Models\Student;
 use App\Models\UnitAllocation;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class StaffExamMarksService
 {
@@ -52,21 +53,30 @@ class StaffExamMarksService
             $continuous = $this->assessments->continuousBreakdown($studentId, $allocation);
             $result = $existing->get($studentId);
 
+            // What the lecturer typed stands; otherwise the marks the system holds.
+            $catAvg = $this->standingOr($result?->cat_avg_entry, $continuous['cat_avg']);
+            $practicalAvg = $this->standingOr($result?->practical_avg_entry, $continuous['practical_avg']);
+            $attendancePct = $this->standingOr($result?->attendance_pct_entry, $continuous['attendance_pct']);
+            $cumulative = $this->assessments->cumulativeFrom($catAvg, $practicalAvg, $attendancePct, $allocation->unit);
+
             $examScore = $result ? (float) $result->final_exam_score : null;
             $finalTotal = $result
                 ? (float) $result->final_total_score
                 : ($examScore !== null
-                    ? $this->assessments->finalScoreWithExam($continuous['cumulative'], $examScore, $allocation->unit)
+                    ? $this->assessments->finalScoreWithExam($cumulative, $examScore, $allocation->unit)
                     : null);
 
             $rows[] = [
                 'student_id' => $studentId,
                 'registration_number' => $student->registration_number,
                 'student_name' => trim($student->student_name),
-                'cat_total' => $continuous['cat_avg'],
-                'practical_total' => $continuous['practical_avg'],
-                'attendance_pct' => $continuous['attendance_pct'],
-                'continuous_total' => $continuous['cumulative'],
+                'cat_total' => $catAvg,
+                'practical_total' => $practicalAvg,
+                'attendance_pct' => $attendancePct,
+                'continuous_total' => $cumulative,
+                'cat_entered' => $result !== null && $result->cat_avg_entry !== null,
+                'practical_entered' => $result !== null && $result->practical_avg_entry !== null,
+                'attendance_entered' => $result !== null && $result->attendance_pct_entry !== null,
                 'exam_score' => $examScore,
                 'final_total' => $finalTotal,
                 'grade_letter' => $result?->grade_letter
@@ -84,36 +94,85 @@ class StaffExamMarksService
 
     /**
      * @param  array<int, mixed>  $examScores
+     * @param  array<string, array<int, mixed>>  $continuous  typed cat, practical and attendance averages
      */
-    public function save(UnitAllocation $allocation, Staff $staff, array $examScores, float $examMax = 100): void
-    {
+    public function save(
+        UnitAllocation $allocation,
+        Staff $staff,
+        array $examScores,
+        float $examMax = 100,
+        array $continuous = [],
+    ): void {
         abort_unless($this->dashboard->canMarkUnit($staff, $allocation), 403);
 
+        $entries = [
+            'cat' => $continuous['cat'] ?? [],
+            'practical' => $continuous['practical'] ?? [],
+            'attendance' => $continuous['attendance'] ?? [],
+        ];
+
+        $filled = fn (array $values) => collect($values)
+            ->filter(fn ($raw) => $raw !== null && $raw !== '')
+            ->keys()
+            ->map(fn ($id) => (int) $id);
+
+        $studentIds = $filled($examScores)
+            ->merge($filled($entries['cat']))
+            ->merge($filled($entries['practical']))
+            ->merge($filled($entries['attendance']))
+            ->unique();
+
         // Own unit is not enough: a lecturer marks the students registered on it, nobody else's.
-        $this->dashboard->assertStudentsAreOnRoll(
-            $allocation,
-            collect($examScores)->filter(fn ($raw) => $raw !== null && $raw !== '')->keys(),
-        );
+        $this->dashboard->assertStudentsAreOnRoll($allocation, $studentIds);
 
         $examMax = max(1, $examMax);
         $passMark = $this->passMarkForAllocation($allocation);
         $saved = 0;
 
-        foreach ($examScores as $studentId => $raw) {
-            if ($raw === null || $raw === '') {
+        $existing = DB::table('exam_results')
+            ->where('unit_id', $allocation->unit_id)
+            ->where('semester_id', $allocation->semester_id)
+            ->where('is_supplementary', 0)
+            ->whereIn('student_id', $studentIds)
+            ->get()
+            ->keyBy('student_id');
+
+        // A typed average is part of a sitting, so it cannot stand on its own: without an
+        // exam mark there is no sitting to attach it to, and inventing one would publish a
+        // grade for a student who has not been marked.
+        $unattached = $studentIds->filter(function (int $studentId) use ($examScores, $existing) {
+            $exam = $examScores[$studentId] ?? null;
+
+            return ($exam === null || $exam === '') && ! $existing->has($studentId);
+        });
+
+        if ($unattached->isNotEmpty()) {
+            $names = Student::query()->whereIn('id', $unattached)->pluck('registration_number')->take(5)->implode(', ');
+
+            throw ValidationException::withMessages([
+                'exam_scores' => 'Enter the exam mark for '.$names.' too. A CAT, practical or attendance average is saved with the sitting, never on its own.',
+            ]);
+        }
+
+        foreach ($studentIds as $studentId) {
+            $studentId = (int) $studentId;
+            $result = $existing->get($studentId);
+            $rawExam = $examScores[$studentId] ?? null;
+            $examScore = ($rawExam === null || $rawExam === '')
+                ? ($result ? (float) $result->final_exam_score : null)
+                : min(max(0, (float) $rawExam), $examMax);
+
+            if ($examScore === null) {
                 continue;
             }
 
-            $studentId = (int) $studentId;
-            $examScore = min(max(0, (float) $raw), $examMax);
-            $continuous = $this->assessments->continuousBreakdown($studentId, $allocation);
-            $catTotal = $continuous['cat_avg'];
-            $practicalTotal = $continuous['practical_avg'];
-            $finalTotal = $this->assessments->finalScoreWithExam(
-                $continuous['cumulative'],
-                $examScore,
-                $allocation->unit,
-            );
+            $derived = $this->assessments->continuousBreakdown($studentId, $allocation);
+            $catTotal = $this->standingOr($entries['cat'][$studentId] ?? null, $derived['cat_avg']);
+            $practicalTotal = $this->standingOr($entries['practical'][$studentId] ?? null, $derived['practical_avg']);
+            $attendancePct = $this->standingOr($entries['attendance'][$studentId] ?? null, $derived['attendance_pct']);
+            $cumulative = $this->assessments->cumulativeFrom($catTotal, $practicalTotal, $attendancePct, $allocation->unit);
+
+            $finalTotal = $this->assessments->finalScoreWithExam($cumulative, $examScore, $allocation->unit);
             $gradeLetter = $this->assessments->gradeLetterForScore($finalTotal, $passMark);
             $examCardId = $this->ensureExamCard($studentId, (int) $allocation->semester_id);
 
@@ -128,6 +187,9 @@ class StaffExamMarksService
                 'exam_card_id' => $examCardId,
                 'cat_total' => $catTotal,
                 'practical_total' => $practicalTotal,
+                'cat_avg_entry' => $this->entryOrNull($entries['cat'][$studentId] ?? null),
+                'practical_avg_entry' => $this->entryOrNull($entries['practical'][$studentId] ?? null),
+                'attendance_pct_entry' => $this->entryOrNull($entries['attendance'][$studentId] ?? null),
                 'final_exam_score' => $examScore,
                 'final_total_score' => $finalTotal,
                 'grade_letter' => $gradeLetter,
@@ -136,7 +198,7 @@ class StaffExamMarksService
                 'updated_at' => now(),
             ];
 
-            if (DB::table('exam_results')->where($match)->exists()) {
+            if ($result) {
                 DB::table('exam_results')->where($match)->update($payload);
             } else {
                 DB::table('exam_results')->insert([
@@ -153,7 +215,7 @@ class StaffExamMarksService
                 (int) $allocation->unit_id,
                 (int) $allocation->semester_id,
                 $allocation->unit,
-                $continuous['cumulative'],
+                $cumulative,
                 $passMark,
             );
 
@@ -201,6 +263,17 @@ class StaffExamMarksService
     private function passMarkForAllocation(UnitAllocation $allocation): float
     {
         return $this->assessments->passMarkForUnit($allocation->unit);
+    }
+
+    /** A figure the lecturer typed, or the one the system worked out. */
+    private function standingOr(mixed $entry, float $derived): float
+    {
+        return $this->entryOrNull($entry) ?? round($derived, 2);
+    }
+
+    private function entryOrNull(mixed $entry): ?float
+    {
+        return $entry === null || $entry === '' ? null : round((float) $entry, 2);
     }
 
     private function gradePoints(string $letter): float

@@ -24,6 +24,7 @@ use App\Services\UnitLearningContentNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StaffPortalActionController extends Controller
@@ -365,18 +366,54 @@ class StaffPortalActionController extends Controller
         $staff = $this->portalService->staffForUser($request->user());
         $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
 
+        $averageLabels = [
+            'cat_averages' => 'A CAT average',
+            'practical_averages' => 'A practical average',
+            'attendance_percents' => 'An attendance percentage',
+        ];
+        $averageMessages = [];
+        foreach ($averageLabels as $field => $label) {
+            foreach (['numeric', 'min', 'max'] as $rule) {
+                $averageMessages["{$field}.*.{$rule}"] = "{$label} must be a number between 0 and 100.";
+            }
+        }
+
         $validated = $request->validate([
             'allocation_id' => ['required', 'integer'],
             'exam_max' => ['nullable', 'numeric', 'min:1', 'max:100'],
             'exam_scores' => ['nullable', 'array'],
-        ]);
+            'cat_averages' => ['nullable', 'array'],
+            'cat_averages.*' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'practical_averages' => ['nullable', 'array'],
+            'practical_averages.*' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'attendance_percents' => ['nullable', 'array'],
+            'attendance_percents.*' => ['nullable', 'numeric', 'min:0', 'max:100'],
+        ], $averageMessages);
 
-        $this->examMarks->save(
-            $allocation,
-            $staff,
-            $validated['exam_scores'] ?? [],
-            (float) ($validated['exam_max'] ?? 100),
-        );
+        try {
+            $this->examMarks->save(
+                $allocation,
+                $staff,
+                $validated['exam_scores'] ?? [],
+                (float) ($validated['exam_max'] ?? 100),
+                [
+                    'cat' => $validated['cat_averages'] ?? [],
+                    'practical' => $validated['practical_averages'] ?? [],
+                    'attendance' => $validated['attendance_percents'] ?? [],
+                ],
+            );
+        } catch (ValidationException $exception) {
+            // The autosave strip only shows a plain message, so hand it the reason
+            // rather than Laravel's generic "The given data was invalid.".
+            if (! $this->isAutosaveRequest($request)) {
+                throw $exception;
+            }
+
+            return response()->json([
+                'ok' => false,
+                'message' => collect($exception->errors())->flatten()->first() ?? 'Could not save the marks.',
+            ], 422);
+        }
 
         return $this->gradingSaveResponse($request, $allocation->id, 'Exam marks saved and final grades updated.');
     }

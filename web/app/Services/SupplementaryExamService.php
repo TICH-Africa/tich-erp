@@ -83,7 +83,7 @@ class SupplementaryExamService
             ->whereIn('unit_id', $unitIds)
             ->whereIn('student_id', $studentIds)
             ->where('is_supplementary', 0)
-            ->get(['student_id', 'unit_id', 'semester_id', 'final_exam_score', 'is_published'])
+            ->get(['student_id', 'unit_id', 'semester_id', 'final_exam_score', 'is_published', 'cat_avg_entry', 'practical_avg_entry', 'attendance_pct_entry'])
             ->keyBy(fn ($row) => $row->student_id.'-'.$row->unit_id.'-'.$row->semester_id);
 
         $units = Unit::query()
@@ -100,10 +100,14 @@ class SupplementaryExamService
             $unit = $units->get($row->unit_id);
             $weights = $this->assessments->weightProfile($unit);
             $passMark = $this->assessments->passMarkForUnit($unit, (float) ($passMarks[$row->program_id] ?? 40));
-            $continuous = $this->assessments->continuousBreakdownFor(
-                (int) $row->student_id,
-                (int) $row->unit_id,
-                (int) $row->semester_id,
+            $continuous = $this->applyTypedAverages(
+                $mainSittings->get($key),
+                $this->assessments->continuousBreakdownFor(
+                    (int) $row->student_id,
+                    (int) $row->unit_id,
+                    (int) $row->semester_id,
+                    $unit,
+                ),
                 $unit,
             );
 
@@ -177,25 +181,35 @@ class SupplementaryExamService
     }
 
     /**
+     * Averages the lecturer typed on the main sitting stand here too, otherwise the
+     * supplementary grade would fall back to the figures the system worked out.
+     *
+     * @param  array<string, mixed>  $continuous
+     * @return array<string, mixed>
+     */
+    private function applyTypedAverages(?object $main, array $continuous, Unit $unit): array
+    {
+        $continuous['cat_avg'] = (float) ($main?->cat_avg_entry ?? $continuous['cat_avg']);
+        $continuous['practical_avg'] = (float) ($main?->practical_avg_entry ?? $continuous['practical_avg']);
+        $continuous['attendance_pct'] = (float) ($main?->attendance_pct_entry ?? $continuous['attendance_pct']);
+        $continuous['cumulative'] = $this->assessments->cumulativeFrom(
+            $continuous['cat_avg'],
+            $continuous['practical_avg'],
+            $continuous['attendance_pct'],
+            $unit,
+        );
+
+        return $continuous;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function recordOne(User $officer, object $staff, object $record, float $examScore): array
     {
         $unit = Unit::query()->with('program')->findOrFail($record->unit_id);
-        $weights = $this->assessments->weightProfile($unit);
         $passMark = $this->assessments->passMarkForUnit($unit);
         $examScore = min(max(0, $examScore), 100);
-
-        $continuous = $this->assessments->continuousBreakdownFor(
-            (int) $record->student_id,
-            (int) $record->unit_id,
-            (int) $record->semester_id,
-            $unit,
-        );
-        $finalTotal = $this->assessments->finalScoreWithExam($continuous['cumulative'], $examScore, $unit);
-        $letter = $this->assessments->gradeLetterForScore($finalTotal, $passMark);
-        $points = $this->assessments->gradePoints($letter);
-        $passed = strtoupper($letter) !== 'F';
 
         $match = [
             'student_id' => (int) $record->student_id,
@@ -203,8 +217,25 @@ class SupplementaryExamService
             'semester_id' => (int) $record->semester_id,
         ];
 
-        $main = DB::table('exam_results')->where($match)->where('is_supplementary', 0)->first(['id', 'exam_card_id', 'is_published']);
+        $main = DB::table('exam_results')->where($match)->where('is_supplementary', 0)
+            ->first(['id', 'exam_card_id', 'is_published', 'cat_avg_entry', 'practical_avg_entry', 'attendance_pct_entry']);
         $examCardId = (int) ($main?->exam_card_id ?? $this->marks->ensureExamCard((int) $record->student_id, (int) $record->semester_id));
+
+        $continuous = $this->applyTypedAverages(
+            $main,
+            $this->assessments->continuousBreakdownFor(
+                (int) $record->student_id,
+                (int) $record->unit_id,
+                (int) $record->semester_id,
+                $unit,
+            ),
+            $unit,
+        );
+
+        $finalTotal = $this->assessments->finalScoreWithExam($continuous['cumulative'], $examScore, $unit);
+        $letter = $this->assessments->gradeLetterForScore($finalTotal, $passMark);
+        $points = $this->assessments->gradePoints($letter);
+        $passed = strtoupper($letter) !== 'F';
 
         $payload = [
             'exam_card_id' => $examCardId,
