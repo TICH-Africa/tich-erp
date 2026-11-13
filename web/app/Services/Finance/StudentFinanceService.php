@@ -145,6 +145,30 @@ class StudentFinanceService
         }, 3);
     }
 
+    public function rejectAdjustment(FinancialAdjustment $adjustment, int $rejectedBy): FinancialAdjustment
+    {
+        return DB::transaction(function () use ($adjustment, $rejectedBy) {
+            /** @var FinancialAdjustment $adjustment */
+            $adjustment = FinancialAdjustment::query()->whereKey($adjustment->id)->lockForUpdate()->firstOrFail();
+
+            if ($adjustment->status !== 'pending') {
+                return $adjustment;
+            }
+
+            $adjustment->update([
+                'status' => 'rejected',
+                'approved_by' => $rejectedBy,
+                'approved_at' => now(),
+            ]);
+
+            if ($adjustment->studentAccount) {
+                $this->recalculateAccount($adjustment->studentAccount);
+            }
+
+            return $adjustment->fresh();
+        }, 3);
+    }
+
     public function autoGenerateInstallmentPlan($payment, int $recordedByStaffId): ?InstallmentPlan
     {
         $invoice = $payment->invoice;

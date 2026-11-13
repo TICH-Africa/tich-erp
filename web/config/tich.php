@@ -80,6 +80,7 @@ return [
         'finance.fee_structures.manage' => 'finance_manage_fee_structures_manage',
         'finance.invoices.manage' => 'finance_manage_invoices_manage',
         'finance.payments.manage' => 'finance_manage_payments_manage',
+        'finance.adjustments.manage' => 'finance_manage_student_accounts_approve',
         'finance.ledger.view' => 'finance_manage_chart_of_accounts_view',
         'finance.chart_of_accounts.manage' => 'finance_manage_chart_of_accounts_manage',
         'site_settings.read' => 'site_settings_manage_settings_view',

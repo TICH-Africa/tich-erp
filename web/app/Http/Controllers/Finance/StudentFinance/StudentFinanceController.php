@@ -1137,7 +1137,7 @@ class StudentFinanceController extends Controller
         ]);
 
         $student = \App\Models\Student::findOrFail($validated['student_id']);
-        $requestedBy = (int) $request->user()->id;
+        $requestedBy = $this->adjustmentStaffId($request);
 
         SafeWrite::transaction(function () use ($validated, $student, $requestedBy) {
             $account = StudentAccount::where('student_id', $student->id)->lockForUpdate()->first();
@@ -1722,13 +1722,60 @@ class StudentFinanceController extends Controller
 
     public function adjustmentApprove(Request $request, int $id, Department $department)
     {
-        $adjustment = Schema::hasTable('financial_adjustments') && FinancialAdjustment::count() > 0
-            ? FinancialAdjustment::findOrFail($id)
-            : new FinancialAdjustment(['id' => $id, 'status' => 'approved']);
+        if (! Schema::hasTable('financial_adjustments')) {
+            abort(404);
+        }
 
-        $this->financeService->approveAdjustment($adjustment, $request->user()->id);
+        $adjustment = FinancialAdjustment::query()->findOrFail($id);
+
+        if ($refusal = $this->adjustmentDecisionRefusal($request, $adjustment)) {
+            return back()->with('error', $refusal);
+        }
+
+        $this->financeService->approveAdjustment($adjustment, $this->adjustmentStaffId($request));
 
         return back()->with('success', 'Adjustment approved successfully.');
+    }
+
+    public function adjustmentReject(Request $request, int $id, Department $department)
+    {
+        if (! Schema::hasTable('financial_adjustments')) {
+            abort(404);
+        }
+
+        $adjustment = FinancialAdjustment::query()->findOrFail($id);
+
+        if ($refusal = $this->adjustmentDecisionRefusal($request, $adjustment)) {
+            return back()->with('error', $refusal);
+        }
+
+        $this->financeService->rejectAdjustment($adjustment, $this->adjustmentStaffId($request));
+
+        return back()->with('success', 'Adjustment rejected.');
+    }
+
+    /**
+     * A waiver, scholarship or bursary is decided by a Finance officer other than the
+     * one who requested it, so the requester's own request never closes itself.
+     */
+    private function adjustmentDecisionRefusal(Request $request, FinancialAdjustment $adjustment): ?string
+    {
+        if ($adjustment->status !== 'pending') {
+            return 'This adjustment was already '.ucfirst($adjustment->status).', so there is nothing left to decide.';
+        }
+
+        $deciders = [$request->user()->id, $request->user()->staff_id];
+        if (in_array((int) $adjustment->requested_by, array_filter(array_map('intval', $deciders)), true)
+            && ! app(\App\Services\RBACService::class)->isPlatformAdministrator($request->user())) {
+            return 'You requested this adjustment, so another Finance officer has to decide it.';
+        }
+
+        return null;
+    }
+
+    private function adjustmentStaffId(Request $request): int
+    {
+        return (int) ($request->user()->staff_id ?? $request->user()->id);
     }
 
     public function feeStructureShow(Request $request, int $id, Department $department): View
@@ -1842,6 +1889,9 @@ class StudentFinanceController extends Controller
 
         return $this->view($request, 'finance.student-finance.adjustments.show', $department, [
             'adjustment' => $adjustment,
+            'canDecide' => $adjustment instanceof FinancialAdjustment
+                && 'pending' === $adjustment->status
+                && $request->user()->can('finance.adjustments.manage'),
         ]);
     }
 

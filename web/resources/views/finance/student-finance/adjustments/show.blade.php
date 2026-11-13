@@ -5,6 +5,16 @@
 @section('finance-content')
     <x-page-toolbar title="Financial Adjustment" meta="Adjustment request details">
         <x-slot:actions>
+            @if ($canDecide)
+                <form method="POST" action="{{ route('finance.student-finance.adjustments.reject', ['id' => $adjustment->id]) }}" class="tich-inline" onsubmit="return confirm('Reject this {{ str_replace('_', ' ', $adjustment->adjustment_type) }}?')">
+                    @csrf
+                    <button type="submit" class="tich-btn tich-btn-danger">Reject</button>
+                </form>
+                <form method="POST" action="{{ route('finance.student-finance.adjustments.approve', ['id' => $adjustment->id]) }}" class="tich-inline" onsubmit="return confirm('Approve this {{ str_replace('_', ' ', $adjustment->adjustment_type) }} and apply it to the student account?')">
+                    @csrf
+                    <button type="submit" class="tich-btn tich-btn-success">Approve</button>
+                </form>
+            @endif
             <a href="{{ route('finance.student-finance.adjustments.index') }}" class="tich-btn tich-btn-ghost">Back</a>
         </x-slot:actions>
     </x-page-toolbar>
@@ -45,10 +55,10 @@
             <p class="tich-text"><strong>Requested By:</strong> {{ $adjustment->requestedBy?->fullName() ?? ($adjustment->requested_by ?? 'N/A') }}</p>
             <p class="tich-text"><strong>Date:</strong> {{ $adjustment->created_at?->format('d M Y') }}</p>
             @if ($adjustment->approved_by ?? null)
-                <p class="tich-text"><strong>Approved By:</strong> {{ $adjustment->approvedBy?->fullName() ?? 'N/A' }}</p>
+                <p class="tich-text"><strong>{{ 'rejected' === $adjustment->status ? 'Rejected By:' : 'Approved By:' }}</strong> {{ $adjustment->approvedBy?->fullName() ?? 'N/A' }}</p>
             @endif
             @if ($adjustment->approved_at ?? null)
-                <p class="tich-text"><strong>Approved At:</strong> {{ $adjustment->approved_at?->format('d M Y H:i') }}</p>
+                <p class="tich-text"><strong>{{ 'rejected' === $adjustment->status ? 'Rejected At:' : 'Approved At:' }}</strong> {{ $adjustment->approved_at?->format('d M Y H:i') }}</p>
             @endif
         </div>
         <div class="tich-card">
