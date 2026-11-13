@@ -23,6 +23,13 @@
             'badgeKey' => 'approvals',
         ])
         @include('partials.navigation.sidebar-link', [
+            'href' => route('ceo.waivers.index'),
+            'label' => 'Student waivers',
+            'icon' => 'file-text',
+            'active' => request()->routeIs('ceo.waivers.*'),
+            'badgeKey' => 'waivers',
+        ])
+        @include('partials.navigation.sidebar-link', [
             'href' => route('ceo.procurement.index'),
             'label' => 'Procurement',
             'icon' => 'shopping-cart',

@@ -61,6 +61,17 @@
             <a href="{{ route('ceo.academics.index') }}" class="tich-btn tich-btn-ghost">Academics hub</a>
             <a href="{{ route('ceo.quality.index') }}" class="tich-btn tich-btn-ghost">Quality reports</a>
         </div>
+
+        @if ((int) ($feeAdjustments['pending'] ?? 0) > 0)
+            <div class="ceo-dash__queue">
+                <p class="ceo-dash__queue-text">
+                    <strong>{{ number_format((int) $feeAdjustments['pending']) }}</strong>
+                    student fee waiver{{ 1 === (int) $feeAdjustments['pending'] ? '' : 's' }} awaiting your decision
+                    (KES {{ number_format((float) $feeAdjustments['pending_value'], 2) }}).
+                </p>
+                <a href="{{ route('ceo.waivers.index') }}" class="tich-btn tich-btn-secondary">Open waiver desk</a>
+            </div>
+        @endif
     </section>
 
     {{-- Workforce --}}
@@ -297,6 +308,9 @@
                 View finance details
             </button>
             <a href="{{ route('ceo.budgets.index') }}" class="tich-btn tich-btn-secondary">Budget authorizations</a>
+            <a href="{{ route('ceo.waivers.index') }}" class="tich-btn tich-btn-secondary">
+                Student waivers ({{ number_format((int) ($feeAdjustments['pending'] ?? 0)) }})
+            </a>
             <a href="{{ route('ceo.procurement.index') }}" class="tich-btn tich-btn-ghost">Procurement queue</a>
             <a href="{{ route('ceo.finance-policy.index') }}" class="tich-btn tich-btn-ghost">Financial policy</a>
         </div>
@@ -320,6 +334,62 @@
                         <div><dt>Procurement in pipeline</dt><dd>{{ number_format((int) ($procurement['in_pipeline'] ?? 0)) }}</dd></div>
                         <div><dt>Policy sign-off</dt><dd>{{ number_format((int) (($queues['finance_policy'] ?? 0) + ($queues['me_policy'] ?? 0))) }}</dd></div>
                     </dl>
+                </div>
+                <div class="ceo-dash__detail-card ceo-dash__detail-card--wide">
+                    <h3 class="ceo-dash__detail-title">Student fee waivers &amp; adjustments</h3>
+                    <dl class="ceo-dash__stat-list">
+                        <div><dt>Awaiting your decision</dt><dd>{{ number_format((int) ($feeAdjustments['pending'] ?? 0)) }}</dd></div>
+                        <div><dt>Value awaiting</dt><dd>KES {{ number_format((float) ($feeAdjustments['pending_value'] ?? 0), 2) }}</dd></div>
+                    </dl>
+                    @if (! empty($feeAdjustments['rows']))
+                        <div class="tich-table-wrap">
+                            <table class="tich-admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Requested by</th>
+                                        <th>Date</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($feeAdjustments['rows'] as $row)
+                                        <tr>
+                                            <td>
+                                                <strong>{{ $row['student'] }}</strong>
+                                                @if ($row['registration_number'])
+                                                    <p class="tich-caption">{{ $row['registration_number'] }}</p>
+                                                @endif
+                                            </td>
+                                            <td class="tich-caption">{{ $row['type'] }}</td>
+                                            <td>KES {{ number_format((float) $row['amount'], 2) }}</td>
+                                            <td>
+                                                <span class="tich-badge tich-badge--{{ match($row['status']) {
+                                                    'pending' => 'warning',
+                                                    'approved' => 'success',
+                                                    'rejected' => 'danger',
+                                                    default => 'secondary',
+                                                } }}">{{ ucfirst($row['status']) }}</span>
+                                            </td>
+                                            <td class="tich-caption">{{ $row['requested_by'] ?? '—' }}</td>
+                                            <td class="tich-caption">{{ $row['date'] ?? '—' }}</td>
+                                            <td>
+                                                <a href="{{ route('ceo.waivers.show', $row['id']) }}" class="tich-btn tich-btn-ghost">
+                                                    {{ 'pending' === $row['status'] ? 'Review' : 'Open' }}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <p class="tich-caption">No waiver, scholarship or bursary has been raised yet.</p>
+                    @endif
+                    <p class="tich-caption">You approve or reject here; the officer who requested a waiver never decides their own.</p>
                 </div>
             </div>
         </div>
@@ -378,6 +448,14 @@
 .ceo-dash__actions, .ceo-dash__panel-toolbar {
     display: flex; flex-wrap: wrap; gap: .55rem; align-items: center;
 }
+
+.ceo-dash__queue {
+    display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between;
+    padding: .85rem 1rem; border-radius: 14px;
+    border: 1px solid color-mix(in srgb, #b45309 35%, var(--tich-border, #d7dde6));
+    background: color-mix(in srgb, #fef3c7 45%, var(--tich-surface, #fff));
+}
+.ceo-dash__queue-text { margin: 0; }
 
 .ceo-dash__detail {
     padding: 1rem; border-radius: 14px;

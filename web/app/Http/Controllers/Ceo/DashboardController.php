@@ -19,6 +19,7 @@ class DashboardController extends Controller
         return view('ceo.dashboard', [
             'queues' => $overview['queues'],
             'finance' => $overview['finance'],
+            'feeAdjustments' => $overview['feeAdjustments'],
             'academics' => $overview['academics'],
             'admissions' => $overview['admissions'],
             'workforce' => $overview['workforce'],

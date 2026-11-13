@@ -173,6 +173,11 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/procurement/{requisition}/approve', [\App\Http\Controllers\Ceo\ProcurementRequisitionController::class, 'approve'])->name('ceo.procurement.approve');
         Route::post('/procurement/{requisition}/reject', [\App\Http\Controllers\Ceo\ProcurementRequisitionController::class, 'reject'])->name('ceo.procurement.reject');
 
+        Route::get('/waivers', [\App\Http\Controllers\Ceo\StudentWaiverController::class, 'index'])->name('ceo.waivers.index');
+        Route::get('/waivers/{waiver}', [\App\Http\Controllers\Ceo\StudentWaiverController::class, 'show'])->name('ceo.waivers.show');
+        Route::post('/waivers/{waiver}/approve', [\App\Http\Controllers\Ceo\StudentWaiverController::class, 'approve'])->name('ceo.waivers.approve');
+        Route::post('/waivers/{waiver}/reject', [\App\Http\Controllers\Ceo\StudentWaiverController::class, 'reject'])->name('ceo.waivers.reject');
+
         Route::get('/finance-policy', [\App\Http\Controllers\Ceo\FinancePolicyController::class, 'index'])->name('ceo.finance-policy.index');
         Route::post('/finance-policy/sign', [\App\Http\Controllers\Ceo\FinancePolicyController::class, 'sign'])->name('ceo.finance-policy.sign');
         Route::get('/finance-policy/view', [\App\Http\Controllers\Ceo\FinancePolicyController::class, 'view'])->name('ceo.finance-policy.view');

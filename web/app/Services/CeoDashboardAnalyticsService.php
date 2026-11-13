@@ -8,6 +8,7 @@ use App\Models\Applicant;
 use App\Models\CurriculumVersion;
 use App\Models\Finance\FinancePolicy;
 use App\Models\Finance\FinancePolicySignoff;
+use App\Models\Finance\FinancialAdjustment;
 use App\Models\JobVacancy;
 use App\Models\LeaveRequest;
 use App\Models\Me\MePolicy;
@@ -41,6 +42,7 @@ class CeoDashboardAnalyticsService
         return [
             'queues' => $this->queueCounts(),
             'finance' => $this->financeSnapshot(),
+            'feeAdjustments' => $this->feeAdjustmentQueue(),
             'academics' => $this->academicsSnapshot(),
             'admissions' => $this->admissionsSnapshot(),
             'workforce' => $this->workforceSnapshot(),
@@ -162,6 +164,50 @@ class CeoDashboardAnalyticsService
                 'net_income' => 0.0,
             ];
         }
+    }
+
+    /**
+     * Student fee waivers, scholarships and bursaries. Finance decides them; the desk
+     * only shows the queue so nothing waits there unseen.
+     *
+     * @return array{pending: int, pending_value: float, rows: array<int, array<string, mixed>>}
+     */
+    public function feeAdjustmentQueue(int $limit = 8): array
+    {
+        if (! Schema::hasTable('financial_adjustments')) {
+            return ['pending' => 0, 'pending_value' => 0.0, 'rows' => []];
+        }
+
+        $pending = FinancialAdjustment::query()->where('status', 'pending');
+
+        $rows = FinancialAdjustment::query()
+            ->with([
+                'student:id,first_name,middle_name,surname,registration_number',
+                'requestedBy:id,title,first_name,middle_name,surname',
+                'approvedBy:id,title,first_name,middle_name,surname',
+            ])
+            ->orderByRaw("case when status = 'pending' then 0 else 1 end")
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->map(fn (FinancialAdjustment $adjustment) => [
+                'id' => (int) $adjustment->id,
+                'student' => $adjustment->student?->fullName() ?? 'Student',
+                'registration_number' => $adjustment->student?->registration_number,
+                'type' => ucfirst((string) $adjustment->adjustment_type),
+                'amount' => (float) $adjustment->amount,
+                'status' => (string) $adjustment->status,
+                'requested_by' => $adjustment->requestedBy?->fullName(),
+                'decided_by' => $adjustment->approvedBy?->fullName(),
+                'date' => ($adjustment->approved_at ?? $adjustment->created_at)?->format('d M Y'),
+            ])
+            ->all();
+
+        return [
+            'pending' => (clone $pending)->count(),
+            'pending_value' => (float) (clone $pending)->sum('amount'),
+            'rows' => $rows,
+        ];
     }
 
     /**

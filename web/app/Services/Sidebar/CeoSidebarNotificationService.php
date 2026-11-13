@@ -6,6 +6,7 @@ use App\Events\CeoSidebarCountsUpdated;
 use App\Models\Administration\BudgetRequest;
 use App\Models\CurriculumVersion;
 use App\Models\Me\MeQuarterlyReport;
+use App\Models\Finance\FinancialAdjustment;
 use App\Models\ProcurementRequisition;
 use App\Models\Qa\IqaAssessment;
 use App\Services\CeoDashboardAnalyticsService;
@@ -27,6 +28,7 @@ class CeoSidebarNotificationService
     public const MENU_KEYS = [
         'budgets' => 'Budget authorizations',
         'approvals' => 'Approval workflow',
+        'waivers' => 'Student waivers',
         'procurement' => 'Procurement',
         'curriculum' => 'Curriculum sign-off',
         'quality' => 'Quality reports',
@@ -126,11 +128,17 @@ class CeoSidebarNotificationService
             $procurement = ProcurementRequisition::query()->pendingCeoApproval()->count();
         }
 
+        $waivers = 0;
+        if (Schema::hasTable('financial_adjustments')) {
+            $waivers = FinancialAdjustment::query()->where('status', 'pending')->count();
+        }
+
         $analytics = app(CeoDashboardAnalyticsService::class);
 
         return [
             'budgets' => $budgets,
             'approvals' => $approvals,
+            'waivers' => $waivers,
             'procurement' => $procurement,
             'curriculum' => $curriculum,
             'quality' => $quality,
