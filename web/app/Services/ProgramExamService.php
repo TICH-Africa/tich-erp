@@ -50,6 +50,7 @@ class ProgramExamService
                 'at_risk_students' => collect(),
                 'supplementary' => collect(),
                 'eligible_roster' => ['semester_id' => null, 'semester_label' => null, 'eligible' => collect(), 'blocked' => collect(), 'pending' => collect()],
+                'marks_locks' => collect(),
                 'timetable_synced' => 0,
             ];
         }
@@ -92,8 +93,46 @@ class ProgramExamService
                 ? $this->supplementaryMarks->outstanding($semesterUnitIds, $studentIds)
                 : collect(),
             'eligible_roster' => $this->semesterEligibleRoster($students, $semesterUnitIds, $semesterUnits, $semesterId),
+            'marks_locks' => $this->marksLockState($semesterUnitIds, $semesterId),
             'timetable_synced' => $timetableSynced,
         ];
+    }
+
+    /**
+     * Whether Academics has taken each unit's marks over, and how many sittings it is signing
+     * for - a unit with no marks entered should not be locked by mistake.
+     *
+     * @param  list<int>  $unitIds
+     * @return Collection<int, object>
+     */
+    private function marksLockState(array $unitIds, ?int $semesterId): Collection
+    {
+        if ($unitIds === [] || ! $semesterId) {
+            return collect();
+        }
+
+        $locks = DB::table('exam_marks_locks')
+            ->whereIn('unit_id', $unitIds)
+            ->where('semester_id', $semesterId)
+            ->whereNull('unlocked_at')
+            ->get()
+            ->keyBy('unit_id');
+
+        $entered = DB::table('exam_results')
+            ->selectRaw('unit_id, COUNT(*) as sittings')
+            ->whereIn('unit_id', $unitIds)
+            ->where('semester_id', $semesterId)
+            ->where('is_supplementary', 0)
+            ->whereNotNull('final_exam_score')
+            ->groupBy('unit_id')
+            ->pluck('sittings', 'unit_id');
+
+        return collect($unitIds)
+            ->mapWithKeys(fn ($unitId) => [(int) $unitId => (object) [
+                'locked_at' => $locks->get($unitId)?->locked_at,
+                'entered' => (int) ($entered[$unitId] ?? 0),
+            ]])
+            ->filter(fn (object $row, int $unitId) => $row->locked_at !== null || $row->entered > 0);
     }
 
     /**

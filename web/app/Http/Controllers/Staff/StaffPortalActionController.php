@@ -351,12 +351,22 @@ class StaffPortalActionController extends Controller
             'scores' => ['nullable', 'array'],
         ]);
 
-        $this->assessments->saveGrid(
-            $allocation,
-            $staff,
-            $validated['columns'],
-            $validated['scores'] ?? [],
-        );
+        try {
+            $this->assessments->saveGrid(
+                $allocation,
+                $staff,
+                $validated['columns'],
+                $validated['scores'] ?? [],
+            );
+        } catch (ValidationException $exception) {
+            $rejected = $this->autosaveRejection($request, $exception);
+
+            if ($rejected) {
+                return $rejected;
+            }
+
+            throw $exception;
+        }
 
         return $this->gradingSaveResponse($request, $allocation->id, 'Competency spreadsheet saved. Cumulative scores updated.');
     }
@@ -403,16 +413,13 @@ class StaffPortalActionController extends Controller
                 ],
             );
         } catch (ValidationException $exception) {
-            // The autosave strip only shows a plain message, so hand it the reason
-            // rather than Laravel's generic "The given data was invalid.".
-            if (! $this->isAutosaveRequest($request)) {
-                throw $exception;
+            $rejected = $this->autosaveRejection($request, $exception);
+
+            if ($rejected) {
+                return $rejected;
             }
 
-            return response()->json([
-                'ok' => false,
-                'message' => collect($exception->errors())->flatten()->first() ?? 'Could not save the marks.',
-            ], 422);
+            throw $exception;
         }
 
         return $this->gradingSaveResponse($request, $allocation->id, 'Exam marks saved and final grades updated.');
@@ -659,6 +666,22 @@ class StaffPortalActionController extends Controller
         return $request->header('X-Auto-Save') === '1'
             || $request->expectsJson()
             || $request->ajax();
+    }
+
+    /**
+     * The autosave strip only shows a plain message, so hand it the reason the save was
+     * refused rather than Laravel's generic "The given data was invalid.".
+     */
+    private function autosaveRejection(Request $request, ValidationException $exception): ?JsonResponse
+    {
+        if (! $this->isAutosaveRequest($request)) {
+            return null;
+        }
+
+        return response()->json([
+            'ok' => false,
+            'message' => collect($exception->errors())->flatten()->first() ?? 'Could not save the marks.',
+        ], 422);
     }
 
     public function updateObjectiveAvailability(Request $request, ObjectiveAssessment $assessment): RedirectResponse

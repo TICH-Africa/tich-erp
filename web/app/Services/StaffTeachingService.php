@@ -375,6 +375,14 @@ class StaffTeachingService
 
         app(StaffPortalDashboardService::class)->assertStudentsAreOnRoll($allocation, [(int) $data['student_id']]);
 
+        $allocation->loadMissing('semester');
+        app(ExamMarksLockService::class)->assertEditable(
+            (int) $allocation->unit_id,
+            $allocation->semester_id ? (int) $allocation->semester_id : null,
+            'a CAT score',
+            (int) ($allocation->semester?->semester_number ?? 1),
+        );
+
         $max = (float) $data['max_score'];
         $obtained = (float) $data['score_obtained'];
 

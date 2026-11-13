@@ -175,7 +175,7 @@
 
         <article class="tich-card">
             <h2 class="tich-h3">Unit assessment weighting - Semester {{ $examTeachingPeriod }}</h2>
-            <p class="tich-caption">Only units taught in this semester. Click Edit to adjust weights in a popup.</p>
+            <p class="tich-caption">Only units taught in this semester. Click Edit to adjust weights in a popup. Locking a unit's marks hands them to this desk: the lecturer's marks grid for that unit turns read-only until it is unlocked again.</p>
             <div class="tich-table-wrap tich-mt-4">
                 <table class="tich-admin-table">
                     <thead>
@@ -187,11 +187,15 @@
                             <th>Attendance %</th>
                             <th>Exam %</th>
                             <th>Pass mark</th>
+                            <th>Marks</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($examHub['units'] as $unit)
+                            @php
+                                $marksLock = ($examHub['marks_locks'] ?? collect())[$unit->unit_id] ?? null;
+                            @endphp
                             <tr>
                                 <td>{{ $unit->unit_code }} - {{ $unit->unit_name }}</td>
                                 <td>{{ $unit->semester }}</td>
@@ -200,6 +204,38 @@
                                 <td>{{ $unit->attendance_weight }}%</td>
                                 <td>{{ $unit->exam_weight }}%</td>
                                 <td>{{ number_format($unit->pass_mark ?? $unit->program_pass_mark, 1) }}%<br><span class="tich-caption">{{ $unit->pass_mark === null ? 'programme mark' : 'this unit' }}</span></td>
+                                <td>
+                                    @if ($marksLock?->locked_at)
+                                        <span class="tich-text">Locked {{ \Illuminate\Support\Carbon::parse($marksLock->locked_at)->format('d M Y') }}</span>
+                                    @else
+                                        <span class="tich-caption">{{ $marksLock?->entered ?? 0 }} exam {{ str('mark')->plural($marksLock?->entered ?? 0) }} entered</span>
+                                    @endif
+
+                                    @can('academics.write')
+                                        <form method="POST"
+                                              action="{{ route($marksLock?->locked_at
+                                                  ? 'departments.academics.programs.units.marks-unlock.store'
+                                                  : 'departments.academics.programs.units.marks-lock.store', array_merge($hub, ['program' => $program->id, 'unit' => $unit->unit_id])) }}"
+                                              style="margin-top:0.4rem; display:grid; gap:0.35rem; justify-items:start;">
+                                            @csrf
+                                            <input type="hidden" name="intake" value="{{ $selectedIntake->id }}">
+                                            <input type="hidden" name="teaching_period" value="{{ $examTeachingPeriod }}">
+                                            @if ($learningDepartment)
+                                                <input type="hidden" name="learning_department" value="{{ $learningDepartment->id }}">
+                                            @endif
+                                            @if ($marksLock?->locked_at)
+                                                <input type="text" name="reason" class="tich-input" maxlength="300" placeholder="Reason (optional)" style="width:100%; max-width:11rem;">
+                                            @endif
+                                            <button type="submit" class="tich-btn tich-btn-secondary">
+                                                @if ($marksLock?->locked_at)
+                                                    Unlock to correct
+                                                @else
+                                                    Submit &amp; lock marks
+                                                @endif
+                                            </button>
+                                        </form>
+                                    @endcan
+                                </td>
                                 <td>
                                     @can('academics.write')
                                         <button
@@ -219,7 +255,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8">No units mapped to Semester {{ $examTeachingPeriod }} yet.</td></tr>
+                            <tr><td colspan="9">No units mapped to Semester {{ $examTeachingPeriod }} yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

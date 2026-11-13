@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 class ContinuousAssessmentService
 {
     public function __construct(protected AuditService $auditService) {}
+
     /**
      * @return list<array{key: string, name: string, type: string, max: float, label: string}>
      */
@@ -45,6 +46,7 @@ class ContinuousAssessmentService
         $columns = $this->columnsForAllocation($allocation);
         $scores = $this->scoreMatrix($allocation, $columns);
         $cumulative = $this->cumulativeSheet($allocation);
+        $lock = app(ExamMarksLockService::class)->state((int) $allocation->unit_id, $allocation->semester_id ? (int) $allocation->semester_id : null);
 
         return [
             'allocation' => $allocation,
@@ -54,6 +56,8 @@ class ContinuousAssessmentService
             'cumulative' => $cumulative,
             'weights' => $this->weightProfile($allocation->unit),
             'assessmentTypes' => $this->assessmentTypeLabels(),
+            'marks_locked' => $lock !== null,
+            'marks_locked_at' => $lock?->locked_at,
         ];
     }
 
@@ -123,6 +127,14 @@ class ContinuousAssessmentService
     public function saveGrid(UnitAllocation $allocation, Staff $staff, array $columns, array $gridScores): void
     {
         abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
+
+        $allocation->loadMissing('semester');
+        app(ExamMarksLockService::class)->assertEditable(
+            (int) $allocation->unit_id,
+            $allocation->semester_id ? (int) $allocation->semester_id : null,
+            'the CAT scores',
+            (int) ($allocation->semester?->semester_number ?? 1),
+        );
 
         app(StaffPortalDashboardService::class)->assertStudentsAreOnRoll(
             $allocation,

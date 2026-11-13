@@ -32,7 +32,18 @@
     @php
         $allocation = $gradingTerminal['allocation'];
         $weights = $gradingTerminal['weights'];
+        $marksLocked = (bool) ($gradingTerminal['marks_locked'] ?? false);
+        $marksLockedLabel = $gradingTerminal['marks_locked_at'] ?? null
+            ? \Illuminate\Support\Carbon::parse($gradingTerminal['marks_locked_at'])->format('d M Y')
+            : null;
     @endphp
+
+    @if ($marksLocked)
+        <article class="tich-card tich-mt-6" style="border-color:var(--tich-blue);">
+            <h2 class="tich-h3">Marks submitted to Academics</h2>
+            <p class="tich-text tich-mt-2">Academics took these marks over on {{ $marksLockedLabel }} and locked them, so this unit is read-only - the exam marks, the CAT and practical scores and the typed averages can no longer be changed here. Ask Academics to unlock the unit if a mark is wrong; attendance keeps being marked as usual.</p>
+        </article>
+    @endif
 
     <div class="tich-grid tich-grid--4 tich-dept-stats tich-mt-6">
         <article class="tich-card tich-stat">
@@ -65,8 +76,12 @@
             <article class="tich-card">
                 <h2 class="tich-h3">{{ $allocation->unit?->unit_code }} - data entry grid</h2>
                 <div class="tich-form-toolbar tich-mt-2">
-                    <p class="tich-caption">Enter scores out of each column maximum. Save at the bottom or rely on automatic saving.</p>
-                    <span class="tich-autosave-status" data-autosave-status="grading-grid" data-state="idle" aria-live="polite">Changes save automatically</span>
+                    @if ($marksLocked)
+                        <p class="tich-caption">Academics submitted this unit's marks on {{ $marksLockedLabel }}, so the scores below are read-only. Attendance keeps being marked as usual.</p>
+                    @else
+                        <p class="tich-caption">Enter scores out of each column maximum. Save at the bottom or rely on automatic saving.</p>
+                        <span class="tich-autosave-status" data-autosave-status="grading-grid" data-state="idle" aria-live="polite">Changes save automatically</span>
+                    @endif
                 </div>
 
                 <form method="POST" action="{{ route('staff.grading.grid') }}" class="tich-mt-4" data-autosave="grading-grid">
@@ -115,7 +130,7 @@
                                                        name="scores[{{ $student->student_id }}][{{ $column['key'] }}]"
                                                        value="{{ $value !== '' ? $value : '' }}"
                                                        class="tich-competency-grid__input"
-                                                       placeholder="-">
+                                                       placeholder="-"@if ($marksLocked) disabled @endif>
                                             </td>
                                         @endforeach
                                     </tr>
@@ -126,7 +141,7 @@
                         </table>
                     </div>
 
-                    @if ($gradingTerminal['roster']->isNotEmpty())
+                    @if ($gradingTerminal['roster']->isNotEmpty() && ! $marksLocked)
                         <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Save spreadsheet &amp; update cumulative scores</button>
                     @endif
                 </form>
@@ -139,8 +154,12 @@
             <article class="tich-card">
                 <h2 class="tich-h3">{{ $allocation->unit?->unit_code }} - exam marks</h2>
                 <div class="tich-form-toolbar tich-mt-2">
-                    <p class="tich-caption">Enter final exam scores (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). The CAT, practical and attendance averages come from the marks already entered - type your own figure into any of them and the final grade follows what you typed, for example when the CATs or attendance were taken on paper. Leave a box empty to keep the figure the system worked out, shown greyed in the box. An exam mark can be recorded here whether or not the tutor has entered theirs. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
-                    <span class="tich-autosave-status" data-autosave-status="grading-exams" data-state="idle" aria-live="polite">Changes save automatically</span>
+                    @if ($marksLocked)
+                        <p class="tich-caption">Academics submitted this unit's marks on {{ $marksLockedLabel }}, so the grid is read-only. Ask them to unlock the unit to correct a mark.</p>
+                    @else
+                        <p class="tich-caption">Enter final exam scores (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). The CAT, practical and attendance averages come from the marks already entered - type your own figure into any of them and the final grade follows what you typed, for example when the CATs or attendance were taken on paper. Leave a box empty to keep the figure the system worked out, shown greyed in the box. A CAT the student sat on an objective paper is marked automatically, so its figure is fixed and only the exam mark is yours to enter. An exam mark can be recorded here whether or not the tutor has entered theirs. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
+                        <span class="tich-autosave-status" data-autosave-status="grading-exams" data-state="idle" aria-live="polite">Changes save automatically</span>
+                    @endif
                 </div>
 
                 <form method="POST" action="{{ route('staff.grading.exams') }}" class="tich-mt-4" data-autosave="grading-exams">
@@ -169,15 +188,20 @@
                                         <td>{{ $row['registration_number'] }}</td>
                                         <td>{{ $row['student_name'] }}</td>
                                         <td>
-                                            <input type="number"
-                                                   step="0.01"
-                                                   min="0"
-                                                   max="100"
-                                                   name="cat_averages[{{ $row['student_id'] }}]"
-                                                   value="{{ $row['cat_entered'] ? $row['cat_total'] : '' }}"
-                                                   class="tich-input"
-                                                   style="width:5.5rem;"
-                                                   placeholder="{{ number_format($row['cat_total'], 1) }}">
+                                            @if (! empty($row['cat_fetched']))
+                                                {{ number_format($row['cat_total'], 1) }}
+                                                <br><span class="tich-caption">objective CAT</span>
+                                            @else
+                                                <input type="number"
+                                                       step="0.01"
+                                                       min="0"
+                                                       max="100"
+                                                       name="cat_averages[{{ $row['student_id'] }}]"
+                                                       value="{{ $row['cat_entered'] ? $row['cat_total'] : '' }}"
+                                                       class="tich-input"
+                                                       style="width:5.5rem;"
+                                                       placeholder="{{ number_format($row['cat_total'], 1) }}"@if ($marksLocked) disabled @endif>
+                                            @endif
                                         </td>
                                         <td>
                                             <input type="number"
@@ -188,7 +212,7 @@
                                                    value="{{ $row['practical_entered'] ? $row['practical_total'] : '' }}"
                                                    class="tich-input"
                                                    style="width:5.5rem;"
-                                                   placeholder="{{ number_format($row['practical_total'], 1) }}">
+                                                   placeholder="{{ number_format($row['practical_total'], 1) }}"@if ($marksLocked) disabled @endif>
                                         </td>
                                         <td>
                                             <input type="number"
@@ -199,7 +223,7 @@
                                                    value="{{ $row['attendance_entered'] ? $row['attendance_pct'] : '' }}"
                                                    class="tich-input"
                                                    style="width:5.5rem;"
-                                                   placeholder="{{ number_format($row['attendance_pct'], 1) }}">
+                                                   placeholder="{{ number_format($row['attendance_pct'], 1) }}"@if ($marksLocked) disabled @endif>
                                         </td>
                                         <td>{{ number_format($row['continuous_total'], 1) }}</td>
                                         <td>
@@ -211,7 +235,7 @@
                                                    value="{{ $row['exam_score'] !== null ? $row['exam_score'] : '' }}"
                                                    class="tich-input"
                                                    style="width:5rem;"
-                                                   placeholder="-">
+                                                   placeholder="-"@if ($marksLocked) disabled @endif>
                                         </td>
                                         <td>{{ $row['final_total'] !== null ? number_format($row['final_total'], 1) : '-' }}</td>
                                         <td>{{ $row['grade_letter'] ?? '-' }}</td>
@@ -223,7 +247,7 @@
                         </table>
                     </div>
 
-                    @if (! empty($examMarksSheet['rows']))
+                    @if (! empty($examMarksSheet['rows']) && ! $marksLocked)
                         <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Save exam marks</button>
                     @endif
                 </form>

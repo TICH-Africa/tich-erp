@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\UnitAllocation;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -16,10 +17,11 @@ class StaffExamMarksService
         protected ContinuousAssessmentService $assessments,
         protected StaffPortalDashboardService $dashboard,
         protected AuditService $auditService,
+        protected ExamMarksLockService $locks,
     ) {}
 
     /**
-     * @return array{rows: list<array<string, mixed>>, exam_max: float, weights: array<string, float>}
+     * @return array{rows: list<array<string, mixed>>, exam_max: float, weights: array<string, float>, locked: bool, locked_at: string|null}
      */
     public function sheet(UnitAllocation $allocation, Staff $staff): array
     {
@@ -36,6 +38,7 @@ class StaffExamMarksService
         $weights = $this->assessments->weightProfile($allocation->unit);
         $examMax = 100.0;
         $passMark = $this->passMarkForAllocation($allocation);
+        $lock = $this->locks->state((int) $allocation->unit_id, $allocation->semester_id ? (int) $allocation->semester_id : null);
 
         $existing = DB::table('exam_results')
             ->where('unit_id', $allocation->unit_id)
@@ -46,15 +49,21 @@ class StaffExamMarksService
             ->get()
             ->keyBy('student_id');
 
+        $fetchedCats = $this->objectiveCatStudentIds($allocation, $roster->pluck('student_id')->all());
+
         $rows = [];
 
         foreach ($roster as $student) {
             $studentId = (int) $student->student_id;
             $continuous = $this->assessments->continuousBreakdown($studentId, $allocation);
             $result = $existing->get($studentId);
+            $catFetched = $fetchedCats->contains($studentId);
 
-            // What the lecturer typed stands; otherwise the marks the system holds.
-            $catAvg = $this->standingOr($result?->cat_avg_entry, $continuous['cat_avg']);
+            // What the lecturer typed stands; otherwise the marks the system holds. A CAT the
+            // student sat on an objective paper is marked by the system, so it is never typed.
+            $catAvg = $catFetched
+                ? round($continuous['cat_avg'], 2)
+                : $this->standingOr($result?->cat_avg_entry, $continuous['cat_avg']);
             $practicalAvg = $this->standingOr($result?->practical_avg_entry, $continuous['practical_avg']);
             $attendancePct = $this->standingOr($result?->attendance_pct_entry, $continuous['attendance_pct']);
             $cumulative = $this->assessments->cumulativeFrom($catAvg, $practicalAvg, $attendancePct, $allocation->unit);
@@ -74,7 +83,8 @@ class StaffExamMarksService
                 'practical_total' => $practicalAvg,
                 'attendance_pct' => $attendancePct,
                 'continuous_total' => $cumulative,
-                'cat_entered' => $result !== null && $result->cat_avg_entry !== null,
+                'cat_entered' => ! $catFetched && $result !== null && $result->cat_avg_entry !== null,
+                'cat_fetched' => $catFetched,
                 'practical_entered' => $result !== null && $result->practical_avg_entry !== null,
                 'attendance_entered' => $result !== null && $result->attendance_pct_entry !== null,
                 'exam_score' => $examScore,
@@ -89,6 +99,8 @@ class StaffExamMarksService
             'rows' => $rows,
             'exam_max' => $examMax,
             'weights' => $weights,
+            'locked' => $lock !== null,
+            'locked_at' => $lock?->locked_at,
         ];
     }
 
@@ -104,6 +116,14 @@ class StaffExamMarksService
         array $continuous = [],
     ): void {
         abort_unless($this->dashboard->canMarkUnit($staff, $allocation), 403);
+
+        $allocation->loadMissing(['semester']);
+        $this->locks->assertEditable(
+            (int) $allocation->unit_id,
+            $allocation->semester_id ? (int) $allocation->semester_id : null,
+            'the exam marks and averages',
+            (int) ($allocation->semester?->semester_number ?? 1),
+        );
 
         $entries = [
             'cat' => $continuous['cat'] ?? [],
@@ -137,6 +157,23 @@ class StaffExamMarksService
             ->get()
             ->keyBy('student_id');
 
+        $fetchedCats = $this->objectiveCatStudentIds($allocation, $studentIds);
+
+        $typedOverFetched = collect($entries['cat'])
+            ->filter(fn ($raw) => $raw !== null && $raw !== '')
+            ->keys()
+            ->map(fn ($id) => (int) $id)
+            ->intersect($fetchedCats)
+            ->values();
+
+        if ($typedOverFetched->isNotEmpty()) {
+            $names = Student::query()->whereIn('id', $typedOverFetched)->pluck('registration_number')->take(5)->implode(', ');
+
+            throw ValidationException::withMessages([
+                'cat_averages' => 'The CAT for '.$names.' was fetched from an objective paper, so it is recorded automatically and cannot be typed over. Enter the exam mark instead.',
+            ]);
+        }
+
         // A typed average is part of a sitting, so it cannot stand on its own: without an
         // exam mark there is no sitting to attach it to, and inventing one would publish a
         // grade for a student who has not been marked.
@@ -167,7 +204,10 @@ class StaffExamMarksService
             }
 
             $derived = $this->assessments->continuousBreakdown($studentId, $allocation);
-            $catTotal = $this->standingOr($entries['cat'][$studentId] ?? null, $derived['cat_avg']);
+            $catFetched = $fetchedCats->contains($studentId);
+            $catTotal = $catFetched
+                ? round($derived['cat_avg'], 2)
+                : $this->standingOr($entries['cat'][$studentId] ?? null, $derived['cat_avg']);
             $practicalTotal = $this->standingOr($entries['practical'][$studentId] ?? null, $derived['practical_avg']);
             $attendancePct = $this->standingOr($entries['attendance'][$studentId] ?? null, $derived['attendance_pct']);
             $cumulative = $this->assessments->cumulativeFrom($catTotal, $practicalTotal, $attendancePct, $allocation->unit);
@@ -187,7 +227,7 @@ class StaffExamMarksService
                 'exam_card_id' => $examCardId,
                 'cat_total' => $catTotal,
                 'practical_total' => $practicalTotal,
-                'cat_avg_entry' => $this->entryOrNull($entries['cat'][$studentId] ?? null),
+                'cat_avg_entry' => $catFetched ? null : $this->entryOrNull($entries['cat'][$studentId] ?? null),
                 'practical_avg_entry' => $this->entryOrNull($entries['practical'][$studentId] ?? null),
                 'attendance_pct_entry' => $this->entryOrNull($entries['attendance'][$studentId] ?? null),
                 'final_exam_score' => $examScore,
@@ -274,6 +314,35 @@ class StaffExamMarksService
     private function entryOrNull(mixed $entry): ?float
     {
         return $entry === null || $entry === '' ? null : round((float) $entry, 2);
+    }
+
+    /**
+     * The students whose CAT average the objective papers fetched: those questions mark
+     * themselves, so the figure is the system's, not a number anyone types.
+     *
+     * @param  iterable<int, mixed>  $studentIds
+     * @return Collection<int, int>
+     */
+    private function objectiveCatStudentIds(UnitAllocation $allocation, iterable $studentIds): Collection
+    {
+        $ids = collect($studentIds)->map(fn ($id) => (int) $id)->filter()->values()->all();
+
+        if ($ids === []) {
+            return collect();
+        }
+
+        return DB::table('cat_scores')
+            ->select('student_id', 'assessment_type')
+            ->where('unit_id', $allocation->unit_id)
+            ->where('semester_id', $allocation->semester_id)
+            ->whereIn('student_id', $ids)
+            ->distinct()
+            ->get()
+            ->filter(fn (object $row) => str_starts_with((string) $row->assessment_type, 'objective_'))
+            ->pluck('student_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
     }
 
     private function gradePoints(string $letter): float

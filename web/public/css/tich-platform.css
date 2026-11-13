@@ -850,6 +850,15 @@ select.tich-select:disabled {
     cursor: not-allowed;
 }
 
+/* A locked marks grid has to look locked, not just refuse the keystroke. */
+input.tich-input:disabled,
+input.tich-competency-grid__input:disabled,
+textarea.tich-input:disabled {
+    background: var(--tich-neutral);
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
 select.tich-input:focus,
 select.tich-select:focus {
     outline: none;

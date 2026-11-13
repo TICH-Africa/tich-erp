@@ -21,6 +21,7 @@ use App\Services\AcademicsAccessService;
 use App\Services\CurriculumVersionService;
 use App\Services\DepartmentDashboardService;
 use App\Services\ExamScheduleSyncService;
+use App\Services\ExamMarksLockService;
 use App\Services\PrintDocumentService;
 use App\Services\ProgramTimetableDocumentService;
 use App\Services\ProgramExamService;
@@ -58,6 +59,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         protected ProgramTimetableDocumentService $timetableDocuments,
         protected UnitAllocationService $unitAllocations,
         protected ExamScheduleSyncService $examScheduleSync,
+        protected ExamMarksLockService $marksLock,
         protected StudentUnitRegistrationService $studentRegistrations,
         AcademicsAccessService $access,
         DepartmentDashboardService $departmentDashboard,
@@ -1434,6 +1436,99 @@ class ProgramCurriculumController extends DepartmentAcademicsController
                 'teaching_period' => $request->integer('teaching_period') ?: null,
             ]))
             ->with('status', 'Unit assessment weights updated.');
+    }
+
+    /**
+     * Take a unit's marks over from the lecturer. Once locked, every writer of those marks
+     * refuses until this desk opens the unit again.
+     */
+    public function lockUnitMarks(Request $request, Department $department, AcademicProgram $program, Unit $unit): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        abort_unless(
+            $this->access->unitsInScope($hub, $program->department_id)->contains('id', $unit->id),
+            403,
+            'That unit does not belong to this programme.'
+        );
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'teaching_period' => ['required', 'integer', 'min:1'],
+        ], [
+            'intake.required' => 'Choose the intake whose marks you are submitting.',
+            'teaching_period.required' => 'Choose the semester whose marks you are submitting.',
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+        $period = $this->programExams->resolveTeachingPeriod($intake, (int) $validated['teaching_period']);
+        $semesterId = $this->examScheduleSync->resolveSemesterId($intake, $period);
+
+        abort_unless($semesterId, 422, 'Could not resolve a semester for this intake and teaching period.');
+
+        $entered = $this->marksLock->marksEntered((int) $unit->id, (int) $semesterId);
+        $this->marksLock->lock($unit, (int) $semesterId, $period, $entered);
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $intake->id,
+                'section' => 'exams',
+                'exam_tab' => 'grading',
+                'teaching_period' => $period,
+            ]))
+            ->with('status', $unit->unit_code.' Semester '.$period.' marks are submitted and locked ('.$entered
+                .' sitting'.(1 === $entered ? '' : 's').' recorded). The lecturer\'s marks grid for the unit is now read-only; unlock it to correct a mark.');
+    }
+
+    public function unlockUnitMarks(Request $request, Department $department, AcademicProgram $program, Unit $unit): RedirectResponse
+    {
+        $hub = $this->authorizeHub($request, $department);
+        abort_unless($request->user()->hasPermission('academics.write'), 403);
+        $program = $this->access->findProgramForHub($request->user(), $hub, $program->id);
+
+        abort_unless(
+            $this->access->unitsInScope($hub, $program->department_id)->contains('id', $unit->id),
+            403,
+            'That unit does not belong to this programme.'
+        );
+
+        $validated = $request->validate([
+            'intake' => ['required', 'integer'],
+            'teaching_period' => ['required', 'integer', 'min:1'],
+            'reason' => ['nullable', 'string', 'max:300'],
+        ], [
+            'intake.required' => 'Choose the intake whose marks you are opening again.',
+            'teaching_period.required' => 'Choose the semester whose marks you are opening again.',
+        ]);
+
+        $intake = CurriculumVersion::query()
+            ->where('program_id', $program->id)
+            ->findOrFail((int) $validated['intake']);
+        $period = $this->programExams->resolveTeachingPeriod($intake, (int) $validated['teaching_period']);
+        $semesterId = $this->examScheduleSync->resolveSemesterId($intake, $period);
+
+        abort_unless($semesterId, 422, 'Could not resolve a semester for this intake and teaching period.');
+
+        $reason = trim((string) ($validated['reason'] ?? '')) ?: null;
+        $this->marksLock->unlock($unit, (int) $semesterId, $period, $reason);
+
+        return redirect()
+            ->route('departments.academics.programs.curriculum', array_filter([
+                'program' => $program->id,
+                'learning_department' => $request->integer('learning_department') ?: null,
+                'intake' => $intake->id,
+                'section' => 'exams',
+                'exam_tab' => 'grading',
+                'teaching_period' => $period,
+            ]))
+            ->with('status', $unit->unit_code.' Semester '.$period.' marks are open for marking again.'
+                .($reason ? ' Note kept on the audit trail: '.$reason.'.' : ''));
     }
 
     public function recordSupplementaryMarks(Request $request, Department $department, AcademicProgram $program): RedirectResponse

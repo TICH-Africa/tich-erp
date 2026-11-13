@@ -185,6 +185,8 @@ return function (bool $named = true): void {
         $register('post', '/programs/{program}/timetables/{timetable}/publish', [ProgramCurriculumController::class, 'publishTimetable'], 'departments.academics.programs.timetable.publish');
         $register('put', '/programs/{program}/exam-schedules/{schedule}', [ProgramCurriculumController::class, 'updateExamSchedule'], 'departments.academics.programs.exam-schedules.update');
         $register('put', '/programs/{program}/units/{unit}/assessment-weights', [ProgramCurriculumController::class, 'updateUnitAssessmentWeights'], 'departments.academics.programs.units.assessment-weights.update');
+        $register('post', '/programs/{program}/units/{unit}/marks-lock', [ProgramCurriculumController::class, 'lockUnitMarks'], 'departments.academics.programs.units.marks-lock.store');
+        $register('post', '/programs/{program}/units/{unit}/marks-unlock', [ProgramCurriculumController::class, 'unlockUnitMarks'], 'departments.academics.programs.units.marks-unlock.store');
         $register('post', '/programs/{program}/supplementary-marks', [ProgramCurriculumController::class, 'recordSupplementaryMarks'], 'departments.academics.programs.supplementary-marks.store');
         $register('post', '/programs/{program}/intakes/{version}/semesters/{semester}/units', [ProgramCurriculumController::class, 'addIntakeUnit'], 'departments.academics.programs.intakes.add-unit');
         $register('post', '/programs/{program}/versions', [ProgramCurriculumController::class, 'createVersion'], 'departments.academics.programs.versions.create');
