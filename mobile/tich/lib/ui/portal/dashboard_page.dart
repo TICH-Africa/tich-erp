@@ -426,13 +426,11 @@ class _StatCard extends StatelessWidget {
     required this.width,
     required this.caption,
     required this.value,
-    this.trailing,
   });
 
   final double width;
   final String caption;
   final String value;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -466,7 +464,6 @@ class _StatCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (trailing != null) trailing!,
               ],
             ),
           ],

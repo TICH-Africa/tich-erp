@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../../data/portal_sidebar_counts.dart';
-
 export '../../data/portal_sidebar_counts.dart';
 
 /// Updates [PortalNavCountsScope] for the More drawer without rebuilding tabs.

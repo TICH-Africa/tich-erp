@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tich/adaptive/adaptive.dart';
+import 'package:tich/ui/widgets/tich_global_more_footer.dart';
 import 'package:tich/ui/widgets/tich_more_drawer.dart';
 
 void _noop() {}
@@ -60,8 +61,12 @@ Future<List<int>> pumpShell(
         portalName: 'Employee portal',
         onSignOut: onSignOut,
         moreIndex: 4,
-        moreDrawer: (context) =>
-            TichMoreDrawer(portalName: 'Employee portal', items: _links),
+        moreDrawer: (context) => TichMoreDrawer(
+          portalName: 'Employee portal',
+          items: _links,
+          menuContext: TichPortalMenuContext.employee,
+          footerItems: const [],
+        ),
       ),
     ),
   );
