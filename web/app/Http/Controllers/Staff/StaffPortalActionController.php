@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceSession;
 use App\Models\LessonPlan;
 use App\Models\ObjectiveAssessment;
+use App\Models\Staff;
 use App\Models\UnitAllocation;
 use App\Models\UnitContent;
 use App\Services\AttendanceSessionGenerationService;
@@ -455,13 +456,91 @@ class StaffPortalActionController extends Controller
             fn ($row) => ! empty(trim((string) ($row['question_text'] ?? '')))
         ));
 
-        $assessment = $this->objectiveGrading->createAssessment($staff, $allocation, $validated, $questions);
+        $asDraft = $request->input('intent') === 'draft';
+
+        $assessment = $this->objectiveGrading->createAssessment($staff, $allocation, $validated, $questions, $asDraft);
 
         return redirect()->route('staff.dashboard', [
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
-        ])->with('status', 'Objective assessment created. It marks itself when the availability window closes.');
+        ])->with('status', $asDraft
+            ? 'Draft saved. Students cannot see this paper until you publish it.'
+            : 'Objective assessment created. It marks itself when the availability window closes.');
+    }
+
+    /**
+     * The lecturer keeps adding to a draft paper between sittings, so the same question editor
+     * stands behind it. Once published the set is frozen and only the answer key stays open.
+     */
+    public function saveObjectiveQuestions(Request $request, ObjectiveAssessment $assessment): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = $this->allocationForPaper($request, $staff, $assessment);
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'questions' => ['required', 'array'],
+            'questions.*.question_text' => ['nullable', 'string'],
+            'questions.*.question_type' => ['nullable', 'string'],
+            'questions.*.options' => ['nullable', 'string'],
+            'questions.*.correct_answer' => ['nullable', 'string'],
+            'questions.*.points' => ['nullable', 'numeric', 'min:0.01'],
+        ]);
+
+        $questions = array_values(array_filter(
+            $validated['questions'],
+            fn ($row) => ! empty(trim((string) ($row['question_text'] ?? '')))
+        ));
+
+        $this->objectiveGrading->saveQuestions($assessment, $staff, $questions);
+
+        return $this->objectiveRedirect($allocation->id, $assessment->id, 'Draft saved. Students still cannot see this paper.');
+    }
+
+    public function publishObjectiveAssessment(Request $request, ObjectiveAssessment $assessment): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = $this->allocationForPaper($request, $staff, $assessment);
+
+        $this->objectiveGrading->publish($assessment, $staff);
+
+        return $this->objectiveRedirect(
+            $allocation->id,
+            $assessment->id,
+            'Published. Students can sit it from their portal, and it marks itself when the availability window closes.',
+        );
+    }
+
+    private function allocationForPaper(Request $request, ?Staff $staff, ObjectiveAssessment $assessment): UnitAllocation
+    {
+        abort_unless($staff, 403);
+
+        // A lecturer can teach the same unit in more than one period, so the row the form came from
+        // wins and the unit lookup only serves as the guard.
+        $allocation = UnitAllocation::query()
+            ->where('id', (int) $request->input('allocation_id'))
+            ->where('staff_id', $staff->id)
+            ->where('is_active', 1)
+            ->first()
+            ?? UnitAllocation::query()
+                ->where('staff_id', $staff->id)
+                ->where('unit_id', $assessment->unit_id)
+                ->where('is_active', 1)
+                ->firstOrFail();
+
+        abort_if($assessment->unit_allocation_id !== $allocation->id, 403);
+
+        return $allocation;
+    }
+
+    private function objectiveRedirect(int $allocationId, int $assessmentId, string $message): RedirectResponse
+    {
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocationId,
+            'objective_assessment' => $assessmentId,
+        ])->with('status', $message);
     }
 
     public function saveObjectiveResponses(Request $request): RedirectResponse|JsonResponse

@@ -23,7 +23,15 @@
                         @endif
                     </div>
                     <div style="text-align:right;">
-                        @if ($selected->status !== 'graded')
+                        @if ($selected->status === 'draft')
+                            <span class="tich-badge tich-badge--warning">Draft</span>
+                            <form method="POST" action="{{ route('staff.grading.objective.publish', $selected) }}" class="tich-mt-2">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
+                                <button type="submit" class="tich-btn tich-btn-primary">Publish to students</button>
+                            </form>
+                        @elseif ($selected->status !== 'graded')
                             <form method="POST" action="{{ route('staff.grading.objective.grade') }}" class="tich-mt-2">
                                 @csrf
                                 <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
@@ -31,6 +39,11 @@
                                 <button type="submit" class="tich-btn tich-btn-primary" onclick="return confirm('Mark all submissions now? This will overwrite existing scores.')">Mark</button>
                             </form>
                         @endif
+                        <p class="tich-caption tich-mt-2">
+                            <a href="{{ route('staff.dashboard', ['section' => 'grading', 'allocation' => $allocation->id, 'objective_assessment' => 'new']) }}">
+                                + New objective paper
+                            </a>
+                        </p>
                     </div>
                 </div>
 
@@ -75,6 +88,26 @@
                     </p>
                 </form>
             </article>
+
+            @if ($selected->status === 'draft')
+                <article class="tich-card tich-mb-6">
+                    <h3 class="tich-h3">Draft questions</h3>
+                    <p class="tich-caption tich-mt-1">
+                        Only you see this paper. Keep adding or fixing questions over as many sittings as you need,
+                        then publish it from the top of this page. Saving here replaces the questions on the draft,
+                        so keep the whole paper in this one list.
+                    </p>
+                    <form method="POST" action="{{ route('staff.grading.objective.questions', $selected) }}" class="tich-mt-4">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
+                        @include('staff.partials.grading-objective-question-editor', ['rows' => $selected->questions->values()->all()])
+                        <div class="tich-flex tich-flex--start" style="gap:0.75rem; margin-top:1rem; flex-wrap:wrap;">
+                            <button type="submit" class="tich-btn tich-btn-primary">Save as draft</button>
+                        </div>
+                    </form>
+                </article>
+            @endif
 
             <article class="tich-card tich-mb-6">
                 <h3 class="tich-h3">Missed or rescheduled sitting</h3>
@@ -387,7 +420,7 @@
                     <div class="tich-form-group" style="margin:0;">
                         <label class="tich-label">Existing assessment</label>
                         <select name="objective_assessment" class="tich-input" onchange="this.form.submit()">
-                            <option value="">Create new…</option>
+                            <option value="new" @selected(! $selected)>Create new…</option>
                             @foreach ($objectiveTerminal['assessments'] as $assessment)
                                 <option value="{{ $assessment->id }}" @selected($selected?->id === $assessment->id)>
                                     {{ $assessment->name }} ({{ ucfirst($assessment->status) }})
@@ -454,159 +487,14 @@
                     </div>
 
                     <p class="tich-caption tich-mt-2">The paper marks itself from the answer key when "Available until" passes, and each student's mark is recorded in the CAT section automatically. Students see the assessment name and their marks only - the questions stay hidden unless you allow review.</p>
+                    <p class="tich-caption tich-mt-1">Saving as a draft keeps the paper to yourself: it stays out of the students' portal until you publish it.</p>
 
-                    <p class="tich-caption tich-mt-4">Questions - separate MCQ options with <code>|</code> (e.g. <code>A|B|C</code>). For essay/long answer questions, leave options blank. <strong>Add as many questions as the paper has</strong> - use the button under the last one.</p>
-                    <div id="objective-question-list">
-                    @for ($i = 0; $i < 5; $i++)
-                        <div class="tich-card tich-grading-question-card tich-mt-4">
-                            <div class="tich-form-group">
-                                <label class="tich-label">Question {{ $i + 1 }}</label>
-                                <button type="button" class="tich-link tich-grading-question-remove" data-remove-question>Remove</button>
-                                <input type="text" name="questions[{{ $i }}][question_text]" class="tich-input" placeholder="Question text (leave blank to skip)">
-                            </div>
-                            <div class="tich-grid tich-grid--3" style="gap:1rem;">
-                                <div class="tich-form-group">
-                                    <label class="tich-label">Type</label>
-                                    <select name="questions[{{ $i }}][question_type]" class="tich-input" onchange="toggleQuestionOptions(this)">
-                                        <option value="mcq">Multiple choice</option>
-                                        <option value="true_false">True / False</option>
-                                        <option value="essay">Essay / Long answer</option>
-                                        <option value="short_answer">Short answer</option>
-                                    </select>
-                                </div>
-                                <div class="tich-form-group question-options-field" data-options-field>
-                                    <label class="tich-label">Options (pipe-separated)</label>
-                                    <input type="text" name="questions[{{ $i }}][options]" class="tich-input question-options-input" placeholder="A|B|C" oninput="updateCorrectAnswerOptions(this)">
-                                </div>
-                                <div class="tich-form-group question-correct-field" data-correct-field>
-                                    <label class="tich-label">Correct answer</label>
-                                    <select name="questions[{{ $i }}][correct_answer]" class="tich-input question-correct-select" style="display:none;">
-                                        <option value="">Select correct answer</option>
-                                    </select>
-                                    <input type="text" name="questions[{{ $i }}][correct_answer]" class="tich-input question-correct-text" placeholder="A or true" style="display:none;">
-                                </div>
-                            </div>
-                            <div class="tich-form-group">
-                                <label class="tich-label">Points</label>
-                                <input type="number" name="questions[{{ $i }}][points]" class="tich-input" value="1" min="0.01" step="0.01" style="max-width:6rem;">
-                            </div>
-                        </div>
-                    @endfor
+                    @include('staff.partials.grading-objective-question-editor', ['rows' => []])
+
+                    <div class="tich-flex tich-flex--start" style="gap:0.75rem; margin-top:1rem; flex-wrap:wrap;">
+                        <button type="submit" name="intent" value="publish" class="tich-btn tich-btn-primary">Publish to students</button>
+                        <button type="submit" name="intent" value="draft" class="tich-btn tich-btn-secondary">Save as draft</button>
                     </div>
-
-                    <button type="button" class="tich-btn tich-btn-secondary tich-mt-4" data-add-question>+ Add another question</button>
-
-                    <script>
-                    function toggleQuestionOptions(select) {
-                        var card = select.closest('.tich-grading-question-card');
-                        var type = select.value;
-                        var optionsField = card.querySelector('[data-options-field]');
-                        var correctField = card.querySelector('[data-correct-field]');
-                        var correctSelect = card.querySelector('.question-correct-select');
-                        var correctText = card.querySelector('.question-correct-text');
-
-                        if (type === 'mcq') {
-                            optionsField.style.display = '';
-                            correctField.style.display = '';
-                            correctSelect.style.display = '';
-                            correctText.style.display = 'none';
-                            updateCorrectAnswerOptions(card.querySelector('.question-options-input'));
-                        } else if (type === 'true_false') {
-                            optionsField.style.display = 'none';
-                            correctField.style.display = '';
-                            correctSelect.style.display = '';
-                            correctText.style.display = 'none';
-                            correctSelect.innerHTML = '<option value="">Select correct answer</option>' +
-                                '<option value="true">True</option>' +
-                                '<option value="false">False</option>';
-                        } else {
-                            optionsField.style.display = 'none';
-                            correctField.style.display = '';
-                            correctSelect.style.display = 'none';
-                            correctText.style.display = '';
-                        }
-                    }
-
-                    function updateCorrectAnswerOptions(input) {
-                        var card = input.closest('.tich-grading-question-card');
-                        var select = card.querySelector('.question-correct-select');
-                        var current = select.value;
-                        var raw = input.value || '';
-                        var options = raw.split('|').map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
-
-                        select.innerHTML = '<option value="">Select correct answer</option>';
-                        options.forEach(function(opt) {
-                            var option = document.createElement('option');
-                            option.value = opt;
-                            option.textContent = opt;
-                            if (opt === current) {
-                                option.selected = true;
-                            }
-                            select.appendChild(option);
-                        });
-                    }
-
-                    document.querySelectorAll('.tich-grading-question-card select').forEach(function(select) {
-                        toggleQuestionOptions(select);
-                    });
-
-                    // The paper is rarely five questions long, so the form carries its own slots:
-                    // a new one is a copy of the last card with its answers cleared, and the fields
-                    // are renumbered from the position each card sits in so blanks never leave a hole.
-                    var questionList = document.getElementById('objective-question-list');
-
-                    function renumberQuestions() {
-                        questionList.querySelectorAll('.tich-grading-question-card').forEach(function(card, index) {
-                            card.querySelectorAll('[name]').forEach(function(field) {
-                                field.name = field.name.replace(/questions\[[^\]]*\]/, 'questions[' + index + ']');
-                            });
-
-                            var label = card.querySelector('.tich-label');
-
-                            if (label) {
-                                label.textContent = 'Question ' + (index + 1);
-                            }
-                        });
-                    }
-
-                    document.querySelector('[data-add-question]').addEventListener('click', function() {
-                        var cards = questionList.querySelectorAll('.tich-grading-question-card');
-                        var added = cards[cards.length - 1].cloneNode(true);
-
-                        added.querySelectorAll('input').forEach(function(input) {
-                            input.value = input.type === 'number' ? '1' : '';
-                        });
-                        added.querySelectorAll('select').forEach(function(select) {
-                            select.value = select.options.length ? select.options[0].value : '';
-                        });
-
-                        var correctSelect = added.querySelector('.question-correct-select');
-
-                        if (correctSelect) {
-                            correctSelect.innerHTML = '<option value="">Select correct answer</option>';
-                        }
-
-                        questionList.appendChild(added);
-                        renumberQuestions();
-                        added.querySelectorAll('select').forEach(function(select) {
-                            toggleQuestionOptions(select);
-                        });
-                        added.querySelector('input[type=text]').focus();
-                    });
-
-                    questionList.addEventListener('click', function(event) {
-                        var button = event.target.closest('[data-remove-question]');
-
-                        if (! button || questionList.querySelectorAll('.tich-grading-question-card').length <= 1) {
-                            return;
-                        }
-
-                        button.closest('.tich-grading-question-card').remove();
-                        renumberQuestions();
-                    });
-                    </script>
-
-                    <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Create assessment &amp; open response grid</button>
                 </form>
             </article>
         @endif

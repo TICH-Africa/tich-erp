@@ -10,6 +10,7 @@ use App\Models\Staff;
 use App\Models\UnitAllocation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class ObjectiveAutoGradingService
 {
@@ -29,7 +30,9 @@ class ObjectiveAutoGradingService
             ->orderByDesc('created_at')
             ->get();
 
-        $selectedId = request()->integer('objective_assessment') ?: $assessments->first()?->id;
+        // "new" opens the blank paper on purpose — otherwise the newest one swallows the form.
+        $requested = (string) request()->input('objective_assessment');
+        $selectedId = $requested === 'new' ? 0 : (request()->integer('objective_assessment') ?: $assessments->first()?->id);
         $selected = $assessments->firstWhere('id', $selectedId);
 
         $roster = app(StaffPortalDashboardService::class)->rosterForAllocation($allocation->id);
@@ -55,10 +58,10 @@ class ObjectiveAutoGradingService
      * @param  array<string, mixed>  $data
      * @param  list<array<string, mixed>>  $questions
      */
-    public function createAssessment(Staff $staff, UnitAllocation $allocation, array $data, array $questions): ObjectiveAssessment
+    public function createAssessment(Staff $staff, UnitAllocation $allocation, array $data, array $questions, bool $asDraft = false): ObjectiveAssessment
     {
         abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
-        abort_unless($questions !== [], 422, 'Add at least one objective question.');
+        abort_unless($asDraft || $questions !== [], 422, 'Add at least one objective question.');
 
         $assessment = ObjectiveAssessment::query()->create([
             'unit_allocation_id' => $allocation->id,
@@ -68,7 +71,7 @@ class ObjectiveAutoGradingService
             'assessment_type' => $data['assessment_type'] ?? 'mcq',
             'max_score' => (float) ($data['max_score'] ?? 100),
             'created_by' => $staff->id,
-            'status' => 'ready',
+            'status' => $asDraft ? 'draft' : 'ready',
             'created_at' => now(),
             'time_limit_minutes' => $data['time_limit_minutes'] ?? 30,
             'available_from' => $data['available_from'] ? now()->parse($data['available_from']) : null,
@@ -82,7 +85,7 @@ class ObjectiveAutoGradingService
         $this->syncQuestions($assessment, $questions);
 
         $this->auditService->log(
-            'staff.grading.objective_assessment_created',
+            $asDraft ? 'staff.grading.objective_assessment_drafted' : 'staff.grading.objective_assessment_created',
             'objective_assessments',
             $assessment->id,
             null,
@@ -92,12 +95,89 @@ class ObjectiveAutoGradingService
                 'question_count' => count($questions),
                 'unit_allocation_id' => $allocation->id,
             ],
-            'Objective assessment created',
+            $asDraft ? 'Objective assessment saved as draft' : 'Objective assessment created',
             'success',
             $staff->user_id ?? Auth::id(),
         );
 
         return $assessment->fresh(['questions']);
+    }
+
+    /**
+     * A draft is the lecturer's own workspace, so the set can still grow between sittings.
+     *
+     * @param  list<array<string, mixed>>  $questions
+     */
+    public function saveQuestions(ObjectiveAssessment $assessment, Staff $staff, array $questions): ObjectiveAssessment
+    {
+        $this->assertDraftEditor($assessment, $staff);
+
+        $this->syncQuestions($assessment, $questions);
+        $assessment->update(['updated_at' => now()]);
+
+        $this->auditService->log(
+            'staff.grading.objective_assessment_drafted',
+            'objective_assessments',
+            $assessment->id,
+            null,
+            ['question_count' => $assessment->fresh()->questions->count()],
+            'Objective assessment draft questions saved',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+
+        return $assessment->fresh(['questions']);
+    }
+
+    /**
+     * Hands the paper to the students. Every auto-keyed question needs its answer first, because
+     * marking at close time would otherwise score those questions wrong for the whole class.
+     */
+    public function publish(ObjectiveAssessment $assessment, Staff $staff): ObjectiveAssessment
+    {
+        $this->assertDraftEditor($assessment, $staff);
+
+        $questions = $assessment->load('questions')->questions;
+
+        if ($questions->isEmpty()) {
+            throw ValidationException::withMessages([
+                'publish' => 'Add at least one question to this paper before publishing it to students.',
+            ]);
+        }
+
+        $missing = $questions->values()
+            ->filter(fn (ObjectiveQuestion $question) => in_array((string) $question->question_type, ['mcq', 'true_false', 'matching'], true)
+                && trim((string) $question->correct_answer) === '')
+            ->keys()
+            ->map(fn (int $index) => $index + 1);
+
+        if ($missing->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'publish' => 'Question '.$missing->implode(', ').($missing->count() === 1 ? ' has' : ' have').
+                    ' no correct answer yet. Fill the answer key first, or those questions will mark every student wrong.',
+            ]);
+        }
+
+        $assessment->update(['status' => 'ready', 'updated_at' => now()]);
+
+        $this->auditService->log(
+            'staff.grading.objective_assessment_published',
+            'objective_assessments',
+            $assessment->id,
+            ['status' => 'draft'],
+            ['status' => 'ready', 'question_count' => $questions->count()],
+            'Objective assessment published to students',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+
+        return $assessment;
+    }
+
+    private function assertDraftEditor(ObjectiveAssessment $assessment, Staff $staff): void
+    {
+        abort_unless((int) $assessment->created_by === (int) $staff->id, 403);
+        abort_unless($assessment->status === 'draft', 403, 'Only a draft paper can be edited. Students already have this one.');
     }
 
     /**
