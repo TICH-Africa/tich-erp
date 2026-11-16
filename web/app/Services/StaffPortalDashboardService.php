@@ -599,10 +599,16 @@ class StaffPortalDashboardService
         }
 
         if ($programId) {
-            return $this->rosterForProgramUnit($programId, (int) $allocation->unit_id);
+            $roster = $this->rosterForProgramUnit($programId, (int) $allocation->unit_id);
+            if ($roster->isNotEmpty()) {
+                return $roster;
+            }
         }
 
-        return collect();
+        // A school that runs one live semester records the roll on the semester the intake opened,
+        // while an allocation can be filed against a later one. The students on the unit are still
+        // the lecturer's to mark, so reach past the semester row before showing an empty grid.
+        return $this->rosterForUnit((int) $allocation->unit_id, null);
     }
 
     /**
@@ -649,20 +655,19 @@ class StaffPortalDashboardService
     }
 
     /**
-     * @param  list<int>  $semesterIds
+     * @param  list<int>|null  $semesterIds  null asks for every semester the unit was ever registered on
      * @return Collection<int, object>
      */
-    public function rosterForUnit(int $unitId, array $semesterIds): Collection
+    public function rosterForUnit(int $unitId, ?array $semesterIds): Collection
     {
         if ($semesterIds === []) {
             return collect();
         }
 
-        return DB::table('registered_units as ru')
+        $roster = DB::table('registered_units as ru')
             ->join('student_semester_registrations as ssr', 'ssr.id', '=', 'ru.semester_registration_id')
             ->join('students as st', 'st.id', '=', 'ssr.student_id')
             ->leftJoin('applicants as a', 'a.id', '=', 'st.application_id')
-            ->whereIn('ssr.semester_id', $semesterIds)
             ->where('ru.unit_id', $unitId)
             ->where('st.is_active', 1)
             ->orderBy('st.registration_number')
@@ -671,8 +676,13 @@ class StaffPortalDashboardService
                 'st.registration_number',
                 DB::raw("TRIM(CONCAT(COALESCE(NULLIF(st.first_name,''), a.first_name, ''), ' ', COALESCE(NULLIF(st.surname,''), a.surname, ''))) as student_name"),
             ])
-            ->distinct()
-            ->get();
+            ->distinct();
+
+        if ($semesterIds !== null) {
+            $roster->whereIn('ssr.semester_id', $semesterIds);
+        }
+
+        return $roster->get();
     }
 
     /**
