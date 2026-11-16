@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PrunesStoredFiles;
 use App\Models\AcademicRecord;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -146,6 +147,46 @@ class Student extends Model
     public function scopeAlumni($query)
     {
         return $query->whereIn('enrollment_status', ['graduated', 'alumni']);
+    }
+
+    /**
+     * One search box for every student list. An officer types a name into a page that may have
+     * been filled from three tables at once - the application an admission was opened from, the
+     * student row Admissions types by hand, or the portal login - so a record must answer to
+     * whichever of them carries it. Every word has to match somewhere, so "Austine Okech" finds
+     * a student filed with those two names in different columns.
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        foreach (preg_split('/\s+/', $term) as $word) {
+            $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $word).'%';
+
+            $query->where(function (Builder $scoped) use ($like): void {
+                $scoped
+                    ->where('registration_number', 'like', $like)
+                    ->orWhere('first_name', 'like', $like)
+                    ->orWhere('middle_name', 'like', $like)
+                    ->orWhere('surname', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhere('phone_number', 'like', $like)
+                    ->orWhereHas('applicant', fn (Builder $applicant) => $applicant
+                        ->where('application_number', 'like', $like)
+                        ->orWhere('first_name', 'like', $like)
+                        ->orWhere('middle_name', 'like', $like)
+                        ->orWhere('surname', 'like', $like)
+                        ->orWhere('email', 'like', $like)
+                        ->orWhere('phone_number', 'like', $like))
+                    ->orWhereHas('user', fn (Builder $user) => $user->where('email', 'like', $like));
+            });
+        }
+
+        return $query;
     }
 
     /**

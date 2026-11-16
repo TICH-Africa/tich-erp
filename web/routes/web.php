@@ -1157,7 +1157,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/profile-changes/{profileChange}/reject', [\App\Http\Controllers\HR\StaffProfileChangeController::class, 'reject'])->name('hr.profile-changes.reject');
             Route::get('/staff/{staff}/edit', [\App\Http\Controllers\HR\StaffViewController::class, 'edit'])->name('hr.staff.edit');
             Route::put('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'update'])->name('hr.staff.update');
-            Route::delete('/staff/{staff}', [\App\Http\Controllers\HR\StaffViewController::class, 'destroy'])->name('hr.staff.destroy');
+            // There is no delete route for a staff record. Adding somebody is a permanent act here:
+            // marks, allocations, payroll and files point at the row, so HR archives or deactivates.
             Route::get('/onboarding', [\App\Http\Controllers\HR\OnboardingViewController::class, 'index'])->name('hr.onboarding.index');
             Route::get('/onboarding/create', [\App\Http\Controllers\HR\OnboardingViewController::class, 'create'])->name('hr.onboarding.create');
             Route::post('/onboarding', [\App\Http\Controllers\HR\OnboardingViewController::class, 'store'])->name('hr.onboarding.store');
@@ -1375,7 +1376,6 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/{staff}/archive', [\App\Http\Controllers\HR\ArchiveController::class, 'archive'])->name('store');
             Route::post('/{staff}/restore', [\App\Http\Controllers\HR\ArchiveController::class, 'restore'])->name('restore');
             Route::post('/{staff}/deactivate', [\App\Http\Controllers\HR\ArchiveController::class, 'deactivate'])->name('deactivate');
-            Route::delete('/{staff}', [\App\Http\Controllers\HR\ArchiveController::class, 'destroy'])->name('destroy');
             });
         });
     });

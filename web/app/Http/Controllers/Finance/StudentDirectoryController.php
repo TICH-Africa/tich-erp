@@ -20,10 +20,20 @@ class StudentDirectoryController extends Controller
 
     public function index(Request $request): View
     {
-        $students = Student::with(['program', 'campus', 'studentAccounts'])
+        $query = Student::with(['program', 'campus', 'studentAccounts'])
             ->where('is_active', 1)
-            ->orderByDesc('created_at')
-            ->paginate(25);
+            ->orderByDesc('created_at');
+
+        // The page has always carried a name box and a programme selector, so both have to filter.
+        if ($request->filled('search')) {
+            $query->search($request->string('search')->toString());
+        }
+
+        if ($request->filled('program_id')) {
+            $query->where('program_id', (int) $request->program_id);
+        }
+
+        $students = $query->paginate(25)->withQueryString();
 
         $programs = AcademicProgram::where('status', 'active')->orderBy('program_name')->get();
 

@@ -1345,11 +1345,7 @@ class StudentUnitRegistrationService
 
         $search = trim($request->string('student_search')->toString());
         if ($search !== '') {
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('registration_number', 'like', '%'.$search.'%')
-                    ->orWhere('first_name', 'like', '%'.$search.'%')
-                    ->orWhere('surname', 'like', '%'.$search.'%');
-            });
+            $query->search($search);
         }
 
         return $query->get()

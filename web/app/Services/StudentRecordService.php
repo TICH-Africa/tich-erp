@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Student;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class StudentRecordService
@@ -19,17 +18,7 @@ class StudentRecordService
             ->orderByDesc('created_at');
 
         if (! empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function (Builder $scoped) use ($search) {
-                $scoped->where('registration_number', 'like', "%{$search}%")
-                    ->orWhereHas('applicant', function (Builder $applicantQuery) use ($search) {
-                        $applicantQuery->where('application_number', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%")
-                            ->orWhere('first_name', 'like', "%{$search}%")
-                            ->orWhere('surname', 'like', "%{$search}%")
-                            ->orWhere('phone_number', 'like', "%{$search}%");
-                    });
-            });
+            $query->search($filters['search']);
         }
 
         if (! empty($filters['status'])) {
@@ -78,7 +67,9 @@ class StudentRecordService
 
         return [
             'identity' => [
-                'full_name' => $applicant?->fullName() ?? '-',
+                // A student Admissions typed by hand carries no application row, so the name and
+                // the contacts have to come off the student record before it reads empty.
+                'full_name' => $student->displayName() ?: '-',
                 'date_of_birth' => $applicant?->date_of_birth?->format('Y-m-d'),
                 'gender' => $applicant?->gender,
                 'nationality' => $applicant?->nationality,
@@ -87,8 +78,8 @@ class StudentRecordService
                 'photo_url' => $student->photoUrl(),
             ],
             'contact' => [
-                'email' => $applicant?->email,
-                'phone_number' => $applicant?->phone_number,
+                'email' => $student->email ?: $applicant?->email ?: $student->user?->email,
+                'phone_number' => $student->phone_number ?: $applicant?->phone_number,
                 'home_county' => $applicant?->home_county,
                 'postal_address' => $applicant?->postal_address,
                 'nationality' => $applicant?->nationality,
@@ -179,7 +170,9 @@ class StudentRecordService
 
         return [
             'identity' => [
-                'full_name' => $applicant?->fullName() ?? '-',
+                // A student Admissions typed by hand carries no application row, so the name and
+                // the contacts have to come off the student record before it reads empty.
+                'full_name' => $student->displayName() ?: '-',
                 'date_of_birth' => $applicant?->date_of_birth?->format('Y-m-d'),
                 'gender' => $applicant?->gender,
                 'nationality' => $applicant?->nationality,
@@ -188,8 +181,8 @@ class StudentRecordService
                 'photo_url' => $student->photoUrl(),
             ],
             'contact' => [
-                'email' => $applicant?->email,
-                'phone_number' => $applicant?->phone_number,
+                'email' => $student->email ?: $applicant?->email ?: $student->user?->email,
+                'phone_number' => $student->phone_number ?: $applicant?->phone_number,
                 'home_county' => $applicant?->home_county,
                 'postal_address' => $applicant?->postal_address,
                 'nationality' => $applicant?->nationality,

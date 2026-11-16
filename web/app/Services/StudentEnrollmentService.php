@@ -20,7 +20,7 @@ class StudentEnrollmentService
         $existing = Student::query()->where('application_id', $applicant->id)->first();
 
         if ($existing) {
-            return $existing;
+            return $this->fillMissingBiodata($existing, $applicant);
         }
 
         $applicant->loadMissing(['program', 'preferredCampus']);
@@ -30,7 +30,7 @@ class StudentEnrollmentService
 
             $existing = Student::query()->where('application_id', $applicant->id)->first();
             if ($existing) {
-                return $existing;
+                return $this->fillMissingBiodata($existing, $applicant);
             }
 
             $student = Student::create(array_merge([
@@ -48,7 +48,7 @@ class StudentEnrollmentService
                 'created_at' => now(),
                 'updated_at' => now(),
                 'created_by' => $createdBy,
-            ], $this->tierFieldsFromApplicant($applicant)));
+            ], $this->biodataFromApplicant($applicant), $this->tierFieldsFromApplicant($applicant)));
 
             $this->carryNextOfKin($applicant, $student, $createdBy);
 
@@ -76,7 +76,7 @@ class StudentEnrollmentService
         $existing = Student::query()->where('application_id', $applicant->id)->first();
 
         if ($existing) {
-            return $this->refreshPortalInvite($existing);
+            return $this->refreshPortalInvite($this->fillMissingBiodata($existing, $applicant));
         }
 
         $applicant->loadMissing(['program', 'preferredCampus']);
@@ -87,7 +87,7 @@ class StudentEnrollmentService
 
             $existing = Student::query()->where('application_id', $applicant->id)->first();
             if ($existing) {
-                return $this->refreshPortalInvite($existing);
+                return $this->refreshPortalInvite($this->fillMissingBiodata($existing, $applicant));
             }
 
             $token = Str::random(48);
@@ -110,7 +110,7 @@ class StudentEnrollmentService
                 'created_at' => now(),
                 'updated_at' => now(),
                 'created_by' => $createdBy,
-            ], $this->tierFieldsFromApplicant($applicant)));
+            ], $this->biodataFromApplicant($applicant), $this->tierFieldsFromApplicant($applicant)));
 
             $this->carryNextOfKin($applicant, $student, $createdBy);
 
@@ -264,6 +264,43 @@ class StudentEnrollmentService
                 'created_by' => $createdBy,
             ]);
         }
+    }
+
+    /**
+     * The student row carries the name and contacts of the person it describes, because every
+     * list searches its own columns. Admission used to leave them blank and the record then only
+     * answered to its registration number, so an officer hunting a student by name was told the
+     * school had never heard of them.
+     *
+     * @return array<string, string|null>
+     */
+    private function biodataFromApplicant(Applicant $applicant): array
+    {
+        return [
+            'first_name' => trim((string) $applicant->first_name),
+            'middle_name' => trim((string) $applicant->middle_name) ?: null,
+            'surname' => trim((string) $applicant->surname),
+            'email' => strtolower(trim((string) $applicant->email)) ?: null,
+            'phone_number' => trim((string) $applicant->phone_number) ?: null,
+        ];
+    }
+
+    /**
+     * Fill only what the student row is missing, so a contact an officer corrected by hand is
+     * never overwritten by the older application.
+     */
+    private function fillMissingBiodata(Student $student, Applicant $applicant): Student
+    {
+        $missing = collect($this->biodataFromApplicant($applicant))
+            ->filter(fn (?string $value) => $value !== null && $value !== '')
+            ->filter(fn (?string $value, string $field) => blank($student->getAttribute($field)))
+            ->all();
+
+        if ($missing !== []) {
+            $student->update($missing + ['updated_at' => now()]);
+        }
+
+        return $student;
     }
 
     /**

@@ -39,13 +39,7 @@ class AcademicStudentController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('registration_number', 'like', "%{$search}%")
-                  ->orWhere('first_name', 'like', "%{$search}%")
-                  ->orWhere('middle_name', 'like', "%{$search}%")
-                  ->orWhere('surname', 'like', "%{$search}%");
-            });
+            $query->search($request->string('search')->toString());
         }
 
         if ($request->filled('program_id')) {

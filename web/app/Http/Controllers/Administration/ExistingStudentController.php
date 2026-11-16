@@ -25,8 +25,14 @@ class ExistingStudentController extends Controller
         protected ProgramsService $programsService,
     ) {}
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        // "Add Existing Student" means an empty form. A retry Laravel kept from a refused save on
+        // another student must not walk in here as though it were the new record.
+        if ($request->old('form_student_id') !== '') {
+            $request->session()->forget('_old_input');
+        }
+
         $programs = AcademicProgram::where('status', 'active')->orderBy('program_name')->get();
         $campusSelectionOptions = $this->programsService->getCampusSelectionOptions();
 
@@ -46,12 +52,7 @@ class ExistingStudentController extends Controller
             ->orderByDesc('created_at');
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('registration_number', 'like', "%{$search}%")
-                  ->orWhere('first_name', 'like', "%{$search}%")
-                  ->orWhere('surname', 'like', "%{$search}%");
-            });
+            $query->search($request->string('search')->toString());
         }
 
         if ($request->filled('cohort_intake')) {
@@ -77,7 +78,16 @@ class ExistingStudentController extends Controller
             'first_name' => 'required|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'surname' => 'required|string|max:100',
-            'email' => 'required|email|unique:users,email',
+            'email' => [
+                'required',
+                'email',
+                // The address lives on the student row, so that is where a duplicate shows up. The
+                // login table is checked too because a portal account already answering to it
+                // belongs to somebody the school has, and a second record for them is how a
+                // student ends up "in the system" but missing from every list.
+                Rule::unique('students', 'email'),
+                Rule::unique('users', 'email'),
+            ],
             'phone_number' => 'nullable|string|max:20',
             'next_of_kin' => 'nullable|array',
             'next_of_kin.*.full_name' => 'nullable|string|max:300',
@@ -98,6 +108,8 @@ class ExistingStudentController extends Controller
             'community_college_site_id' => 'nullable|exists:campuses,id',
             'photo' => 'nullable|image|max:2048',
             'notes' => 'nullable|string',
+        ], [
+            'email.unique' => 'That email is already on a record in the system. Find the student by name or registration number and open it instead of adding them again.',
         ]);
 
         $nextOfKin = $this->nextOfKinContacts($validated);
@@ -209,8 +221,14 @@ class ExistingStudentController extends Controller
         return view('administration.applications.existing-student-show', compact('student', 'academicRecords', 'nextOfKin'));
     }
 
-    public function edit(Student $student): View
+    public function edit(Request $request, Student $student): View
     {
+        // Only a retry typed against this same student may refill the form. Coming from another
+        // record has to show the row the officer clicked, not the last name left in the session.
+        if ($request->old('form_student_id') !== (string) $student->id) {
+            $request->session()->forget('_old_input');
+        }
+
         $programs = AcademicProgram::where('status', 'active')->orderBy('program_name')->get();
         $campusSelectionOptions = $this->programsService->getCampusSelectionOptions();
 
@@ -230,8 +248,9 @@ class ExistingStudentController extends Controller
             'middle_name' => 'nullable|string|max:100',
             'surname' => 'required|string|max:100',
             'email' => [
-                'nullable',
+                'required',
                 'email',
+                Rule::unique('students', 'email')->ignore($student->id),
                 Rule::unique('users', 'email')->ignore($student->user_id),
             ],
             'phone_number' => 'nullable|string|max:20',
@@ -255,6 +274,8 @@ class ExistingStudentController extends Controller
             'photo' => 'nullable|image|max:2048',
             'photo_remove' => 'boolean',
             'notes' => 'nullable|string',
+        ], [
+            'email.unique' => 'That email is already on another student record in the system. Open that record instead of giving this one the same address.',
         ]);
 
         $nextOfKin = $this->nextOfKinContacts($validated);

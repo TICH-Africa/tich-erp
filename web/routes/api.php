@@ -97,7 +97,7 @@ Route::middleware(['auth:sanctum', 'mfa'])->prefix('hr')->group(function () {
     });
 
     Route::middleware('permission:hr.staff.delete')->group(function () {
-        Route::delete('/staff/{staff}', [StaffController::class, 'destroy']);
+        // A staff record is never deleted from the phone either; only its documents come off.
         Route::delete('/staff/{staff}/documents/{document}', [DocumentController::class, 'destroy']);
     });
 

@@ -3,7 +3,7 @@
 @section('title', 'Staff Archive')
 
 @section('hr-content')
-    <x-page-toolbar title="Staff Archive" meta="Archived and permanently deleted staff records">
+    <x-page-toolbar title="Staff Archive" meta="Staff who have left, kept on the record and restored from here">
         <x-slot:filters>
             <form method="GET" action="{{ route('hr.archive.index') }}" class="tich-page-toolbar__filters-form" data-live-filter>
                 @include('partials.search-field', ['placeholder' => 'Search archived staff...', 'value' => request('search')])
@@ -58,19 +58,6 @@
                                                 <path d="M21 3v5h-5"/>
                                                 <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
                                                 <path d="M8 16H3v5"/>
-                                            </svg>
-                                        </button>
-                                    </form>
-                                    <form method="POST" action="{{ route('hr.archive.destroy', $staff) }}" onsubmit="return confirm('Permanently delete this record? This cannot be undone.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="tich-squircle-btn tich-squircle-btn--danger" title="Permanently delete" aria-label="Permanently delete">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                <path d="M3 6h18"/>
-                                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-                                                <path d="M10 11v6"/>
-                                                <path d="M14 11v6"/>
                                             </svg>
                                         </button>
                                     </form>

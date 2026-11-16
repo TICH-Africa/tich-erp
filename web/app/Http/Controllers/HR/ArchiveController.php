@@ -103,26 +103,6 @@ class ArchiveController extends Controller
         return redirect()->route('hr.archive.index')->with('status', 'Staff restored successfully.');
     }
 
-    public function destroy(Request $request, string $staff): RedirectResponse
-    {
-        $staffModel = Staff::withTrashed()->findOrFail($staff);
-        $staffModel->forceDelete();
-
-        $this->auditService->log(
-            'hr.staff.permanently_deleted',
-            'staff',
-            $staffModel->id,
-            ['archived_at' => $staffModel->archived_at, 'archive_reason' => $staffModel->archive_reason],
-            null,
-            null,
-            'success',
-            $request->user()->id,
-            $request
-        );
-
-        return redirect()->route('hr.archive.index')->with('status', 'Staff permanently deleted.');
-    }
-
     public function deactivate(Request $request, string $staff): RedirectResponse
     {
         $staffModel = Staff::withTrashed()->findOrFail($staff);

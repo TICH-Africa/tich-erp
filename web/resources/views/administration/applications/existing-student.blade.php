@@ -15,6 +15,22 @@
                 default => 'campus',
             }
         );
+
+        // A student admitted from an application keeps its name and contacts on the application row
+        // until this form is saved, so each box reads whichever table actually holds the value.
+        $biodata = function (string $field, array $sources) use ($student): string {
+            foreach ($sources as $source) {
+                $value = trim((string) ($source === 'student'
+                    ? ($student?->{$field} ?? '')
+                    : ($student?->{$source}?->{$field} ?? '')));
+
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+
+            return '';
+        };
     @endphp
 
     <x-page-toolbar
@@ -36,8 +52,9 @@
         </div>
     @endif
 
-    <form method="POST" enctype="multipart/form-data" class="tich-mt-6" action="{{ $editing ? route('administration.applications.existing-student.update', $student) : route('administration.applications.existing-student.store') }}">
+    <form method="POST" enctype="multipart/form-data" autocomplete="off" class="tich-mt-6" action="{{ $editing ? route('administration.applications.existing-student.update', $student) : route('administration.applications.existing-student.store') }}">
             @csrf
+            <input type="hidden" name="form_student_id" value="{{ $student->id ?? '' }}">
             @if ($editing)
                 @method('PUT')
             @endif
@@ -51,27 +68,27 @@
                 </div>
                 <div>
                     <label class="tich-label">First Name *</label>
-                    <input type="text" name="first_name" class="tich-input" required value="{{ old('first_name', $student->first_name ?? '') }}">
+                    <input type="text" name="first_name" class="tich-input" required value="{{ old('first_name', $biodata('first_name', ['student', 'applicant'])) }}">
                     @error('first_name')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="tich-label">Middle Name</label>
-                    <input type="text" name="middle_name" class="tich-input" value="{{ old('middle_name', $student->middle_name ?? '') }}">
+                    <input type="text" name="middle_name" class="tich-input" value="{{ old('middle_name', $biodata('middle_name', ['student', 'applicant'])) }}">
                     @error('middle_name')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="tich-label">Surname *</label>
-                    <input type="text" name="surname" class="tich-input" required value="{{ old('surname', $student->surname ?? '') }}">
+                    <input type="text" name="surname" class="tich-input" required value="{{ old('surname', $biodata('surname', ['student', 'applicant'])) }}">
                     @error('surname')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="tich-label">Email *</label>
-                    <input type="email" name="email" class="tich-input" required value="{{ old('email', $student->email ?? ($student ?? null)?->user?->email ?? ($student ?? null)?->applicant?->email ?? '') }}">
+                    <input type="email" name="email" class="tich-input" required value="{{ old('email', $biodata('email', ['student', 'applicant', 'user'])) }}">
                     @error('email')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="tich-label">Phone Number</label>
-                    <input type="text" name="phone_number" class="tich-input" value="{{ old('phone_number', $student->phone_number ?? ($student ?? null)?->user?->phone_number ?? '') }}">
+                    <input type="text" name="phone_number" class="tich-input" value="{{ old('phone_number', $biodata('phone_number', ['student', 'applicant'])) }}">
                     @error('phone_number')<p class="tich-field-error">{{ $message }}</p>@enderror
                 </div>
             </div>

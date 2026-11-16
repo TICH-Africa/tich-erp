@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\StudentPortalInvitationEmail;
+use App\Models\Applicant;
 use App\Models\Student;
 use App\Models\User;
 use App\Support\ModuleMail;
@@ -44,7 +45,7 @@ class StudentPortalInviteService
         if (! $student) {
             return [
                 'success' => false,
-                'message' => 'No enrolled student is registered with '.$email.'. Admissions creates student records on admission, so ask them to confirm the email on the application.',
+                'message' => $this->unknownEmailMessage($email),
             ];
         }
 
@@ -205,38 +206,50 @@ class StudentPortalInviteService
 
     private function applyTerm(Builder $query, string $term): void
     {
-        $like = '%'.str_replace(['%', '_'], ['\%', '\_'], trim($term)).'%';
-
-        $query->where(function (Builder $nested) use ($like): void {
-            $nested
-                ->where('students.registration_number', 'like', $like)
-                ->orWhere('students.first_name', 'like', $like)
-                ->orWhere('students.surname', 'like', $like)
-                ->orWhere('students.email', 'like', $like)
-                ->orWhereHas('applicant', function (Builder $applicant) use ($like): void {
-                    $applicant->where('first_name', 'like', $like)
-                        ->orWhere('surname', 'like', $like)
-                        ->orWhere('email', 'like', $like);
-                })
-                ->orWhereHas('user', fn (Builder $user) => $user->where('users.email', 'like', $like));
-        });
+        $query->search($term);
     }
 
-    private function studentQuery(): Builder
-    {
-        return $this->browseQuery()->where('students.is_active', 1);
-    }
-
+    /**
+     * An email typed at the desk has to be answered by whichever record carries it. A graduate
+     * still needs the portal for a transcript, and refusing them as "not registered" sent the
+     * officer off to hunt for a student who was in the system all along.
+     */
     private function findStudentByEmail(string $email): ?Student
     {
-        return $this->studentQuery()
-            ->where(function ($query) use ($email): void {
+        return $this->browseQuery()
+            ->where(function (Builder $query) use ($email): void {
                 $query->whereRaw('LOWER(students.email) = ?', [$email])
-                    ->orWhereHas('applicant', fn ($applicant) => $applicant->whereRaw('LOWER(email) = ?', [$email]))
-                    ->orWhereHas('user', fn ($user) => $user->whereRaw('LOWER(users.email) = ?', [$email]));
+                    ->orWhereHas('applicant', fn (Builder $applicant) => $applicant->whereRaw('LOWER(email) = ?', [$email]))
+                    ->orWhereHas('user', fn (Builder $user) => $user->whereRaw('LOWER(users.email) = ?', [$email]));
             })
+            ->orderByRaw('students.is_active DESC')
             ->orderByDesc('students.id')
             ->first();
+    }
+
+    /**
+     * Where the address was seen, in the words an officer can act on, rather than a flat "not
+     * in the system" for a person the school already holds.
+     */
+    private function unknownEmailMessage(string $email): string
+    {
+        $applicant = Applicant::query()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->orderByDesc('id')
+            ->first();
+
+        if ($applicant) {
+            return trim($applicant->first_name.' '.$applicant->surname).' applied as '.$applicant->application_number
+                .' on '.$applicant->created_at?->format('d M Y').', but Admissions has not admitted that application yet, so there is no student record to invite.';
+        }
+
+        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+
+        if ($user) {
+            return 'That email belongs to a portal login that is not linked to a student record yet. Open the account from the list below rather than inviting it again.';
+        }
+
+        return 'Nothing in the school carries '.$email.'. Check the spelling with the student, or add them under Admissions first.';
     }
 
     private function emailFor(Student $student): ?string

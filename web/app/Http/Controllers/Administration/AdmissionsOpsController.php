@@ -62,18 +62,11 @@ class AdmissionsOpsController extends Controller
                 ->where('is_active', 1);
 
             if ($search !== '') {
-                $studentQuery->where(function (Builder $q) use ($search) {
-                    $q->where('registration_number', 'like', "%{$search}%")
-                        ->orWhere('first_name', 'like', "%{$search}%")
-                        ->orWhere('surname', 'like', "%{$search}%")
-                        ->orWhereHas('program', function (Builder $pq) use ($search) {
+                $studentQuery->where(function (Builder $q) use ($search): void {
+                    $q->search($search)
+                        ->orWhereHas('program', function (Builder $pq) use ($search): void {
                             $pq->where('program_name', 'like', "%{$search}%")
                                 ->orWhere('program_code', 'like', "%{$search}%");
-                        })
-                        ->orWhereHas('applicant', function (Builder $aq) use ($search) {
-                            $aq->where('first_name', 'like', "%{$search}%")
-                                ->orWhere('surname', 'like', "%{$search}%")
-                                ->orWhere('application_number', 'like', "%{$search}%");
                         });
                 });
             }

@@ -253,25 +253,4 @@ class StaffController extends Controller
 
         return response()->json(['data' => $staff->fresh()->load('department', 'campus', 'lineManager')]);
     }
-
-    public function destroy(Request $request, int $id)
-    {
-        $staff = Staff::findOrFail($id);
-
-        $this->auditService->log(
-            'staff.deleted',
-            'staff',
-            $staff->id,
-            $staff->toArray(),
-            null,
-            'Staff record deleted',
-            'success',
-            $request->user()->id,
-            $request
-        );
-
-        $staff->delete();
-
-        return response()->json(null, 204);
-    }
 }

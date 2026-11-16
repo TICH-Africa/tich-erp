@@ -491,29 +491,6 @@ class StaffViewController extends Controller
         return redirect()->route('hr.staff.show', $staff)->with('success', $message);
     }
 
-    public function destroy(Request $request, int $id)
-    {
-        $staff = Staff::excludePlatformOperators()->findOrFail($id);
-
-        DB::transaction(function () use ($staff, $request) {
-            $this->auditService->log(
-                'staff.deleted',
-                'staff',
-                $staff->id,
-                $staff->toArray(),
-                null,
-                'Staff record deleted',
-                'success',
-                $request->user()->id,
-                $request
-            );
-
-            $staff->delete();
-        });
-
-        return redirect()->route('hr.staff.index')->with('success', 'Staff member deleted successfully.');
-    }
-
     private function prepareStaffEmails(array $validated, ?Staff $staff = null): array
     {
         // Organisation email is assigned manually by ICT only.
