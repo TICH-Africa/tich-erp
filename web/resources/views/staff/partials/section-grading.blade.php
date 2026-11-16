@@ -41,7 +41,7 @@
     @if ($marksLocked)
         <article class="tich-card tich-mt-6" style="border-color:var(--tich-blue);">
             <h2 class="tich-h3">Marks submitted to Academics</h2>
-            <p class="tich-text tich-mt-2">Academics took these marks over on {{ $marksLockedLabel }} and locked them, so this unit is read-only - the exam marks, the CAT and practical scores and the typed averages can no longer be changed here. Ask Academics to unlock the unit if a mark is wrong; attendance keeps being marked as usual.</p>
+            <p class="tich-text tich-mt-2">Academics took these marks over on {{ $marksLockedLabel }} and locked them, so this unit is read-only - the exam marks and the CAT, assignment and practical scores can no longer be changed here, and no assessment column can be added. Ask Academics to unlock the unit if a mark is wrong; attendance keeps being marked as usual.</p>
         </article>
     @endif
 
@@ -83,6 +83,34 @@
                         <span class="tich-autosave-status" data-autosave-status="grading-grid" data-state="idle" aria-live="polite">Changes save automatically</span>
                     @endif
                 </div>
+
+                @if ($errors->any())
+                    <p class="tich-text tich-mt-4" style="color:var(--tich-danger, #b91c1c);">{{ $errors->first() }}</p>
+                @endif
+
+                @if (! $marksLocked)
+                    <form method="POST" action="{{ route('staff.grading.column.store') }}" class="tich-grid tich-grid--4" style="gap:0.75rem; align-items:end; margin-top:1rem;">
+                        @csrf
+                        <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
+                        <div class="tich-form-group" style="margin:0;">
+                            <label class="tich-label" for="column_name">Add an assessment you ran</label>
+                            <input type="text" id="column_name" name="assessment_name" class="tich-input" maxlength="200" placeholder="CAT 3, Assignment 2, Practical 2…" required>
+                        </div>
+                        <div class="tich-form-group" style="margin:0;">
+                            <label class="tich-label" for="column_type">Kind</label>
+                            <select id="column_type" name="assessment_type" class="tich-input" required>
+                                @foreach ($gradingTerminal['assessmentTypes'] as $type => $label)
+                                    <option value="{{ $type }}" @selected($type === 'cat')>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="tich-form-group" style="margin:0;">
+                            <label class="tich-label" for="column_max">Out of</label>
+                            <input type="number" id="column_max" name="max_score" class="tich-input" step="0.01" min="0.01" max="100" value="20" required>
+                        </div>
+                        <button type="submit" class="tich-btn tich-btn-primary">+ Add column</button>
+                    </form>
+                @endif
 
                 <form method="POST" action="{{ route('staff.grading.grid') }}" class="tich-mt-4" data-autosave="grading-grid">
                     @csrf
@@ -157,7 +185,7 @@
                     @if ($marksLocked)
                         <p class="tich-caption">Academics submitted this unit's marks on {{ $marksLockedLabel }}, so the grid is read-only. Ask them to unlock the unit to correct a mark.</p>
                     @else
-                        <p class="tich-caption">Enter final exam scores (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). The CAT, practical and attendance averages come from the marks already entered - type your own figure into any of them and the final grade follows what you typed, for example when the CATs or attendance were taken on paper. Leave a box empty to keep the figure the system worked out, shown greyed in the box. A CAT the student sat on an objective paper is marked automatically, so its figure is fixed and only the exam mark is yours to enter. An exam mark can be recorded here whether or not the tutor has entered theirs. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
+                        <p class="tich-caption">Type the final exam score only (out of {{ number_format($examMarksSheet['exam_max'] ?? 100, 0) }}). The CAT, practical and attendance figures are read from the CAT &amp; continuous assessment grid and the signed registers, so correct a mark there and this sheet re-weights itself - an exam mark can be recorded here whether or not the tutor has entered theirs. Final grade uses exam weight {{ number_format($weights['exam'], 0) }}%.</p>
                         <span class="tich-autosave-status" data-autosave-status="grading-exams" data-state="idle" aria-live="polite">Changes save automatically</span>
                     @endif
                 </div>
@@ -187,44 +215,9 @@
                                     <tr>
                                         <td>{{ $row['registration_number'] }}</td>
                                         <td>{{ $row['student_name'] }}</td>
-                                        <td>
-                                            @if (! empty($row['cat_fetched']))
-                                                {{ number_format($row['cat_total'], 1) }}
-                                                <br><span class="tich-caption">objective CAT</span>
-                                            @else
-                                                <input type="number"
-                                                       step="0.01"
-                                                       min="0"
-                                                       max="100"
-                                                       name="cat_averages[{{ $row['student_id'] }}]"
-                                                       value="{{ $row['cat_entered'] ? $row['cat_total'] : '' }}"
-                                                       class="tich-input"
-                                                       style="width:5.5rem;"
-                                                       placeholder="{{ number_format($row['cat_total'], 1) }}"@if ($marksLocked) disabled @endif>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <input type="number"
-                                                   step="0.01"
-                                                   min="0"
-                                                   max="100"
-                                                   name="practical_averages[{{ $row['student_id'] }}]"
-                                                   value="{{ $row['practical_entered'] ? $row['practical_total'] : '' }}"
-                                                   class="tich-input"
-                                                   style="width:5.5rem;"
-                                                   placeholder="{{ number_format($row['practical_total'], 1) }}"@if ($marksLocked) disabled @endif>
-                                        </td>
-                                        <td>
-                                            <input type="number"
-                                                   step="0.01"
-                                                   min="0"
-                                                   max="100"
-                                                   name="attendance_percents[{{ $row['student_id'] }}]"
-                                                   value="{{ $row['attendance_entered'] ? $row['attendance_pct'] : '' }}"
-                                                   class="tich-input"
-                                                   style="width:5.5rem;"
-                                                   placeholder="{{ number_format($row['attendance_pct'], 1) }}"@if ($marksLocked) disabled @endif>
-                                        </td>
+                                        <td>{{ number_format($row['cat_total'], 1) }}</td>
+                                        <td>{{ number_format($row['practical_total'], 1) }}</td>
+                                        <td>{{ $row['attendance_pct'] === null ? 'Unmarked' : number_format($row['attendance_pct'], 1) }}</td>
                                         <td>{{ number_format($row['continuous_total'], 1) }}</td>
                                         <td>
                                             <input type="number"
@@ -276,7 +269,7 @@
                                     <td>{{ $row['registration_number'] }} · {{ $row['student_name'] }}</td>
                                     <td>{{ number_format($row['breakdown']['cat_avg'], 1) }}%</td>
                                     <td>{{ number_format($row['breakdown']['practical_avg'], 1) }}%</td>
-                                    <td>{{ number_format($row['breakdown']['attendance_pct'], 1) }}%</td>
+                                    <td>{{ $row['breakdown']['attendance_pct'] === null ? 'Unmarked' : number_format($row['breakdown']['attendance_pct'], 1).'%' }}</td>
                                     <td><strong>{{ number_format($row['cumulative'], 1) }}%</strong></td>
                                     <td>{{ $row['grade_letter'] }}</td>
                                 </tr>

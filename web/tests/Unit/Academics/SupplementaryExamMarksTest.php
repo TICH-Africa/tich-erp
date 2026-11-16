@@ -5,6 +5,7 @@ namespace Tests\Unit\Academics;
 use App\Models\AcademicProgram;
 use App\Models\Staff;
 use App\Models\Student;
+use App\Models\Unit;
 use App\Models\UnitAllocation;
 use App\Models\User;
 use App\Services\ContinuousAssessmentService;
@@ -150,7 +151,8 @@ class SupplementaryExamMarksTest extends TestCase
             'issued_at' => '2026-04-01',
         ]);
 
-        // One CAT at 60% with the default 30/15/5/50 profile banks a continuous score of 36.
+        // One CAT at 60% on the 30/15/5/50 profile banks a continuous score of 36. The register was
+        // signed and this student never turned up, so attendance carries its zero weight.
         DB::table('cat_scores')->insert([
             'student_id' => $this->student->id,
             'unit_id' => $this->unitId,
@@ -163,6 +165,17 @@ class SupplementaryExamMarksTest extends TestCase
             'weight_in_final' => 30,
             'recorded_by' => $staffId,
             'recorded_at' => '2026-03-01 09:00:00',
+        ]);
+
+        DB::table('attendance_summaries')->insert([
+            'student_id' => $this->student->id,
+            'unit_id' => $this->unitId,
+            'semester_id' => $this->semesterId,
+            'total_sessions' => 10,
+            'total_present' => 0,
+            'attendance_percentage' => 0,
+            'status_flag' => 'red',
+            'last_calculated_at' => '2026-04-01 09:00:00',
         ]);
 
         // The sitting that failed: 36 continuous plus a 20 exam out of 50 weights is 28 - an F.
@@ -450,6 +463,54 @@ class SupplementaryExamMarksTest extends TestCase
             ->where(['student_id' => $this->student->id, 'unit_id' => $this->unitId, 'is_supplementary' => 0])
             ->first();
         $this->assertSame('D', $sitting->grade_letter);
+    }
+
+    public function test_a_mark_saved_in_the_assessment_grid_re_weights_the_exam_sheet(): void
+    {
+        [$staffId, $allocationId] = $this->allocateLecturer('EMP/TEST/0006', 'grid@test.africa');
+        $allocation = UnitAllocation::query()->findOrFail($allocationId);
+        $staff = Staff::query()->findOrFail($staffId);
+
+        app(StaffExamMarksService::class)->save($allocation, $staff, [(int) $this->student->id => 46]);
+
+        app(ContinuousAssessmentService::class)->saveGrid(
+            $allocation,
+            $staff,
+            [['key' => 'cat_2', 'name' => 'CAT 2', 'type' => 'cat', 'max' => 30]],
+            [(int) $this->student->id => ['cat_2' => 30]],
+        );
+
+        // The two CATs now average 80%, the register still scores zero, and nothing was typed on
+        // the exam sheet: 80*30/50 is 48 continuous, which on 46 exam weights out at 47.
+        $sitting = DB::table('exam_results')
+            ->where(['student_id' => $this->student->id, 'unit_id' => $this->unitId, 'is_supplementary' => 0])
+            ->first();
+        $this->assertSame(80.0, (float) $sitting->cat_total);
+        $this->assertSame(46.0, (float) $sitting->final_exam_score);
+        $this->assertSame(47.0, (float) $sitting->final_total_score);
+        $this->assertSame('D', $sitting->grade_letter);
+
+        $grade = DB::table('grade_records')->where('id', $this->gradeRecordId)->first();
+        $this->assertSame(47.0, (float) $grade->final_score);
+    }
+
+    public function test_an_unmarked_register_leaves_the_attendance_weight_out(): void
+    {
+        DB::table('attendance_summaries')
+            ->where(['student_id' => $this->student->id, 'unit_id' => $this->unitId, 'semester_id' => $this->semesterId])
+            ->delete();
+
+        $breakdown = app(ContinuousAssessmentService::class)->continuousBreakdownFor(
+            (int) $this->student->id,
+            $this->unitId,
+            $this->semesterId,
+            Unit::query()->findOrFail($this->unitId),
+        );
+
+        // A register nobody signed is missing data, not a zero, so attendance neither scores nor
+        // drags: the 60% CAT is averaged over the CAT and practical weights alone.
+        $this->assertNull($breakdown['attendance_pct']);
+        $this->assertSame(40.0, $breakdown['cumulative']);
     }
 
     /**

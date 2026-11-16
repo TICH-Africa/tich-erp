@@ -373,29 +373,11 @@ class StaffPortalActionController extends Controller
         $staff = $this->portalService->staffForUser($request->user());
         $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
 
-        $averageLabels = [
-            'cat_averages' => 'A CAT average',
-            'practical_averages' => 'A practical average',
-            'attendance_percents' => 'An attendance percentage',
-        ];
-        $averageMessages = [];
-        foreach ($averageLabels as $field => $label) {
-            foreach (['numeric', 'min', 'max'] as $rule) {
-                $averageMessages["{$field}.*.{$rule}"] = "{$label} must be a number between 0 and 100.";
-            }
-        }
-
         $validated = $request->validate([
             'allocation_id' => ['required', 'integer'],
             'exam_max' => ['nullable', 'numeric', 'min:1', 'max:100'],
             'exam_scores' => ['nullable', 'array'],
-            'cat_averages' => ['nullable', 'array'],
-            'cat_averages.*' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'practical_averages' => ['nullable', 'array'],
-            'practical_averages.*' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'attendance_percents' => ['nullable', 'array'],
-            'attendance_percents.*' => ['nullable', 'numeric', 'min:0', 'max:100'],
-        ], $averageMessages);
+        ]);
 
         try {
             $this->examMarks->save(
@@ -403,11 +385,6 @@ class StaffPortalActionController extends Controller
                 $staff,
                 $validated['exam_scores'] ?? [],
                 (float) ($validated['exam_max'] ?? 100),
-                [
-                    'cat' => $validated['cat_averages'] ?? [],
-                    'practical' => $validated['practical_averages'] ?? [],
-                    'attendance' => $validated['attendance_percents'] ?? [],
-                ],
             );
         } catch (ValidationException $exception) {
             $rejected = $this->autosaveRejection($request, $exception);
@@ -420,6 +397,34 @@ class StaffPortalActionController extends Controller
         }
 
         return $this->gradingSaveResponse($request, $allocation->id, 'Exam marks saved and final grades updated.');
+    }
+
+    public function addGradingColumn(Request $request): RedirectResponse
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
+
+        $validated = $request->validate([
+            'allocation_id' => ['required', 'integer'],
+            'assessment_name' => ['required', 'string', 'max:200'],
+            'assessment_type' => ['required', 'string', 'in:'.implode(',', array_keys($this->assessments->assessmentTypeLabels()))],
+            'max_score' => ['required', 'numeric', 'min:0.01', 'max:100'],
+        ], [
+            'max_score.max' => 'The column maximum must be a number between 0.01 and 100.',
+        ]);
+
+        $this->assessments->addColumn(
+            $allocation,
+            $staff,
+            $validated['assessment_name'],
+            $validated['assessment_type'],
+            (float) $validated['max_score'],
+        );
+
+        return redirect()->route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $allocation->id,
+        ])->with('status', $validated['assessment_name'].' is now a column in the assessment grid. Enter the marks against it.');
     }
 
     public function storeObjectiveAssessment(Request $request): RedirectResponse

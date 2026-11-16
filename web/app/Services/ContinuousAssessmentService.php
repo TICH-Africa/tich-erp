@@ -9,6 +9,7 @@ use App\Models\UnitAllocation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ContinuousAssessmentService
 {
@@ -66,30 +67,148 @@ class ContinuousAssessmentService
      */
     public function columnsForAllocation(UnitAllocation $allocation): array
     {
-        $existing = DB::table('cat_scores')
+        $configured = DB::table('unit_assessment_columns')
+            ->where('unit_id', $allocation->unit_id)
+            ->where('semester_id', $allocation->semester_id)
+            ->orderBy('id')
+            ->get(['assessment_name', 'assessment_type', 'max_score'])
+            ->map(fn (object $row) => [
+                'name' => (string) $row->assessment_name,
+                'type' => (string) $row->assessment_type,
+                'max' => (float) $row->max_score,
+            ]);
+
+        // A mark that arrived without anyone adding a column - an auto-graded objective paper, a
+        // CAT recorded from the phone - still earns its own column in this table.
+        $scored = DB::table('cat_scores')
             ->where('unit_id', $allocation->unit_id)
             ->where('semester_id', $allocation->semester_id)
             ->orderByDesc('id')
             ->get(['assessment_name', 'assessment_type', 'max_score'])
             ->unique('assessment_name')
             ->sortBy('assessment_name')
+            ->reject(fn (object $row) => $configured->contains(
+                fn (array $column) => $column['name'] === (string) $row->assessment_name
+            ))
+            ->map(fn (object $row) => [
+                'name' => (string) $row->assessment_name,
+                'type' => (string) $row->assessment_type,
+                'max' => (float) $row->max_score,
+            ])
             ->values();
 
-        if ($existing->isEmpty()) {
+        $columns = $configured->concat($scored->all())->values();
+
+        if ($columns->isEmpty()) {
             return $this->defaultAssessmentColumns();
         }
 
-        return $existing->map(function ($row, $index) {
-            $name = (string) $row->assessment_name;
-
+        return $columns->map(function (array $column, $index) {
             return [
                 'key' => 'col_'.$index,
-                'name' => $name,
-                'type' => (string) $row->assessment_type,
-                'max' => (float) $row->max_score,
-                'label' => $name,
+                'name' => $column['name'],
+                'type' => $column['type'],
+                'max' => $column['max'],
+                'label' => $column['name'],
             ];
         })->values()->all();
+    }
+
+    /**
+     * A column the lecturer adds by hand: a CAT, assignment or practical they ran on paper. It
+     * opens an empty box for every student on the roll, so the mark is entered here and nowhere
+     * else, and the exam sheet reads the average off it.
+     */
+    public function addColumn(UnitAllocation $allocation, Staff $staff, string $name, string $type, float $max): void
+    {
+        abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
+
+        $allocation->loadMissing('semester');
+        app(ExamMarksLockService::class)->assertEditable(
+            (int) $allocation->unit_id,
+            $allocation->semester_id ? (int) $allocation->semester_id : null,
+            'the assessment columns',
+            (int) ($allocation->semester?->semester_number ?? 1),
+        );
+
+        $name = trim(preg_replace('/\s+/', ' ', $name));
+
+        // Measured against the columns the lecturer can actually see, and checked before anything is
+        // written: a refused name must leave the unit exactly as it was.
+        $taken = collect($this->columnsForAllocation($allocation))
+            ->pluck('name')
+            ->map(fn (string $label) => trim(preg_replace('/\s+/', ' ', $label)))
+            ->contains($name);
+
+        if ($taken) {
+            throw ValidationException::withMessages([
+                'assessment_name' => $name.' is already a column on this unit. Enter its mark in that column instead of adding it again.',
+            ]);
+        }
+
+        $this->materializeColumns($allocation, $staff);
+
+        DB::table('unit_assessment_columns')->insert([
+            'unit_id' => (int) $allocation->unit_id,
+            'semester_id' => (int) $allocation->semester_id,
+            'assessment_name' => $name,
+            'assessment_type' => $type,
+            'max_score' => $max,
+            'created_by' => $staff->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->auditService->log(
+            'staff.grading.column_added',
+            'unit_allocations',
+            $allocation->id,
+            null,
+            [
+                'unit_id' => $allocation->unit_id,
+                'semester_id' => $allocation->semester_id,
+                'assessment_name' => $name,
+                'assessment_type' => $type,
+                'max_score' => $max,
+            ],
+            'Assessment column added to the continuous assessment grid',
+            'success',
+            $staff->user_id ?? Auth::id(),
+        );
+    }
+
+    /**
+     * The six columns a fresh unit shows are the school's standing ones, not records. The first time
+     * anyone adds a column or saves a mark against the unit they become that unit's own columns, so
+     * the boxes the lecturer is filling never disappear underneath the new one.
+     */
+    private function materializeColumns(UnitAllocation $allocation, Staff $staff): void
+    {
+        $already = DB::table('unit_assessment_columns')
+            ->where('unit_id', $allocation->unit_id)
+            ->where('semester_id', $allocation->semester_id)
+            ->exists();
+
+        if ($already) {
+            return;
+        }
+
+        $now = now();
+
+        DB::table('unit_assessment_columns')->insert(
+            collect($this->defaultAssessmentColumns())
+                ->map(fn (array $column) => [
+                    'unit_id' => (int) $allocation->unit_id,
+                    'semester_id' => (int) $allocation->semester_id,
+                    'assessment_name' => $column['name'],
+                    'assessment_type' => $column['type'],
+                    'max_score' => $column['max'],
+                    'created_by' => $staff->id,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])
+                ->all()
+        );
     }
 
     /**
@@ -142,6 +261,8 @@ class ContinuousAssessmentService
                 ->filter(fn ($cells) => is_array($cells) && collect($cells)->contains(fn ($cell) => $cell !== null && $cell !== ''))
                 ->keys(),
         );
+
+        $this->materializeColumns($allocation, $staff);
 
         foreach ($gridScores as $studentId => $cells) {
             foreach ($columns as $column) {
@@ -233,11 +354,11 @@ class ContinuousAssessmentService
                 ->where('semester_id', $allocation->semester_id)
                 ->get();
 
-            $attendancePct = (float) (DB::table('attendance_summaries')
-                ->where('student_id', $studentId)
-                ->where('unit_id', $allocation->unit_id)
-                ->where('semester_id', $allocation->semester_id)
-                ->value('attendance_percentage') ?? 0);
+            $attendancePct = $this->attendancePercentage(
+                $studentId,
+                (int) $allocation->unit_id,
+                (int) $allocation->semester_id,
+            );
 
             $breakdown = $this->buildWeightedBreakdown($scores, $attendancePct, $weights);
             $cumulative = $breakdown['cumulative'];
@@ -265,6 +386,10 @@ class ContinuousAssessmentService
 
     public function recalculateCumulativeScores(UnitAllocation $allocation): void
     {
+        // A CAT entered here moves the sitting it belongs to, so the exam sheet never keeps a
+        // total worked out from the marks that stood before it.
+        $this->refreshSittingsFromContinuous($allocation);
+
         $sheet = $this->cumulativeSheet($allocation);
 
         foreach ($sheet as $row) {
@@ -276,6 +401,52 @@ class ContinuousAssessmentService
                 (float) $row['cumulative'],
                 (float) $row['pass_mark'],
             );
+        }
+    }
+
+    /**
+     * The recorded sittings of this unit, re-weighted against the continuous marks on file.
+     * Only a sitting that already carries an exam mark is touched: without one there is no
+     * exam to fold the continuous score into.
+     */
+    private function refreshSittingsFromContinuous(UnitAllocation $allocation): void
+    {
+        $allocation->loadMissing('unit');
+        $unit = $allocation->unit;
+        $passMark = $this->passMarkForUnit($unit);
+
+        $sittings = DB::table('exam_results')
+            ->where('unit_id', $allocation->unit_id)
+            ->where('semester_id', $allocation->semester_id)
+            ->where('is_supplementary', 0)
+            ->whereNotNull('final_exam_score')
+            ->get(['id', 'student_id', 'final_exam_score']);
+
+        foreach ($sittings as $sitting) {
+            $breakdown = $this->continuousBreakdownFor(
+                (int) $sitting->student_id,
+                (int) $allocation->unit_id,
+                (int) $allocation->semester_id,
+                $unit,
+            );
+
+            $cumulative = $this->cumulativeFrom(
+                $breakdown['cat_avg'],
+                $breakdown['practical_avg'],
+                $breakdown['attendance_pct'],
+                $unit,
+            );
+            $finalTotal = $this->finalScoreWithExam($cumulative, (float) $sitting->final_exam_score, $unit);
+            $letter = $this->gradeLetterForScore($finalTotal, $passMark);
+
+            DB::table('exam_results')->where('id', $sitting->id)->update([
+                'cat_total' => round($breakdown['cat_avg'], 2),
+                'practical_total' => round($breakdown['practical_avg'], 2),
+                'final_total_score' => $finalTotal,
+                'grade_letter' => $letter,
+                'grade_points' => $this->gradePoints($letter),
+                'updated_at' => now(),
+            ]);
         }
     }
 
@@ -373,7 +544,7 @@ class ContinuousAssessmentService
     }
 
     /**
-     * @return array{cumulative: float, cat_avg: float, practical_avg: float, attendance_pct: float, components: array<string, float>}
+     * @return array{cumulative: float, cat_avg: float, practical_avg: float, attendance_pct: float|null, components: array<string, float>}
      */
     public function continuousBreakdown(int $studentId, UnitAllocation $allocation): array
     {
@@ -390,7 +561,7 @@ class ContinuousAssessmentService
      * Academics records themselves (a supplementary, for example), where no lecturer allocation is
      * in play.
      *
-     * @return array{cumulative: float, cat_avg: float, practical_avg: float, attendance_pct: float, components: array<string, float>}
+     * @return array{cumulative: float, cat_avg: float, practical_avg: float, attendance_pct: float|null, components: array<string, float>}
      */
     public function continuousBreakdownFor(int $studentId, int $unitId, int $semesterId, ?Unit $unit): array
     {
@@ -400,13 +571,27 @@ class ContinuousAssessmentService
             ->where('semester_id', $semesterId)
             ->get();
 
-        $attendancePct = (float) (DB::table('attendance_summaries')
+        return $this->buildWeightedBreakdown(
+            $scores,
+            $this->attendancePercentage($studentId, $unitId, $semesterId),
+            $this->weightProfile($unit),
+        );
+    }
+
+    /**
+     * The attendance the signed registers worked out. Null means no register was ever marked for
+     * this student on this unit, which is not the same as a register marked at zero: an unmarked
+     * attendance must not pull the continuous score down as if the student stayed away.
+     */
+    public function attendancePercentage(int $studentId, int $unitId, int $semesterId): ?float
+    {
+        $recorded = DB::table('attendance_summaries')
             ->where('student_id', $studentId)
             ->where('unit_id', $unitId)
             ->where('semester_id', $semesterId)
-            ->value('attendance_percentage') ?? 0);
+            ->value('attendance_percentage');
 
-        return $this->buildWeightedBreakdown($scores, $attendancePct, $this->weightProfile($unit));
+        return $recorded === null ? null : round((float) $recorded, 2);
     }
 
     public function finalScoreWithExam(float $continuousCumulative, float $examScore, ?Unit $unit): float
@@ -422,25 +607,27 @@ class ContinuousAssessmentService
     }
 
     /**
-     * The continuous score from three figures the lecturer stands by, instead of the ones
-     * the system captured. Same weighting, so a typed average and a recorded CAT average
-     * carry the same weight on the final grade.
+     * The continuous score from three figures the system holds. Same weighting, so a CAT average
+     * and a practical average carry their set share, and an attendance nobody ever registered
+     * simply leaves the pool instead of counting as a zero.
      */
     public function cumulativeFrom(
         float $catAvg,
         float $practicalAvg,
-        float $attendancePct,
+        ?float $attendancePct,
         ?Unit $unit,
     ): float {
         $weights = $this->weightProfile($unit);
-        $continuousWeight = $weights['cat'] + $weights['practical'] + $weights['attendance'];
+        $continuousWeight = $weights['cat'] + $weights['practical']
+            + ($attendancePct === null ? 0.0 : $weights['attendance']);
 
         if ($continuousWeight <= 0) {
             return 0.0;
         }
 
         return round(
-            (($catAvg * $weights['cat']) + ($practicalAvg * $weights['practical']) + ($attendancePct * $weights['attendance'])) / $continuousWeight,
+            (($catAvg * $weights['cat']) + ($practicalAvg * $weights['practical'])
+                + ($attendancePct === null ? 0.0 : $attendancePct * $weights['attendance'])) / $continuousWeight,
             2
         );
     }
@@ -473,9 +660,9 @@ class ContinuousAssessmentService
     }
 
     /**
-     * @return array{cumulative: float, cat_avg: float, practical_avg: float, attendance_pct: float, components: array<string, float>}
+     * @return array{cumulative: float, cat_avg: float, practical_avg: float, attendance_pct: float|null, components: array<string, float>}
      */
-    private function buildWeightedBreakdown(Collection $scores, float $attendancePct, array $weights): array
+    private function buildWeightedBreakdown(Collection $scores, ?float $attendancePct, array $weights): array
     {
         // One entry counts per assessment: the last mark typed stands, the one it replaced does not.
         $scores = $scores->sortByDesc('id')->unique('assessment_name')->values();
@@ -489,14 +676,15 @@ class ContinuousAssessmentService
         ));
         $practicalAvg = $this->averagePercentage($scores->whereIn('assessment_type', $practicalTypes));
 
-        $continuousWeight = $weights['cat'] + $weights['practical'] + $weights['attendance'];
+        $continuousWeight = $weights['cat'] + $weights['practical']
+            + ($attendancePct === null ? 0.0 : $weights['attendance']);
         $cumulative = 0.0;
 
         if ($continuousWeight > 0) {
             $cumulative = (
                 ($catAvg * $weights['cat']) +
                 ($practicalAvg * $weights['practical']) +
-                ($attendancePct * $weights['attendance'])
+                ($attendancePct === null ? 0.0 : $attendancePct * $weights['attendance'])
             ) / $continuousWeight;
         }
 
@@ -504,11 +692,11 @@ class ContinuousAssessmentService
             'cumulative' => round($cumulative, 2),
             'cat_avg' => round($catAvg, 2),
             'practical_avg' => round($practicalAvg, 2),
-            'attendance_pct' => round($attendancePct, 2),
+            'attendance_pct' => $attendancePct,
             'components' => [
                 'cat' => round($catAvg * $weights['cat'] / max($continuousWeight, 1), 2),
                 'practical' => round($practicalAvg * $weights['practical'] / max($continuousWeight, 1), 2),
-                'attendance' => round($attendancePct * $weights['attendance'] / max($continuousWeight, 1), 2),
+                'attendance' => round(($attendancePct ?? 0) * $weights['attendance'] / max($continuousWeight, 1), 2),
             ],
         ];
     }
