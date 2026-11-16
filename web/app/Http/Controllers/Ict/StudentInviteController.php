@@ -18,10 +18,16 @@ class StudentInviteController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q'));
+        $filter = (string) $request->query('status');
+        if (! isset(StudentPortalInviteService::FILTERS[$filter])) {
+            $filter = 'waiting';
+        }
 
         return view('ict.student-invites.index', [
             'search' => $search,
-            'students' => $search === '' ? $this->invites->pendingActivations() : $this->invites->search($search),
+            'filter' => $filter,
+            'counts' => $this->invites->filterCounts(),
+            'students' => $this->invites->browse($search, $filter),
         ]);
     }
 

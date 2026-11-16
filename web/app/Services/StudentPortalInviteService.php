@@ -12,6 +12,21 @@ use Illuminate\Support\Facades\Log;
 
 class StudentPortalInviteService
 {
+    /**
+     * The list the ICT desk works from, in the words the table's own badges use.
+     *
+     * @var array<string, string>
+     */
+    public const FILTERS = [
+        'waiting' => 'Students waiting to activate',
+        'pending' => 'Awaiting activation',
+        'active' => 'Active',
+        'expired' => 'Expired link',
+        'none' => 'No invite yet',
+        'inactive' => 'Inactive students',
+        'all' => 'Everyone',
+    ];
+
     public function __construct(
         protected AuditService $auditService,
         protected StudentEnrollmentService $enrollment,
@@ -103,48 +118,113 @@ class StudentPortalInviteService
     /**
      * @return Collection<int, Student>
      */
-    public function pendingActivations(int $limit = 60): Collection
+    public function browse(string $search, string $filter, int $limit = 60): Collection
     {
-        return $this->studentQuery()
-            ->whereNull('students.user_id')
-            ->whereNull('students.portal_activated_at')
-            ->orderByRaw('COALESCE(students.portal_invite_expires_at, students.created_at) DESC')
-            ->limit($limit)
-            ->get();
+        $query = $this->browseQuery();
+
+        if ($search !== '') {
+            $this->applyTerm($query, $search);
+        }
+
+        $this->applyFilter($query, $filter);
+
+        // The plain list is the activation queue, so the link that dies soonest leads.
+        // A search is a lookup, so it comes back in the order records were made.
+        $query = $search === ''
+            ? $query->orderByRaw('COALESCE(students.portal_invite_expires_at, students.created_at) DESC')
+            : $query->orderByDesc('students.id');
+
+        return $query->limit($limit)->get();
     }
 
     /**
-     * @return Collection<int, Student>
+     * @return array<string, int>
      */
-    public function search(string $term, int $limit = 60): Collection
+    public function filterCounts(): array
     {
-        $term = trim($term);
-        $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
+        $account = '(students.user_id is not null or students.portal_activated_at is not null)';
+        $noAccount = '(students.user_id is null and students.portal_activated_at is null)';
+        $invited = 'students.portal_invite_token is not null';
+        $live = '(students.portal_invite_expires_at is null or students.portal_invite_expires_at >= now())';
 
-        return $this->studentQuery()
-            ->where(function ($query) use ($like): void {
-                $query
-                    ->where('students.registration_number', 'like', $like)
-                    ->orWhere('students.first_name', 'like', $like)
-                    ->orWhere('students.surname', 'like', $like)
-                    ->orWhere('students.email', 'like', $like)
-                    ->orWhereHas('applicant', function ($applicant) use ($like): void {
-                        $applicant->where('first_name', 'like', $like)
-                            ->orWhere('surname', 'like', $like)
-                            ->orWhere('email', 'like', $like);
-                    })
-                    ->orWhereHas('user', fn ($user) => $user->where('users.email', 'like', $like));
-            })
-            ->orderByDesc('students.id')
-            ->limit($limit)
-            ->get();
+        $row = $this->browseQuery()
+            ->selectRaw("
+                sum(students.is_active and {$noAccount}) as waiting,
+                sum(students.is_active and {$noAccount} and {$invited} and {$live}) as pending,
+                sum(students.is_active and {$account}) as active,
+                sum(students.is_active and {$noAccount} and {$invited} and students.portal_invite_expires_at < now()) as expired,
+                sum(students.is_active and {$noAccount} and students.portal_invite_token is null) as none,
+                sum(students.is_active = 0) as inactive,
+                count(*) as every
+            ")
+            ->first();
+
+        return collect(self::FILTERS)
+            ->mapWithKeys(fn (string $label, string $key) => [
+                $key => (int) ($row->{($key === 'all' ? 'every' : $key)} ?? 0),
+            ])
+            ->all();
+    }
+
+    private function browseQuery(): Builder
+    {
+        return Student::query()->with(['applicant', 'program.department', 'campus', 'user']);
+    }
+
+    private function applyFilter(Builder $query, string $filter): void
+    {
+        $hasAccount = fn (Builder $q) => $q
+            ->whereNotNull('students.user_id')
+            ->orWhereNotNull('students.portal_activated_at');
+        $noAccount = fn (Builder $q) => $q
+            ->whereNull('students.user_id')
+            ->whereNull('students.portal_activated_at');
+
+        match ($filter) {
+            'waiting' => $query->where('students.is_active', 1)->where($noAccount),
+            'active' => $query->where('students.is_active', 1)->where($hasAccount),
+            'pending' => $query
+                ->where('students.is_active', 1)
+                ->where($noAccount)
+                ->whereNotNull('students.portal_invite_token')
+                ->where(fn (Builder $q) => $q->whereNull('students.portal_invite_expires_at')
+                    ->orWhere('students.portal_invite_expires_at', '>=', now())),
+            'expired' => $query
+                ->where('students.is_active', 1)
+                ->where($noAccount)
+                ->whereNotNull('students.portal_invite_token')
+                ->where('students.portal_invite_expires_at', '<', now()),
+            'none' => $query
+                ->where('students.is_active', 1)
+                ->where($noAccount)
+                ->whereNull('students.portal_invite_token'),
+            'inactive' => $query->where('students.is_active', 0),
+            default => null,
+        };
+    }
+
+    private function applyTerm(Builder $query, string $term): void
+    {
+        $like = '%'.str_replace(['%', '_'], ['\%', '\_'], trim($term)).'%';
+
+        $query->where(function (Builder $nested) use ($like): void {
+            $nested
+                ->where('students.registration_number', 'like', $like)
+                ->orWhere('students.first_name', 'like', $like)
+                ->orWhere('students.surname', 'like', $like)
+                ->orWhere('students.email', 'like', $like)
+                ->orWhereHas('applicant', function (Builder $applicant) use ($like): void {
+                    $applicant->where('first_name', 'like', $like)
+                        ->orWhere('surname', 'like', $like)
+                        ->orWhere('email', 'like', $like);
+                })
+                ->orWhereHas('user', fn (Builder $user) => $user->where('users.email', 'like', $like));
+        });
     }
 
     private function studentQuery(): Builder
     {
-        return Student::query()
-            ->with(['applicant', 'program.department', 'campus', 'user'])
-            ->where('students.is_active', 1);
+        return $this->browseQuery()->where('students.is_active', 1);
     }
 
     private function findStudentByEmail(string $email): ?Student

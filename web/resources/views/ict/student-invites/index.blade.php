@@ -33,23 +33,44 @@
     <div class="tich-table-panel tich-mt-8">
         <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:flex-end; justify-content:space-between;">
             <div>
-                <h2 class="tich-h3">{{ $search === '' ? 'Students waiting to activate' : 'Search results' }}</h2>
+                <h2 class="tich-h3">{{ \App\Services\StudentPortalInviteService::FILTERS[$filter] }}</h2>
                 <p class="tich-caption tich-mt-2">
-                    @if ($search === '')
-                        Every listed student still needs to set a portal password.
-                    @else
+                    @if ($search !== '')
                         Showing students matching “{{ $search }}”.
+                    @else
+                        @switch($filter)
+                            @case('pending') A link is on the way or waiting in the inbox, still usable. @break
+                            @case('active') These students already have a portal account and can sign in. @break
+                            @case('expired') Their invite link expired before it was used, so send a fresh one. @break
+                            @case('none') No invite link has been sent for these students yet. @break
+                            @case('inactive') These students are marked inactive, usually after graduating. @break
+                            @case('all') Every student on the register, whatever their invite state. @break
+                            @default Every listed student still needs to set a portal password. @break
+                        @endswitch
                     @endif
                 </p>
             </div>
 
             <form method="GET" action="{{ route('ict.student-invites.index') }}" style="display:flex; gap:0.5rem; align-items:flex-end;" data-uf="skip">
                 <div class="tich-form-group" style="margin:0;">
+                    <label for="student_invite_status" class="tich-label">Show</label>
+                    <select
+                        id="student_invite_status"
+                        name="status"
+                        class="tich-input tich-input--compact"
+                        onchange="this.form.submit()"
+                    >
+                        @foreach (\App\Services\StudentPortalInviteService::FILTERS as $key => $label)
+                            <option value="{{ $key }}" @selected($key === $filter)>{{ $label }} ({{ $counts[$key] ?? 0 }})</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="tich-form-group" style="margin:0;">
                     <label for="student_invite_search" class="tich-label">Search</label>
                     <input type="search" id="student_invite_search" name="q" value="{{ $search }}" class="tich-input" placeholder="Name, reg. number or email">
                 </div>
                 <button type="submit" class="tich-btn tich-btn-primary">Search</button>
-                @if ($search !== '')
+                @if ($search !== '' || $filter !== 'waiting')
                     <a class="tich-btn tich-btn-secondary" href="{{ route('ict.student-invites.index') }}">Clear</a>
                 @endif
             </form>
@@ -81,7 +102,9 @@
                                 <td>{{ $student->campus?->campus_name ?? 'Campus not set' }}</td>
                                 <td>{{ $student->email ?: ($student->applicant?->email ?: ($student->user?->email ?? '-')) }}</td>
                                 <td>
-                                    @if ($student->portal_activated_at || $student->user_id)
+                                    @if (! $student->is_active)
+                                        <span class="tich-badge tich-badge--neutral">Inactive</span>
+                                    @elseif ($student->portal_activated_at || $student->user_id)
                                         <span class="tich-badge tich-badge--success">Active</span>
                                     @elseif ($student->portal_invite_token === null)
                                         <span class="tich-badge tich-badge--neutral">No invite yet</span>
