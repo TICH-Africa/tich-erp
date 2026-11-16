@@ -95,7 +95,9 @@ class AttendanceSessionGenerationService
         $windowEnd = $today->copy()->addWeeks($weeksAhead);
 
         if ($rangeStart) {
-            $windowStart = Carbon::parse($rangeStart)->max($windowStart);
+            // The register runs from the day the curriculum started, so a term that began before
+            // anyone pressed refresh still has a sheet for every past class day.
+            $windowStart = Carbon::parse($rangeStart)->min($windowStart);
         }
         if ($rangeEnd) {
             $windowEnd = Carbon::parse($rangeEnd)->min($windowEnd);

@@ -7,7 +7,6 @@ use App\Models\LessonPlan;
 use App\Models\LessonPlanApproval;
 use App\Models\Staff;
 use App\Models\Unit;
-use App\Models\UnitAllocation;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -225,20 +224,6 @@ class LessonPlanApprovalService
         );
 
         return $plan->fresh();
-    }
-
-    public function assertCanInitiateSession(UnitAllocation $allocation, string $sessionDate): void
-    {
-        abort_unless($this->hasApprovedPlanForSession($allocation, $sessionDate), 422, 'An approved lesson plan is required for this unit and date before you can start a class session. Create and submit a lesson plan, then wait for it to be approved.');
-    }
-
-    public function hasApprovedPlanForSession(UnitAllocation $allocation, string $sessionDate): bool
-    {
-        return LessonPlan::query()
-            ->where('unit_allocation_id', $allocation->id)
-            ->where('status', 'approved')
-            ->whereDate('planned_date', $sessionDate)
-            ->exists();
     }
 
     /**

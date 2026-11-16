@@ -8,7 +8,6 @@ use App\Models\AttendanceSession;
 use App\Models\Staff;
 use App\Models\UnitAllocation;
 use App\Services\AttendanceSessionGenerationService;
-use App\Services\LessonPlanApprovalService;
 use App\Services\StaffMobilePortalSerializer;
 use App\Services\StaffTeachingService;
 use Illuminate\Http\JsonResponse;
@@ -74,12 +73,6 @@ class AttendanceController extends Controller
 
         $allocation = UnitAllocation::query()->findOrFail((int) $validated['allocation_id']);
         abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
-
-        if (! $this->lessonPlanApprovals->hasApprovedPlanForSession($allocation, $validated['session_date'])) {
-            return response()->json([
-                'message' => 'An HOD-approved lesson plan matching this unit and date is required before creating a class session.',
-            ], 422);
-        }
 
         $session = $this->teaching->createAttendanceSession($staff, $allocation, $validated);
 

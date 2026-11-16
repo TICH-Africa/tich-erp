@@ -207,10 +207,7 @@
 
 <details class="tich-card tich-mt-8">
     <summary class="tich-h3" style="cursor:pointer;">Manual session (ad-hoc)</summary>
-    <p class="tich-caption tich-mt-2">For classes outside the timetable. Requires an HOD-approved lesson plan.</p>
-    @if ($errors->has('lesson_plan'))
-        <p class="tich-text" style="color:var(--tich-danger, #b91c1c); margin-top:0.75rem;">{{ $errors->first('lesson_plan') }}</p>
-    @endif
+    <p class="tich-caption tich-mt-2">For a class outside the timetable, from the day this intake started. No lesson plan is needed to sign a register.</p>
     @if ($portalData['allocations']->isEmpty())
         <p class="tich-text tich-mt-4">You need a unit allocation first.</p>
     @else

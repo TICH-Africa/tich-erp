@@ -115,7 +115,8 @@ class StaffTeachingService
     {
         abort_unless((int) $allocation->staff_id === (int) $staff->id, 403);
 
-        $this->lessonPlanApprovals->assertCanInitiateSession($allocation, $data['session_date']);
+        // The register never waits on a lesson plan: a class that has already gone by still has to
+        // be signed for, however late the lecturer reaches it.
 
         // The unit's register for the date may already exist from the timetable, so a class the
         // lecturer adds for that date widens the one sheet instead of creating a second to mark.
@@ -136,7 +137,7 @@ class StaffTeachingService
         }
 
         $session = AttendanceSession::query()->create([
-            'session_number' => 'ATT-'.now()->format('YmdHis'),
+            'session_number' => 'ATT-'.Carbon::parse($data['session_date'])->format('Ymd').'-'.strtoupper(Str::random(4)),
             'unit_allocation_id' => $allocation->id,
             'session_date' => $data['session_date'],
             'start_time' => $data['start_time'] ?? '08:00:00',

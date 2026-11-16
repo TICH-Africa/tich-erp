@@ -11,10 +11,10 @@ use App\Models\UnitAllocation;
 use App\Models\UnitContent;
 use App\Services\AttendanceSessionGenerationService;
 use App\Services\ContinuousAssessmentService;
-use App\Services\LessonPlanApprovalService;
 use App\Services\LessonPlanContextService;
 use App\Services\LessonPlanDocumentService;
 use App\Services\ObjectiveAutoGradingService;
+use App\Services\ObjectivePaperDocumentService;
 use App\Services\StaffExamMarksService;
 use App\Services\StaffPortalDashboardService;
 use App\Services\StaffPortalService;
@@ -26,6 +26,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StaffPortalActionController extends Controller
@@ -36,10 +37,10 @@ class StaffPortalActionController extends Controller
         protected AttendanceSessionGenerationService $attendanceGeneration,
         protected StaffExamMarksService $examMarks,
         protected ContinuousAssessmentService $assessments,
-        protected LessonPlanApprovalService $lessonPlanApprovals,
         protected LessonPlanDocumentService $lessonPlanDocuments,
         protected LessonPlanContextService $lessonPlanContext,
         protected ObjectiveAutoGradingService $objectiveGrading,
+        protected ObjectivePaperDocumentService $objectivePapers,
         protected StoredFileService $files,
         protected UnitLearningContentNotificationService $contentNotifications,
     ) {}
@@ -214,11 +215,6 @@ class StaffPortalActionController extends Controller
             'end_time' => ['nullable'],
             'venue' => ['nullable', 'string', 'max:200'],
         ]);
-
-        if (! $this->lessonPlanApprovals->hasApprovedPlanForSession($allocation, $validated['session_date'])) {
-            return redirect()->route('staff.dashboard', ['section' => 'lesson-plans'])
-                ->withErrors(['lesson_plan' => 'An HOD-approved lesson plan matching this unit and date is required before you can create a class session.']);
-        }
 
         $session = $this->teaching->createAttendanceSession($staff, $allocation, $validated);
 
@@ -510,6 +506,49 @@ class StaffPortalActionController extends Controller
             $assessment->id,
             'Published. Students can sit it from their portal, and it marks itself when the availability window closes.',
         );
+    }
+
+    public function printObjectivePaper(Request $request, ObjectiveAssessment $assessment): View
+    {
+        $this->assertPaperOwner($request, $assessment);
+        $copy = $this->paperCopy($request);
+
+        return $this->objectivePapers->page($assessment, $copy, [
+            'backUrl' => $this->paperBackUrl($assessment),
+            'pdfDownloadUrl' => route('staff.grading.objective.pdf', ['objective_assessment' => $assessment->id, 'copy' => $copy]),
+        ]);
+    }
+
+    public function downloadObjectivePaperPdf(Request $request, ObjectiveAssessment $assessment): StreamedResponse
+    {
+        $this->assertPaperOwner($request, $assessment);
+
+        return $this->objectivePapers->download($assessment, $this->paperCopy($request));
+    }
+
+    /**
+     * Only the lecturer holding the allocation prints the paper, so the marker's copy of the
+     * answer key never reaches a colleague by guessing an id.
+     */
+    private function assertPaperOwner(Request $request, ObjectiveAssessment $assessment): void
+    {
+        $staff = $this->portalService->staffForUser($request->user());
+        abort_unless($staff, 403);
+        abort_unless((int) $assessment->allocation?->staff_id === (int) $staff->id, 403);
+    }
+
+    private function paperCopy(Request $request): string
+    {
+        return $request->input('copy') === 'marker' ? 'marker' : 'student';
+    }
+
+    private function paperBackUrl(ObjectiveAssessment $assessment): string
+    {
+        return route('staff.dashboard', [
+            'section' => 'grading',
+            'allocation' => $assessment->unit_allocation_id,
+            'objective_assessment' => $assessment->id,
+        ]);
     }
 
     private function allocationForPaper(Request $request, ?Staff $staff, ObjectiveAssessment $assessment): UnitAllocation

@@ -710,17 +710,34 @@ class StaffPortalDashboardService
             return collect();
         }
 
-        return $this->groupSessionsByDay(
-            \App\Models\AttendanceSession::query()
-                ->with(['allocation.unit', 'allocation.semester.academicYear', 'timetableSession.timetable.curriculumVersion'])
-                ->whereIn('unit_allocation_id', $allocationIds)
-                ->whereDate('session_date', '>=', now()->subWeek()->toDateString())
-                ->orderBy('session_date')
-                ->orderBy('start_time')
-                ->limit(60)
-                ->get()
-        )
-            ->take(12)
+        $relations = ['allocation.unit', 'allocation.semester.academicYear', 'timetableSession.timetable.curriculumVersion'];
+        $today = today()->toDateString();
+
+        // A lecturer catching up on a term works backwards from today, so the register reaches into
+        // the days they have already taught and keeps the upcoming fortnight beside them.
+        $ahead = \App\Models\AttendanceSession::query()
+            ->with($relations)
+            ->whereIn('unit_allocation_id', $allocationIds)
+            ->whereDate('session_date', '>=', $today)
+            ->orderBy('session_date')
+            ->orderBy('start_time')
+            ->limit(60)
+            ->get();
+
+        $past = \App\Models\AttendanceSession::query()
+            ->with($relations)
+            ->whereIn('unit_allocation_id', $allocationIds)
+            ->whereDate('session_date', '<', $today)
+            ->orderByDesc('session_date')
+            ->orderByDesc('start_time')
+            ->limit(120)
+            ->get();
+
+        return $this->groupSessionsByDay($ahead->concat($past))
+            ->sortByDesc(fn (\App\Models\AttendanceSession $session) => substr((string) $session->session_date, 0, 10))
+            ->take(18)
+            ->sortBy(fn (\App\Models\AttendanceSession $session) => substr((string) $session->session_date, 0, 10).'~'.(string) ($session->allocation?->unit?->unit_code ?? ''))
+            ->values()
             ->each(function (\App\Models\AttendanceSession $session) {
                 if (! $session->allocation) {
                     return;
