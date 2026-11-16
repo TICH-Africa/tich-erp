@@ -39,16 +39,16 @@
                                 <button type="submit" class="tich-btn tich-btn-primary" onclick="return confirm('Mark all submissions now? This will overwrite existing scores.')">Mark</button>
                             </form>
                         @endif
-                        <p class="tich-caption tich-mt-2">
-                            <a href="{{ route('staff.dashboard', ['section' => 'grading', 'allocation' => $allocation->id, 'objective_assessment' => 'new']) }}">
-                                + New objective paper
-                            </a>
-                        </p>
-                        <p class="tich-caption tich-mt-2">
-                            <a href="{{ route('staff.grading.objective.print', ['assessment' => $selected]) }}" target="_blank" rel="noopener">Print paper</a>
-                            &nbsp;·&nbsp;
-                            <a href="{{ route('staff.grading.objective.print', ['assessment' => $selected, 'copy' => 'marker']) }}" target="_blank" rel="noopener">Marker's copy</a>
-                        </p>
+                        <div class="tich-flex tich-flex--center tich-flex--wrap" style="gap:0.5rem; justify-content:flex-end; margin-top:0.75rem;">
+                            <a href="{{ route('staff.dashboard', ['section' => 'grading', 'allocation' => $allocation->id, 'objective_assessment' => 'new']) }}"
+                               class="tich-btn tich-btn-ghost">+ New objective paper</a>
+                            <a href="{{ route('staff.grading.objective.print', ['assessment' => $selected]) }}"
+                               target="_blank" rel="noopener"
+                               class="tich-btn tich-btn-secondary">Print paper</a>
+                            <a href="{{ route('staff.grading.objective.print', ['assessment' => $selected, 'copy' => 'marker']) }}"
+                               target="_blank" rel="noopener"
+                               class="tich-btn tich-btn-secondary tich-btn--danger">Marker's copy</a>
+                        </div>
                     </div>
                 </div>
 
