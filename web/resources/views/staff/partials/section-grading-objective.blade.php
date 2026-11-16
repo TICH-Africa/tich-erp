@@ -44,6 +44,11 @@
                                 + New objective paper
                             </a>
                         </p>
+                        <p class="tich-caption tich-mt-2">
+                            <a href="{{ route('staff.grading.objective.print', ['assessment' => $selected]) }}" target="_blank" rel="noopener">Print paper</a>
+                            &nbsp;·&nbsp;
+                            <a href="{{ route('staff.grading.objective.print', ['assessment' => $selected, 'copy' => 'marker']) }}" target="_blank" rel="noopener">Marker's copy</a>
+                        </p>
                     </div>
                 </div>
 

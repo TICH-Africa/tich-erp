@@ -1641,11 +1641,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/grading/objective/responses', [StaffPortalActionController::class, 'saveObjectiveResponses'])->name('staff.grading.objective.responses');
         Route::post('/grading/objective/grade', [StaffPortalActionController::class, 'runObjectiveAutoGrade'])->name('staff.grading.objective.grade');
         Route::post('/grading/objective/manual-grade', [StaffPortalActionController::class, 'manualGradeObjectiveSubmission'])->name('staff.grading.objective.manual-grade');
-        Route::patch('/grading/objective/{objective_assessment}/availability', [StaffPortalActionController::class, 'updateObjectiveAvailability'])->name('staff.grading.objective.availability');
-        Route::patch('/grading/objective/{objective_assessment}/questions', [StaffPortalActionController::class, 'saveObjectiveQuestions'])->name('staff.grading.objective.questions');
-        Route::patch('/grading/objective/{objective_assessment}/publish', [StaffPortalActionController::class, 'publishObjectiveAssessment'])->name('staff.grading.objective.publish');
-        Route::patch('/grading/objective/{objective_assessment}/makeup', [StaffPortalActionController::class, 'openObjectiveMakeup'])->name('staff.grading.objective.makeup');
-        Route::patch('/grading/objective/{objective_assessment}/answers', [StaffPortalActionController::class, 'updateObjectiveAnswers'])->name('staff.grading.objective.answers.update');
+        Route::patch('/grading/objective/{assessment}/availability', [StaffPortalActionController::class, 'updateObjectiveAvailability'])->name('staff.grading.objective.availability');
+        Route::patch('/grading/objective/{assessment}/questions', [StaffPortalActionController::class, 'saveObjectiveQuestions'])->name('staff.grading.objective.questions');
+        Route::patch('/grading/objective/{assessment}/publish', [StaffPortalActionController::class, 'publishObjectiveAssessment'])->name('staff.grading.objective.publish');
+        Route::patch('/grading/objective/{assessment}/makeup', [StaffPortalActionController::class, 'openObjectiveMakeup'])->name('staff.grading.objective.makeup');
+        Route::patch('/grading/objective/{assessment}/answers', [StaffPortalActionController::class, 'updateObjectiveAnswers'])->name('staff.grading.objective.answers.update');
+        Route::get('/grading/objective/{assessment}/print', [StaffPortalActionController::class, 'printObjectivePaper'])->name('staff.grading.objective.print');
+        Route::get('/grading/objective/{assessment}/pdf', [StaffPortalActionController::class, 'downloadObjectivePaperPdf'])->name('staff.grading.objective.pdf');
         Route::post('/content', [StaffPortalActionController::class, 'storeContent'])->name('staff.content.store');
         Route::get('/content/{content}/view', [StaffPortalActionController::class, 'viewContent'])->name('staff.content.view');
         Route::get('/content/{content}/download', [StaffPortalActionController::class, 'downloadContent'])->name('staff.content.download');

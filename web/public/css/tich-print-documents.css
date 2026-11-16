@@ -828,3 +828,74 @@ body {
 .tich-doc-uploaded th { background: #eef2f7; }
 .doc-viewer__doc-scroll { overflow: visible; }
 .doc-viewer__swipe-hint { display: none; }
+
+/* Objective CAT paper - student hand-out and the marker's copy */
+.tich-cat-band {
+    margin: 0.9rem 0 0.5rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--tich-doc-border);
+    border-left: 3px solid var(--tich-doc-navy);
+    background: #f8fafc;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: #1f2937;
+}
+
+.tich-cat-band--key {
+    border-left-color: #b91c1c;
+    background: #fef2f2;
+    color: #7f1d1d;
+    font-weight: 600;
+}
+
+.tich-cat-table { width: 100%; table-layout: fixed; }
+
+.tich-cat-question { margin: 0; }
+
+.tich-cat-options {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.3rem 0 0;
+}
+
+.tich-cat-options td {
+    border: 0;
+    padding: 0.08rem 0.3rem 0.08rem 0;
+    font-size: 0.76rem;
+    vertical-align: top;
+}
+
+.tich-cat-options .tich-cat-letter {
+    width: 2rem;
+    font-weight: 700;
+    color: var(--tich-doc-navy);
+    text-align: right;
+}
+
+.tich-cat-options .tich-cat-correct { font-weight: 700; color: #166534; }
+
+.tich-cat-choices { margin: 0.3rem 0 0; font-size: 0.78rem; color: #374151; }
+
+.tich-cat-lines {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.45rem 0 0;
+}
+
+.tich-cat-lines td {
+    padding: 0;
+}
+
+.tich-cat-lines .tich-cat-line {
+    height: 1.2rem;
+    border: 0;
+    border-bottom: 1px solid var(--tich-doc-border);
+}
+
+.tich-cat-answer { background: #fcfdff; }
+
+.tich-cat-rule { background: #f8fafc; height: 1.4rem; }
+
+.tich-cat-key { font-weight: 700; color: #166534; font-size: 0.76rem; }
+
+.tich-cat-signoff { margin-top: 1rem; }

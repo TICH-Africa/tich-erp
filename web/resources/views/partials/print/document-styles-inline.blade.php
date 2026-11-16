@@ -89,4 +89,20 @@ body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-heigh
 .tich-doc-uploaded th { background: #eef2f7; }
 .doc-viewer__doc-scroll { overflow: visible; }
 .doc-viewer__swipe-hint { display: none; }
+.tich-cat-band { font-size: 8.5pt; color: #1f2937; background: #f8fafc; border: 0.6pt solid #cbd5e1; border-left: 2.5pt solid #1e3a5f; padding: 5pt 7pt; margin: 9pt 0 7pt; }
+.tich-cat-band--key { color: #7f1d1d; background: #fef2f2; border-left: 2.5pt solid #b91c1c; font-weight: bold; }
+.tich-cat-table { width: 100%; table-layout: fixed; }
+.tich-cat-question { margin: 0; font-size: 9.5pt; }
+.tich-cat-options { width: 100%; border-collapse: collapse; margin: 3pt 0 0; }
+.tich-cat-options td { border: 0; padding: 1pt 4pt 1pt 0; font-size: 8.5pt; vertical-align: top; }
+.tich-cat-options .tich-cat-letter { width: 16pt; text-align: right; font-weight: bold; color: #1e3a5f; }
+.tich-cat-options .tich-cat-correct { font-weight: bold; color: #166534; }
+.tich-cat-choices { font-size: 9pt; color: #374151; margin: 3pt 0 0; }
+.tich-cat-lines { width: 100%; border-collapse: collapse; margin: 4pt 0 0; }
+.tich-cat-lines td { padding: 0; }
+.tich-cat-lines .tich-cat-line { height: 13pt; border: 0; border-bottom: 0.6pt solid #cbd5e1; }
+.tich-cat-answer { background: #fcfdff; }
+.tich-cat-rule { background: #f8fafc; height: 14pt; }
+.tich-cat-key { font-weight: bold; color: #166534; font-size: 8.5pt; }
+.tich-cat-signoff { margin-top: 10pt; }
 </style>

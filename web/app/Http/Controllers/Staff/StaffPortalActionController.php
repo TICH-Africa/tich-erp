@@ -515,7 +515,7 @@ class StaffPortalActionController extends Controller
 
         return $this->objectivePapers->page($assessment, $copy, [
             'backUrl' => $this->paperBackUrl($assessment),
-            'pdfDownloadUrl' => route('staff.grading.objective.pdf', ['objective_assessment' => $assessment->id, 'copy' => $copy]),
+            'pdfDownloadUrl' => route('staff.grading.objective.pdf', ['assessment' => $assessment->id, 'copy' => $copy]),
         ]);
     }
 
