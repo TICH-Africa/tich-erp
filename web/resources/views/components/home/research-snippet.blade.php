@@ -1,5 +1,5 @@
 @if ($research)
-<section class="tich-section tich-section--white" id="research">
+<section class="tich-section tich-section--white tich-research-hub{{ !empty($research->page_dark) ? ' tich-research-hub--tinted' : '' }}" id="research" @if (!empty($research->page_color)) style="--study-page-bg: {{ $research->page_color }};" @endif>
     <div class="tich-container">
         <div class="tich-grid tich-grid--2" style="align-items: center; gap: 2rem;" data-home-reveal data-home-reveal-cols="2">
             <div class="tich-home-reveal">
@@ -12,7 +12,7 @@
                     <a href="{{ route('research') }}" class="tich-btn tich-btn-secondary">View all research</a>
                 </div>
             </div>
-            <div class="tich-research-card tich-home-reveal{{ !empty($research->page_dark) ? ' tich-research-card--tinted' : '' }}" @if (!empty($research->page_color)) style="--study-page-bg: {{ $research->page_color }};" @endif>
+            <div class="tich-research-card tich-home-reveal">
                 @if (!empty($research->cover_image_path))
                     <img src="{{ $research->cover_image_path }}" alt="{{ $research->title }}" class="tich-research-card__image">
                 @else

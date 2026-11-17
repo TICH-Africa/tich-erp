@@ -4024,6 +4024,29 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     color: inherit;
 }
 
+/* The featured study's own colour washes the whole homepage section, not just its picture. */
+.tich-section.tich-section--white.tich-research-hub {
+    background-color: var(--study-page-bg, var(--tich-white));
+}
+
+.tich-research-hub--tinted h2.tich-h2,
+.tich-research-hub--tinted h3.tich-h3,
+.tich-research-hub--tinted .tich-text,
+.tich-research-hub--tinted .tich-caption,
+.tich-research-hub--tinted .tich-research-card__placeholder p {
+    color: #ffffff;
+}
+
+.tich-research-hub--tinted .tich-btn-secondary {
+    background-color: transparent;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+.tich-research-hub--tinted .tich-btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+}
+
 .tich-research-card {
     /* The homepage feature tile wears the study's own page colour, so it reads as the page it describes. */
     background: var(--study-page-bg, transparent);
@@ -4047,10 +4070,6 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     display: flex;
     flex-direction: column;
     justify-content: center;
-}
-
-.tich-research-card--tinted .tich-research-card__placeholder p {
-    color: #ffffff;
 }
 
 /* ??? Rich footer ????????????????????????????????????????????????????? */
