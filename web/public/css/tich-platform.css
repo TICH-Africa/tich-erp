@@ -15675,21 +15675,6 @@ input[type="time"]::-moz-calendar-picker-indicator {
     }
 }
 
-/* Research excellence rides beside the studies, so an active activity is never alone on the page.
-   No margins here: the gap under the row comes from the tich-mb-8 utility on the same element. */
-.research-activities {
-    display: grid;
-    gap: 2rem;
-    align-items: start;
-}
-
-@media (min-width: 1024px) {
-    .research-activities {
-        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-        gap: 2.5rem;
-    }
-}
-
 .research-partners {
     /* The list carries its own top gap: the utility class loses to this rule, and the heading has no bottom margin. */
     margin: 1.5rem 0 0;
@@ -15773,8 +15758,15 @@ h2.tich-h2.research-partners__head {
     padding: 0;
     list-style: none;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    /* Two columns, so a posted book or paper reads as a pair of cards rather than a long single list. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
+}
+
+@media (max-width: 639px) {
+    .research-resources {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .research-resources__item {

@@ -43,7 +43,7 @@
                 @endphp
 
                 <x-animated-section animation="bottom">
-                    <div class="research-activities tich-mt-10 tich-mb-8">
+                    <div class="tich-mt-10 tich-mb-8">
                         <div data-live-search>
                             @if ($projects->isNotEmpty())
                                 <div class="tich-flex-wrap" style="gap: 1rem; align-items: end; justify-content: space-between;">
@@ -77,88 +77,32 @@
                                 <p class="tich-text">Research activities will appear here once published.</p>
                             @endif
                         </div>
-
-                        <x-animated-card animation="left">
-                            <div>
-                                <h2 class="tich-h2">Research excellence</h2>
-                                <p class="tich-text tich-mt-4">
-                                    From health and education to technology, environment, and social development, our multidisciplinary research teams work at the intersection of theory and practice-translating research into action and policy.
-                                </p>
-                                <p class="tich-text tich-mt-4">
-                                    Through partnership with local and global organizations, we address real-world challenges by generating knowledge that empowers individuals and strengthens communities.
-                                </p>
-
-                                <div class="tich-mt-6">
-                                    <h3 class="tich-h3">Our research areas</h3>
-                                    <ul class="tich-mt-4">
-                                        @foreach ($researchAreas as $area)
-                                            <li>{{ $area }}</li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            </div>
-                        </x-animated-card>
                     </div>
                 </x-animated-section>
 
-                @if ($partners->isNotEmpty())
-                    <x-animated-section animation="bottom">
-                        <div class="tich-mt-10 tich-mb-8">
-                            <h2 class="tich-h2 research-partners__head" style="margin: 0;">Our partners</h2>
-                            <ul class="research-partners tich-mt-6">
-                                @foreach ($partners as $partner)
-                                    <li class="research-partners__item{{ $partner->name ? '' : ' research-partners__item--logo-only' }}{{ $partner->backgroundIsDark() ? ' research-partners__item--tinted' : '' }}" style="background-color: {{ $partner->backgroundColor() }};">
-                                        @if ($partner->logoUrl())
-                                            <img src="{{ $partner->logoUrl() }}" alt="{{ $partner->displayLabel() }}" class="research-partners__logo" loading="lazy">
-                                        @else
-                                            <span class="research-partners__logo research-partners__logo--text" aria-hidden="true">{{ $partner->name }}</span>
-                                        @endif
-                                        @if ($partner->name)
-                                            <span class="research-partners__name">{{ $partner->name }}</span>
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </x-animated-section>
-                @endif
+                <div class="tich-grid tich-grid--2 tich-mt-10 tich-mb-8" style="gap: 2rem; align-items: start;">
+                    <x-animated-card animation="left">
+                        <div>
+                            <h2 class="tich-h2">Research excellence</h2>
+                            <p class="tich-text tich-mt-4">
+                                From health and education to technology, environment, and social development, our multidisciplinary research teams work at the intersection of theory and practice-translating research into action and policy.
+                            </p>
+                            <p class="tich-text tich-mt-4">
+                                Through partnership with local and global organizations, we address real-world challenges by generating knowledge that empowers individuals and strengthens communities.
+                            </p>
 
-                @if ($resources->isNotEmpty())
-                    <x-animated-section animation="bottom">
-                        <div class="tich-mt-10 tich-mb-8">
-                            <h2 class="tich-h2" style="margin: 0;">Research resources</h2>
-                            <p class="tich-text tich-mt-2">Books, papers and reports from our teams, posted here for download.</p>
-                            <ul class="research-resources tich-mt-6">
-                                @foreach ($resources as $resource)
-                                    <li class="research-resources__item">
-                                        @if ($resource->year || $resource->publisher)
-                                            <p class="research-resources__lead">{{ trim(($resource->year ? $resource->year.' ' : '').($resource->publisher ?? '')) }}</p>
-                                        @endif
-                                        <h3 class="research-resources__title">{{ $resource->title }}</h3>
-                                        @if ($resource->authors)
-                                            <p class="research-resources__authors">By {{ $resource->authors }}</p>
-                                        @endif
-                                        @if ($resource->isbn)
-                                            <p class="research-resources__id">ISBN: {{ $resource->isbn }}</p>
-                                        @endif
-                                        @if ($resource->doi)
-                                            <p class="research-resources__id">DOI: {{ $resource->doi }}</p>
-                                        @endif
-                                        @if ($resource->description)
-                                            <p class="tich-text tich-text--sm tich-mt-3">{{ $resource->description }}</p>
-                                        @endif
-                                        @if ($resource->hasFile())
-                                            <a href="{{ route('research.resource.download', $resource) }}" class="tich-btn tich-btn-primary tich-mt-4">Download</a>
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
+                            <div class="tich-mt-6">
+                                <h3 class="tich-h3">Our research areas</h3>
+                                <ul class="tich-mt-4">
+                                    @foreach ($researchAreas as $area)
+                                        <li>{{ $area }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
                         </div>
-                    </x-animated-section>
-                @endif
+                    </x-animated-card>
 
-                <div class="tich-grid tich-grid--2" style="gap: 2rem; align-items: start;">
-                    <x-animated-card animation="right" class="tich-grid--2-span-full">
+                    <x-animated-card animation="right">
                         <div class="research-partner-form">
                             <h3 class="tich-h3">Be a research partner</h3>
                             <form method="POST" action="{{ route('research.partnerships.store') }}" enctype="multipart/form-data" class="tich-mt-4 uf-form" data-partnership-form data-uf="skip" style="margin-top:1rem;">
@@ -300,6 +244,63 @@
                         </div>
                     </x-animated-card>
                 </div>
+
+                @if ($partners->isNotEmpty())
+                    <x-animated-section animation="bottom">
+                        <div class="tich-mt-10 tich-mb-8">
+                            <h2 class="tich-h2 research-partners__head" style="margin: 0;">Our partners</h2>
+                            <ul class="research-partners tich-mt-6">
+                                @foreach ($partners as $partner)
+                                    <li class="research-partners__item{{ $partner->name ? '' : ' research-partners__item--logo-only' }}{{ $partner->backgroundIsDark() ? ' research-partners__item--tinted' : '' }}" style="background-color: {{ $partner->backgroundColor() }};">
+                                        @if ($partner->logoUrl())
+                                            <img src="{{ $partner->logoUrl() }}" alt="{{ $partner->displayLabel() }}" class="research-partners__logo" loading="lazy">
+                                        @else
+                                            <span class="research-partners__logo research-partners__logo--text" aria-hidden="true">{{ $partner->name }}</span>
+                                        @endif
+                                        @if ($partner->name)
+                                            <span class="research-partners__name">{{ $partner->name }}</span>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </x-animated-section>
+                @endif
+
+                @if ($resources->isNotEmpty())
+                    <x-animated-section animation="bottom">
+                        <div class="tich-mt-10 tich-mb-8">
+                            <h2 class="tich-h2" style="margin: 0;">Research resources</h2>
+                            <p class="tich-text tich-mt-2">Books, papers and reports from our teams, posted here for download.</p>
+                            <ul class="research-resources tich-mt-6">
+                                @foreach ($resources as $resource)
+                                    <li class="research-resources__item">
+                                        @if ($resource->year || $resource->publisher)
+                                            <p class="research-resources__lead">{{ trim(($resource->year ? $resource->year.' ' : '').($resource->publisher ?? '')) }}</p>
+                                        @endif
+                                        <h3 class="research-resources__title">{{ $resource->title }}</h3>
+                                        @if ($resource->authors)
+                                            <p class="research-resources__authors">By {{ $resource->authors }}</p>
+                                        @endif
+                                        @if ($resource->isbn)
+                                            <p class="research-resources__id">ISBN: {{ $resource->isbn }}</p>
+                                        @endif
+                                        @if ($resource->doi)
+                                            <p class="research-resources__id">DOI: {{ $resource->doi }}</p>
+                                        @endif
+                                        @if ($resource->description)
+                                            <p class="tich-text tich-text--sm tich-mt-3">{{ $resource->description }}</p>
+                                        @endif
+                                        @if ($resource->hasFile())
+                                            <a href="{{ route('research.resource.download', $resource) }}" class="tich-btn tich-btn-primary tich-mt-4">Download</a>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </x-animated-section>
+                @endif
+
             </div>
         </section>
     </x-animated-section>
