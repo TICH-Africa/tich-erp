@@ -67,6 +67,27 @@
                     <p class="tich-text tich-mt-10 tich-mb-8">Research activities will appear here once published.</p>
                 @endif
 
+                @if ($partners->isNotEmpty())
+                    <x-animated-section animation="bottom">
+                        <div class="tich-mt-10 tich-mb-8">
+                            <h2 class="tich-h2" style="margin: 0;">Our partners</h2>
+                            <p class="tich-text tich-mt-2">Organisations we carry out research, fieldwork and community programmes with.</p>
+                            <ul class="research-partners tich-mt-6">
+                                @foreach ($partners as $partner)
+                                    <li class="research-partners__item">
+                                        @if ($partner->logoUrl())
+                                            <img src="{{ $partner->logoUrl() }}" alt="{{ $partner->name }}" class="research-partners__logo" loading="lazy">
+                                        @else
+                                            <span class="research-partners__logo research-partners__logo--text" aria-hidden="true">{{ $partner->name }}</span>
+                                        @endif
+                                        <span class="research-partners__name">{{ $partner->name }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </x-animated-section>
+                @endif
+
                 <div class="tich-grid tich-grid--2" style="gap: 2rem; align-items: start;">
                     <x-animated-card animation="left">
                         <div>

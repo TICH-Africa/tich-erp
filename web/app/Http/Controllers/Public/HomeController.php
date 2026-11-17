@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Portal\BlogPost;
 use App\Models\Portal\CmsPage;
 use App\Models\Portal\Event;
+use App\Models\Portal\ResearchPartner;
 use App\Models\Portal\ResearchProject;
 use App\Services\AboutContentService;
 use App\Services\HomepageService;
@@ -55,6 +56,9 @@ class HomeController extends Controller
 
         return view('pages.research', [
             'projects' => $projects,
+            'partners' => Schema::hasTable('research_partners')
+                ? ResearchPartner::query()->active()->orderBy('name')->get()
+                : collect(),
             'featured' => $this->homepageService->getFeaturedResearch(),
         ]);
     }

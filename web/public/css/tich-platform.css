@@ -15661,3 +15661,59 @@ input[type="time"]::-moz-calendar-picker-indicator {
         padding: 0.85rem 0.9rem;
     }
 }
+
+.research-partners {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 1rem;
+}
+
+.research-partners__item {
+    display: grid;
+    gap: 0.6rem;
+    justify-items: center;
+    align-content: center;
+    padding: 1rem;
+    background: var(--tich-white);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.research-partners__logo {
+    /* A partner logo is never cropped - the whole mark has to stay readable. */
+    width: 100%;
+    max-width: 11rem;
+    height: 4.5rem;
+    object-fit: contain;
+}
+
+.research-partners__logo--text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-ui);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--tich-neutral-muted);
+}
+
+.research-partners__name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--tich-text);
+}
+
+@media (max-width: 767px) {
+    .research-partners {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .research-partners__item {
+        padding: 0.75rem;
+    }
+}

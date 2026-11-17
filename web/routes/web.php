@@ -997,6 +997,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::put('/partnerships/{partnership}/status', [\App\Http\Controllers\Research\PartnershipRequestController::class, 'updateStatus'])->name('research.partnerships.status');
         Route::get('/partnerships/{partnership}/documents/{document}/download', [\App\Http\Controllers\Research\PartnershipRequestController::class, 'downloadDocument'])->name('research.partnerships.documents.download');
 
+        Route::get('/partners', [\App\Http\Controllers\Research\ResearchPartnerController::class, 'index'])->name('research.partners.index');
+        Route::get('/partners/create', [\App\Http\Controllers\Research\ResearchPartnerController::class, 'create'])->name('research.partners.create');
+        Route::post('/partners', [\App\Http\Controllers\Research\ResearchPartnerController::class, 'store'])->name('research.partners.store');
+        Route::get('/partners/{partner}/edit', [\App\Http\Controllers\Research\ResearchPartnerController::class, 'edit'])->name('research.partners.edit');
+        Route::put('/partners/{partner}', [\App\Http\Controllers\Research\ResearchPartnerController::class, 'update'])->name('research.partners.update');
+        Route::delete('/partners/{partner}', [\App\Http\Controllers\Research\ResearchPartnerController::class, 'destroy'])->name('research.partners.destroy');
+
         $registerModuleBudgeting('research');
         $registerModuleMeReports('research');
     });

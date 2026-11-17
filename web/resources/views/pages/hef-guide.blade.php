@@ -17,8 +17,8 @@
                         <a href="{{ $portals[0]['url'] }}" target="_blank" rel="noopener noreferrer" class="tich-btn tich-btn-primary">
                             Apply on the HEF Student Portal
                         </a>
-                        <a href="{{ route('apply.index') }}" class="tich-btn tich-btn-secondary">
-                            Apply for a TICH programme
+                        <a href="{{ $portals[2]['url'] }}" target="_blank" rel="noopener noreferrer" class="tich-btn tich-btn-secondary">
+                            Apply on the HELB portal
                         </a>
                         <a href="{{ route('programs.index') }}" class="tich-btn tich-btn-ghost">
                             Browse programs &amp; courses
@@ -81,7 +81,7 @@
                             @endforeach
                         </ul>
                         <p class="tich-text tich-text--sm tich-text--muted tich-mt-4">
-                            HEF is Government of Kenya funding applied for on the HEF portal above. TICH does not decide an HEF application.
+                            HEF is Government of Kenya funding applied for on the HEF or HELB portal above. TICH does not decide an HEF application.
                             For TICH scholarships, grants and work-study rounds see
                             <a href="{{ route('financial-aid.index') }}">Financial Aid</a>.
                         </p>
