@@ -35,6 +35,7 @@ class ResearchPartnerController extends Controller
         $partner->fill($this->validated($request));
         $partner->created_by = $request->user()?->id;
         $partner->save();
+        $partner->syncLogoTone();
 
         return redirect()
             ->route('research.partners.index')
@@ -53,6 +54,7 @@ class ResearchPartnerController extends Controller
         $partner->fill($this->validated($request, $partner));
         $partner->updated_by = $request->user()?->id;
         $partner->save();
+        $partner->syncLogoTone();
 
         return redirect()
             ->route('research.partners.index')

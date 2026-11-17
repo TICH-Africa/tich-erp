@@ -15697,6 +15697,10 @@ input[type="time"]::-moz-calendar-picker-indicator {
     text-align: center;
 }
 
+.research-partners__item--tinted .research-partners__name {
+    color: var(--tich-white);
+}
+
 .research-partners__logo {
     /* A partner logo is never cropped - the whole mark has to stay readable. */
     width: 100%;

@@ -73,7 +73,7 @@
                             <h2 class="tich-h2" style="margin: 0;">Our partners</h2>
                             <ul class="research-partners tich-mt-6">
                                 @foreach ($partners as $partner)
-                                    <li class="research-partners__item{{ $partner->name ? '' : ' research-partners__item--logo-only' }}">
+                                    <li class="research-partners__item{{ $partner->name ? '' : ' research-partners__item--logo-only' }}{{ $partner->backgroundIsDark() ? ' research-partners__item--tinted' : '' }}" style="background-color: {{ $partner->backgroundColor() }};">
                                         @if ($partner->logoUrl())
                                             <img src="{{ $partner->logoUrl() }}" alt="{{ $partner->displayLabel() }}" class="research-partners__logo" loading="lazy">
                                         @else

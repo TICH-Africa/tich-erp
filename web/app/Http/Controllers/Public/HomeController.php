@@ -55,11 +55,24 @@ class HomeController extends Controller
                 ->get();
         }
 
+        $partners = collect();
+
+        if (Schema::hasTable('research_partners')) {
+            $partners = ResearchPartner::query()->active()->orderByRaw('name IS NULL, name')->get();
+
+            // A partner posted before its logo was sampled still gets the card colour its logo needs.
+            if (Schema::hasColumn('research_partners', 'bg_color')) {
+                foreach ($partners as $partner) {
+                    if ($partner->logo_path && $partner->getAttribute('bg_color') === null) {
+                        $partner->syncLogoTone();
+                    }
+                }
+            }
+        }
+
         return view('pages.research', [
             'projects' => $projects,
-            'partners' => Schema::hasTable('research_partners')
-                ? ResearchPartner::query()->active()->orderByRaw('name IS NULL, name')->get()
-                : collect(),
+            'partners' => $partners,
             'resources' => Schema::hasTable('research_resources')
                 ? ResearchResource::query()->active()->orderByDesc('year')->orderByDesc('id')->get()
                 : collect(),
