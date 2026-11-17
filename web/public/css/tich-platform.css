@@ -15640,6 +15640,19 @@ input[type="time"]::-moz-calendar-picker-indicator {
     color: var(--tich-neutral-muted);
 }
 
+/* The portal addresses are links like every other link on the site. */
+.hef-steps__notes li a {
+    color: var(--tich-blue);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.hef-steps__notes li a:hover {
+    color: var(--tich-blue-dark);
+    text-decoration: underline;
+}
+
 .hef-steps__branch {
     margin-top: 0.65rem;
     padding: 0.7rem 0.85rem;
@@ -15715,5 +15728,63 @@ input[type="time"]::-moz-calendar-picker-indicator {
 
     .research-partners__item {
         padding: 0.75rem;
+    }
+}
+
+.research-resources {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.research-resources__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    padding: 1.25rem;
+    background: var(--tich-white);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+}
+
+.research-resources__lead {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--tich-neutral-muted);
+}
+
+.research-resources__title {
+    margin: 0 0 0.2rem;
+    font-family: var(--font-body);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--tich-text);
+}
+
+.research-resources__authors,
+.research-resources__id {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    color: var(--tich-neutral-muted);
+}
+
+@media (max-width: 767px) {
+    .research-resources {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .research-resources__item {
+        padding: 1rem;
     }
 }

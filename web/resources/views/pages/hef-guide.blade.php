@@ -13,12 +13,9 @@
                         HEF (Higher Education Funding) is Government of Kenya funding for university and college students.
                         These are the steps printed in the Higher Education Finance Application guide, in the order the guide gives them.
                     </p>
-                    <div class="tich-flex tich-gap-3 tich-mt-6" style="flex-wrap: wrap;">
+                    <div class="tich-flex tich-mt-6" style="flex-wrap: wrap; gap: 2rem;">
                         <a href="{{ $portals[0]['url'] }}" target="_blank" rel="noopener noreferrer" class="tich-btn tich-btn-primary">
                             Apply on the HEF Student Portal
-                        </a>
-                        <a href="{{ $portals[2]['url'] }}" target="_blank" rel="noopener noreferrer" class="tich-btn tich-btn-secondary">
-                            Apply on the HELB portal
                         </a>
                         <a href="{{ route('programs.index') }}" class="tich-btn tich-btn-ghost">
                             Browse programs &amp; courses
@@ -81,7 +78,7 @@
                             @endforeach
                         </ul>
                         <p class="tich-text tich-text--sm tich-text--muted tich-mt-4">
-                            HEF is Government of Kenya funding applied for on the HEF or HELB portal above. TICH does not decide an HEF application.
+                            HEF is Government of Kenya funding applied for on the HEF Student Portal linked above. TICH does not decide an HEF application.
                             For TICH scholarships, grants and work-study rounds see
                             <a href="{{ route('financial-aid.index') }}">Financial Aid</a>.
                         </p>

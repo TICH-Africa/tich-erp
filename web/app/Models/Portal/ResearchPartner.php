@@ -31,6 +31,12 @@ class ResearchPartner extends Model
         return $query->where('is_active', true);
     }
 
+    // A logo-only partner still needs a label wherever the list names it.
+    public function displayLabel(): string
+    {
+        return $this->name ?: 'Logo only';
+    }
+
     public function logoUrl(): ?string
     {
         if (! $this->logo_path) {

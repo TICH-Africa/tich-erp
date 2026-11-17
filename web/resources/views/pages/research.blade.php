@@ -76,11 +76,47 @@
                                 @foreach ($partners as $partner)
                                     <li class="research-partners__item">
                                         @if ($partner->logoUrl())
-                                            <img src="{{ $partner->logoUrl() }}" alt="{{ $partner->name }}" class="research-partners__logo" loading="lazy">
+                                            <img src="{{ $partner->logoUrl() }}" alt="{{ $partner->displayLabel() }}" class="research-partners__logo" loading="lazy">
                                         @else
                                             <span class="research-partners__logo research-partners__logo--text" aria-hidden="true">{{ $partner->name }}</span>
                                         @endif
-                                        <span class="research-partners__name">{{ $partner->name }}</span>
+                                        @if ($partner->name)
+                                            <span class="research-partners__name">{{ $partner->name }}</span>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </x-animated-section>
+                @endif
+
+                @if ($resources->isNotEmpty())
+                    <x-animated-section animation="bottom">
+                        <div class="tich-mt-10 tich-mb-8">
+                            <h2 class="tich-h2" style="margin: 0;">Research resources</h2>
+                            <p class="tich-text tich-mt-2">Books, papers and reports from our teams, posted here for download.</p>
+                            <ul class="research-resources tich-mt-6">
+                                @foreach ($resources as $resource)
+                                    <li class="research-resources__item">
+                                        @if ($resource->year || $resource->publisher)
+                                            <p class="research-resources__lead">{{ trim(($resource->year ? $resource->year.' ' : '').($resource->publisher ?? '')) }}</p>
+                                        @endif
+                                        <h3 class="research-resources__title">{{ $resource->title }}</h3>
+                                        @if ($resource->authors)
+                                            <p class="research-resources__authors">By {{ $resource->authors }}</p>
+                                        @endif
+                                        @if ($resource->isbn)
+                                            <p class="research-resources__id">ISBN: {{ $resource->isbn }}</p>
+                                        @endif
+                                        @if ($resource->doi)
+                                            <p class="research-resources__id">DOI: {{ $resource->doi }}</p>
+                                        @endif
+                                        @if ($resource->description)
+                                            <p class="tich-text tich-text--sm tich-mt-3">{{ $resource->description }}</p>
+                                        @endif
+                                        @if ($resource->hasFile())
+                                            <a href="{{ route('research.resource.download', $resource) }}" class="tich-btn tich-btn-primary tich-mt-4">Download</a>
+                                        @endif
                                     </li>
                                 @endforeach
                             </ul>

@@ -3,7 +3,7 @@
 @section('title', 'Add partner')
 
 @section('research-content')
-    <x-page-toolbar title="Add partner" meta="Name and logo of an organisation TICH is in partnership with">
+    <x-page-toolbar title="Add partner" meta="Name and logo of an organisation TICH is in partnership with; the name can stay blank when the logo carries it">
         <x-slot:actions>
             <a href="{{ route('research.partners.index') }}" class="tich-btn tich-btn-secondary">Back to list</a>
         </x-slot:actions>

@@ -21,6 +21,12 @@
             'icon' => 'building-2',
             'active' => request()->routeIs('research.partners.*'),
         ])
+        @include('partials.navigation.sidebar-link', [
+            'href' => route('research.resources.index'),
+            'label' => 'Research resources',
+            'icon' => 'clipboard-list',
+            'active' => request()->routeIs('research.resources.*'),
+        ])
         @include('partials.navigation.department-budgeting-link', ['module' => 'research'])
         @include('partials.navigation.department-technical-plan-link', ['module' => 'research'])
         @include('partials.navigation.department-finance-policy-sign-link', ['module' => 'research'])

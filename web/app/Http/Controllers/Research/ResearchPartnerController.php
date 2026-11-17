@@ -18,7 +18,9 @@ class ResearchPartnerController extends Controller
     public function index(): View
     {
         return view('research.partners.index', [
-            'partners' => ResearchPartner::query()->orderBy('name')->get(),
+            'partners' => ResearchPartner::query()
+                ->orderByRaw('name IS NULL, name')
+                ->get(),
         ]);
     }
 
@@ -72,12 +74,24 @@ class ResearchPartnerController extends Controller
     private function validated(Request $request, ?ResearchPartner $partner = null): array
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:300'],
+            'name' => ['nullable', 'string', 'max:300'],
             'logo' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
         ]);
 
+        $name = trim($request->string('name')->toString());
+        $keepsLogo = $request->hasFile('logo')
+            || ($partner?->logo_path && ! $request->boolean('remove_logo'));
+
+        // A partner with neither a name nor a logo would post an empty card to the website.
+        if ($name === '' && ! $keepsLogo) {
+            $request->validate(
+                ['name' => ['required']],
+                ['name.required' => 'Type the partner name, or upload the logo that carries it.'],
+            );
+        }
+
         $data = [
-            'name' => trim($request->string('name')->toString()),
+            'name' => $name === '' ? null : $name,
             'is_active' => $request->boolean('is_active'),
         ];
 

@@ -34,12 +34,18 @@
                                     <span class="tich-caption">No logo</span>
                                 @endif
                             </td>
-                            <td><strong>{{ $partner->name }}</strong></td>
+                            <td>
+                                @if ($partner->name)
+                                    <strong>{{ $partner->name }}</strong>
+                                @else
+                                    <span class="tich-caption">Name on the logo</span>
+                                @endif
+                            </td>
                             <td><x-status-badge :status="$partner->is_active ? 'published' : 'draft'" :label="$partner->is_active ? 'Yes' : 'Hidden'" /></td>
                             <td>
                                 <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
                                     <a href="{{ route('research.partners.edit', $partner) }}" class="tich-link">Edit</a>
-                                    <form method="POST" action="{{ route('research.partners.destroy', $partner) }}" onsubmit="return confirm('Remove {{ $partner->name }} from the website partners list?');">
+                                    <form method="POST" action="{{ route('research.partners.destroy', $partner) }}" onsubmit="return confirm('Remove {{ $partner->displayLabel() }} from the website partners list?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="tich-btn tich-btn-ghost">Remove</button>

@@ -8,6 +8,7 @@ use App\Models\Portal\CmsPage;
 use App\Models\Portal\Event;
 use App\Models\Portal\ResearchPartner;
 use App\Models\Portal\ResearchProject;
+use App\Models\Portal\ResearchResource;
 use App\Services\AboutContentService;
 use App\Services\HomepageService;
 use App\Services\PrintDocumentService;
@@ -57,7 +58,10 @@ class HomeController extends Controller
         return view('pages.research', [
             'projects' => $projects,
             'partners' => Schema::hasTable('research_partners')
-                ? ResearchPartner::query()->active()->orderBy('name')->get()
+                ? ResearchPartner::query()->active()->orderByRaw('name IS NULL, name')->get()
+                : collect(),
+            'resources' => Schema::hasTable('research_resources')
+                ? ResearchResource::query()->active()->orderByDesc('year')->orderByDesc('id')->get()
                 : collect(),
             'featured' => $this->homepageService->getFeaturedResearch(),
         ]);

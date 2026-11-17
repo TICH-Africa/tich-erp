@@ -7,8 +7,9 @@
     <div class="uf-section-body">
         <div class="uf-form-grid-2">
             <div class="uf-field" style="grid-column: 1 / -1;">
-                <label for="name">Partner name <span class="uf-req">*</span></label>
-                <input id="name" type="text" name="name" value="{{ old('name', $partner->name ?? '') }}" required maxlength="300" placeholder="e.g. County Health Department, Kisumu">
+                <label for="name">Partner name</label>
+                <input id="name" type="text" name="name" value="{{ old('name', $partner->name ?? '') }}" maxlength="300" placeholder="e.g. County Health Department, Kisumu">
+                <span class="uf-hint">Leave it blank when the logo already shows the partner's name.</span>
             </div>
             <div class="uf-field" style="grid-column: 1 / -1;">
                 <label for="logo">Logo</label>

@@ -45,6 +45,7 @@ Route::post('/research/partnerships', [\App\Http\Controllers\Public\PartnershipI
 Route::get('/research/activity/{slug}', [\App\Http\Controllers\Public\ResearchPortalController::class, 'show'])->name('research.show');
 Route::get('/research/documents/{document}/view', [\App\Http\Controllers\Public\ResearchPortalController::class, 'documentViewer'])->name('research.documents.view');
 Route::get('/research/documents/{document}/stream', [\App\Http\Controllers\Public\ResearchPortalController::class, 'documentStream'])->name('research.documents.stream');
+Route::get('/research/resources/{resource}/download', [\App\Http\Controllers\Public\ResearchPortalController::class, 'resourceDownload'])->name('research.resource.download');
 Route::get('/support', [HomeController::class, 'support'])->name('support');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/events', [HomeController::class, 'events'])->name('events');
@@ -1003,6 +1004,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/partners/{partner}/edit', [\App\Http\Controllers\Research\ResearchPartnerController::class, 'edit'])->name('research.partners.edit');
         Route::put('/partners/{partner}', [\App\Http\Controllers\Research\ResearchPartnerController::class, 'update'])->name('research.partners.update');
         Route::delete('/partners/{partner}', [\App\Http\Controllers\Research\ResearchPartnerController::class, 'destroy'])->name('research.partners.destroy');
+
+        Route::get('/resources', [\App\Http\Controllers\Research\ResearchResourceController::class, 'index'])->name('research.resources.index');
+        Route::get('/resources/create', [\App\Http\Controllers\Research\ResearchResourceController::class, 'create'])->name('research.resources.create');
+        Route::post('/resources', [\App\Http\Controllers\Research\ResearchResourceController::class, 'store'])->name('research.resources.store');
+        Route::get('/resources/{resource}/edit', [\App\Http\Controllers\Research\ResearchResourceController::class, 'edit'])->name('research.resources.edit');
+        Route::put('/resources/{resource}', [\App\Http\Controllers\Research\ResearchResourceController::class, 'update'])->name('research.resources.update');
+        Route::delete('/resources/{resource}', [\App\Http\Controllers\Research\ResearchResourceController::class, 'destroy'])->name('research.resources.destroy');
 
         $registerModuleBudgeting('research');
         $registerModuleMeReports('research');
