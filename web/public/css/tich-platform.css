@@ -15701,6 +15701,12 @@ input[type="time"]::-moz-calendar-picker-indicator {
     color: var(--tich-white);
 }
 
+/* The heading sits over a centred wall of logos, so it is centred too and wears the house blue. */
+h2.tich-h2.research-partners__head {
+    text-align: center;
+    color: var(--tich-blue);
+}
+
 .research-partners__logo {
     /* A partner logo is never cropped - the whole mark has to stay readable. */
     width: 100%;
