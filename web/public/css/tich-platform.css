@@ -4169,13 +4169,17 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     }
 }
 
-/* --- Translucent footer panel: the whole footer wears a see-through blue, --- */
-/* --- so every word, rule and chip on it is a white alpha, not a solid ink. --- */
+/* --- Translucent footer panel: the same house blue, thinned toward the bottom --- */
+/* --- so the last rows land on plain blue instead of the dark band. Words stay --- */
+/* --- white alpha, and the page still shows faintly through the panel. --- */
 
 .tich-footer,
 .tich-footer--rich {
     background:
-        linear-gradient(180deg, rgba(22, 105, 166, 0.92) 0%, rgba(11, 58, 92, 0.95) 100%),
+        linear-gradient(180deg,
+            rgba(15, 76, 124, 0.95) 0%,
+            rgba(19, 90, 146, 0.80) 55%,
+            rgba(22, 105, 166, 0.60) 100%),
         var(--tich-blue);
     border-top: 1px solid rgba(255, 255, 255, 0.18);
     color: rgba(255, 255, 255, 0.85);
