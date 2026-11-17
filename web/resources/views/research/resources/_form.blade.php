@@ -30,6 +30,7 @@
             <div class="uf-field">
                 <label for="doi">DOI</label>
                 <input id="doi" type="text" name="doi" value="{{ old('doi', $resource->doi ?? '') }}" maxlength="300" placeholder="e.g. 10.13189/ujmsj.2015.03">
+                <span class="uf-hint">Year, publisher, authors, ISBN and DOI are all optional - one you leave blank simply does not show on the website.</span>
             </div>
         </div>
     </div>
