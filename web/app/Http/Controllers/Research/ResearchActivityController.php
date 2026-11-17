@@ -66,6 +66,7 @@ class ResearchActivityController extends Controller
     public function show(ResearchProject $activity): View
     {
         $this->activities->syncLifecycleStatus($activity);
+        $activity->syncCoverTone();
         $activity->load('documents');
 
         return view('research.activities.show', [
@@ -75,6 +76,7 @@ class ResearchActivityController extends Controller
 
     public function edit(ResearchProject $activity): View
     {
+        $activity->syncCoverTone();
         $activity->load('documents');
 
         return view('research.activities.edit', array_merge($this->formMeta(), [
@@ -162,6 +164,7 @@ class ResearchActivityController extends Controller
             'visibility' => ['required', 'in:'.implode(',', ResearchActivityService::VISIBILITIES)],
             'is_featured' => ['nullable', 'boolean'],
             'cover_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'bg_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'remove_cover' => ['nullable', 'boolean'],
             'doc_titles' => ['nullable', 'array'],
             'doc_titles.*' => ['nullable', 'string', 'max:300'],

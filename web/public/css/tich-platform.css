@@ -4024,7 +4024,8 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     width: 100%;
     border-radius: var(--radius-lg);
     object-fit: contain;
-    background: #e8eaed;
+    /* The band a whole cover sits in takes the study's own colour, so white paper does not read as a grey frame. */
+    background: var(--study-page-bg, #e8eaed);
 }
 
 .tich-research-card__placeholder {
@@ -12353,8 +12354,29 @@ a.tich-tabs__btn {
 
 .research-public-show {
     padding: 2.5rem 0 4rem;
-    background: var(--tich-white);
+    /* The colour chosen on the study's form paints this whole page; unset means the usual white. */
+    background: var(--study-page-bg, var(--tich-white));
     color: var(--tich-grey);
+}
+
+/* A dark page colour carries the study's own words with it, except inside the light facts panel. */
+.research-public-show--tinted,
+.research-public-show--tinted .research-public-show__title,
+.research-public-show--tinted .research-public-show__subtitle,
+.research-public-show--tinted .research-public-show__meta,
+.research-public-show--tinted .research-public-show__summary,
+.research-public-show--tinted .research-public-show__heading,
+.research-public-show--tinted .research-public-show__objective,
+.research-public-show--tinted .research-public-show__objective li,
+.research-public-show--tinted .research-public-show__body,
+.research-public-show--tinted .research-public-show__body * {
+    color: #ffffff;
+}
+
+/* Only the link that sits on the painted page turns pale; the document list stays blue inside the light panel. */
+.research-public-show--tinted .research-public-show__back a,
+.research-public-show--tinted .research-public-show__status {
+    color: #cfe3f3;
 }
 
 .research-public-show__inner {
@@ -12416,13 +12438,19 @@ a.tich-tabs__btn {
     width: 100%;
     max-height: 22rem;
     object-fit: contain;
-    background: #e8eaed;
+    /* The cover sits in the study's own colour, so white paper does not read as a grey frame. */
+    background: var(--study-page-bg, #e8eaed);
 }
 
 /* Uploaded covers are often text or documents, so show the whole image instead of cropping it. */
 .tich-research-card-cover .tich-course-card__image {
     object-fit: contain;
-    background: #e8eaed;
+    /* The band a whole cover sits in takes the study's own colour, so white paper does not read as a grey frame. */
+    background: var(--study-page-bg, #e8eaed);
+}
+
+.tich-research-card-cover .tich-course-card__img {
+    background: var(--study-page-bg, var(--tich-blue-light));
 }
 
 .research-public-show__layout {
@@ -12539,7 +12567,7 @@ a.tich-tabs__btn {
 }
 
 [data-theme="dark"] .research-public-show {
-    background: var(--tich-white);
+    background: var(--study-page-bg, var(--tich-white));
     color: var(--tich-grey);
 }
 

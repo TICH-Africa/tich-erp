@@ -53,6 +53,13 @@ class HomeController extends Controller
                 ->orderByDesc('start_date')
                 ->orderByDesc('id')
                 ->get();
+
+            // A study posted before the colour picker still gets the page colour its cover needs.
+            if (Schema::hasColumn('research_projects', 'bg_color')) {
+                foreach ($projects as $project) {
+                    $project->syncCoverTone();
+                }
+            }
         }
 
         $partners = collect();

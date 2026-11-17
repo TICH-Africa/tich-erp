@@ -11,6 +11,7 @@
         : ($project->url ?? route('research'));
     $summary = $project->summary ?? null;
     $subtitle = $project->subtitle ?? null;
+    $pageColor = $project->bg_color ?? null;
 
     $durationLabel = null;
     if ($isModel) {
@@ -37,6 +38,7 @@
 @endphp
 <article
     class="tich-course-card tich-research-card-cover{{ $extraClass ? ' '.$extraClass : '' }}"
+    @if ($pageColor) style="--study-page-bg: {{ $pageColor }};" @endif
     data-live-search-item
     data-search="{{ $searchBlob }}"
 >

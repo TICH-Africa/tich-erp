@@ -6,6 +6,7 @@ use App\Models\Portal\ResearchProject;
 use App\Models\Portal\ResearchProjectDocument;
 use App\Models\User;
 use App\Services\StoredFileService;
+use App\Support\LogoTone;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -176,9 +177,13 @@ class ResearchActivityService
             $this->files->delete($coverPath, 'public');
             $coverPath = null;
         }
-        if (! empty($data['cover_image']) && $data['cover_image'] instanceof UploadedFile) {
-            $coverPath = $this->files->replace($coverPath, $data['cover_image'], 'research/covers', 'public', null, true);
+        $newCover = ! empty($data['cover_image']) && $data['cover_image'] instanceof UploadedFile
+            ? $data['cover_image']
+            : null;
+        if ($newCover) {
+            $coverPath = $this->files->replace($coverPath, $newCover, 'research/covers', 'public', null, true);
         }
+        $bgColor = $this->coverTone($data, $newCover, $existing);
 
         return [
             'title' => $title,
@@ -199,8 +204,31 @@ class ResearchActivityService
             'published_at' => $publishedAt,
             'is_featured' => (bool) ($data['is_featured'] ?? false),
             'cover_image_path' => $coverPath,
+            'bg_color' => $bgColor,
             'lead_researcher_id' => $data['lead_researcher_id'] ?? $user->staff_id,
         ];
+    }
+
+    /**
+     * The colour the study's own page is painted with. The picker on the form wins; a fresh cover lends its own
+     * edge colour when the officer leaves the choice to the image.
+     */
+    private function coverTone(array $data, ?UploadedFile $newCover, ?ResearchProject $existing): ?string
+    {
+        if (array_key_exists('bg_color', $data)) {
+            $picked = trim((string) $data['bg_color']);
+
+            return $picked === '' ? null : strtolower($picked);
+        }
+
+        if ($newCover) {
+            $binary = @file_get_contents($newCover->getRealPath());
+            $tone = $binary === false ? null : LogoTone::fromBinary($binary);
+
+            return $tone['hex'] ?? null;
+        }
+
+        return $existing?->getAttribute('bg_color');
     }
 
     /**

@@ -28,6 +28,7 @@ class ResearchPortalController extends Controller
             ->firstOrFail();
 
         $this->activities->syncLifecycleStatus($activity);
+        $activity->syncCoverTone();
 
         return view('pages.research-show', [
             'activity' => $activity,

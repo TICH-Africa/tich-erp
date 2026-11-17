@@ -4,7 +4,14 @@
 @section('meta_description', \Illuminate\Support\Str::limit(strip_tags($activity->summary ?: $activity->subtitle ?: $activity->title), 160, ''))
 
 @section('content')
-    <article class="research-public-show">
+    @php
+        // The colour chosen on the study's form paints this page; a study that never picked one stays site-white.
+        $pageColor = $activity->pageColor();
+    @endphp
+    <article
+        class="research-public-show{{ $pageColor && $activity->backgroundIsDark() ? ' research-public-show--tinted' : '' }}"
+        @if ($pageColor) style="--study-page-bg: {{ $pageColor }};" @endif
+    >
         <div class="research-public-show__inner">
             <p class="research-public-show__back">
                 <a href="{{ route('research') }}">← Back to Research</a>

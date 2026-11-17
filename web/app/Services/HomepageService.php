@@ -264,11 +264,15 @@ class HomepageService
                 ?? ResearchProject::query()->published()->orderByDesc('created_at')->first();
 
             if ($project) {
+                // A study posted before the colour picker still gets the page colour its cover needs.
+                $project->syncCoverTone();
+
                 return (object) [
                     'title' => $project->title,
                     'summary' => $project->summary,
                     'status' => $project->statusLabel(),
                     'cover_image_path' => $this->mediaUrl($project->cover_image_path),
+                    'page_color' => $project->pageColor(),
                     'url' => $project->slug
                         ? route('research.show', $project->slug)
                         : route('research'),

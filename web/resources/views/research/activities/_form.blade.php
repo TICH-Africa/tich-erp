@@ -58,11 +58,22 @@
                 <input id="cover_image" type="file" name="cover_image" accept="image/jpeg,image/png,image/webp,image/gif">
                 @if ($activity?->coverUrl())
                     <div class="uf-field--check tich-mt-2" style="flex-wrap:nowrap;">
-                        <img src="{{ $activity->coverUrl() }}" alt="" style="width:4.5rem;height:3rem;object-fit:contain;border-radius:4px;flex-shrink:0;background:#e8eaed;">
+                        <img src="{{ $activity->coverUrl() }}" alt="" style="width:4.5rem;height:3rem;object-fit:contain;border-radius:4px;flex-shrink:0;background:{{ $activity->pageColor() ?: '#e8eaed' }};">
                         <input type="checkbox" id="remove_cover" name="remove_cover" value="1" class="tich-checkbox">
                         <label for="remove_cover">Remove current image</label>
                     </div>
                 @endif
+            </div>
+            <div class="uf-field">
+                <label for="bg_color">Page background colour</label>
+                <input
+                    id="bg_color"
+                    type="color"
+                    name="bg_color"
+                    value="{{ old('bg_color', $activity->bg_color ?? '#ffffff') }}"
+                    data-study-page-colour
+                >
+                <span class="uf-hint">Paints the whole page of this study on the website, behind the title, cover and description. It starts from the cover image's own colour - change it to override.</span>
             </div>
             <div class="uf-field uf-field--check" style="grid-column: 1 / -1;">
                 <input type="checkbox" id="is_featured" name="is_featured" value="1" class="tich-checkbox" @checked(old('is_featured', $activity->is_featured ?? false))>
