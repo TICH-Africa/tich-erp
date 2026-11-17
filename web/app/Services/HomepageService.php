@@ -273,6 +273,7 @@ class HomepageService
                     'status' => $project->statusLabel(),
                     'cover_image_path' => $this->mediaUrl($project->cover_image_path),
                     'page_color' => $project->pageColor(),
+                    'page_dark' => $project->backgroundIsDark(),
                     'url' => $project->slug
                         ? route('research.show', $project->slug)
                         : route('research'),

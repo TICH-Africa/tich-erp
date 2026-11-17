@@ -12,7 +12,7 @@
                     <a href="{{ route('research') }}" class="tich-btn tich-btn-secondary">View all research</a>
                 </div>
             </div>
-            <div class="tich-research-card tich-home-reveal" @if (!empty($research->page_color)) style="--study-page-bg: {{ $research->page_color }};" @endif>
+            <div class="tich-research-card tich-home-reveal{{ !empty($research->page_dark) ? ' tich-research-card--tinted' : '' }}" @if (!empty($research->page_color)) style="--study-page-bg: {{ $research->page_color }};" @endif>
                 @if (!empty($research->cover_image_path))
                     <img src="{{ $research->cover_image_path }}" alt="{{ $research->title }}" class="tich-research-card__image">
                 @else

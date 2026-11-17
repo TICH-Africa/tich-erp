@@ -3267,7 +3267,8 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
 }
 
 .tich-hero-carousel__bracket--tl {
-    top: 5rem;
+    /* Tied to the header bar so the frame never sits behind the menu row */
+    top: calc(var(--tich-header-bar-height, 4rem) + 1.5rem);
     left: clamp(1.25rem, 4vw, 3rem);
     border-right: none;
     border-bottom: none;
@@ -3298,8 +3299,11 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+    /* A three-line headline is taller than the space left at the bottom, and flex-end then spills it up over the
+       header bar. "safe" keeps it bottom-aligned only while it fits, so the padding above always stays clear. */
+    justify-content: safe flex-end;
     padding: clamp(1.5rem, 5vw, 4rem);
-    padding-top: calc(var(--tich-header-bar-height, 4rem) + 2rem);
+    padding-top: calc(var(--tich-header-bar-height, 4rem) + 3rem);
     padding-left: clamp(3.5rem, 11vw, 7.75rem);
     padding-right: clamp(1rem, 3vw, 2rem);
     padding-bottom: 5.5rem;
@@ -4020,6 +4024,13 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     color: inherit;
 }
 
+.tich-research-card {
+    /* The homepage feature tile wears the study's own page colour, so it reads as the page it describes. */
+    background: var(--study-page-bg, transparent);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem;
+}
+
 .tich-research-card__image {
     width: 100%;
     border-radius: var(--radius-lg);
@@ -4030,12 +4041,16 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
 
 .tich-research-card__placeholder {
     padding: 2rem;
-    background: var(--tich-blue-light);
+    background: var(--study-page-bg, var(--tich-blue-light));
     border-radius: var(--radius-lg);
     min-height: 16rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+
+.tich-research-card--tinted .tich-research-card__placeholder p {
+    color: #ffffff;
 }
 
 /* ??? Rich footer ????????????????????????????????????????????????????? */
