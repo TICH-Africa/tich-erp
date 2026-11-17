@@ -111,13 +111,20 @@
     <section class="tich-dept-panel tich-mt-8">
         <div class="tich-dept-panel__head">
             <h2 class="tich-h2 tich-dept-panel__title">Paybill callback URLs</h2>
+            @can('finance.payments.manage')
+                <form method="POST" action="{{ route('finance.mpesa.settings.register-callbacks') }}" class="tich-inline">
+                    @csrf
+                    <button type="submit" class="tich-btn tich-btn-secondary tich-btn-sm">Send both to Safaricom</button>
+                </form>
+            @endcan
         </div>
         <p class="tich-caption">
-            Register both of these in the Safaricom Daraja app under C2B Admin → URL Registration.
-            They must point at the same shortcode as the paybill above.
+            Sending them hands both URLs to Safaricom's C2B registration against the shortcode above, so
+            nothing has to be typed into the Daraja portal. Copy them and paste them under C2B Admin →
+            URL Registration instead if you prefer.
             @if ($callbackSecretSet)
-                A callback secret is configured, so append <code>?token=&lt;that secret&gt;</code> to each
-                URL when you paste it into Daraja.
+                Sending them appends the configured <code>token</code> secret to each URL itself, so the
+                copy below is the URL without it.
             @endif
         </p>
         <div class="tich-card tich-mt-4" style="display:grid; gap:1rem;">

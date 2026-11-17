@@ -694,6 +694,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::put('/payments/{payment}', [\App\Http\Controllers\Finance\PaymentController::class, 'update'])->name('finance.payments.update');
             Route::get('/mpesa/settings', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'edit'])->name('finance.mpesa.settings');
             Route::put('/mpesa/settings', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'update'])->name('finance.mpesa.settings.update');
+            Route::post('/mpesa/settings/register-callbacks', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'registerCallbacks'])->name('finance.mpesa.settings.register-callbacks');
             Route::post('/mpesa/stk/{stkRequest}/reconcile', [\App\Http\Controllers\Finance\MpesaSettingsController::class, 'reconcile'])->name('finance.mpesa.stk.reconcile');
         });
 
