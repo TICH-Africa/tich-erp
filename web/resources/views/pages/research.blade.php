@@ -22,6 +22,17 @@
                 @endif
 
                 @php
+                    // The six areas are named once so the excellence panel and the partner form's
+                    // "Interested research area" dropdown can never drift apart in wording.
+                    $researchAreas = [
+                        'Community Health Systems Strengthening',
+                        'Maternal, Neonatal, and Child Health (MNCH)',
+                        'Health Equity and Social Determinants of Health',
+                        'Digital Health and Innovation',
+                        'Health Policy and Implementation Science',
+                        'Climate Change and Health',
+                    ];
+
                     // A study the school has already finished stays on the website under Completed
                     // research, so the work of previous years is still citable by a partner.
                     $isActiveStudy = fn ($project): bool => in_array((string) $project->status, ['upcoming', 'ongoing'], true);
@@ -80,12 +91,9 @@
                                 <div class="tich-mt-6">
                                     <h3 class="tich-h3">Our research areas</h3>
                                     <ul class="tich-mt-4">
-                                        <li>Community Health Systems Strengthening</li>
-                                        <li>Maternal, Neonatal, and Child Health (MNCH)</li>
-                                        <li>Health Equity and Social Determinants of Health</li>
-                                        <li>Digital Health and Innovation</li>
-                                        <li>Health Policy and Implementation Science</li>
-                                        <li>Climate Change and Health</li>
+                                        @foreach ($researchAreas as $area)
+                                            <li>{{ $area }}</li>
+                                        @endforeach
                                     </ul>
                                 </div>
                             </div>
@@ -197,19 +205,11 @@
                                 </div>
 
                                 @php
-                                    $areaOptions = [
-                                        'Community Health Systems',
-                                        'MNCH',
-                                        'Health Equity',
-                                        'Digital Health',
-                                        'Health Policy',
-                                        'Climate Change and Health',
-                                        'Other',
-                                    ];
+                                    $areaOptions = array_merge($researchAreas, ['Other']);
                                     $oldArea = old('research_area');
                                     $areaSelected = in_array($oldArea, $areaOptions, true)
                                         ? $oldArea
-                                        : (old('research_area_other') ? 'Other' : ($oldArea ?: 'Community Health Systems'));
+                                        : (old('research_area_other') ? 'Other' : ($oldArea ?: $researchAreas[0]));
                                 @endphp
                                 <div class="uf-field tich-mt-4">
                                     <label for="research_area">Interested research area</label>
