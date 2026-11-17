@@ -4,7 +4,7 @@
 @section('meta_description', Str::limit(strip_tags($opportunity->description), 160))
 
 @section('content')
-    <header class="tich-course-page-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">
+    <header class="tich-course-page-header">
         <div class="tich-container">
             <div class="tich-flex tich-flex--wrap tich-flex--between tich-mb-4">
                 <div>

@@ -4,7 +4,7 @@
 @section('meta_description', 'Apply for ' . $opportunity->title . ' financial aid opportunity')
 
 @section('content')
-    <header class="tich-course-page-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">
+    <header class="tich-course-page-header">
         <div class="tich-container">
             <h1 class="tich-course-page-header__title">Apply for {{ $opportunity->title }}</h1>
             <p class="tich-course-page-header__lead">Complete the application form below. All fields marked with * are required.</p>

@@ -7077,8 +7077,18 @@ a.tich-notification-badge:hover {
 /* ??? Programs catalogue ??????????????????????????????????????????????? */
 
 .tich-section--hero-plain {
-    background: var(--tich-blue-light);
+    background: var(--tich-blue-dark);
     border-bottom: 3px solid var(--tich-green);
+}
+
+/* The plain page hero wears the same blue as the Blog / course page header, so its
+   title and lead take that header's white-on-blue words rather than the page greys. */
+.tich-section--hero-plain .tich-h1 {
+    color: #ffffff;
+}
+
+.tich-section--hero-plain .tich-text {
+    color: var(--tich-blue-light);
 }
 
 .tich-featured-program {
@@ -8155,6 +8165,10 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 
 [data-theme="dark"] .tich-section--hero-plain {
     background: var(--tich-blue-light);
+}
+
+[data-theme="dark"] .tich-section--hero-plain .tich-text {
+    color: #b8bcc0;
 }
 
 [data-theme="dark"] .tich-featured-program__aside {

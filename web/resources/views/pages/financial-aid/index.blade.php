@@ -4,7 +4,7 @@
 @section('meta_description', 'Explore scholarships, grants, and financial aid opportunities at TICH. We believe financial circumstances should not be a barrier to quality education.')
 
 @section('content')
-    <header class="tich-course-page-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">
+    <header class="tich-course-page-header">
         <div class="tich-container">
             <h1 class="tich-course-page-header__title">Financial Aid & Sponsorship</h1>
             <p class="tich-course-page-header__lead">
