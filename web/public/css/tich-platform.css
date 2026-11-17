@@ -4169,6 +4169,73 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     }
 }
 
+/* --- Translucent footer panel: the whole footer wears a see-through blue, --- */
+/* --- so every word, rule and chip on it is a white alpha, not a solid ink. --- */
+
+.tich-footer,
+.tich-footer--rich {
+    background:
+        linear-gradient(180deg, rgba(22, 105, 166, 0.92) 0%, rgba(11, 58, 92, 0.95) 100%),
+        var(--tich-blue);
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.tich-footer .tich-h3,
+.tich-footer .tich-h4,
+.tich-footer .tich-label,
+.tich-footer .tich-text,
+.tich-footer .tich-brand__name,
+.tich-footer__bottom p {
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.tich-footer .tich-caption,
+.tich-footer .tich-brand__tagline {
+    color: rgba(255, 255, 255, 0.66);
+}
+
+.tich-footer a,
+.tich-footer__list a {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.tich-footer a:hover,
+.tich-footer__list a:hover {
+    color: #fff;
+}
+
+.tich-footer__social-link {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+}
+
+.tich-footer__social-link:hover {
+    background: rgba(255, 255, 255, 0.28);
+    color: #fff;
+}
+
+.tich-footer__newsletter-row .tich-input {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.28);
+    color: #fff;
+}
+
+.tich-footer__newsletter-row .tich-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.tich-footer__bottom {
+    border-top-color: rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="dark"] .tich-footer,
+[data-theme="dark"] .tich-footer--rich {
+    background:
+        linear-gradient(180deg, rgba(15, 34, 55, 0.92) 0%, rgba(8, 18, 30, 0.95) 100%),
+        var(--tich-white);
+}
+
 /* ??? Responsive navigation ??????????????????????????????????????????? */
 
 .tich-nav-toggle {
