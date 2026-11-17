@@ -31,41 +31,67 @@
                     ])->reject(fn ($group) => $group->isEmpty());
                 @endphp
 
-                @if ($projects->isNotEmpty())
-                    <x-animated-section animation="bottom">
-                        <div class="tich-mt-10 tich-mb-8" data-live-search>
-                            <div class="tich-flex-wrap" style="gap: 1rem; align-items: end; justify-content: space-between;">
-                                <h2 class="tich-h2" style="margin: 0;">Research activities</h2>
-                                <div class="tich-form-group" style="margin: 0; min-width: min(100%, 16rem);">
-                                    <label for="research-search" class="tich-label">Search activities</label>
-                                    <input
-                                        type="search"
-                                        id="research-search"
-                                        data-live-search-input
-                                        placeholder="Title, status, keyword..."
-                                        class="tich-input"
-                                        autocomplete="off"
-                                    >
+                <x-animated-section animation="bottom">
+                    <div class="research-activities tich-mt-10 tich-mb-8">
+                        <div data-live-search>
+                            @if ($projects->isNotEmpty())
+                                <div class="tich-flex-wrap" style="gap: 1rem; align-items: end; justify-content: space-between;">
+                                    <h2 class="tich-h2" style="margin: 0;">Research activities</h2>
+                                    <div class="tich-form-group" style="margin: 0; min-width: min(100%, 16rem);">
+                                        <label for="research-search" class="tich-label">Search activities</label>
+                                        <input
+                                            type="search"
+                                            id="research-search"
+                                            data-live-search-input
+                                            placeholder="Title, status, keyword..."
+                                            class="tich-input"
+                                            autocomplete="off"
+                                        >
+                                    </div>
+                                </div>
+                                @foreach ($studyGroups as $groupHeading => $group)
+                                    <h3 class="tich-h3" style="margin: 2rem 0 0;">{{ $groupHeading }} <span class="tich-text tich-text--muted" style="font-weight: 400;">({{ $group->count() }})</span></h3>
+                                    <div class="tich-course-grid tich-mt-6">
+                                        @foreach ($group as $project)
+                                            @include('research.partials.project-card', [
+                                                'project' => $project,
+                                                'headingTag' => 'h4',
+                                                'excerptLimit' => 180,
+                                            ])
+                                        @endforeach
+                                    </div>
+                                @endforeach
+                                <p class="tich-text tich-mt-6" data-live-search-empty hidden>No research activities match your search.</p>
+                            @else
+                                <p class="tich-text">Research activities will appear here once published.</p>
+                            @endif
+                        </div>
+
+                        <x-animated-card animation="left">
+                            <div>
+                                <h2 class="tich-h2">Research excellence</h2>
+                                <p class="tich-text tich-mt-4">
+                                    From health and education to technology, environment, and social development, our multidisciplinary research teams work at the intersection of theory and practice-translating research into action and policy.
+                                </p>
+                                <p class="tich-text tich-mt-4">
+                                    Through partnership with local and global organizations, we address real-world challenges by generating knowledge that empowers individuals and strengthens communities.
+                                </p>
+
+                                <div class="tich-mt-6">
+                                    <h3 class="tich-h3">Our research areas</h3>
+                                    <ul class="tich-mt-4">
+                                        <li>Community Health Systems Strengthening</li>
+                                        <li>Maternal, Neonatal, and Child Health (MNCH)</li>
+                                        <li>Health Equity and Social Determinants of Health</li>
+                                        <li>Digital Health and Innovation</li>
+                                        <li>Health Policy and Implementation Science</li>
+                                        <li>Climate Change and Health</li>
+                                    </ul>
                                 </div>
                             </div>
-                            @foreach ($studyGroups as $groupHeading => $group)
-                                <h3 class="tich-h3" style="margin: 2rem 0 0;">{{ $groupHeading }} <span class="tich-text tich-text--muted" style="font-weight: 400;">({{ $group->count() }})</span></h3>
-                                <div class="tich-course-grid tich-mt-6">
-                                    @foreach ($group as $project)
-                                        @include('research.partials.project-card', [
-                                            'project' => $project,
-                                            'headingTag' => 'h4',
-                                            'excerptLimit' => 180,
-                                        ])
-                                    @endforeach
-                                </div>
-                            @endforeach
-                            <p class="tich-text tich-mt-6" data-live-search-empty hidden>No research activities match your search.</p>
-                        </div>
-                    </x-animated-section>
-                @else
-                    <p class="tich-text tich-mt-10 tich-mb-8">Research activities will appear here once published.</p>
-                @endif
+                        </x-animated-card>
+                    </div>
+                </x-animated-section>
 
                 @if ($partners->isNotEmpty())
                     <x-animated-section animation="bottom">
@@ -124,31 +150,7 @@
                 @endif
 
                 <div class="tich-grid tich-grid--2" style="gap: 2rem; align-items: start;">
-                    <x-animated-card animation="left">
-                        <div>
-                            <h2 class="tich-h2">Research excellence</h2>
-                            <p class="tich-text tich-mt-4">
-                                From health and education to technology, environment, and social development, our multidisciplinary research teams work at the intersection of theory and practice-translating research into action and policy.
-                            </p>
-                            <p class="tich-text tich-mt-4">
-                                Through partnership with local and global organizations, we address real-world challenges by generating knowledge that empowers individuals and strengthens communities.
-                            </p>
-
-                            <div class="tich-mt-6">
-                                <h3 class="tich-h3">Our research areas</h3>
-                                <ul class="tich-mt-4">
-                                    <li>Community Health Systems Strengthening</li>
-                                    <li>Maternal, Neonatal, and Child Health (MNCH)</li>
-                                    <li>Health Equity and Social Determinants of Health</li>
-                                    <li>Digital Health and Innovation</li>
-                                    <li>Health Policy and Implementation Science</li>
-                                    <li>Climate Change and Health</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </x-animated-card>
-
-                    <x-animated-card animation="right">
+                    <x-animated-card animation="right" class="tich-grid--2-span-full">
                         <div class="research-partner-form">
                             <h3 class="tich-h3">Be a research partner</h3>
                             <form method="POST" action="{{ route('research.partnerships.store') }}" enctype="multipart/form-data" class="tich-mt-4 uf-form" data-partnership-form data-uf="skip" style="margin-top:1rem;">
