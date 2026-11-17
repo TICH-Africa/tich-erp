@@ -71,7 +71,6 @@
                     <x-animated-section animation="bottom">
                         <div class="tich-mt-10 tich-mb-8">
                             <h2 class="tich-h2" style="margin: 0;">Our partners</h2>
-                            <p class="tich-text tich-mt-2">Organisations we carry out research, fieldwork and community programmes with.</p>
                             <ul class="research-partners tich-mt-6">
                                 @foreach ($partners as $partner)
                                     <li class="research-partners__item{{ $partner->name ? '' : ' research-partners__item--logo-only' }}">
