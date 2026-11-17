@@ -2852,6 +2852,80 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     color: #fff;
 }
 
+/* Dropdown under Programs & courses. The links row clips its own overflow for the
+   fit measurement, so the panel is fixed to the viewport and placed by tich-nav.js.
+   The toggle carries .tich-nav__link so it takes the header's own link colours. */
+.tich-nav__submenu-toggle {
+    justify-content: center;
+    width: 1.35rem;
+    margin-left: -0.2rem;
+    padding-inline: 0;
+    border: 0;
+    cursor: pointer;
+}
+
+.tich-nav__submenu-toggle .tich-nav__chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.72;
+    transition: transform 0.15s ease;
+}
+
+.tich-nav__submenu-toggle .tich-nav__chevron .tich-admin-sidebar__icon-svg svg {
+    width: 12px;
+    height: 12px;
+}
+
+.tich-nav__item--submenu.is-open .tich-nav__submenu-toggle .tich-nav__chevron {
+    transform: rotate(180deg);
+}
+
+.tich-nav__submenu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-width: 14rem;
+    padding: 0.35rem;
+    background: var(--tich-white);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    z-index: 70;
+    display: grid;
+    gap: 0.125rem;
+}
+
+.tich-nav__submenu[hidden] {
+    display: none;
+}
+
+.tich-nav__submenu .tich-nav__link {
+    width: 100%;
+    padding: 0.5rem 0.625rem;
+    border-radius: calc(var(--radius-md) - 2px);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    /* The bar paints its own links light for the blue header; the panel is a white card. */
+    color: var(--tich-grey) !important;
+    background: transparent !important;
+}
+
+.tich-nav__submenu .tich-nav__link:hover,
+.tich-nav__submenu .tich-nav__link.is-active {
+    color: var(--tich-blue) !important;
+    background: var(--tich-blue-light) !important;
+}
+
+.tich-nav__submenu .tich-nav__icon {
+    background: transparent !important;
+    color: inherit !important;
+}
+
+.tich-nav__more-link--nested {
+    padding-left: 1.6rem;
+}
+
 .tich-nav__actions {
     display: inline-flex;
     align-items: center;
@@ -15504,5 +15578,86 @@ input[type="time"]::-moz-calendar-picker-indicator {
 
     .tich-assessment-footer .tich-btn {
         flex: 1 1 auto;
+    }
+}
+
+/* HEF application guide page - the steps keep the document's own numbering. */
+.hef-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+    counter-reset: hef-step;
+}
+
+.hef-steps__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem 1.1rem;
+    background: var(--tich-white);
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-md);
+}
+
+.hef-steps__number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 50%;
+    background: var(--tich-blue);
+    color: #fff;
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.hef-steps__body {
+    min-width: 0;
+}
+
+.hef-steps__title {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--tich-text);
+}
+
+.hef-steps__notes {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 0.3rem;
+}
+
+.hef-steps__notes li {
+    font-size: 0.9375rem;
+    color: var(--tich-neutral-muted);
+}
+
+.hef-steps__branch {
+    margin-top: 0.65rem;
+    padding: 0.7rem 0.85rem;
+    background: var(--tich-blue-light);
+    border-radius: calc(var(--radius-md) - 2px);
+}
+
+.hef-steps__branch-title {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--tich-blue);
+}
+
+@media (max-width: 767px) {
+    .hef-steps__item {
+        padding: 0.85rem 0.9rem;
     }
 }

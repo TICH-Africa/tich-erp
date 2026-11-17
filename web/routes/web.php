@@ -72,6 +72,7 @@ Route::post('/privacy/data-request', [\App\Http\Controllers\Public\DataSubjectRe
 Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
 Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.index');
 Route::get('/programs/{code}', [ProgramsController::class, 'show'])->name('programs.show');
+Route::get('/how-to-apply-hef', [HomeController::class, 'hefGuide'])->name('hef.guide');
 
 /*
 |--------------------------------------------------------------------------

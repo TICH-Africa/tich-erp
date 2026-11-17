@@ -1,7 +1,100 @@
 document.addEventListener('DOMContentLoaded', () => {
     initMobileNav();
+    initNavSubmenus();
     initNavOverflow();
 });
+
+const navSubmenus = [];
+
+function closeNavSubmenu(entry) {
+    if (!entry) {
+        return;
+    }
+
+    window.clearTimeout(entry.timer);
+    entry.timer = null;
+    entry.item.classList.remove('is-open');
+    entry.panel.hidden = true;
+    entry.toggle?.setAttribute('aria-expanded', 'false');
+}
+
+function closeAllNavSubmenus() {
+    navSubmenus.forEach(closeNavSubmenu);
+}
+
+function initNavSubmenus() {
+    document.querySelectorAll('.tich-nav__links [data-nav-submenu]').forEach((panel) => {
+        const item = panel.closest('.tich-nav__item');
+        if (!item) {
+            return;
+        }
+
+        const entry = { item, panel, toggle: item.querySelector('[data-nav-submenu-toggle]'), timer: null };
+        navSubmenus.push(entry);
+
+        const position = () => {
+            const link = item.querySelector('.tich-nav__link');
+            if (!link) {
+                return;
+            }
+
+            const rect = link.getBoundingClientRect();
+            const width = panel.offsetWidth || 224;
+            panel.style.left = `${Math.max(12, Math.min(rect.left, window.innerWidth - width - 12))}px`;
+            panel.style.top = `${rect.bottom + 6}px`;
+        };
+
+        const open = () => {
+            closeAllNavSubmenus();
+            panel.hidden = false;
+            position();
+            item.classList.add('is-open');
+            entry.toggle?.setAttribute('aria-expanded', 'true');
+        };
+
+        const scheduleClose = () => {
+            window.clearTimeout(entry.timer);
+            entry.timer = window.setTimeout(() => closeNavSubmenu(entry), 160);
+        };
+
+        entry.toggle?.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (item.classList.contains('is-open')) {
+                closeNavSubmenu(entry);
+            } else {
+                open();
+            }
+        });
+
+        item.addEventListener('mouseenter', () => {
+            if (window.innerWidth >= 1024 && !item.hidden) {
+                open();
+            }
+        });
+        item.addEventListener('mouseleave', scheduleClose);
+        panel.addEventListener('mouseenter', () => window.clearTimeout(entry.timer));
+        panel.addEventListener('mouseleave', scheduleClose);
+        panel.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => closeNavSubmenu(entry)));
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeNavSubmenu(entry);
+            }
+        });
+    });
+
+    document.addEventListener('click', (event) => {
+        navSubmenus.forEach((entry) => {
+            if (!entry.item.contains(event.target)) {
+                closeNavSubmenu(entry);
+            }
+        });
+    });
+
+    window.addEventListener('resize', closeAllNavSubmenus);
+}
 
 function initMobileNav() {
     const header = document.getElementById('site-header');
@@ -169,12 +262,25 @@ function initNavOverflow() {
         return clone;
     };
 
+    // A dropped parent would otherwise take its dropdown links out of reach.
+    const cloneNestedForMore = (item) => [...item.querySelectorAll('[data-nav-submenu] .tich-nav__link')]
+        .map((link) => {
+            const clone = link.cloneNode(true);
+            clone.classList.remove('tich-nav__link');
+            clone.classList.add('tich-nav__more-link', 'tich-nav__more-link--nested');
+            clone.setAttribute('role', 'menuitem');
+            clone.addEventListener('click', closeMoreMenu);
+
+            return clone;
+        });
+
     const fits = () => linksContainer.scrollWidth <= linksContainer.clientWidth + 1;
 
     const layout = () => {
         isLayoutScheduled = false;
         const wasOpen = isOpen;
         closeMoreMenu();
+        closeAllNavSubmenus();
         moreMenu.innerHTML = '';
 
         overflowItems.forEach((item) => {
@@ -207,7 +313,9 @@ function initNavOverflow() {
                 break;
             }
 
-            moreMenu.prepend(clone);
+            [clone, ...cloneNestedForMore(lastItem)].reverse().forEach((node) => {
+                moreMenu.prepend(node);
+            });
             lastItem.hidden = true;
         }
 
