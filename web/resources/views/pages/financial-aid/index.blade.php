@@ -23,7 +23,7 @@
                             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                         </svg>
                     </div>
-                    <h3 class="tich-h4 tich-mt-4">Scholarships</h3>
+                    <h3 class="tich-h4 tich-mt-4"><a href="{{ route('financial-aid.index', ['type' => 'scholarship']) }}" class="tich-link">Scholarships</a></h3>
                     <p class="tich-text tich-text--muted tich-mt-2">Merit-based awards for academic excellence and outstanding achievements.</p>
                 </article>
 
@@ -34,7 +34,7 @@
                             <path d="M12 6v6l4 2"/>
                         </svg>
                     </div>
-                    <h3 class="tich-h4 tich-mt-4">Grants</h3>
+                    <h3 class="tich-h4 tich-mt-4"><a href="{{ route('financial-aid.index', ['type' => 'grant']) }}" class="tich-link">Grants</a></h3>
                     <p class="tich-text tich-text--muted tich-mt-2">Need-based financial support that doesn't require repayment.</p>
                 </article>
 
@@ -45,13 +45,45 @@
                             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                         </svg>
                     </div>
-                    <h3 class="tich-h4 tich-mt-4">Work-Study</h3>
+                    <h3 class="tich-h4 tich-mt-4"><a href="{{ route('financial-aid.index', ['type' => 'work_study']) }}" class="tich-link">Work-Study</a></h3>
                     <p class="tich-text tich-text--muted tich-mt-2">Earn while you learn through campus employment opportunities.</p>
                 </article>
             </div>
 
             <div class="tich-section tich-mt-8">
-                <h2 id="opportunities-heading" class="tich-h2" style="margin-bottom: 1.5rem;">Available Opportunities</h2>
+                <div class="tich-flex tich-flex--wrap" style="gap: 1rem; align-items: end; justify-content: space-between; margin-bottom: 1rem;">
+                    <h2 id="opportunities-heading" class="tich-h2" style="margin: 0;">
+                        {{ $listing === 'completed' ? 'Completed Opportunities' : 'Available Opportunities' }}
+                    </h2>
+                    <nav class="tich-tabs__nav" style="margin: 0;" aria-label="Opportunity round">
+                        <a href="{{ route('financial-aid.index', ['listing' => 'active', 'type' => $type]) }}"
+                           class="tich-tabs__btn {{ $listing === 'active' ? 'is-active' : '' }}"
+                           @if ($listing === 'active') aria-current="page" @endif>
+                            Active ({{ $counts['active'] }})
+                        </a>
+                        <a href="{{ route('financial-aid.index', ['listing' => 'completed', 'type' => $type]) }}"
+                           class="tich-tabs__btn {{ $listing === 'completed' ? 'is-active' : '' }}"
+                           @if ($listing === 'completed') aria-current="page" @endif>
+                            Completed ({{ $counts['completed'] }})
+                        </a>
+                    </nav>
+                </div>
+
+                <nav class="tich-tabs__nav" aria-label="Funding type">
+                    <a href="{{ route('financial-aid.index', ['listing' => $listing]) }}"
+                       class="tich-tabs__btn {{ $type === null ? 'is-active' : '' }}">All types</a>
+                    @foreach ($typeOptions as $option)
+                        <a href="{{ route('financial-aid.index', ['listing' => $listing, 'type' => $option]) }}"
+                           class="tich-tabs__btn {{ $type === $option ? 'is-active' : '' }}">
+                            {{ Str::plural(match ($option) {
+                                'work_study' => 'Work-Study',
+                                'loan' => 'Loan',
+                                'grant' => 'Grant',
+                                default => 'Scholarship',
+                            }) }}
+                        </a>
+                    @endforeach
+                </nav>
 
                 @if ($opportunities->isNotEmpty())
                     <div class="tich-card">
@@ -75,7 +107,7 @@
                                                     ];
                                                 @endphp
                                                 <span class="tich-badge {{ $typeColors[$opportunity->funding_type] ?? 'bg-gray-100 text-gray-800' }}">
-                                                    {{ ucfirst(str_replace('_', ' ', $opportunity->funding_type)) }}
+                                                    {{ $opportunity->fundingTypeLabel() }}
                                                 </span>
                                             </div>
                                             <p class="tich-text tich-text--muted tich-mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
@@ -85,7 +117,13 @@
                                                 @if ($opportunity->amount)
                                                     <span><strong>Amount:</strong> KES {{ number_format((float) $opportunity->amount, 2) }}</span>
                                                 @endif
-                                                @if ($opportunity->application_open_date || $opportunity->application_deadline)
+                                                @if ($opportunity->isCompleted())
+                                                    @if ($opportunity->application_deadline)
+                                                        <span><strong>Round closed:</strong> {{ $opportunity->application_deadline->format('d M Y') }}</span>
+                                                    @else
+                                                        <span><strong>Round:</strong> Completed</span>
+                                                    @endif
+                                                @elseif ($opportunity->application_open_date || $opportunity->application_deadline)
                                                     <span>
                                                         <strong>Apply by:</strong> 
                                                         @if ($opportunity->application_open_date)
@@ -100,8 +138,8 @@
                                             @if ($opportunity->isOpenForApplications())
                                                 <a href="{{ route('financial-aid.apply', $opportunity->slug) }}" class="tich-btn tich-btn-primary" style="width: 100%;">Apply Now</a>
                                             @else
-                                                <span class="tich-badge bg-gray-100 text-gray-600" style="width: 100%; text-align: center;">
-                                                    {{ $opportunity->application_deadline && $opportunity->application_deadline < now() ? 'Closed' : 'Not Open' }}
+                                                <span class="tich-badge {{ $opportunity->isCompleted() ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-800' }}" style="width: 100%; text-align: center;">
+                                                    {{ $opportunity->websiteStatusLabel() }}
                                                 </span>
                                             @endif
                                         </div>
@@ -122,8 +160,12 @@
                                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                             </svg>
-                            <h3 class="tich-h3">No opportunities available</h3>
-                            <p class="tich-text tich-text--muted tich-mt-2">There are no financial aid opportunities open for applications at the moment. Please check back later.</p>
+                            <h3 class="tich-h3">{{ $listing === 'completed' ? 'No completed opportunities yet' : 'No opportunities available' }}</h3>
+                            <p class="tich-text tich-text--muted tich-mt-2">
+                                {{ $listing === 'completed'
+                                    ? 'Past scholarship, grant and work-study rounds will be listed here once they close.'
+                                    : 'There are no financial aid opportunities open for applications at the moment. Please check back later.' }}
+                            </p>
                         </div>
                     </div>
                 @endif

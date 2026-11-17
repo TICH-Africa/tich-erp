@@ -9,7 +9,7 @@
         $editEvent = $openEditEventId ? $events->firstWhere('id', $openEditEventId) : null;
     @endphp
 
-    <x-page-toolbar title="Events" meta="Public events, conferences, and homepage hero features">
+    <x-page-toolbar title="Events" meta="Public events, conferences, and homepage hero features. A past date lists the event under Past events on the website.">
         <x-slot:actions>
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="event-create-modal">
                 Add event

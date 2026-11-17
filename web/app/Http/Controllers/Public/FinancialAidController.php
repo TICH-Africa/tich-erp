@@ -9,23 +9,55 @@ use Illuminate\View\View;
 
 class FinancialAidController extends Controller
 {
-    public function index(): View
+    /**
+     * The website carries both rounds that can still be applied for and the ones the school has
+     * already run, because a sponsor or an applicant who missed a round needs to see that it
+     * existed. A draft or archived record never reaches either list.
+     */
+    public function index(Request $request): View
     {
-        $opportunities = FinancialAidOpportunity::query()
+        $listing = $request->query('listing') === 'completed' ? 'completed' : 'active';
+        $types = ['scholarship', 'grant', 'loan', 'work_study'];
+        $type = in_array($request->query('type'), $types, true) ? $request->query('type') : null;
+
+        $scoped = function (callable $scope) use ($type) {
+            $query = FinancialAidOpportunity::query()->whereIn('status', ['published', 'closed']);
+            $scope($query);
+            $query->when($type, fn ($q) => $q->where('funding_type', $type));
+
+            return $query;
+        };
+
+        // A round whose window has not opened yet still belongs under Active - the card says when
+        // it opens - so only the deadline decides whether it is finished.
+        $active = fn ($query) => $query
             ->where('status', 'published')
-            ->where(function ($query) {
-                $query->whereNull('application_deadline')
-                      ->orWhere('application_deadline', '>=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('application_open_date')
-                      ->orWhere('application_open_date', '<=', now());
-            })
+            ->where(function ($q) {
+                $q->whereNull('application_deadline')->orWhere('application_deadline', '>=', now());
+            });
+
+        $completed = fn ($query) => $query->where(function ($q) {
+            $q->where('status', 'closed')
+              ->orWhere(function ($d) {
+                  $d->whereNotNull('application_deadline')->where('application_deadline', '<', now());
+              });
+        });
+
+        $opportunities = $scoped($listing === 'active' ? $active : $completed)
             ->orderByDesc('published_at')
-            ->paginate(10);
+            ->orderByDesc('id')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('pages.financial-aid.index', [
             'opportunities' => $opportunities,
+            'listing' => $listing,
+            'type' => $type,
+            'typeOptions' => $types,
+            'counts' => [
+                'active' => $scoped($active)->count(),
+                'completed' => $scoped($completed)->count(),
+            ],
         ]);
     }
 
@@ -33,15 +65,7 @@ class FinancialAidController extends Controller
     {
         $opportunity = FinancialAidOpportunity::query()
             ->where('slug', $slug)
-            ->where('status', 'published')
-            ->where(function ($query) {
-                $query->whereNull('application_deadline')
-                      ->orWhere('application_deadline', '>=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('application_open_date')
-                      ->orWhere('application_open_date', '<=', now());
-            })
+            ->whereIn('status', ['published', 'closed'])
             ->firstOrFail();
 
         $isOpen = $opportunity->isOpenForApplications();
@@ -54,17 +78,11 @@ class FinancialAidController extends Controller
 
     public function apply(string $slug): View
     {
+        // Resolved the same way the detail page is, so a round that closed while somebody was
+        // reading it answers with the reason instead of a dead link.
         $opportunity = FinancialAidOpportunity::query()
             ->where('slug', $slug)
-            ->where('status', 'published')
-            ->where(function ($query) {
-                $query->whereNull('application_deadline')
-                      ->orWhere('application_deadline', '>=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('application_open_date')
-                      ->orWhere('application_open_date', '<=', now());
-            })
+            ->whereIn('status', ['published', 'closed'])
             ->firstOrFail();
 
         if (!$opportunity->isOpenForApplications()) {
@@ -81,15 +99,7 @@ class FinancialAidController extends Controller
     {
         $opportunity = FinancialAidOpportunity::query()
             ->where('slug', $slug)
-            ->where('status', 'published')
-            ->where(function ($query) {
-                $query->whereNull('application_deadline')
-                      ->orWhere('application_deadline', '>=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('application_open_date')
-                      ->orWhere('application_open_date', '<=', now());
-            })
+            ->whereIn('status', ['published', 'closed'])
             ->firstOrFail();
 
         if (!$opportunity->isOpenForApplications()) {

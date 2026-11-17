@@ -21,6 +21,16 @@
                     </div>
                 @endif
 
+                @php
+                    // A study the school has already finished stays on the website under Completed
+                    // research, so the work of previous years is still citable by a partner.
+                    $isActiveStudy = fn ($project): bool => in_array((string) $project->status, ['upcoming', 'ongoing'], true);
+                    $studyGroups = collect([
+                        'Active research' => $projects->filter($isActiveStudy)->values(),
+                        'Completed research' => $projects->reject($isActiveStudy)->values(),
+                    ])->reject(fn ($group) => $group->isEmpty());
+                @endphp
+
                 @if ($projects->isNotEmpty())
                     <x-animated-section animation="bottom">
                         <div class="tich-mt-10 tich-mb-8" data-live-search>
@@ -38,15 +48,18 @@
                                     >
                                 </div>
                             </div>
-                            <div class="tich-course-grid tich-mt-6">
-                                @foreach ($projects as $project)
-                                    @include('research.partials.project-card', [
-                                        'project' => $project,
-                                        'headingTag' => 'h3',
-                                        'excerptLimit' => 180,
-                                    ])
-                                @endforeach
-                            </div>
+                            @foreach ($studyGroups as $groupHeading => $group)
+                                <h3 class="tich-h3" style="margin: 2rem 0 0;">{{ $groupHeading }} <span class="tich-text tich-text--muted" style="font-weight: 400;">({{ $group->count() }})</span></h3>
+                                <div class="tich-course-grid tich-mt-6">
+                                    @foreach ($group as $project)
+                                        @include('research.partials.project-card', [
+                                            'project' => $project,
+                                            'headingTag' => 'h4',
+                                            'excerptLimit' => 180,
+                                        ])
+                                    @endforeach
+                                </div>
+                            @endforeach
                             <p class="tich-text tich-mt-6" data-live-search-empty hidden>No research activities match your search.</p>
                         </div>
                     </x-animated-section>

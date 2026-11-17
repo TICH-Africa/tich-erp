@@ -17,7 +17,7 @@
                         ];
                     @endphp
                     <span class="tich-badge {{ $typeColors[$opportunity->funding_type] ?? 'bg-gray-100 text-gray-800' }} tich-mb-3">
-                        {{ ucfirst(str_replace('_', ' ', $opportunity->funding_type)) }}
+                        {{ $opportunity->fundingTypeLabel() }}
                     </span>
                     <h1 class="tich-course-page-header__title">{{ $opportunity->title }}</h1>
                     @if ($opportunity->amount)
@@ -51,8 +51,8 @@
                                 'draft' => 'bg-yellow-100 text-yellow-800',
                             ];
                         @endphp
-                        <span class="tich-badge {{ $statusColors[$opportunity->status] ?? 'bg-gray-100 text-gray-800' }}">
-                            {{ ucfirst($opportunity->status) }}
+                        <span class="tich-badge {{ $opportunity->isCompleted() ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800' }}">
+                            {{ $opportunity->websiteStatusLabel() }}
                         </span>
                     </span>
                 </div>
@@ -91,7 +91,7 @@
                         <h3 class="tich-h4 tich-mb-4">Quick Details</h3>
                         <dl class="tich-dl tich-mb-6">
                             <dt>Funding Type</dt>
-                            <dd>{{ ucfirst(str_replace('_', ' ', $opportunity->funding_type)) }}</dd>
+                            <dd>{{ $opportunity->fundingTypeLabel() }}</dd>
                             @if ($opportunity->amount)
                                 <dt>Amount</dt>
                                 <dd>KES {{ number_format((float) $opportunity->amount, 2) }}</dd>
@@ -113,8 +113,8 @@
                                         'draft' => 'bg-yellow-100 text-yellow-800',
                                     ];
                                 @endphp
-                                <span class="tich-badge {{ $statusColors[$opportunity->status] ?? 'bg-gray-100 text-gray-800' }}">
-                                    {{ ucfirst($opportunity->status) }}
+                                <span class="tich-badge {{ $opportunity->isCompleted() ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800' }}">
+                                    {{ $opportunity->websiteStatusLabel() }}
                                 </span>
                             </dd>
                         </dl>
@@ -132,7 +132,8 @@
                                     <p class="tich-text tich-mb-0"><strong>Applications Not Yet Open</strong></p>
                                     <p class="tich-text tich-text--sm tich-text--muted tich-mt-1 tich-mb-0">Applications open on {{ $opportunity->application_open_date->format('d M Y') }}.</p>
                                 @else
-                                    <p class="tich-text tich-mb-0"><strong>Currently Not Accepting Applications</strong></p>
+                                    <p class="tich-text tich-mb-0"><strong>This Round Is Closed</strong></p>
+                                    <p class="tich-text tich-text--sm tich-text--muted tich-mt-1 tich-mb-0">Kept on the website as a completed opportunity. Watch this page for the next round.</p>
                                 @endif
                             </div>
                         @endif

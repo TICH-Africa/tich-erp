@@ -97,11 +97,12 @@
                         <div class="uf-field">
                             <label for="status">Status <span class="uf-req">*</span></label>
                             <select id="status" name="status" required>
-                                <option value="draft" @selected($financialAidOpportunity->status === 'draft')>Draft</option>
-                                <option value="published" @selected($financialAidOpportunity->status === 'published')>Published</option>
-                                <option value="closed" @selected($financialAidOpportunity->status === 'closed')>Closed</option>
-                                <option value="archived" @selected($financialAidOpportunity->status === 'archived')>Archived</option>
+                                <option value="draft" @selected($financialAidOpportunity->status === 'draft')>Draft - not on the website</option>
+                                <option value="published" @selected($financialAidOpportunity->status === 'published')>Published - active on the website</option>
+                                <option value="closed" @selected($financialAidOpportunity->status === 'closed')>Closed - completed on the website</option>
+                                <option value="archived" @selected($financialAidOpportunity->status === 'archived')>Archived - off the website</option>
                             </select>
+                            <p class="uf-hint tich-mt-1">A published round whose deadline has passed moves itself to the website's Completed tab. Choose Closed to complete it by hand; it stays on the website as a past opportunity, and no new application is accepted.</p>
                         </div>
                     </div>
                 </div>

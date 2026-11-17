@@ -110,7 +110,7 @@
                         <option value="{{ $st }}" @selected(old('status', $activity->status ?? 'upcoming') === $st)>{{ ucfirst($st) }}</option>
                     @endforeach
                 </select>
-                <span class="uf-hint">When unchecked, status comes from the dates - with no end date it stays Ongoing (Active once published).</span>
+                <span class="uf-hint">When unchecked, status comes from the dates - with no end date it stays Ongoing (Active once published). Completed studies show on the website under Completed research.</span>
             </div>
         </div>
     </div>
