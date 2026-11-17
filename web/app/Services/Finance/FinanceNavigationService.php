@@ -112,8 +112,18 @@ class FinanceNavigationService
             $this->item('Projects & donors', 'globe', route('finance.projects-donors.index'), request()->routeIs('finance.projects-donors.*')),
         ];
 
+        if (Auth::user()?->can('finance.read')) {
+            $items[] = $this->item('Paybill transactions', 'receipt', route('finance.mpesa.paybill'), request()->routeIs('finance.mpesa.paybill*'));
+        }
+
         if (Auth::user()?->can('finance.payments.manage')) {
-            $items[] = $this->item('M-Pesa / treasury', 'smartphone', route('finance.mpesa.settings'), request()->routeIs('finance.mpesa.*'), 'finance.mpesa');
+            $items[] = $this->item(
+                'M-Pesa / treasury',
+                'smartphone',
+                route('finance.mpesa.settings'),
+                request()->routeIs('finance.mpesa.*') && ! request()->routeIs('finance.mpesa.paybill*'),
+                'finance.mpesa'
+            );
         }
 
         return $items;

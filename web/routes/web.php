@@ -680,6 +680,13 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         });
 
         Route::get('/payments', [\App\Http\Controllers\Finance\PaymentController::class, 'index'])->name('finance.payments.index');
+        Route::get('/mpesa/paybill', [\App\Http\Controllers\Finance\MpesaPaybillController::class, 'index'])->name('finance.mpesa.paybill');
+        Route::get('/mpesa/paybill/export', [\App\Http\Controllers\Finance\MpesaPaybillController::class, 'export'])->name('finance.mpesa.paybill.export');
+        Route::get('/mpesa/paybill/{c2bTransaction}', [\App\Http\Controllers\Finance\MpesaPaybillController::class, 'show'])->name('finance.mpesa.paybill.show');
+        Route::middleware('permission:finance.payments.manage')->group(function () {
+            Route::post('/mpesa/paybill/{c2bTransaction}/reconcile', [\App\Http\Controllers\Finance\MpesaPaybillController::class, 'reconcile'])->name('finance.mpesa.paybill.reconcile');
+            Route::post('/mpesa/paybill/{c2bTransaction}/note', [\App\Http\Controllers\Finance\MpesaPaybillController::class, 'note'])->name('finance.mpesa.paybill.note');
+        });
         Route::middleware('permission:finance.payments.manage')->group(function () {
             Route::get('/payments/create/new', [\App\Http\Controllers\Finance\PaymentController::class, 'create'])->name('finance.payments.create');
             Route::post('/payments', [\App\Http\Controllers\Finance\PaymentController::class, 'store'])->name('finance.payments.store');
@@ -1506,10 +1513,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('portal.assessments.submit');
         Route::get('/assessments/{assessment}/result', [\App\Http\Controllers\Portal\StudentAssessmentController::class, 'result'])
             ->name('portal.assessments.result');
-        Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Portal\FinancePaymentController::class, 'store'])
-            ->name('portal.invoices.pay');
-        Route::get('/mpesa/stk/{stkRequest}/status', [\App\Http\Controllers\Portal\MpesaPaymentStatusController::class, '__invoke'])
-            ->name('portal.mpesa.stk.status');
+        Route::get('/fee-structure/pdf', [\App\Http\Controllers\Portal\PortalFeeStructureController::class, 'pdf'])
+            ->name('portal.fee-structure.pdf');
         Route::post('/suggestions', [\App\Http\Controllers\Portal\PortalSuggestionController::class, 'store'])
             ->name('portal.suggestions.store');
     });
@@ -1700,6 +1705,14 @@ Route::get('/careers/{vacancy}', [\App\Http\Controllers\Public\CareerController:
 
 Route::post('/webhooks/mpesa/stk-callback', \App\Http\Controllers\Webhooks\MpesaStkCallbackController::class)
     ->name('webhooks.mpesa.stk-callback');
+
+Route::post('/webhooks/mpesa/c2b/validation', [\App\Http\Controllers\Webhooks\MpesaC2bController::class, 'validation'])
+    ->middleware('throttle:120,1')
+    ->name('webhooks.mpesa.c2b-validation');
+
+Route::post('/webhooks/mpesa/c2b/confirmation', [\App\Http\Controllers\Webhooks\MpesaC2bController::class, 'confirmation'])
+    ->middleware('throttle:120,1')
+    ->name('webhooks.mpesa.c2b-confirmation');
 
 Route::prefix('vacancies')->group(function () {
     Route::get('/apply/{vacancy}', [\App\Http\Controllers\Public\VacancyApplicationController::class, 'create'])->name('vacancies.apply.create');

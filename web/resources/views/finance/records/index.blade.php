@@ -94,10 +94,15 @@
                         <p class="tich-caption tich-mt-2">Donor projects, disbursements, and accountability reporting.</p>
                     </a>
 
+                <a href="{{ route('finance.mpesa.paybill') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
+                    <h3 class="tich-h4">Paybill transactions</h3>
+                    <p class="tich-caption tich-mt-2">M-Pesa fees that arrive on their own against a student's admission number, and the receipts that still need reconciling.</p>
+                </a>
+
                 @can('finance.payments.manage')
                     <a href="{{ route('finance.mpesa.settings') }}" class="tich-card tich-card--hover" style="text-decoration:none;color:inherit;">
                         <h3 class="tich-h4">Treasury / M-Pesa</h3>
-                        <p class="tich-caption tich-mt-2">Daraja credentials, STK push settings, and payment reconciliation.</p>
+                        <p class="tich-caption tich-mt-2">Paybill number, Daraja credentials, callback URLs, and the application-fee STK log.</p>
                     </a>
                 @endcan
             </div>

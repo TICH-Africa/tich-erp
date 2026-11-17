@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Models\FinanceMpesaSetting;
+use App\Models\MpesaC2bTransaction;
 use App\Models\MpesaStkRequest;
+use App\Services\Finance\MpesaC2bService;
 use App\Services\Finance\MpesaSettingsService;
 use App\Services\Finance\MpesaStkCallbackService;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +19,7 @@ class MpesaSettingsController extends Controller
 {
     public function __construct(
         protected MpesaSettingsService $settings,
+        protected MpesaC2bService $c2b,
     ) {}
 
     public function edit(Request $request): View
@@ -33,13 +36,49 @@ class MpesaSettingsController extends Controller
                 ->get();
         }
 
+        $recentPaybill = collect();
+        if (Schema::hasTable((new MpesaC2bTransaction)->getTable())) {
+            $recentPaybill = MpesaC2bTransaction::query()
+                ->with(['student.applicant', 'payment'])
+                ->whereIn('status', [MpesaC2bTransaction::STATUS_UNMATCHED, MpesaC2bTransaction::STATUS_DUPLICATE, 'received'])
+                ->latest('id')
+                ->limit(10)
+                ->get();
+        }
+
         return view('finance.mpesa.settings', [
             'settings' => $settings,
             'callbackUrl' => $this->settings->callbackUrl(),
             'credentialsReady' => $this->credentialsConfigured($settings),
             'recentRequests' => $recentRequests,
+            'recentPaybill' => $recentPaybill,
+            'paybillSummary' => $this->c2b->paybillSummary(),
+            'c2bCallbacks' => $this->c2bCallbacks(),
+            'callbackSecretSet' => filled(config('finance.mpesa.callback_secret')),
             'openEditModal' => $request->session()->get('open_mpesa_edit_modal', false) || $request->session()->get('errors')?->any(),
         ]);
+    }
+
+    /**
+     * Safaricom asks these two URLs about every paybill payment. The shared secret is never
+     * printed here; the page only says to append it, so a screenshot cannot leak it.
+     *
+     * @return list<array<string, string>>
+     */
+    private function c2bCallbacks(): array
+    {
+        return [
+            [
+                'label' => 'Validation URL',
+                'url' => (string) route('webhooks.mpesa.c2b-validation'),
+                'hint' => 'Safaricom asks here before the money leaves the student. A refusal bounces the payment back.',
+            ],
+            [
+                'label' => 'Confirmation URL',
+                'url' => (string) route('webhooks.mpesa.c2b-confirmation'),
+                'hint' => 'Safaricom reports here after the money arrived. Only this callback books a payment.',
+            ],
+        ];
     }
 
     public function update(Request $request): RedirectResponse

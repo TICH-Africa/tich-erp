@@ -249,20 +249,14 @@ trait SerializesStudentPortal
         return [
             'summary' => $f['summary'] ?? [],
             'credits' => $f['credits'] ?? [],
-            'default_phone' => $f['default_phone'] ?? '',
+            'paybill' => (string) ($f['paybill'] ?? ''),
+            'business_name' => (string) ($f['business_name'] ?? ''),
+            'admission_number' => (string) ($f['admission_number'] ?? ''),
             'mpesa_enabled' => (bool) ($f['mpesa_enabled'] ?? false),
             'accounts' => $this->mapRows($f['accounts'] ?? []),
             'invoices' => $this->mapRows($f['invoices'] ?? []),
             'payments' => $this->mapRows($f['payments'] ?? []),
             'payable_invoices' => $this->mapRows($f['payable_invoices'] ?? []),
-            'pending_stk_requests' => collect($f['pending_stk_requests'] ?? [])->map(fn ($r) => [
-                'id' => $r->id,
-                'status' => $r->status,
-                'amount' => (float) $r->amount,
-                'phone' => $r->phone,
-                'invoice_number' => $r->invoice?->invoice_number,
-                'created_at' => optional($r->created_at)?->toIso8601String(),
-            ])->values()->all(),
             'statement' => $f['statement'] ?? [],
         ];
     }
