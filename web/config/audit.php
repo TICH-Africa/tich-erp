@@ -52,6 +52,8 @@ return [
         'auth.register' => ['module' => 'auth', 'sensitive' => false],
         'auth.mfa.setup_started' => ['module' => 'auth', 'sensitive' => false],
         'auth.mfa.otp_sent' => ['module' => 'auth', 'sensitive' => false],
+        'auth.mobile.otp_sent' => ['module' => 'auth', 'sensitive' => false],
+        'auth.mobile.otp_verified' => ['module' => 'auth', 'sensitive' => false],
         'auth.mfa.verify.success' => ['module' => 'auth', 'sensitive' => false],
         'auth.mfa.verify.failed' => ['module' => 'auth', 'sensitive' => false],
         'auth.mfa.enabled' => ['module' => 'auth', 'sensitive' => false],

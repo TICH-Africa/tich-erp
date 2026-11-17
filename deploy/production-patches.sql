@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-10-20
+-- Last updated: 2026-11-17
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -2701,6 +2701,21 @@ CREATE TABLE IF NOT EXISTS `student_application_document_submissions` (
     CONSTRAINT `student_app_doc_sub_uploaded_by_user_id_foreign` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`),
     CONSTRAINT `student_app_doc_sub_reviewed_by_user_id_foreign` FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- Mobile app first sign-in: email OTP gate (migration 2026_11_17_120000)
+-- -----------------------------------------------------------------------------
+SET @u_has_mobile_app_verified := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'users'
+      AND column_name = 'mobile_app_verified_at'
+);
+SET @sql_u_mobile_app_verified := IF(@u_has_mobile_app_verified = 0,
+    'ALTER TABLE `users` ADD COLUMN `mobile_app_verified_at` timestamp NULL DEFAULT NULL AFTER `last_login_at`',
+    'SELECT 1');
+PREPARE stmt_u_mobile_app_verified FROM @sql_u_mobile_app_verified;
+EXECUTE stmt_u_mobile_app_verified;
+DEALLOCATE PREPARE stmt_u_mobile_app_verified;
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';
