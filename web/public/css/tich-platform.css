@@ -15720,6 +15720,12 @@ input[type="time"]::-moz-calendar-picker-indicator {
     color: var(--tich-text);
 }
 
+/* A logo that already carries the partner's name has no caption under it, so it gets the taller mark box. */
+.research-partners__item--logo-only .research-partners__logo {
+    max-width: 12.5rem;
+    height: 6.75rem;
+}
+
 @media (max-width: 767px) {
     .research-partners {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -15728,6 +15734,11 @@ input[type="time"]::-moz-calendar-picker-indicator {
 
     .research-partners__item {
         padding: 0.75rem;
+    }
+
+    .research-partners__item--logo-only .research-partners__logo {
+        max-width: 12rem;
+        height: 6rem;
     }
 }
 

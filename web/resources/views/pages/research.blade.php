@@ -74,7 +74,7 @@
                             <p class="tich-text tich-mt-2">Organisations we carry out research, fieldwork and community programmes with.</p>
                             <ul class="research-partners tich-mt-6">
                                 @foreach ($partners as $partner)
-                                    <li class="research-partners__item">
+                                    <li class="research-partners__item{{ $partner->name ? '' : ' research-partners__item--logo-only' }}">
                                         @if ($partner->logoUrl())
                                             <img src="{{ $partner->logoUrl() }}" alt="{{ $partner->displayLabel() }}" class="research-partners__logo" loading="lazy">
                                         @else
