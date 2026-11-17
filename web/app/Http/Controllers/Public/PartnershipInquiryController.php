@@ -21,9 +21,7 @@ class PartnershipInquiryController extends Controller
             'first_name' => ['required', 'string', 'max:120'],
             'last_name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255'],
-            'alternative_email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'alternative_phone' => ['nullable', 'string', 'max:30'],
             'research_area' => ['nullable', 'string', 'max:200'],
             'research_area_other' => [
                 Rule::requiredIf(fn () => $request->input('research_area') === 'Other'),
@@ -42,7 +40,6 @@ class PartnershipInquiryController extends Controller
             ],
             'organisation_details' => ['nullable', 'required_if:applicant_type,organisation', 'string', 'max:5000'],
             'individual_details' => ['nullable', 'required_if:applicant_type,individual', 'string', 'max:5000'],
-            'what_they_do' => ['required', 'string', 'max:5000'],
             'why_partnership' => ['required', 'string', 'max:5000'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'max:10240', 'mimes:pdf,doc,docx,png,jpg,jpeg'],
