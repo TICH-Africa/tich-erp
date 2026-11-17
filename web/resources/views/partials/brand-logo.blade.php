@@ -24,9 +24,6 @@
     >
     <div>
         <p class="tich-brand__name">{{ $siteMeta['brand_name'] ?? $siteMeta['short_name'] ?? 'TICH ERP' }}</p>
-        @if (!empty($siteMeta['brand_tagline']))
-            <p class="tich-brand__tagline">{{ $siteMeta['brand_tagline'] }}</p>
-        @endif
     </div>
 @if ($static)
     </div>

@@ -43,7 +43,6 @@ class SiteSettingsController extends Controller
             'institution_name' => ['required', 'string', 'max:300'],
             'short_name' => ['required', 'string', 'max:120'],
             'brand_name' => ['required', 'string', 'max:120'],
-            'brand_tagline' => ['nullable', 'string', 'max:200'],
             'tagline' => ['nullable', 'string', 'max:300'],
             'copyright' => ['nullable', 'string', 'max:300'],
             'website' => ['nullable', 'string', 'max:200'],
@@ -70,10 +69,6 @@ class SiteSettingsController extends Controller
         $this->settings->set('site.brand_name', $validated['brand_name'], $userId, [
             'group_name' => 'identity',
             'label' => 'Navbar brand name',
-        ]);
-        $this->settings->set('site.brand_tagline', $validated['brand_tagline'] ?? '', $userId, [
-            'group_name' => 'identity',
-            'label' => 'Navbar tagline',
         ]);
         $this->settings->set('site.tagline', $validated['tagline'] ?? '', $userId, [
             'group_name' => 'site',

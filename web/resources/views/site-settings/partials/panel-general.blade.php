@@ -108,9 +108,6 @@
             <div class="tich-site-identity-preview__footer">
                 <p>
                     <strong>{{ $siteMeta['brand_name'] }}</strong>
-                    @if ($siteMeta['brand_tagline'])
-                        · {{ $siteMeta['brand_tagline'] }}
-                    @endif
                 </p>
             </div>
         </div>
@@ -165,10 +162,6 @@
             <div>
                 <span class="tich-kv-grid__label">Navbar brand name</span>
                 <span class="tich-kv-grid__value">{{ $siteMeta['brand_name'] }}</span>
-            </div>
-            <div>
-                <span class="tich-kv-grid__label">Navbar tagline</span>
-                <span class="tich-kv-grid__value">{{ $siteMeta['brand_tagline'] ?: '-' }}</span>
             </div>
             <div style="grid-column: 1 / -1;">
                 <span class="tich-kv-grid__label">Site tagline</span>
@@ -238,11 +231,6 @@
                         <label for="brand_name" class="tich-label">Navbar brand name</label>
                         <input type="text" id="brand_name" name="brand_name" class="tich-input" required
                             value="{{ old('brand_name', $siteMeta['brand_name']) }}">
-                    </div>
-                    <div class="tich-form-group">
-                        <label for="brand_tagline" class="tich-label">Navbar tagline</label>
-                        <input type="text" id="brand_tagline" name="brand_tagline" class="tich-input"
-                            value="{{ old('brand_tagline', $siteMeta['brand_tagline']) }}">
                     </div>
                     <div class="tich-form-group">
                         <label for="tagline" class="tich-label">Site tagline</label>
