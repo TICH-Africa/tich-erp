@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-11-17 19:30:46 EAT
+-- Generated: 2026-11-18 10:05:33 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -7132,6 +7132,48 @@ CALL `tich_ensure_column`('migrations', 'batch', 'int(11) NOT NULL');
 
 -- Indexes for `migrations` (add only if missing)
 -- (no secondary indexes)
+
+-- -----------------------------------------------------------------------------
+-- Table: `mobile_app_releases`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `mobile_app_releases` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `platform` varchar(20) NOT NULL,
+  `version_label` varchar(50) NOT NULL,
+  `build_number` int(10) unsigned DEFAULT NULL,
+  `storage_path` varchar(500) DEFAULT NULL,
+  `original_filename` varchar(255) DEFAULT NULL,
+  `file_size` bigint(20) unsigned DEFAULT NULL,
+  `external_url` varchar(500) DEFAULT NULL,
+  `release_notes` text DEFAULT NULL,
+  `is_published` tinyint(1) NOT NULL DEFAULT 1,
+  `uploaded_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `mobile_app_releases_uploaded_by_user_id_foreign` (`uploaded_by_user_id`),
+  KEY `mobile_app_releases_platform_is_published_created_at_index` (`platform`,`is_published`,`created_at`),
+  CONSTRAINT `mobile_app_releases_uploaded_by_user_id_foreign` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `mobile_app_releases` (add only if missing)
+CALL `tich_ensure_column`('mobile_app_releases', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('mobile_app_releases', 'platform', 'varchar(20) NOT NULL');
+CALL `tich_ensure_column`('mobile_app_releases', 'version_label', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('mobile_app_releases', 'build_number', 'int(10) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('mobile_app_releases', 'storage_path', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('mobile_app_releases', 'original_filename', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('mobile_app_releases', 'file_size', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('mobile_app_releases', 'external_url', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('mobile_app_releases', 'release_notes', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('mobile_app_releases', 'is_published', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('mobile_app_releases', 'uploaded_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('mobile_app_releases', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('mobile_app_releases', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `mobile_app_releases` (add only if missing)
+CALL `tich_ensure_index`('mobile_app_releases', 'mobile_app_releases_platform_is_published_created_at_index', '`platform`, `is_published`, `created_at`');
+CALL `tich_ensure_index`('mobile_app_releases', 'mobile_app_releases_uploaded_by_user_id_foreign', '`uploaded_by_user_id`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `mobile_web_handoffs`
@@ -14724,6 +14766,9 @@ CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_department_id_fo
 CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_me_reviewed_by_foreign', '`me_reviewed_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_planning_cycle_id_foreign', '`planning_cycle_id`', 'admin_planning_cycles', '`id`', 'RESTRICT', 'SET NULL');
 CALL `tich_ensure_fk`('me_technical_plans', 'me_technical_plans_submitted_by_foreign', '`submitted_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+
+-- Foreign keys for `mobile_app_releases`
+CALL `tich_ensure_fk`('mobile_app_releases', 'mobile_app_releases_uploaded_by_user_id_foreign', '`uploaded_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `mobile_web_handoffs`
 CALL `tich_ensure_fk`('mobile_web_handoffs', 'mobile_web_handoffs_user_id_foreign', '`user_id`', 'users', '`id`', 'RESTRICT', 'CASCADE');

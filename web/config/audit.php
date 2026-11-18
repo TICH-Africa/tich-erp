@@ -54,6 +54,8 @@ return [
         'auth.mfa.otp_sent' => ['module' => 'auth', 'sensitive' => false],
         'auth.mobile.otp_sent' => ['module' => 'auth', 'sensitive' => false],
         'auth.mobile.otp_verified' => ['module' => 'auth', 'sensitive' => false],
+        'ict.mobile_app.published' => ['module' => 'ict', 'sensitive' => false],
+        'ict.mobile_app.unpublished' => ['module' => 'ict', 'sensitive' => false],
         'auth.mfa.verify.success' => ['module' => 'auth', 'sensitive' => false],
         'auth.mfa.verify.failed' => ['module' => 'auth', 'sensitive' => false],
         'auth.mfa.enabled' => ['module' => 'auth', 'sensitive' => false],

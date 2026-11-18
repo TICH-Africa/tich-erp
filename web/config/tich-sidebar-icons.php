@@ -46,6 +46,7 @@ return [
         'monitoring_evaluation.dashboard' => 'dashboard',
         'monitoring_evaluation.budgeting.index' => 'wallet',
         'ict.dashboard' => 'dashboard',
+        'ict.mobile-app.index' => 'smartphone',
         'ict.users.index' => 'users',
         'ict.roles.index' => 'shield',
         'hr.staff.index' => 'users',
