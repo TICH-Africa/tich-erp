@@ -7,6 +7,7 @@
         @include('partials.navigation.sidebar-link', ['href' => route('marketing.blogs.index'), 'label' => 'Blogs', 'icon' => 'layers', 'active' => request()->routeIs('marketing.blogs.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('marketing.pages.index'), 'label' => 'Legal pages', 'icon' => 'file-text', 'active' => request()->routeIs('marketing.pages.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('marketing.events.index'), 'label' => 'Events', 'icon' => 'calendar', 'active' => request()->routeIs('marketing.events.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('marketing.efundi.index'), 'label' => 'e-Fundi opportunities', 'icon' => 'briefcase', 'active' => request()->routeIs('marketing.efundi.*')])
 
         <p class="tich-admin-sidebar__title tich-mt-4">Site Settings</p>
         @include('partials.navigation.sidebar-link', ['href' => route('marketing.site-settings.index', ['panel' => 'general']), 'label' => 'Identity & logo', 'icon' => 'settings', 'active' => request()->routeIs('marketing.site-settings.*')])
