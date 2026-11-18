@@ -33,7 +33,7 @@
                         </div>
 
                         @if (!empty($event->is_important))
-                            <x-event-countdown :event="$event" caption="Starts in" />
+                            <x-event-countdown :event="$event" />
                         @endif
                     </div>
                 </div>

@@ -17,10 +17,7 @@
                 </div>
 
                 @if ($countdownEvent)
-                    <x-event-countdown
-                        :event="$countdownEvent"
-                        :caption="'Countdown to '.\Illuminate\Support\Str::limit($countdownEvent->title, 46)"
-                    />
+                    <x-event-countdown :event="$countdownEvent" />
                 @endif
             </div>
         </section>

@@ -1,9 +1,13 @@
 @props([
     'event',
-    'caption' => 'Countdown',
+    'caption' => null,
 ])
 
 @php
+    // The banner speaks for the event the office titled in the form, so the wording follows a
+    // rename instead of going stale under a hand-written caption.
+    $label = $caption ?: ('The countdown to '.\Illuminate\Support\Str::limit((string) ($event->title ?? 'the event'), 46).' is on!');
+
     // The timer only ever speaks for an event that has not started yet. A past date means no markup
     // at all, so the banner goes back to plain words on the next page load and the script removes
     // the block live for a visitor already watching.
@@ -24,7 +28,7 @@
     @endphp
 
     <div class="tich-countdown" data-countdown data-countdown-target="{{ $start->toIso8601String() }}">
-        <p class="tich-countdown__label">{{ $caption }}</p>
+        <p class="tich-countdown__label">{{ $label }}</p>
 
         <div class="tich-countdown__units" role="timer">
             @foreach ([
