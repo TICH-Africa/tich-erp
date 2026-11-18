@@ -10,6 +10,7 @@ return [
         'mandatory_mfa_user_types' => ['staff', 'student', 'admin', 'external', 'super_admin'],
         'login_throttle_per_minute' => (int) env('AUTH_LOGIN_THROTTLE', 5),
         'otp_throttle_per_minute' => (int) env('AUTH_OTP_THROTTLE', 3),
+        'mobile_otp_expiry_minutes' => (int) env('MOBILE_LOGIN_OTP_EXPIRY_MINUTES', 15),
         'password_reset_throttle_per_minute' => (int) env('AUTH_PASSWORD_RESET_THROTTLE', 3),
     ],
 

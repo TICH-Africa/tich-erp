@@ -24,6 +24,7 @@ import 'notifications/tich_notifications.dart';
 import 'settings/app_settings.dart';
 import 'theme/tich_theme.dart';
 import 'ui/auth/unlock_page.dart';
+import 'ui/auth/mobile_otp_page.dart';
 import 'ui/login_page.dart';
 import 'ui/portal/portal_chooser_page.dart';
 import 'ui/shell/portal_shell.dart';
@@ -325,10 +326,17 @@ class _AuthGateState extends State<_AuthGate> {
           unawaited(TichRealtime.disconnect());
         }
       },
-      buildWhen: (prev, next) => prev.runtimeType != next.runtimeType ||
-          (next is AuthAuthenticated && prev is AuthAuthenticated &&
+      buildWhen: (prev, next) =>
+          prev.runtimeType != next.runtimeType ||
+          (next is AuthAuthenticated &&
+              prev is AuthAuthenticated &&
               next.user.id != prev.user.id) ||
-          next is AuthLocked,
+          next is AuthLocked ||
+          (next is AuthMobileOtpPending &&
+              (prev is! AuthMobileOtpPending ||
+                  next.message != prev.message ||
+                  next.resending != prev.resending ||
+                  next.expiresMinutes != prev.expiresMinutes)),
       builder: (context, state) {
         late final Widget child;
         late final Key childKey;
@@ -340,6 +348,17 @@ class _AuthGateState extends State<_AuthGate> {
           _primedUserKey = null;
           childKey = ValueKey('unlock-${state.user.id}');
           child = UnlockPage(user: state.user, message: state.message);
+        } else if (state is AuthMobileOtpPending) {
+          _primedUserKey = null;
+          childKey = ValueKey('mobile-otp-${state.user.id}');
+          child = MobileOtpPage(
+            user: state.user,
+            emailMasked: state.emailMasked,
+            expiresMinutes: state.expiresMinutes,
+            otpSent: state.otpSent,
+            message: state.message,
+            resending: state.resending,
+          );
         } else if (state is AuthInitial || state is AuthChecking) {
           childKey = const ValueKey('auth-checking');
           child = const Scaffold(

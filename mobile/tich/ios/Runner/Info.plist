@@ -70,10 +70,24 @@
 	<string>Scan signed attendance sheets and capture class photos for verification.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Import attendance sheet images from your photo library.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Verify your location when you clock in or out at campus or an approved site. Location is not tracked in the background.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Unlock the app with Face ID or Touch ID after you enable app lock in settings.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
 	</dict>
 </dict>
 </plist>
