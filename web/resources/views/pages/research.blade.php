@@ -239,7 +239,7 @@
                                 @foreach ($resources as $resource)
                                     <li class="research-resources__item">
                                         @if ($resource->year || $resource->publisher)
-                                            <p class="research-resources__lead">{{ trim(($resource->year ? $resource->year.' ' : '').($resource->publisher ?? '')) }}</p>
+                                            <p class="research-resources__lead">@if ($resource->year)<span class="research-resources__year">{{ $resource->year }}</span>@endif {{ $resource->publisher ?? '' }}</p>
                                         @endif
                                         <h3 class="research-resources__title">{{ $resource->title }}</h3>
                                         @if ($resource->authors)

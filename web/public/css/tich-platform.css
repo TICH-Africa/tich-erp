@@ -16180,6 +16180,23 @@ h2.tich-h2.research-partners__head {
     color: var(--tich-blue);
 }
 
+/* The year sits in its own filled chip so the card opens like the page numbers do, with the
+   publisher beside it. */
+.research-resources__year {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: var(--tich-blue);
+    color: #ffffff;
+    vertical-align: middle;
+}
+
+[data-theme="dark"] .research-resources__year {
+    color: #0b1220;
+}
+
 .research-resources__title {
     margin: 0 0 0.2rem;
     font-family: var(--font-body);
