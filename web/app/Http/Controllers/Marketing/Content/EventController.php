@@ -41,6 +41,7 @@ class EventController extends Controller
                 : null,
             'is_public' => $request->boolean('is_public'),
             'is_featured' => $request->boolean('is_featured'),
+            'is_important' => $request->boolean('is_important'),
             'created_by' => $staffId,
             'created_at' => now(),
             'updated_at' => now(),
@@ -70,6 +71,7 @@ class EventController extends Controller
             'end_datetime' => $validated['end_datetime'] ?? $validated['start_datetime'],
             'is_public' => $request->boolean('is_public'),
             'is_featured' => $request->boolean('is_featured'),
+            'is_important' => $request->boolean('is_important'),
             'updated_by' => $request->user()?->staff_id,
             'updated_at' => now(),
         ];
@@ -113,7 +115,7 @@ class EventController extends Controller
      */
     private function validated(Request $request, ?Event $event = null): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'title' => ['required', 'string', 'max:300'],
             'subtitle' => ['nullable', 'string', 'max:500'],
             'event_type' => ['required', 'string', 'max:50'],
@@ -125,6 +127,11 @@ class EventController extends Controller
             'cover_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
             'is_public' => ['nullable', 'boolean'],
             'is_featured' => ['nullable', 'boolean'],
+            'is_important' => ['nullable', 'boolean'],
         ]);
+
+        Event::guardCountdownIsFree($request->boolean('is_important'), $event?->id);
+
+        return $validated;
     }
 }

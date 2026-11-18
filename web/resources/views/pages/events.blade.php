@@ -4,13 +4,24 @@
 @section('meta_description', config('tich-seo.pages.events.description'))
 
 @section('content')
+    {{-- Only an event the office marks Important counts down in the banner, and only the next one to
+         come; a past date drops out of the query, so the timer goes away by itself. --}}
     <x-animated-section animation="top">
         <section class="tich-section tich-section--hero-plain" aria-labelledby="events-heading">
-            <div class="tich-container">
-                <h1 id="events-heading" class="tich-h1">Events</h1>
-                <p class="tich-text tich-mt-4" style="max-width: 42rem;">
-                    Symposiums, open days, outreach drives, and institutional calendar highlights.
-                </p>
+            <div class="tich-container tich-hero--split">
+                <div class="tich-hero__copy">
+                    <h1 id="events-heading" class="tich-h1">Events</h1>
+                    <p class="tich-text tich-mt-4" style="max-width: 42rem;">
+                        Symposiums, open days, outreach drives, and institutional calendar highlights.
+                    </p>
+                </div>
+
+                @if ($countdownEvent)
+                    <x-event-countdown
+                        :event="$countdownEvent"
+                        :caption="'Countdown to '.\Illuminate\Support\Str::limit($countdownEvent->title, 46)"
+                    />
+                @endif
             </div>
         </section>
     </x-animated-section>

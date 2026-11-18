@@ -1,4 +1,7 @@
 @php($stats = $portalData['overview_stats'])
+@php($financeSummary = $portalData['finance'])
+@php($paybill = (string) ($financeSummary['paybill'] ?? ''))
+@php($paybillAccount = (string) ($financeSummary['admission_number'] ?? ''))
 
 <x-page-toolbar
     title="Welcome, {{ $biodata['identity']['full_name'] }}"
@@ -56,9 +59,20 @@
                 Outstanding: KES {{ number_format($stats['outstanding_balance'], 2) }}<br>
                 Clearance: {{ $stats['fee_clearance'] }}
             </p>
-            <a href="{{ route('portal.dashboard', ['section' => 'finance']) }}" class="tich-link tich-mt-4" style="display:inline-block;">View finance</a>
             @if ($stats['outstanding_balance'] > 0)
-                <a href="{{ route('portal.dashboard', ['section' => 'finance']) }}#pay-with-mpesa" class="tich-link tich-mt-2" style="display:inline-block;">Pay by M-Pesa paybill</a>
+                <p class="tich-text tich-mt-2">
+                    @if ($paybill !== '')
+                        Pay with M-Pesa · Lipa na M-Pesa · Pay Bill<br>
+                        Paybill number: <strong id="paybill-number">{{ $paybill }}</strong><br>
+                        Account number (your admission number): <strong id="paybill-account">{{ $paybillAccount !== '' ? $paybillAccount : 'Contact the finance office' }}</strong>
+                    @else
+                        The finance office has not published the paybill number yet. Please pay at the finance office for now.
+                    @endif
+                </p>
+            @endif
+            <a href="{{ route('portal.dashboard', ['section' => 'finance']) }}" class="tich-link tich-mt-4" style="display:block;">View finance</a>
+            @if ($stats['outstanding_balance'] > 0)
+                <a href="{{ route('portal.dashboard', ['section' => 'finance']) }}#pay-with-mpesa" class="tich-link tich-mt-2" style="display:block;">See how to pay by M-Pesa paybill</a>
             @endif
         </article>
     </div>

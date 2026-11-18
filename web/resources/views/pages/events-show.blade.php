@@ -16,18 +16,26 @@
         <article class="tich-event-show" itemscope itemtype="https://schema.org/Event">
             <header class="tich-event-show__hero">
                 <div class="tich-container tich-event-show__hero-content">
-                    <x-animated-card animation="left">
-                        <p class="tich-event-show__back">
-                            <a href="{{ route('events') }}" class="tich-event-show__back-link">← All events</a>
-                        </p>
-                    </x-animated-card>
-                    <x-animated-card animation="bottom">
-                        <p class="tich-event-show__eyebrow">{{ strtoupper(str_replace('_', ' ', $event->event_type ?? 'EVENT')) }}</p>
-                        <h1 class="tich-event-show__title" itemprop="name">{{ $event->title }}</h1>
-                        @if (!empty($event->subtitle))
-                            <p class="tich-event-show__lead" itemprop="description">{{ $event->subtitle }}</p>
+                    <div class="tich-hero--split">
+                        <div class="tich-hero__copy">
+                            <x-animated-card animation="left">
+                                <p class="tich-event-show__back">
+                                    <a href="{{ route('events') }}" class="tich-event-show__back-link">← All events</a>
+                                </p>
+                            </x-animated-card>
+                            <x-animated-card animation="bottom">
+                                <p class="tich-event-show__eyebrow">{{ strtoupper(str_replace('_', ' ', $event->event_type ?? 'EVENT')) }}</p>
+                                <h1 class="tich-event-show__title" itemprop="name">{{ $event->title }}</h1>
+                                @if (!empty($event->subtitle))
+                                    <p class="tich-event-show__lead" itemprop="description">{{ $event->subtitle }}</p>
+                                @endif
+                            </x-animated-card>
+                        </div>
+
+                        @if (!empty($event->is_important))
+                            <x-event-countdown :event="$event" caption="Starts in" />
                         @endif
-                    </x-animated-card>
+                    </div>
                 </div>
             </header>
 

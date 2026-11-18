@@ -7091,6 +7091,174 @@ a.tich-notification-badge:hover {
     color: var(--tich-blue-light);
 }
 
+/* --- Event countdown: the hero splits so the words sit left and the rings sit right --- */
+
+.tich-hero--split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+}
+
+.tich-hero--split > .tich-hero__copy {
+    flex: 1 1 24rem;
+}
+
+.tich-countdown {
+    flex: 0 0 auto;
+}
+
+.tich-countdown__label {
+    margin: 0 0 0.875rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.78);
+    text-align: center;
+}
+
+.tich-countdown__units {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1.25rem;
+}
+
+.tich-countdown__ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 5.75rem;
+    aspect-ratio: 1 / 1;
+}
+
+/* The ring is a conic sweep masked to its outer band, so the hero shows through the middle.
+   The arc takes the house green, and a hero whose own background is green overrides it. */
+.tich-countdown__arc {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        from -90deg,
+        var(--tich-countdown-arc, var(--tich-green)) calc(var(--tich-countdown-frac, 0) * 360deg),
+        rgba(255, 255, 255, 0.22) 0
+    );
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 0.4375rem), #000 calc(100% - 0.4375rem));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 0.4375rem), #000 calc(100% - 0.4375rem));
+}
+
+.tich-countdown__readout {
+    position: relative;
+    display: grid;
+    place-items: center;
+    gap: 0.125rem;
+    text-align: center;
+}
+
+.tich-countdown__value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+}
+
+.tich-countdown__name {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+@media (max-width: 640px) {
+    .tich-hero--split {
+        justify-content: center;
+        gap: 1.75rem;
+    }
+
+    .tich-countdown__units {
+        gap: 0.625rem;
+    }
+
+    .tich-countdown__ring {
+        width: 4.25rem;
+    }
+
+    .tich-countdown__value {
+        font-size: 1.25rem;
+    }
+
+    .tich-countdown__name {
+        font-size: 0.5625rem;
+    }
+}
+
+/* The single event banner is green, so its rings sweep in pale blue instead of the green. */
+.tich-event-show__hero .tich-countdown {
+    --tich-countdown-arc: var(--tich-blue-light);
+}
+
+/* The homepage hero keeps its countdown on the right, clear of the arrows and the ticker. */
+.tich-hero-carousel__countdown {
+    position: absolute;
+    z-index: 11;
+    right: clamp(1.25rem, 4vw, 3rem);
+    bottom: 8.5rem;
+    max-width: min(30rem, 42%);
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+    .tich-hero-carousel__countdown {
+        max-width: none;
+    }
+
+    .tich-hero-carousel__countdown .tich-countdown__units {
+        gap: 0.625rem;
+    }
+
+    .tich-hero-carousel__countdown .tich-countdown__ring {
+        width: 4.25rem;
+    }
+
+    .tich-hero-carousel__countdown .tich-countdown__value {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 900px) {
+    .tich-hero-carousel__countdown {
+        top: calc(var(--tich-header-bar-height, 4rem) + 1.25rem);
+        bottom: auto;
+        left: 1.25rem;
+        right: 1.25rem;
+        max-width: none;
+    }
+
+    .tich-hero-carousel__countdown .tich-countdown__label {
+        font-size: 0.625rem;
+        letter-spacing: 0.1em;
+    }
+
+    .tich-hero-carousel__countdown .tich-countdown__units {
+        gap: 0.5rem;
+    }
+
+    .tich-hero-carousel__countdown .tich-countdown__ring {
+        width: 3.75rem;
+    }
+
+    .tich-hero-carousel__countdown .tich-countdown__value {
+        font-size: 1.0625rem;
+    }
+
+    .tich-hero-carousel__countdown .tich-countdown__name {
+        font-size: 0.5rem;
+    }
+}
+
 .tich-featured-program {
     border: 2px solid var(--tich-green);
     padding: 0;

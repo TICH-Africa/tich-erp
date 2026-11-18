@@ -32,6 +32,7 @@
                         <th>Starts</th>
                         <th>Public</th>
                         <th>Featured</th>
+                        <th>Countdown</th>
                         <th class="tich-admin-table__actions"></th>
                     </tr>
                 </thead>
@@ -62,6 +63,15 @@
                                     <span class="tich-caption">-</span>
                                 @endif
                             </td>
+                            <td>
+                                @if ($event->is_important && $event->start_datetime?->isPast())
+                                    <span class="tich-caption">Started</span>
+                                @elseif ($event->is_important)
+                                    <span class="tich-badge tich-badge--info">Timer</span>
+                                @else
+                                    <span class="tich-caption">-</span>
+                                @endif
+                            </td>
                             <td class="tich-admin-table__actions">
                                 <div class="tich-admin-table__action-group">
                                     <button
@@ -70,7 +80,7 @@
                                         title="Edit event"
                                         aria-label="Edit {{ $event->title }}"
                                         data-open-modal="event-edit-modal"
-                                        data-update-url="{{ route('admin.events.update', $event) }}"
+                                        data-update-url="{{ route('admin.events.update', $event->slug ?: $event->id) }}"
                                         data-event-id="{{ $event->id }}"
                                         data-title="{{ $event->title }}"
                                         data-subtitle="{{ $event->subtitle }}"
@@ -82,13 +92,14 @@
                                         data-registration="{{ $event->registration_url_or_form }}"
                                         data-is-public="{{ $event->is_public ? '1' : '0' }}"
                                         data-is-featured="{{ $event->is_featured ? '1' : '0' }}"
+                                        data-is-important="{{ $event->is_important ? '1' : '0' }}"
                                         data-cover-image-url="{{ $event->coverImageUrl() ?? '' }}"
                                     >
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                             <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
                                         </svg>
                                     </button>
-                                    <form method="POST" action="{{ route('admin.events.destroy', $event) }}" onsubmit="return confirm('Delete this event?');">
+                                    <form method="POST" action="{{ route('admin.events.destroy', $event->slug ?: $event->id) }}" onsubmit="return confirm('Delete this event?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="tich-squircle-btn" title="Delete" aria-label="Delete {{ $event->title }}">
@@ -102,7 +113,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="tich-table-empty">No events yet. Add one to populate the public events feed and optional hero slides.</td>
+                            <td colspan="8" class="tich-table-empty">No events yet. Add one to populate the public events feed and optional hero slides.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -150,7 +161,7 @@
             <form
                 id="event-edit-form"
                 method="POST"
-                action="{{ $editEvent ? route('admin.events.update', $editEvent) : '#' }}"
+                action="{{ $editEvent ? route('admin.events.update', $editEvent->slug ?: $editEvent->id) : '#' }}"
                 class="tich-modal__body"
                 enctype="multipart/form-data"
             >
@@ -200,8 +211,10 @@
                 }
                 var pub = document.getElementById('edit_is_public');
                 var feat = document.getElementById('edit_is_featured');
+                var imp = document.getElementById('edit_is_important');
                 if (pub) pub.checked = btn.getAttribute('data-is-public') === '1';
                 if (feat) feat.checked = btn.getAttribute('data-is-featured') === '1';
+                if (imp) imp.checked = btn.getAttribute('data-is-important') === '1';
                 var preview = document.getElementById('edit_cover_preview');
                 var url = btn.getAttribute('data-cover-image-url') || '';
                 if (preview) {

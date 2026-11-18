@@ -27,6 +27,7 @@ class HomepageService
             'programs' => $this->getFeaturedPrograms(),
             'research' => $this->getFeaturedResearch(),
             'events' => $this->getUpcomingEvents(),
+            'countdownEvent' => $this->getCountdownEvent(),
             'blogPosts' => $this->getLatestBlogPosts(),
             'tickerMessage' => $this->settings->get('site.ticker_message', ''),
             'usingFallback' => [
@@ -284,6 +285,22 @@ class HomepageService
         return null;
     }
 
+    /**
+     * The next public event the office marked Important counts down in the homepage and Events
+     * banners. The model owns that rule, so the site and the event forms never disagree about who
+     * holds the single countdown.
+     */
+    public function getCountdownEvent(): ?object
+    {
+        if (! $this->tableExists('events')) {
+            return null;
+        }
+
+        $event = Event::countdownHolder();
+
+        return $event ? $this->mapEvent($event) : null;
+    }
+
     public function getUpcomingEvents(int $limit = 6): Collection
     {
         if ($this->tableExists('events')) {
@@ -421,6 +438,7 @@ class HomepageService
             'formatted_time' => $event->start_datetime?->format('g:i A'),
             'formatted_end' => $event->end_datetime?->format('M j, Y · g:i A'),
             'venue' => $event->venue,
+            'is_important' => (bool) $event->is_important,
             'cover_image_path' => $this->mediaUrl($event->cover_image_path),
             'cover_image_url' => $this->mediaUrl($event->cover_image_path),
             'registration_url_or_form' => $event->registration_url_or_form

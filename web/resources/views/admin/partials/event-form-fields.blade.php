@@ -106,3 +106,18 @@
     <span class="tich-text">Featured on homepage hero</span>
 </label>
 <p class="tich-caption tich-mt-2">Featured public events appear as slides in the homepage hero carousel.</p>
+
+<label style="display:flex;gap:0.5rem;align-items:center;margin-top:0.75rem;">
+    <input type="checkbox" name="is_important" value="1" @if ($fieldIdPrefix) id="{{ $fieldIdPrefix }}is_important" @endif @checked(old('is_important', $event->is_important ?? false))>
+    <span class="tich-text">Important event</span>
+</label>
+@php
+    // Only one event may hold the countdown at a time, so the form names the current holder.
+    $countdownHolder = \App\Models\Portal\Event::countdownHolder($event->id ?? null);
+@endphp
+<p class="tich-caption tich-mt-2">
+    One event at a time shows a live countdown to its start date (Nairobi time) in the Events banner and on the homepage, and it goes away on its own once that day begins.
+    @if ($countdownHolder)
+        It is currently on "{{ $countdownHolder->title }}" ({{ $countdownHolder->start_datetime->format('M j, Y, g:i A') }}) - untick Important there first, or wait for that day to pass.
+    @endif
+</p>

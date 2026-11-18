@@ -24,6 +24,7 @@
                     <th>Type</th>
                     <th>Starts</th>
                     <th>Featured</th>
+                    <th>Countdown</th>
                     <th></th>
                 </tr>
             </thead>
@@ -41,6 +42,7 @@
                         <td>{{ ucfirst(str_replace('_', ' ', $event->event_type)) }}</td>
                         <td>{{ $event->start_datetime?->format('d M Y H:i') }}</td>
                         <td>{{ $event->is_featured ? 'Hero' : '-' }}</td>
+                        <td>{{ $event->is_important ? ($event->start_datetime?->isPast() ? 'Started' : 'Timer') : '-' }}</td>
                         <td style="display:flex;gap:0.35rem;">
                             <button
                                 type="button"
@@ -58,6 +60,7 @@
                                 data-registration="{{ $event->registration_url_or_form }}"
                                 data-is-public="{{ $event->is_public ? '1' : '0' }}"
                                 data-is-featured="{{ $event->is_featured ? '1' : '0' }}"
+                                data-is-important="{{ $event->is_important ? '1' : '0' }}"
                             >Edit</button>
                             <form method="POST" action="{{ route('marketing.events.destroy', ['event' => $event->id]) }}" onsubmit="return confirm('Delete this event?');">
                                 @csrf
@@ -67,7 +70,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6">No events yet.</td></tr>
+                    <tr><td colspan="7">No events yet.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -127,8 +130,10 @@
                 }
                 var pub = document.getElementById('edit_is_public');
                 var feat = document.getElementById('edit_is_featured');
+                var imp = document.getElementById('edit_is_important');
                 if (pub) pub.checked = btn.getAttribute('data-is-public') === '1';
                 if (feat) feat.checked = btn.getAttribute('data-is-featured') === '1';
+                if (imp) imp.checked = btn.getAttribute('data-is-important') === '1';
             });
         });
     </script>
