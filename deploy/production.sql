@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-11-18 10:05:33 EAT
+-- Generated: 2026-11-18 10:22:51 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -3818,6 +3818,69 @@ CALL `tich_ensure_column`('donor_projects', 'created_at', 'datetime NOT NULL DEF
 -- Indexes for `donor_projects` (add only if missing)
 CALL `tich_ensure_unique`('donor_projects', 'donor_projects_project_code_unique', '`project_code`');
 CALL `tich_ensure_index`('donor_projects', 'donor_projects_project_leader_id_foreign', '`project_leader_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `efundi_opportunities`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `efundi_opportunities` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `slug` varchar(255) NOT NULL,
+  `opportunity_type` varchar(32) NOT NULL,
+  `opportunity_scope` varchar(20) NOT NULL DEFAULT 'external',
+  `job_vacancy_id` bigint(20) unsigned DEFAULT NULL,
+  `organization_name` varchar(255) DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `summary` text DEFAULT NULL,
+  `description` longtext DEFAULT NULL,
+  `application_url` varchar(500) DEFAULT NULL,
+  `application_email` varchar(255) DEFAULT NULL,
+  `application_deadline` date DEFAULT NULL,
+  `is_published` tinyint(1) NOT NULL DEFAULT 0,
+  `published_at` timestamp NULL DEFAULT NULL,
+  `posted_via` varchar(20) NOT NULL,
+  `posted_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `students_notified_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `efundi_opportunities_slug_unique` (`slug`),
+  KEY `efundi_opportunities_posted_by_user_id_foreign` (`posted_by_user_id`),
+  KEY `efundi_opportunities_is_published_application_deadline_index` (`is_published`,`application_deadline`),
+  KEY `efundi_opportunities_opportunity_type_index` (`opportunity_type`),
+  KEY `efundi_opportunities_job_vacancy_id_foreign` (`job_vacancy_id`),
+  CONSTRAINT `efundi_opportunities_job_vacancy_id_foreign` FOREIGN KEY (`job_vacancy_id`) REFERENCES `job_vacancies` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `efundi_opportunities_posted_by_user_id_foreign` FOREIGN KEY (`posted_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `efundi_opportunities` (add only if missing)
+CALL `tich_ensure_column`('efundi_opportunities', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('efundi_opportunities', 'title', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'slug', 'varchar(255) NOT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'opportunity_type', 'varchar(32) NOT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'opportunity_scope', 'varchar(20) NOT NULL DEFAULT \'\\\'external\\\'\'');
+CALL `tich_ensure_column`('efundi_opportunities', 'job_vacancy_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'organization_name', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'location', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'summary', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'description', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'application_url', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'application_email', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'application_deadline', 'date NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'is_published', 'tinyint(1) NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('efundi_opportunities', 'published_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'posted_via', 'varchar(20) NOT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'posted_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'students_notified_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('efundi_opportunities', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `efundi_opportunities` (add only if missing)
+CALL `tich_ensure_index`('efundi_opportunities', 'efundi_opportunities_is_published_application_deadline_index', '`is_published`, `application_deadline`');
+CALL `tich_ensure_index`('efundi_opportunities', 'efundi_opportunities_job_vacancy_id_foreign', '`job_vacancy_id`');
+CALL `tich_ensure_index`('efundi_opportunities', 'efundi_opportunities_opportunity_type_index', '`opportunity_type`');
+CALL `tich_ensure_index`('efundi_opportunities', 'efundi_opportunities_posted_by_user_id_foreign', '`posted_by_user_id`');
+CALL `tich_ensure_unique`('efundi_opportunities', 'efundi_opportunities_slug_unique', '`slug`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `email_gateway_logs`
@@ -14466,6 +14529,10 @@ CALL `tich_ensure_fk`('donor_disbursements', 'donor_disbursements_donor_project_
 
 -- Foreign keys for `donor_projects`
 CALL `tich_ensure_fk`('donor_projects', 'donor_projects_project_leader_id_foreign', '`project_leader_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `efundi_opportunities`
+CALL `tich_ensure_fk`('efundi_opportunities', 'efundi_opportunities_job_vacancy_id_foreign', '`job_vacancy_id`', 'job_vacancies', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('efundi_opportunities', 'efundi_opportunities_posted_by_user_id_foreign', '`posted_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `email_gateway_logs`
 CALL `tich_ensure_fk`('email_gateway_logs', 'email_gateway_logs_notification_id_foreign', '`notification_id`', 'notifications', '`id`', 'RESTRICT', 'SET NULL');

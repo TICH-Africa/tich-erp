@@ -2748,6 +2748,8 @@ CREATE TABLE IF NOT EXISTS `efundi_opportunities` (
     `title` varchar(255) NOT NULL,
     `slug` varchar(255) NOT NULL,
     `opportunity_type` varchar(32) NOT NULL,
+    `opportunity_scope` varchar(20) NOT NULL DEFAULT 'external',
+    `job_vacancy_id` bigint(20) unsigned DEFAULT NULL,
     `organization_name` varchar(255) DEFAULT NULL,
     `location` varchar(255) DEFAULT NULL,
     `summary` text DEFAULT NULL,
@@ -2767,8 +2769,14 @@ CREATE TABLE IF NOT EXISTS `efundi_opportunities` (
     KEY `efundi_opportunities_is_published_application_deadline_index` (`is_published`, `application_deadline`),
     KEY `efundi_opportunities_opportunity_type_index` (`opportunity_type`),
     KEY `efundi_opportunities_posted_by_user_id_foreign` (`posted_by_user_id`),
-    CONSTRAINT `efundi_opportunities_posted_by_user_id_foreign` FOREIGN KEY (`posted_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+    KEY `efundi_opportunities_job_vacancy_id_foreign` (`job_vacancy_id`),
+    CONSTRAINT `efundi_opportunities_posted_by_user_id_foreign` FOREIGN KEY (`posted_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `efundi_opportunities_job_vacancy_id_foreign` FOREIGN KEY (`job_vacancy_id`) REFERENCES `job_vacancies` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `efundi_opportunities`
+    ADD COLUMN IF NOT EXISTS `opportunity_scope` varchar(20) NOT NULL DEFAULT 'external' AFTER `opportunity_type`,
+    ADD COLUMN IF NOT EXISTS `job_vacancy_id` bigint(20) unsigned DEFAULT NULL AFTER `opportunity_scope`;
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

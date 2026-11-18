@@ -27,6 +27,7 @@
                             <div class="tich-flex tich-flex-wrap tich-justify-between tich-gap-2">
                                 <div>
                                     <span class="tich-badge tich-badge--pending">{{ $item->typeLabel() }}</span>
+                                    <span class="tich-badge tich-badge--neutral">{{ $item->scopeLabel() }}</span>
                                     <h2 class="tich-h2 tich-mt-2">
                                         <a href="{{ route('e-fundi.show', $item) }}">{{ $item->title }}</a>
                                     </h2>

@@ -16,10 +16,16 @@ class EfundiOpportunity extends Model
 
     public const TYPE_OTHER = 'other';
 
+    public const SCOPE_EXTERNAL = 'external';
+
+    public const SCOPE_INTERNAL = 'internal';
+
     protected $fillable = [
         'title',
         'slug',
         'opportunity_type',
+        'opportunity_scope',
+        'job_vacancy_id',
         'organization_name',
         'location',
         'summary',
@@ -44,6 +50,34 @@ class EfundiOpportunity extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'posted_by_user_id');
+    }
+
+    public function jobVacancy(): BelongsTo
+    {
+        return $this->belongsTo(JobVacancy::class, 'job_vacancy_id');
+    }
+
+    public function isInternal(): bool
+    {
+        return ($this->opportunity_scope ?? self::SCOPE_EXTERNAL) === self::SCOPE_INTERNAL;
+    }
+
+    public function isExternal(): bool
+    {
+        return ! $this->isInternal();
+    }
+
+    public static function scopes(): array
+    {
+        return [
+            self::SCOPE_EXTERNAL => 'External',
+            self::SCOPE_INTERNAL => 'Within TICH',
+        ];
+    }
+
+    public function scopeLabel(): string
+    {
+        return self::scopes()[$this->opportunity_scope] ?? 'External';
     }
 
     public function getRouteKeyName(): string
@@ -77,11 +111,58 @@ class EfundiOpportunity extends Model
             return false;
         }
 
+        if ($this->isInternal()) {
+            $vacancy = $this->relationLoaded('jobVacancy') ? $this->jobVacancy : $this->jobVacancy()->first();
+
+            return $vacancy && self::vacancyAcceptsApplications($vacancy);
+        }
+
         if ($this->application_deadline === null) {
             return true;
         }
 
         return $this->application_deadline->gte(now()->startOfDay());
+    }
+
+    public static function vacancyAcceptsApplications(JobVacancy $vacancy): bool
+    {
+        if (! $vacancy->is_published || $vacancy->is_closed) {
+            return false;
+        }
+
+        if ($vacancy->closing_date === null) {
+            return true;
+        }
+
+        return $vacancy->closing_date->gte(now()->startOfDay());
+    }
+
+    public function scopeVisibleOnPublic($query)
+    {
+        return $query
+            ->where('is_published', true)
+            ->where(function ($q) {
+                $q->where(function ($external) {
+                    $external->where('opportunity_scope', self::SCOPE_EXTERNAL)
+                        ->where(function ($deadline) {
+                            $deadline->whereNull('application_deadline')
+                                ->orWhere('application_deadline', '>=', now()->toDateString());
+                        });
+                })->orWhere(function ($internal) {
+                    $internal->where('opportunity_scope', self::SCOPE_INTERNAL)
+                        ->whereNotNull('job_vacancy_id')
+                        ->whereHas('jobVacancy', fn ($vq) => self::applyOpenVacancyQuery($vq));
+                });
+            });
+    }
+
+    public static function applyOpenVacancyQuery($query): void
+    {
+        $query->where('is_published', 1)
+            ->where(function ($q) {
+                $q->where('is_closed', 0)
+                    ->orWhere('closing_date', '>=', now()->toDateString());
+            });
     }
 
     public static function uniqueSlug(string $title, ?int $ignoreId = null): string

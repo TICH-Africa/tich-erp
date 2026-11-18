@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\EfundiOpportunity;
+use App\Models\JobVacancy;
 use App\Services\AuditService;
 use App\Services\EfundiOpportunityNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class EfundiOpportunityAdminController extends Controller
@@ -22,7 +25,7 @@ class EfundiOpportunityAdminController extends Controller
         $ctx = $this->context($request);
 
         $opportunities = Schema::hasTable('efundi_opportunities')
-            ? EfundiOpportunity::query()->orderByDesc('created_at')->limit(100)->get()
+            ? EfundiOpportunity::query()->with('jobVacancy')->orderByDesc('created_at')->limit(100)->get()
             : collect();
 
         return view($ctx['viewPrefix'].'.index', [
@@ -39,8 +42,13 @@ class EfundiOpportunityAdminController extends Controller
 
         return view($ctx['viewPrefix'].'.form', [
             ...$ctx,
-            'opportunity' => new EfundiOpportunity(['is_published' => true]),
+            'opportunity' => new EfundiOpportunity([
+                'is_published' => true,
+                'opportunity_scope' => EfundiOpportunity::SCOPE_EXTERNAL,
+            ]),
             'types' => EfundiOpportunity::types(),
+            'scopes' => EfundiOpportunity::scopes(),
+            'linkableVacancies' => $this->linkableVacancies(),
         ]);
     }
 
@@ -91,6 +99,8 @@ class EfundiOpportunityAdminController extends Controller
             ...$ctx,
             'opportunity' => $opportunity,
             'types' => EfundiOpportunity::types(),
+            'scopes' => EfundiOpportunity::scopes(),
+            'linkableVacancies' => $this->linkableVacancies($opportunity),
         ]);
     }
 
@@ -184,9 +194,11 @@ class EfundiOpportunityAdminController extends Controller
     /** @return array<string, mixed> */
     protected function validated(Request $request, ?EfundiOpportunity $existing = null): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'opportunity_type' => ['required', 'in:'.implode(',', array_keys(EfundiOpportunity::types()))],
+            'opportunity_scope' => ['required', Rule::in([EfundiOpportunity::SCOPE_EXTERNAL, EfundiOpportunity::SCOPE_INTERNAL])],
+            'job_vacancy_id' => ['nullable', 'integer', Rule::exists('job_vacancies', 'id')],
             'organization_name' => ['nullable', 'string', 'max:255'],
             'location' => ['nullable', 'string', 'max:255'],
             'summary' => ['nullable', 'string', 'max:1000'],
@@ -195,5 +207,39 @@ class EfundiOpportunityAdminController extends Controller
             'application_email' => ['nullable', 'email', 'max:255'],
             'application_deadline' => ['nullable', 'date'],
         ]);
+
+        if ($validated['opportunity_scope'] === EfundiOpportunity::SCOPE_INTERNAL) {
+            $request->validate([
+                'job_vacancy_id' => ['required', 'integer', Rule::exists('job_vacancies', 'id')],
+            ]);
+
+            $vacancy = JobVacancy::query()->findOrFail((int) $validated['job_vacancy_id']);
+            abort_unless($vacancy->is_published, 422, 'Link a vacancy that HR has published on the careers page.');
+
+            $validated['application_url'] = null;
+            $validated['application_email'] = null;
+        } else {
+            $validated['job_vacancy_id'] = null;
+        }
+
+        return $validated;
+    }
+
+    protected function linkableVacancies(?EfundiOpportunity $current = null): Collection
+    {
+        if (! Schema::hasTable('job_vacancies')) {
+            return collect();
+        }
+
+        return JobVacancy::query()
+            ->with('department:id,dept_name')
+            ->where(function ($q) use ($current) {
+                EfundiOpportunity::applyOpenVacancyQuery($q);
+                if ($current?->job_vacancy_id) {
+                    $q->orWhere('id', $current->job_vacancy_id);
+                }
+            })
+            ->orderBy('job_title')
+            ->get(['id', 'job_title', 'vacancy_number', 'employment_type', 'is_published', 'is_closed', 'closing_date', 'department_id']);
     }
 }

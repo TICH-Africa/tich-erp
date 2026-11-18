@@ -9,6 +9,8 @@
         'routePrefix' => $routePrefix,
         'publicUrl' => $publicUrl,
         'types' => $types,
+        'scopes' => $scopes,
+        'linkableVacancies' => $linkableVacancies,
         'opportunity' => $opportunity,
     ])
 @endsection

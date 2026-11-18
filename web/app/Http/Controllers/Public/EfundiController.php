@@ -17,12 +17,9 @@ class EfundiController extends Controller
 
         if (Schema::hasTable('efundi_opportunities')) {
             $opportunities = EfundiOpportunity::query()
-                ->where('is_published', true)
+                ->with('jobVacancy.department')
+                ->visibleOnPublic()
                 ->when($type, fn ($q) => $q->where('opportunity_type', $type))
-                ->where(function ($q) {
-                    $q->whereNull('application_deadline')
-                        ->orWhere('application_deadline', '>=', now()->toDateString());
-                })
                 ->orderByDesc('published_at')
                 ->orderByDesc('created_at')
                 ->get();
@@ -38,6 +35,8 @@ class EfundiController extends Controller
     public function show(EfundiOpportunity $opportunity): View
     {
         abort_unless($opportunity->is_published, 404);
+
+        $opportunity->load('jobVacancy.department');
 
         return view('pages.e-fundi.show', [
             'opportunity' => $opportunity,

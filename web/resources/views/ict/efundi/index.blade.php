@@ -14,6 +14,7 @@
                     <tr>
                         <th>Title</th>
                         <th>Type</th>
+                        <th>Scope</th>
                         <th>Status</th>
                         <th>Deadline</th>
                         <th>Students notified</th>
@@ -28,6 +29,12 @@
                                 <p class="tich-caption">{{ $row->organization_name ?? '—' }}</p>
                             </td>
                             <td>{{ $row->typeLabel() }}</td>
+                            <td>
+                                {{ $row->scopeLabel() }}
+                                @if ($row->isInternal() && $row->jobVacancy)
+                                    <p class="tich-caption">{{ $row->jobVacancy->job_title }}</p>
+                                @endif
+                            </td>
                             <td>
                                 @if ($row->is_published)
                                     <span class="tich-badge tich-badge--success">Live</span>
@@ -57,7 +64,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6">No opportunities yet.</td>
+                            <td colspan="7">No opportunities yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

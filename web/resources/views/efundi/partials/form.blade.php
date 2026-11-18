@@ -1,9 +1,12 @@
 @php
     $opportunity = $opportunity ?? new \App\Models\EfundiOpportunity();
+    $scopes = $scopes ?? \App\Models\EfundiOpportunity::scopes();
+    $linkableVacancies = $linkableVacancies ?? collect();
     $isEdit = $opportunity->exists;
     $action = $isEdit
         ? route($routePrefix.'.update', $opportunity)
         : route($routePrefix.'.store');
+    $selectedScope = old('opportunity_scope', $opportunity->opportunity_scope ?? \App\Models\EfundiOpportunity::SCOPE_EXTERNAL);
 @endphp
 
 <form method="post" action="{{ $action }}" class="tich-mt-4">
@@ -26,17 +29,44 @@
             </select>
         </div>
         <div>
+            <label class="tich-label" for="efundi-scope">Where is this opportunity? <span class="uf-req">*</span></label>
+            <select id="efundi-scope" name="opportunity_scope" class="tich-input" required>
+                @foreach ($scopes as $value => $label)
+                    <option value="{{ $value }}" @selected($selectedScope === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+            <p class="tich-caption tich-mt-1">Within TICH uses HR careers applications (same as <a href="{{ route('careers.index') }}" target="_blank" rel="noopener">/careers</a>).</p>
+        </div>
+        <div id="efundi-internal-field" class="@if($selectedScope !== 'internal') hidden @endif">
+            <label class="tich-label" for="efundi-vacancy">HR vacancy <span class="uf-req">*</span></label>
+            <select id="efundi-vacancy" name="job_vacancy_id" class="tich-input">
+                <option value="">Select published vacancy…</option>
+                @foreach ($linkableVacancies as $vacancy)
+                    <option value="{{ $vacancy->id }}" @selected((int) old('job_vacancy_id', $opportunity->job_vacancy_id) === (int) $vacancy->id)">
+                        {{ $vacancy->job_title }} ({{ $vacancy->vacancy_number ?? 'VAC-'.$vacancy->id }}) — {{ $vacancy->department->dept_name ?? 'TICH' }}
+                    </option>
+                @endforeach
+            </select>
+            @if ($linkableVacancies->isEmpty())
+                <p class="tich-caption tich-mt-1">No open HR vacancies. Ask HR to publish one under <strong>Vacancies</strong> first.</p>
+            @endif
+        </div>
+        <div>
             <label class="tich-label" for="efundi-org">Organization</label>
-            <input id="efundi-org" name="organization_name" class="tich-input" maxlength="255" value="{{ old('organization_name', $opportunity->organization_name) }}">
+            <input id="efundi-org" name="organization_name" class="tich-input" maxlength="255" value="{{ old('organization_name', $opportunity->organization_name) }}" placeholder="Leave blank for within TICH">
         </div>
         <div>
             <label class="tich-label" for="efundi-location">Location</label>
             <input id="efundi-location" name="location" class="tich-input" maxlength="255" value="{{ old('location', $opportunity->location) }}">
         </div>
-        <div>
+        <div id="efundi-deadline-field">
             <label class="tich-label" for="efundi-deadline">Application deadline</label>
             <input id="efundi-deadline" type="date" name="application_deadline" class="tich-input" value="{{ old('application_deadline', optional($opportunity->application_deadline)->format('Y-m-d')) }}">
+            <p class="tich-caption tich-mt-1 efundi-internal-hint @if($selectedScope !== 'internal') hidden @endif">For within TICH, the linked vacancy closing date on HR/careers also applies.</p>
         </div>
+    </div>
+
+    <div id="efundi-external-fields" class="tich-grid tich-grid--2 tich-mt-2 @if($selectedScope === 'internal') hidden @endif" style="gap: 1rem;">
         <div>
             <label class="tich-label" for="efundi-url">Application link</label>
             <input id="efundi-url" type="url" name="application_url" class="tich-input" placeholder="https://..." value="{{ old('application_url', $opportunity->application_url) }}">
@@ -76,3 +106,30 @@
 
     <button type="submit" class="tich-btn tich-btn-primary tich-mt-6">{{ $isEdit ? 'Save changes' : 'Publish opportunity' }}</button>
 </form>
+
+<script>
+    (function () {
+        const scope = document.getElementById('efundi-scope');
+        const internalField = document.getElementById('efundi-internal-field');
+        const externalFields = document.getElementById('efundi-external-fields');
+        const vacancySelect = document.getElementById('efundi-vacancy');
+        const internalHints = document.querySelectorAll('.efundi-internal-hint');
+
+        if (!scope) {
+            return;
+        }
+
+        const sync = () => {
+            const internal = scope.value === 'internal';
+            internalField?.classList.toggle('hidden', !internal);
+            externalFields?.classList.toggle('hidden', internal);
+            internalHints.forEach((el) => el.classList.toggle('hidden', !internal));
+            if (vacancySelect) {
+                vacancySelect.required = internal;
+            }
+        };
+
+        scope.addEventListener('change', sync);
+        sync();
+    })();
+</script>
