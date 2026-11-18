@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AuthService;
 use App\Services\MFAService;
+use App\Services\MobileLoginOtpService;
 use App\Services\RBACService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class AuthController extends Controller
     public function __construct(
         protected AuthService $authService,
         protected MFAService $mfaService,
+        protected MobileLoginOtpService $mobileLoginOtp,
         protected RBACService $rbacService,
     ) {}
 
@@ -34,7 +36,85 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        return response()->json($this->authService->loginResponse($user, $request));
+        $payload = $this->authService->loginResponse($user, $request);
+
+        if ($this->authService->needsMobileLoginOtp($user, $request)) {
+            $delivery = $this->mobileLoginOtp->send($user, $request);
+
+            $payload['mobile_otp_required'] = true;
+            $payload['mobile_app_verified'] = false;
+            $payload['otp_sent'] = $delivery['sent'];
+            $payload['otp_expires_minutes'] = $delivery['expires_minutes'];
+            $payload['email_masked'] = $this->mobileLoginOtp->maskEmail($user->email);
+
+            if (! $delivery['sent']) {
+                $payload['message'] = 'Could not send the sign-in code to your email.';
+                $payload['error'] = config('app.debug') ? $delivery['error'] : 'Mail configuration error';
+            } else {
+                $payload['message'] = 'Enter the 6-digit code sent to your email.';
+            }
+
+            if (config('app.debug')) {
+                $payload['dev_code'] = $delivery['otp'];
+            }
+        }
+
+        return response()->json($payload);
+    }
+
+    public function verifyMobileLoginOtp(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'size:6', 'regex:/^\d{6}$/'],
+        ]);
+
+        $user = $request->user();
+
+        if ($user->mobile_app_verified_at !== null) {
+            return response()->json([
+                'message' => 'Mobile sign-in already verified.',
+                'mobile_app_verified' => true,
+            ]);
+        }
+
+        if (! $this->mobileLoginOtp->verify($user, $validated['code'])) {
+            return response()->json(['message' => 'Invalid or expired sign-in code.'], 422);
+        }
+
+        $this->authService->markMobileAppVerified($user, $request);
+
+        return response()->json([
+            'message' => 'Mobile sign-in verified.',
+            'mobile_app_verified' => true,
+            'verified_at' => $user->fresh()->mobile_app_verified_at,
+        ]);
+    }
+
+    public function resendMobileLoginOtp(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->mobile_app_verified_at !== null) {
+            return response()->json(['message' => 'Mobile sign-in already verified.'], 422);
+        }
+
+        $delivery = $this->mobileLoginOtp->send($user, $request);
+
+        if (! $delivery['sent']) {
+            return response()->json([
+                'message' => 'Could not send the sign-in code.',
+                'error' => config('app.debug') ? $delivery['error'] : 'Mail configuration error',
+                'dev_code' => config('app.debug') ? $delivery['otp'] : null,
+            ], 503);
+        }
+
+        return response()->json([
+            'message' => 'A new sign-in code was sent to your email.',
+            'otp_sent' => true,
+            'otp_expires_minutes' => $delivery['expires_minutes'],
+            'email_masked' => $this->mobileLoginOtp->maskEmail($user->email),
+            'dev_code' => config('app.debug') ? $delivery['otp'] : null,
+        ]);
     }
 
     public function mfaChallenge(Request $request): JsonResponse
@@ -201,6 +281,9 @@ class AuthController extends Controller
             'permissions' => $this->rbacService->getUserPermissions($user),
             'mfa_required' => $this->mfaService->isMFARequired($user),
             'mfa_enabled' => (bool) $user->mfa_enabled,
+            'mobile_app_verified' => $user->mobile_app_verified_at !== null,
+            'mobile_otp_required' => $this->authService->isMobileClient($request)
+                && $user->mobile_app_verified_at === null,
         ]);
     }
 }

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import '../config/api_config.dart';
+import '../config/mobile_client.dart';
 import 'auth_token_store.dart';
 import 'tich_realtime_signals.dart';
 
@@ -121,7 +122,10 @@ class ApiClient {
   }
 
   Future<Map<String, String>> _headers({bool json = true}) async {
-    final headers = <String, String>{'Accept': 'application/json'};
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      ...tichMobileClientHeaders,
+    };
     if (json) {
       headers['Content-Type'] = 'application/json';
     }
