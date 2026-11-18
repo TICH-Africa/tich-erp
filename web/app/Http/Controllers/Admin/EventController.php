@@ -42,9 +42,11 @@ class EventController extends Controller
         $event = Event::query()->create([
             ...$validated,
             'slug' => Event::uniqueSlug($validated['title']),
+            'end_datetime' => $validated['end_datetime'] ?? $validated['start_datetime'],
             'cover_image_path' => $coverPath,
             'is_public' => $request->boolean('is_public', true),
             'is_featured' => $request->boolean('is_featured'),
+            'is_important' => $request->boolean('is_important'),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -54,7 +56,7 @@ class EventController extends Controller
             'events',
             $event->id,
             null,
-            $event->only(['title', 'event_type', 'is_featured', 'is_public']),
+            $event->only(['title', 'event_type', 'is_featured', 'is_important', 'is_public']),
             null,
             'success',
             $request->user()->id,
@@ -69,12 +71,14 @@ class EventController extends Controller
     public function update(Request $request, Event $event): RedirectResponse
     {
         $validated = $this->validated($request, $event);
-        $old = $event->only(['title', 'event_type', 'is_featured', 'is_public']);
+        $old = $event->only(['title', 'event_type', 'is_featured', 'is_important', 'is_public']);
 
         $updates = [
             ...$validated,
+            'end_datetime' => $validated['end_datetime'] ?? $validated['start_datetime'],
             'is_public' => $request->boolean('is_public', true),
             'is_featured' => $request->boolean('is_featured'),
+            'is_important' => $request->boolean('is_important'),
             'updated_at' => now(),
         ];
 
@@ -100,7 +104,7 @@ class EventController extends Controller
             'events',
             $event->id,
             $old,
-            $event->only(['title', 'event_type', 'is_featured', 'is_public']),
+            $event->only(['title', 'event_type', 'is_featured', 'is_important', 'is_public']),
             null,
             'success',
             $request->user()->id,
@@ -147,7 +151,7 @@ class EventController extends Controller
      */
     private function validated(Request $request, ?Event $event = null): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'title' => ['required', 'string', 'max:300'],
             'subtitle' => ['nullable', 'string', 'max:500'],
             'event_type' => ['required', 'string', 'max:50'],
@@ -159,6 +163,11 @@ class EventController extends Controller
             'cover_image' => [$event ? 'nullable' : 'nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp'],
             'is_public' => ['nullable', 'boolean'],
             'is_featured' => ['nullable', 'boolean'],
+            'is_important' => ['nullable', 'boolean'],
         ]);
+
+        Event::guardCountdownIsFree($request->boolean('is_important'), $event?->id);
+
+        return $validated;
     }
 }

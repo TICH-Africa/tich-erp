@@ -60,6 +60,15 @@
                 @endif
             </div>
         @endforeach
+
+        @if (! empty($countdownEvent))
+            <div class="tich-hero-carousel__countdown">
+                <x-event-countdown
+                    :event="$countdownEvent"
+                    :caption="'Countdown to '.\Illuminate\Support\Str::limit($countdownEvent->title, 46)"
+                />
+            </div>
+        @endif
     </div>
 
     @if ($slideCount > 1)

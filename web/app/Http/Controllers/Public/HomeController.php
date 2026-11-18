@@ -93,6 +93,7 @@ class HomeController extends Controller
 
         return view('pages.events', [
             'events' => $events,
+            'countdownEvent' => $this->homepageService->getCountdownEvent(),
             'usingFallback' => ['events' => $events->isEmpty()],
         ]);
     }
