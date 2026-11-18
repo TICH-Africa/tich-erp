@@ -6,10 +6,10 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_form_dialog.dart';
-import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'employee_prefetch.dart';
+import 'portal_helpers.dart';
 import 'time_log_detail_page.dart';
 
 class TimeLogsPage extends StatefulWidget {
@@ -28,18 +28,14 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
   @override
   void initState() {
     super.initState();
-    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.time_logs');
-    _future = TichScreenCache.ensure('portal.time_logs', () => widget.api.timeLogs());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (_dataCache != null) {
-        Future<void>.delayed(const Duration(seconds: 12), () {
-          if (mounted) _liveRefresh();
-        });
-        return;
-      }
-      _liveRefresh();
-    });
+    portalPrimeScreen(
+      persistKey: 'portal.time_logs',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.timeLogs(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
+    );
   }
 
   Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(

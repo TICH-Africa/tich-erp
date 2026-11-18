@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:collection';
 
+import 'tich_cold_start.dart';
 import 'tich_screen_cache_store.dart';
 
 /// In-memory + on-disk cache so screens paint from last data (WhatsApp-style).
@@ -8,6 +10,7 @@ abstract final class TichScreenCache {
   static final Map<String, Object> _store = {};
   static final List<String> _lru = [];
   static final Map<String, Future<Object>> _inFlight = {};
+  static final Map<String, List<Completer<void>>> _keyWaiters = {};
 
   static String _userScope = '';
   static Timer? _persistDebounce;
@@ -17,6 +20,43 @@ abstract final class TichScreenCache {
   static final Set<String> _dirtyKeys = {};
 
   static bool get isHydrated => _indexLoaded;
+
+  static bool get hasDiskCache =>
+      _indexLoaded && _diskIndex.isNotEmpty;
+
+  static bool isKeyInFlight(String key) => _inFlight.containsKey(key);
+
+  static int get inFlightCount => _inFlight.length;
+
+  /// Completes when [key] is in memory or its in-flight [ensure] finishes (success or fail).
+  static Future<void> waitForKey(String key, {Duration? timeout}) async {
+    if (read(key) != null) return;
+    final existing = _inFlight[key];
+    if (existing != null) {
+      try {
+        await existing.timeout(timeout ?? const Duration(seconds: 35));
+      } catch (_) {}
+      return;
+    }
+    final waiter = Completer<void>();
+    _keyWaiters.putIfAbsent(key, () => []).add(waiter);
+    final maxWait = timeout ?? const Duration(seconds: 35);
+    try {
+      await waiter.future.timeout(maxWait);
+    } catch (_) {
+      _keyWaiters[key]?.remove(waiter);
+    }
+  }
+
+  static void _notifyKeyWaiters(String key) {
+    final list = _keyWaiters.remove(key);
+    if (list == null) return;
+    for (final c in list) {
+      if (!c.isCompleted) c.complete();
+    }
+  }
+
+  static final Queue<Completer<void>> _ensureWaiters = Queue();
 
   /// Completes when the disk index for the current [assignUser] scope is known.
   static Future<void> whenHydrated() async {
@@ -88,6 +128,7 @@ abstract final class TichScreenCache {
     _hydrateFuture = null;
     _userScope = '';
     _persistDebounce?.cancel();
+    TichColdStart.reset();
     if (wipeDisk && scope.isNotEmpty) {
       await TichScreenCacheStore.clearScope(scope);
     }
@@ -104,6 +145,7 @@ abstract final class TichScreenCache {
   static void write(String key, Object value) {
     _writeWithoutPersist(key, value);
     _dirtyKeys.add(key);
+    _notifyKeyWaiters(key);
     _schedulePersist();
   }
 
@@ -193,7 +235,10 @@ abstract final class TichScreenCache {
   /// A warm memory hit returns synchronously; only a real miss touches disk.
   static Future<T> ensure<T>(String key, Future<T> Function() fetch) async {
     final cached = read<T>(key);
-    if (cached != null) return cached;
+    if (cached != null) {
+      _maybeMarkHomeSettled(key);
+      return cached;
+    }
 
     final existing = _inFlight[key];
     if (existing != null) {
@@ -201,13 +246,42 @@ abstract final class TichScreenCache {
     }
 
     final diskHit = await _readDisk<T>(key);
-    if (diskHit != null) return diskHit;
+    if (diskHit != null) {
+      _maybeMarkHomeSettled(key);
+      return diskHit;
+    }
 
+    if (TichColdStart.isEmptyDiskSession &&
+        !TichColdStart.isHomeSettled &&
+        !_isHomeCacheKey(key)) {
+      await TichColdStart.whenHomeSettled();
+    }
+
+    await _acquireEnsureSlot(key);
     final future = _fetchWithRetry(key, fetch)
-        .whenComplete(() => _inFlight.remove(key));
+        .whenComplete(() {
+          _inFlight.remove(key);
+          _notifyKeyWaiters(key);
+          _releaseEnsureSlot();
+        });
 
     _inFlight[key] = future;
     return future.then((value) => value as T);
+  }
+
+  static Future<void> _acquireEnsureSlot(String key) async {
+    if (_inFlight.containsKey(key)) return;
+    while (inFlightCount >= TichColdStart.maxConcurrentEnsures) {
+      final waiter = Completer<void>();
+      _ensureWaiters.add(waiter);
+      await waiter.future;
+      if (_inFlight.containsKey(key)) return;
+    }
+  }
+
+  static void _releaseEnsureSlot() {
+    if (_ensureWaiters.isEmpty) return;
+    _ensureWaiters.removeFirst().complete();
   }
 
   /// One quick retry avoids a flash error when the first request races login or DNS.
@@ -215,20 +289,34 @@ abstract final class TichScreenCache {
     String key,
     Future<T> Function() fetch,
   ) async {
+    final attempts = TichColdStart.isEmptyDiskSession ? 1 : 2;
     Object? lastError;
-    for (var attempt = 0; attempt < 2; attempt++) {
+    for (var attempt = 0; attempt < attempts; attempt++) {
       if (attempt > 0) {
         await Future<void>.delayed(const Duration(milliseconds: 400));
       }
       try {
         final value = await fetch();
         write(key, value as Object);
+        _maybeMarkHomeSettled(key);
         return value as Object;
       } catch (e) {
         lastError = e;
       }
     }
     throw lastError ?? Exception('Request failed for $key');
+  }
+
+  static void _maybeMarkHomeSettled(String key) {
+    const homeKeys = {
+      'student.home',
+      'portal.dashboard',
+      'staff.home',
+      'procurement.home',
+    };
+    if (homeKeys.contains(key)) {
+      TichColdStart.markHomeSettled();
+    }
   }
 
   static Future<T?> _readDisk<T>(String key) async {
@@ -247,6 +335,18 @@ abstract final class TichScreenCache {
   /// Starts [fetch] when idle; safe to call from drawer open / tab preload.
   static void warm(String key, Future<Object> Function() fetch) {
     if (_store.containsKey(key) || _inFlight.containsKey(key)) return;
+    if (TichColdStart.isEmptyDiskSession &&
+        !TichColdStart.isHomeSettled &&
+        !_isHomeCacheKey(key)) {
+      return;
+    }
     unawaited(ensure<Object>(key, fetch));
   }
+
+  static bool _isHomeCacheKey(String key) => const {
+        'student.home',
+        'portal.dashboard',
+        'staff.home',
+        'procurement.home',
+      }.contains(key);
 }

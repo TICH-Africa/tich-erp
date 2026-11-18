@@ -49,10 +49,7 @@ class StudentApi {
         accept: 'application/pdf',
       );
 
-  Future<Map<String, dynamic>> timetable() => _client.get(
-        '/student/timetable',
-        timeout: const Duration(seconds: 90),
-      );
+  Future<Map<String, dynamic>> timetable() => _client.get('/student/timetable');
 
   Future<List<int>> downloadTimetablePdf(int timetableId) =>
       _client.getBytes(

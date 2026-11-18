@@ -6,6 +6,7 @@ import '../../config/api_config.dart';
 import '../../data/auth_api.dart';
 import '../../data/auth_repository.dart';
 import '../../data/tich_realtime.dart';
+import '../../data/tich_cold_start.dart';
 import '../../data/tich_screen_cache.dart';
 import '../../models/auth_user.dart';
 import '../../settings/app_settings.dart';
@@ -104,9 +105,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _startCacheForUser(AuthUser user) async {
     TichScreenCache.assignUser(user.id);
     await TichScreenCache.hydrateFromDisk();
-    // Warm the newest screens behind the first frame so the tab the user lands
-    // on paints from cache instead of waiting on the network.
-    unawaited(TichScreenCache.preloadRecent());
+    TichColdStart.beginSession();
   }
 
   Future<void> _onBiometricUnlock(

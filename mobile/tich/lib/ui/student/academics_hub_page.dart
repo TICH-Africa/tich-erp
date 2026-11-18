@@ -26,6 +26,7 @@ import 'student_academic_progress_section.dart';
 import 'student_provisional_results_section.dart';
 import 'student_module_nav.dart';
 import 'student_prefetch.dart';
+import '../../data/tich_cold_start.dart';
 import '../../data/tich_screen_cache.dart';
 
 class StudentAcademicsHubPage extends StatefulWidget {
@@ -72,17 +73,21 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
       setCache: _onAcademicsCache,
       setFuture: (f) => _future = f,
       fetch: () => widget.api.academics(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      StudentPrefetch.academicsSubsections(widget.api);
-      if (_dataCache != null) {
-        Future<void>.delayed(const Duration(seconds: 12), () {
-          if (mounted) _liveRefresh();
-        });
-        return;
-      }
-      _liveRefresh();
+      if (!TichColdStart.allowSecondaryEndpoints) return;
+      Future<void>.delayed(
+        TichColdStart.isEmptyDiskSession
+            ? const Duration(seconds: 25)
+            : const Duration(seconds: 4),
+        () {
+          if (!mounted) return;
+          StudentPrefetch.academicsSubsections(widget.api);
+        },
+      );
     });
   }
 

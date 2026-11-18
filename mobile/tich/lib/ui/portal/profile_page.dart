@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
-import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
 import '../shell/tich_logout.dart';
 import '../widgets/tich_live_refresh.dart';
+import 'portal_helpers.dart';
 import '../widgets/tich_profile_identity_card.dart';
 import '../widgets/tich_widgets.dart';
 
@@ -37,8 +37,14 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _dataCache = TichScreenCache.read<Map<String, dynamic>>(_cacheKey);
-    _future = TichScreenCache.ensure(_cacheKey, () => widget.api.profile());
+    portalPrimeScreen(
+      persistKey: _cacheKey,
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.profile(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
+    );
   }
 
   @override

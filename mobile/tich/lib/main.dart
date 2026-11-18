@@ -12,6 +12,7 @@ import 'data/api_client.dart';
 import 'data/auth_repository.dart';
 import 'data/auth_token_store.dart';
 import 'data/tich_api_scope.dart';
+import 'data/tich_cold_start.dart';
 import 'data/tich_portal_warmup.dart';
 import 'data/tich_screen_cache.dart';
 import 'data/tich_screen_cache_store.dart';
@@ -293,7 +294,7 @@ class _AuthGateState extends State<_AuthGate> {
     final key = '${state.user.id}:${state.user.isStudent}';
     if (_primedUserKey == key) return;
     _primedUserKey = key;
-    Future<void>.delayed(const Duration(seconds: 4), () {
+    Future<void>.delayed(TichColdStart.notificationsPrimeDelay, () {
       unawaited(
         TichNotifications.instance.onAuthenticated(
           isStudent: state.user.isStudent,
@@ -314,7 +315,7 @@ class _AuthGateState extends State<_AuthGate> {
           _primeIfNeeded(state);
           final client = context.read<ApiClient>();
           TichPortalWarmup.prefetchHome(state.user, client);
-          Future<void>.delayed(const Duration(seconds: 3), () {
+          Future<void>.delayed(TichColdStart.realtimeConnectDelay, () {
             if (!context.mounted) return;
             unawaited(TichRealtime.connect(client));
           });
@@ -323,6 +324,7 @@ class _AuthGateState extends State<_AuthGate> {
             TichNotificationRouter.instance.applyPending(context);
           });
         } else {
+          TichColdStart.reset();
           unawaited(TichRealtime.disconnect());
         }
       },

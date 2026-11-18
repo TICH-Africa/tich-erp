@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/procurement_api.dart';
-import '../../data/tich_screen_cache.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/portal_hero.dart';
 import '../shell/procurement_nav_signals.dart';
@@ -28,10 +27,13 @@ class _ProcurementHomePageState extends State<ProcurementHomePage> {
   @override
   void initState() {
     super.initState();
-    _cache = procurementReadCache('procurement.home');
-    _future = TichScreenCache.ensure(
-      'procurement.home',
-      () => widget.api.dashboard(),
+    procurementPrimeScreen(
+      persistKey: 'procurement.home',
+      setCache: (c) => _cache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.dashboard(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
     );
   }
 

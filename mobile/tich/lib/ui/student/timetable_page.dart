@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
+import '../../data/tich_cold_start.dart';
 import '../../notifications/tich_notifications.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/tich_live_refresh.dart';
@@ -40,25 +41,22 @@ class _StudentTimetablePageState extends State<StudentTimetablePage>
       setCache: (c) => _dataCache = c,
       setFuture: (f) => _future = f,
       fetch: () => widget.api.timetable(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
+      liveRefreshDelayWhenCached: const Duration(seconds: 10),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      if (!TichColdStart.allowSecondaryEndpoints) return;
       StudentPrefetch.timetableDocumentsFromCache(widget.api);
       final cached = studentReadCache(_cacheKey);
-      if (cached != null) {
-        _dataCache = cached;
-        _warmVisibleDocument(cached);
-        scheduleMicrotask(() {
-          if (!mounted) return;
-          _scheduleLessonReminders(cached);
-        });
-        Future<void>.delayed(const Duration(seconds: 10), () {
-          if (!mounted) return;
-          _liveRefresh();
-        });
-        return;
-      }
-      _liveRefresh();
+      if (cached == null) return;
+      _dataCache = cached;
+      _warmVisibleDocument(cached);
+      scheduleMicrotask(() {
+        if (!mounted) return;
+        _scheduleLessonReminders(cached);
+      });
     });
   }
 

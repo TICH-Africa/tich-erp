@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../data/api_client.dart';
+import '../data/tich_cold_start.dart';
 import '../data/tich_power_policy.dart';
 import '../sync/tich_background_sync.dart';
 import '../ui/widgets/tich_brand_logo.dart';
@@ -243,10 +244,15 @@ class TichNotifications {
       return;
     }
     unawaited(registerDeviceToken());
-    if (!isStudent) {
+    if (!isStudent && !TichColdStart.isEmptyDiskSession) {
       unawaited(refreshClockInRemindersFromServer());
     }
-    unawaited(syncFromServerInBackground(isStudent: isStudent));
+    Future<void>.delayed(
+      TichColdStart.isEmptyDiskSession
+          ? const Duration(seconds: 25)
+          : Duration.zero,
+      () => unawaited(syncFromServerInBackground(isStudent: isStudent)),
+    );
   }
 
   /// Keeps clock-in alarms current (any signed-in staff, any portal tab).

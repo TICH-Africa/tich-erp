@@ -1,7 +1,7 @@
 name: tich
 description: TICH Africa mobile app (Flutter) - connects to the Laravel ERP API.
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.2+3
 
 environment:
   sdk: ^3.12.2

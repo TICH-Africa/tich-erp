@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../notifications/tich_notifications.dart';
+import 'tich_cold_start.dart';
 import 'employee_api.dart';
 import 'employee_clock_nav.dart';
 import 'portal_sidebar_counts.dart';
@@ -49,7 +50,9 @@ class EmployeeBadgeService extends ChangeNotifier {
       unawaited(refresh(force: true));
     };
     TichRealtimeSignals.onSidebarCountsUpdated = _realtimeHook;
-    unawaited(refresh());
+    Future<void>.delayed(TichColdStart.badgeServiceStartDelay, () {
+      unawaited(refresh());
+    });
   }
 
   @override

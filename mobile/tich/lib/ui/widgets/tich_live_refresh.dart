@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../data/api_client.dart';
+import '../../data/tich_cold_start.dart';
 import '../../data/tich_power_policy.dart';
 import '../../data/tich_realtime.dart';
 import '../../data/tich_realtime_signals.dart';
@@ -152,6 +153,49 @@ bool tichShowLoadingSpinner<T>(AsyncSnapshot<T> snap, T? merged) {
 }
 
 /// Network refresh without replacing the [FutureBuilder]'s future (prevents flicker).
+/// Schedules the first background refresh after [primeMapScreen] / [ensure] without
+/// racing the initial in-flight request (critical on first APK install).
+void tichScheduleInitialLiveRefresh({
+  required bool Function() mounted,
+  required String persistKey,
+  required VoidCallback onRefresh,
+  Duration delayWhenCached = const Duration(seconds: 12),
+}) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted()) return;
+    unawaited(_runInitialLiveRefresh(
+      mounted: mounted,
+      persistKey: persistKey,
+      onRefresh: onRefresh,
+      delayWhenCached: delayWhenCached,
+    ));
+  });
+}
+
+Future<void> _runInitialLiveRefresh({
+  required bool Function() mounted,
+  required String persistKey,
+  required VoidCallback onRefresh,
+  required Duration delayWhenCached,
+}) async {
+  if (TichScreenCache.isKeyInFlight(persistKey) ||
+      TichColdStart.shouldBlockSilentReload(persistKey)) {
+    await TichScreenCache.waitForKey(persistKey);
+    if (!mounted()) return;
+  }
+  if (TichColdStart.shouldBlockSilentReload(persistKey)) return;
+  if (TichScreenCache.isKeyInFlight(persistKey)) return;
+  final cached = TichScreenCache.read(persistKey);
+  if (cached != null) {
+    await Future<void>.delayed(delayWhenCached);
+    if (mounted()) onRefresh();
+    return;
+  }
+  if (!TichColdStart.isEmptyDiskSession) {
+    onRefresh();
+  }
+}
+
 void tichSilentReload<T>({
   required bool Function() mounted,
   required void Function(VoidCallback fn) setState,
@@ -159,6 +203,10 @@ void tichSilentReload<T>({
   void Function(T data)? onData,
   String? persistKey,
 }) {
+  if (persistKey != null) {
+    if (TichScreenCache.isKeyInFlight(persistKey)) return;
+    if (TichColdStart.shouldBlockSilentReload(persistKey)) return;
+  }
   unawaited(
     fetch().then((data) {
       if (!mounted()) return;
@@ -264,6 +312,9 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
 
   void _maybeAutoRefresh() {
     if (!_shouldRun) return;
+    if (TichColdStart.isEmptyDiskSession && !TichColdStart.isHomeSettled) {
+      return;
+    }
     final now = DateTime.now();
     if (_lastAutoRefresh != null &&
         now.difference(_lastAutoRefresh!) < tichLiveRefreshMinGap) {

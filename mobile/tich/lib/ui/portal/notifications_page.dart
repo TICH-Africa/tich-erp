@@ -8,8 +8,8 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
-import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
+import 'portal_helpers.dart';
 import '../../notifications/tich_notification_router.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -28,8 +28,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
   @override
   void initState() {
     super.initState();
-    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.notifications');
-    _future = TichScreenCache.ensure('portal.notifications', () => widget.api.notifications());
+    portalPrimeScreen(
+      persistKey: 'portal.notifications',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.notifications(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
+    );
   }
 
   Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(

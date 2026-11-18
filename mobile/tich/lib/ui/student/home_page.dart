@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
+import '../../data/tich_cold_start.dart';
 import '../../notifications/tich_notifications.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
@@ -60,14 +61,9 @@ class _StudentHomePageState extends State<StudentHomePage> {
       },
       setFuture: (f) => _future = f,
       fetch: _fetchDashboard,
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
     );
-    scheduleMicrotask(() {
-      if (mounted) unawaited(_primeLessonReminders());
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _liveRefresh();
-    });
   }
 
   Future<void> _reload() => studentCachedReload(
@@ -92,6 +88,12 @@ class _StudentHomePageState extends State<StudentHomePage> {
   }
 
   Future<void> _primeLessonReminders({bool force = false}) async {
+    if (!force && !TichColdStart.allowSecondaryEndpoints) {
+      Future<void>.delayed(const Duration(seconds: 15), () {
+        if (mounted) unawaited(_primeLessonReminders(force: true));
+      });
+      return;
+    }
     final now = DateTime.now();
     if (!force &&
         _lastTimetablePrime != null &&
