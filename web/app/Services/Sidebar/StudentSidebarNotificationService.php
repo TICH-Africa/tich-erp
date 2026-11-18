@@ -90,7 +90,7 @@ class StudentSidebarNotificationService
         'student.mobile.academics.content.{id}.v2',
         'student.mobile.academics.assessments.{id}.v1',
         'student.mobile.timetable.{id}.v3',
-        'student.mobile.finance.{id}.v1',
+        'student.mobile.finance.{id}.v2',
         'student.mobile.biodata.{id}.v1',
         'student.mobile.sidebar_counts.{id}',
     ];

@@ -132,19 +132,8 @@
                                         <input type="email" id="email" name="email" value="{{ old('email') }}" required>
                                     </div>
                                     <div class="uf-field">
-                                        <label for="alternative_email">Alternative email</label>
-                                        <input type="email" id="alternative_email" name="alternative_email" value="{{ old('alternative_email') }}">
-                                    </div>
-                                </div>
-
-                                <div class="tich-grid tich-grid--2 tich-mt-4">
-                                    <div class="uf-field">
                                         <label for="phone">Phone</label>
                                         <input type="tel" id="phone" name="phone" value="{{ old('phone') }}">
-                                    </div>
-                                    <div class="uf-field">
-                                        <label for="alternative_phone">Alternative phone</label>
-                                        <input type="tel" id="alternative_phone" name="alternative_phone" value="{{ old('alternative_phone') }}">
                                     </div>
                                 </div>
 
@@ -225,10 +214,6 @@
                                     </div>
                                 </div>
 
-                                <div class="uf-field tich-mt-4">
-                                    <label for="what_they_do">What do you do? <span class="uf-req">*</span></label>
-                                    <textarea id="what_they_do" name="what_they_do" rows="3" required maxlength="5000">{{ old('what_they_do') }}</textarea>
-                                </div>
                                 <div class="uf-field tich-mt-4">
                                     <label for="why_partnership">Why do you want this partnership? <span class="uf-req">*</span></label>
                                     <textarea id="why_partnership" name="why_partnership" rows="3" required maxlength="5000">{{ old('why_partnership') }}</textarea>

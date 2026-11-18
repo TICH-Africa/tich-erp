@@ -2887,10 +2887,11 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     left: 0;
     min-width: 14rem;
     padding: 0.35rem;
-    background: var(--tich-white);
-    border: 1px solid var(--tich-neutral-border);
+    /* The panel reads as part of the blue bar it hangs from, not a white card dropped under it. */
+    background: rgba(18, 90, 140, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: var(--radius-md);
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 12px 32px rgba(6, 26, 41, 0.35);
     z-index: 70;
     display: grid;
     gap: 0.125rem;
@@ -2906,20 +2907,24 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     border-radius: calc(var(--radius-md) - 2px);
     font-size: 0.8125rem;
     white-space: nowrap;
-    /* The bar paints its own links light for the blue header; the panel is a white card. */
-    color: var(--tich-grey) !important;
+    color: #e8f3dc !important;
     background: transparent !important;
 }
 
 .tich-nav__submenu .tich-nav__link:hover,
 .tich-nav__submenu .tich-nav__link.is-active {
-    color: var(--tich-blue) !important;
-    background: var(--tich-blue-light) !important;
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.14) !important;
 }
 
 .tich-nav__submenu .tich-nav__icon {
     background: transparent !important;
     color: inherit !important;
+}
+
+[data-theme="dark"] .tich-nav__submenu {
+    background: rgba(26, 28, 30, 0.97);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .tich-nav__more-link--nested {
@@ -4162,6 +4167,77 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
         justify-content: space-between;
         text-align: left;
     }
+}
+
+/* --- Translucent footer panel: the same house blue, thinned toward the bottom --- */
+/* --- so the last rows land on plain blue instead of the dark band. Words stay --- */
+/* --- white alpha, and the page still shows faintly through the panel. --- */
+
+.tich-footer,
+.tich-footer--rich {
+    background:
+        linear-gradient(180deg,
+            rgba(15, 76, 124, 0.95) 0%,
+            rgba(19, 90, 146, 0.80) 55%,
+            rgba(22, 105, 166, 0.60) 100%),
+        var(--tich-blue);
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.tich-footer .tich-h3,
+.tich-footer .tich-h4,
+.tich-footer .tich-label,
+.tich-footer .tich-text,
+.tich-footer .tich-brand__name,
+.tich-footer__bottom p {
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.tich-footer .tich-caption,
+.tich-footer .tich-brand__tagline {
+    color: rgba(255, 255, 255, 0.66);
+}
+
+.tich-footer a,
+.tich-footer__list a {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.tich-footer a:hover,
+.tich-footer__list a:hover {
+    color: #fff;
+}
+
+.tich-footer__social-link {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+}
+
+.tich-footer__social-link:hover {
+    background: rgba(255, 255, 255, 0.28);
+    color: #fff;
+}
+
+.tich-footer__newsletter-row .tich-input {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.28);
+    color: #fff;
+}
+
+.tich-footer__newsletter-row .tich-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.tich-footer__bottom {
+    border-top-color: rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="dark"] .tich-footer,
+[data-theme="dark"] .tich-footer--rich {
+    background:
+        linear-gradient(180deg, rgba(15, 34, 55, 0.92) 0%, rgba(8, 18, 30, 0.95) 100%),
+        var(--tich-white);
 }
 
 /* ??? Responsive navigation ??????????????????????????????????????????? */
@@ -7001,8 +7077,18 @@ a.tich-notification-badge:hover {
 /* ??? Programs catalogue ??????????????????????????????????????????????? */
 
 .tich-section--hero-plain {
-    background: var(--tich-blue-light);
+    background: var(--tich-blue-dark);
     border-bottom: 3px solid var(--tich-green);
+}
+
+/* The plain page hero wears the same blue as the Blog / course page header, so its
+   title and lead take that header's white-on-blue words rather than the page greys. */
+.tich-section--hero-plain .tich-h1 {
+    color: #ffffff;
+}
+
+.tich-section--hero-plain .tich-text {
+    color: var(--tich-blue-light);
 }
 
 .tich-featured-program {
@@ -8079,6 +8165,10 @@ body.page-home .tich-header--over-hero.tich-header--solid .tich-theme-toggle:hov
 
 [data-theme="dark"] .tich-section--hero-plain {
     background: var(--tich-blue-light);
+}
+
+[data-theme="dark"] .tich-section--hero-plain .tich-text {
+    color: #b8bcc0;
 }
 
 [data-theme="dark"] .tich-featured-program__aside {

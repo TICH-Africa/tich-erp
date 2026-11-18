@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\AcademicProgram;
-use App\Models\MpesaStkRequest;
 use App\Models\ProgramTimetableSession;
 use App\Models\Student;
 use App\Services\Finance\MpesaSettingsService;
@@ -16,6 +15,7 @@ class StudentPortalDashboardService
         protected StudentAcademicRecordService $academicRecords,
         protected TimetableSchedulingService $timetableScheduling,
         protected MpesaSettingsService $mpesaSettings,
+        protected SiteSettingsService $siteSettings,
     ) {}
 
     /**
@@ -266,14 +266,6 @@ class StudentPortalDashboardService
                 && in_array($invoice->status, ['issued', 'partial', 'overdue'], true);
         })->values();
 
-        $pendingStkRequests = MpesaStkRequest::query()
-            ->with('invoice:id,invoice_number,invoice_type')
-            ->where('student_id', $student->id)
-            ->where('status', MpesaStkRequest::STATUS_PENDING)
-            ->where('created_at', '>=', now()->subMinutes(15))
-            ->orderByDesc('created_at')
-            ->get();
-
         $currentAccount = $accounts->first();
         $accountBalance = (float) $accounts->sum('outstanding_balance');
         $invoiceBalance = (float) $invoices->sum('balance');
@@ -284,10 +276,11 @@ class StudentPortalDashboardService
             'invoices' => $invoices,
             'payments' => $payments,
             'payable_invoices' => $payableInvoices,
-            'pending_stk_requests' => $pendingStkRequests,
             'statement' => $this->buildFinanceStatement($invoices, $payments, $mobile ? 40 : null),
             'credits' => $this->accountCredits($currentAccount),
-            'default_phone' => (string) ($student->applicant?->phone_number ?? ''),
+            'paybill' => (string) ($this->mpesaSettings->shortcode() ?? ''),
+            'business_name' => (string) ($this->siteSettings->documentBranding()['name'] ?? ''),
+            'admission_number' => (string) ($student->registration_number ?? ''),
             'mpesa_enabled' => $this->mpesaSettings->isEnabled(),
             'summary' => [
                 'outstanding_balance' => $accountBalance > 0 ? $accountBalance : ($invoiceBalance > 0 ? $invoiceBalance : $studentBalance),

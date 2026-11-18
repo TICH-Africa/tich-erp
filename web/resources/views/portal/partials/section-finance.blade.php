@@ -1,21 +1,19 @@
 @php
     $finance = $portalData['finance'];
     $payableInvoices = $finance['payable_invoices'];
-    $selectedInvoice = $payableInvoices->firstWhere('id', (int) request('invoice'))
-        ?? $payableInvoices->first();
-    $defaultPhone = $finance['default_phone'];
-    $mpesaEnabled = (bool) ($finance['mpesa_enabled'] ?? false);
-    $pendingStkId = session('mpesa_stk_request_id');
-    $pendingStk = $finance['pending_stk_requests']->firstWhere('id', (int) $pendingStkId)
-        ?? $finance['pending_stk_requests']->first();
+    $paybill = (string) ($finance['paybill'] ?? '');
+    $businessName = (string) ($finance['business_name'] ?? '');
+    $admissionNumber = (string) ($finance['admission_number'] ?? '');
+    $outstanding = (float) $finance['summary']['outstanding_balance'];
 @endphp
 
-<x-page-toolbar title="Finance" meta="Fee accounts, invoices, payments, and M-Pesa self-pay">
+<x-page-toolbar title="Finance" meta="Fee accounts, invoices, payments, and M-Pesa paybill">
     <x-slot:actions>
         <a href="{{ route('portal.fee-statement.print') }}" target="_blank" rel="noopener" class="tich-btn tich-btn-secondary">Print statement</a>
         <a href="{{ route('portal.fee-statement.pdf') }}" class="tich-btn tich-btn-secondary">Download statement</a>
+        <a href="{{ route('portal.fee-structure.pdf') }}" class="tich-btn tich-btn-secondary">Download fees structure</a>
         @if ($payableInvoices->isNotEmpty())
-            <a href="#pay-with-mpesa" class="tich-btn tich-btn-primary">Pay with M-Pesa</a>
+            <a href="#pay-with-mpesa" class="tich-btn tich-btn-primary">Pay by M-Pesa paybill</a>
         @endif
     </x-slot:actions>
 </x-page-toolbar>
@@ -25,21 +23,6 @@
         @foreach ($errors->all() as $error)
             <p>{{ $error }}</p>
         @endforeach
-    </div>
-@endif
-
-@if ($pendingStk)
-    <div
-        id="mpesa-payment-banner"
-        class="tich-card tich-mt-4"
-        data-status-url="{{ route('portal.mpesa.stk.status', $pendingStk->id) }}"
-        role="status"
-        style="border-left: 4px solid var(--tich-primary, #0d6efd); padding: 1rem;"
-    >
-        M-Pesa prompt sent to {{ $pendingStk->phone }} for
-        {{ $pendingStk->invoice?->invoice_number ?? 'your invoice' }}
-        (KES {{ number_format((float) $pendingStk->amount, 2) }}).
-        Check your phone and enter your PIN…
     </div>
 @endif
 
@@ -65,92 +48,84 @@
 @if ($payableInvoices->isNotEmpty())
     <section id="pay-with-mpesa" class="tich-dept-panel tich-mt-8">
         <div class="tich-dept-panel__head">
-            <h2 class="tich-h2 tich-dept-panel__title">Pay with M-Pesa</h2>
-            <p class="tich-text">Choose an invoice, enter your M-Pesa number, and approve the STK prompt on your phone.</p>
+            <h2 class="tich-h2 tich-dept-panel__title">Pay fees by M-Pesa paybill</h2>
+            <p class="tich-text">You send the money yourself from M-Pesa. No prompt comes to your phone and you never type your PIN on this site.</p>
         </div>
 
         <article class="tich-card tich-mt-4" style="padding: 1.25rem;">
-            @if (! $mpesaEnabled)
+            @if ($paybill === '')
                 <p class="tich-text" style="margin: 0 0 1rem; color: var(--tich-danger, #b42318);">
-                    Online M-Pesa payments are not active yet. Contact the finance office or try again later.
+                    The finance office has not published the paybill number yet. Please pay at the finance office for now.
                 </p>
             @endif
 
-            <form
-                id="portal-mpesa-pay-form"
-                method="post"
-                action="{{ $selectedInvoice ? route('portal.invoices.pay', $selectedInvoice->id) : '#' }}"
-                class="tich-grid tich-grid--2"
-                style="gap: 1rem; align-items: end;"
-                @disabled(! $mpesaEnabled || ! $selectedInvoice)
-            >
-                @csrf
-
-                <div>
-                    <label for="portal-pay-invoice" class="tich-caption">Invoice</label>
-                    <select id="portal-pay-invoice" class="tich-input tich-mt-2" required>
-                        @foreach ($payableInvoices as $invoice)
-                            <option
-                                value="{{ $invoice->id }}"
-                                data-balance="{{ $invoice->balance }}"
-                                data-action="{{ route('portal.invoices.pay', $invoice->id) }}"
-                                @selected($selectedInvoice && (int) $selectedInvoice->id === (int) $invoice->id)
-                            >
-                                {{ $invoice->invoice_number }}
-                                · {{ ucwords(str_replace('_', ' ', $invoice->invoice_type)) }}
-                                · balance KES {{ number_format((float) $invoice->balance, 2) }}
-                            </option>
-                        @endforeach
-                    </select>
+            <div class="tich-grid tich-grid--2" style="gap: 1rem;">
+                <div class="tich-card" style="padding: 1rem;">
+                    <p class="tich-caption" style="margin: 0;">School Paybill Number</p>
+                    <p class="tich-stat__value" id="paybill-number" style="font-size: 1.5rem; margin: .25rem 0 .75rem;">{{ $paybill !== '' ? $paybill : 'Not set' }}</p>
+                    @if ($paybill !== '')
+                        <button type="button" class="tich-btn tich-btn-secondary tich-btn-sm" data-copy-target="paybill-number">Copy paybill number</button>
+                    @endif
                 </div>
 
-                <div>
-                    <label for="portal-pay-amount" class="tich-caption">Amount (KES)</label>
-                    <input
-                        id="portal-pay-amount"
-                        type="number"
-                        name="amount"
-                        class="tich-input tich-mt-2"
-                        min="1"
-                        step="0.01"
-                        value="{{ $selectedInvoice ? number_format((float) $selectedInvoice->balance, 2, '.', '') : '' }}"
-                        max="{{ $selectedInvoice ? number_format((float) $selectedInvoice->balance, 2, '.', '') : '' }}"
-                        required
-                    >
-                    <p class="tich-caption tich-mt-2">You can pay the full balance or a partial amount.</p>
+                <div class="tich-card" style="padding: 1rem;">
+                    <p class="tich-caption" style="margin: 0;">Business / Account Name</p>
+                    <p class="tich-stat__value" id="paybill-business-name" style="font-size: 1.125rem; margin: .25rem 0 .75rem;">{{ $businessName !== '' ? $businessName : 'The school name given by the finance office' }}</p>
                 </div>
 
-                <div>
-                    <label for="portal-pay-phone" class="tich-caption">M-Pesa phone number</label>
-                    <input
-                        id="portal-pay-phone"
-                        type="tel"
-                        name="phone_number"
-                        class="tich-input tich-mt-2"
-                        placeholder="07XXXXXXXX or 2547XXXXXXXX"
-                        inputmode="tel"
-                        pattern="^(?:\+?254|0)?[17]\d{8}$"
-                        title="Kenyan mobile number"
-                        value="{{ old('phone_number', $defaultPhone) }}"
-                        required
-                    >
+                <div class="tich-card" style="padding: 1rem;">
+                    <p class="tich-caption" style="margin: 0;">Account Number · your admission number</p>
+                    <p class="tich-stat__value" id="paybill-account" style="font-size: 1.5rem; margin: .25rem 0 .75rem;">{{ $admissionNumber !== '' ? $admissionNumber : 'Contact the finance office' }}</p>
+                    @if ($admissionNumber !== '')
+                        <button type="button" class="tich-btn tich-btn-secondary tich-btn-sm" data-copy-target="paybill-account">Copy account number</button>
+                    @endif
                 </div>
 
-                <div>
-                    <input type="hidden" name="payment_method" value="mpesa">
-                    <button type="submit" class="tich-btn tich-btn-primary" style="width: 100%;" @disabled(! $mpesaEnabled)>
-                        Send M-Pesa prompt
-                    </button>
+                <div class="tich-card" style="padding: 1rem;">
+                    <p class="tich-caption" style="margin: 0;">Payment Method</p>
+                    <p class="tich-stat__value" style="font-size: 1.125rem; margin: .25rem 0 0;">Safaricom M-Pesa Paybill</p>
                 </div>
-            </form>
+            </div>
+
+            <ol class="tich-list tich-mt-4" style="padding-left: 1.25rem; line-height: 1.9;">
+                <li>Open M-Pesa on your phone.</li>
+                <li>Select Lipa na M-Pesa.</li>
+                <li>Select Pay Bill.</li>
+                <li>Enter the school's Paybill number.</li>
+                <li>Enter your student admission number as the account number.</li>
+                <li>Enter the amount you wish to pay.</li>
+                <li>Enter your M-Pesa PIN to authorize the payment.</li>
+                <li>Wait for the M-Pesa confirmation message.</li>
+            </ol>
+
+            <p class="tich-text tich-mt-4">
+                <strong>Important:</strong> The account number must always be your actual admission
+                number, exactly as shown above. Payments with any other account number cannot be
+                matched to you and are returned by Safaricom.
+            </p>
+
+            <p class="tich-text tich-mt-4" style="margin: 0;">
+                You still owe <strong>KES {{ number_format($outstanding, 2) }}</strong>.
+                Pay the whole figure or part of it. Anything you send above what has been billed stays on your account and comes off the next bill.
+            </p>
+
+            <div class="tich-grid tich-grid--2 tich-mt-4" style="gap: 1rem;">
+                @foreach ($payableInvoices as $invoice)
+                    <p class="tich-caption" style="margin: 0;">
+                        {{ $invoice->invoice_number }} · {{ ucwords(str_replace('_', ' ', $invoice->invoice_type)) }} · balance KES {{ number_format((float) $invoice->balance, 2) }}
+                    </p>
+                @endforeach
+            </div>
+
+            <a href="{{ route('portal.fee-structure.pdf') }}" class="tich-btn tich-btn-primary tich-mt-4">Download fees structure</a>
         </article>
     </section>
-@elseif ((float) $finance['summary']['outstanding_balance'] > 0)
+@elseif ($outstanding > 0)
     <article class="tich-card tich-mt-8">
         <h2 class="tich-h3">Balance on account</h2>
         <p class="tich-text tich-mt-2">
             You have an outstanding balance of
-            <strong>KES {{ number_format((float) $finance['summary']['outstanding_balance'], 2) }}</strong>.
+            <strong>KES {{ number_format($outstanding, 2) }}</strong>.
             A payable invoice has not been posted to your portal yet. Contact the finance office if you need to pay now.
         </p>
     </article>
@@ -274,8 +249,8 @@
                             <td>{{ $invoice->due_date ? \Illuminate\Support\Carbon::parse($invoice->due_date)->format('d M Y') : '-' }}</td>
                             <td>{{ ucfirst($invoice->status) }}</td>
                             <td>
-                                @if ($isPayable && $mpesaEnabled)
-                                    <a href="{{ route('portal.dashboard', ['section' => 'finance', 'invoice' => $invoice->id]) }}#pay-with-mpesa" class="tich-link">Pay</a>
+                                @if ($isPayable)
+                                    <a href="{{ route('portal.dashboard', ['section' => 'finance']) }}#pay-with-mpesa" class="tich-link">How to pay</a>
                                 @else
                                     -
                                 @endif
@@ -326,10 +301,6 @@
     ])
 @endif
 
-@if ($pendingStk || $payableInvoices->isNotEmpty())
-    <script src="{{ asset('js/tich-portal-finance.js') }}" defer></script>
-@endif
-
-@if ($pendingStk)
-    <script src="{{ asset('js/tich-mpesa-payment.js') }}" defer></script>
+@if ($payableInvoices->isNotEmpty() && $paybill !== '')
+    <script src="{{ asset('js/tich-copy-value.js') }}" defer></script>
 @endif

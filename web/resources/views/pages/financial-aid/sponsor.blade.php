@@ -4,7 +4,7 @@
 @section('meta_description', 'Express your interest in sponsoring a student at TICH. Our team will contact you to discuss sponsorship options and matching with a student.')
 
 @section('content')
-    <header class="tich-course-page-header" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">
+    <header class="tich-course-page-header">
         <div class="tich-container">
             <h1 class="tich-course-page-header__title">Sponsor a Student</h1>
             <p class="tich-course-page-header__lead">

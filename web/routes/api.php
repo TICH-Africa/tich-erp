@@ -203,7 +203,7 @@ Route::middleware(['auth:sanctum', 'mobile.verified', 'student.portal'])->prefix
 
     Route::get('/finance', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'show']);
     Route::post('/finance/invoices/{invoice}/pay', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'pay']);
-    Route::get('/finance/mpesa/{stkRequest}/status', [\App\Http\Controllers\Api\Student\mobile\FinanceController::class, 'stkStatus']);
+    Route::get('/finance/fee-structure/pdf', [\App\Http\Controllers\Api\Student\mobile\FeeStructureController::class, 'pdf']);
 
     Route::get('/profile', [\App\Http\Controllers\Api\Student\mobile\ProfileController::class, 'show']);
     Route::put('/profile', [\App\Http\Controllers\Api\Student\mobile\ProfileController::class, 'update']);

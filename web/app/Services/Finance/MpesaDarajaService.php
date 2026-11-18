@@ -135,7 +135,94 @@ class MpesaDarajaService
         ];
     }
 
-    private function accessToken(): string
+    /**
+     * Hand both paybill callback URLs to Daraja in one call, so an officer does not have
+     * to paste them into the Safaricom portal by hand. Safaricom answers the result codes
+     * documented for C2B URL registration, and a code of 0 means it took them.
+     *
+     * @return array{ok:bool,result_code:string|null,result_desc:string}
+     */
+    public function registerC2bUrls(string $validationUrl, string $confirmationUrl): array
+    {
+        $shortcode = (string) $this->settings->shortcode();
+
+        if ($shortcode === '') {
+            return [
+                'ok' => false,
+                'result_code' => null,
+                'result_desc' => 'Save the paybill shortcode on this page before registering the callbacks.',
+            ];
+        }
+
+        foreach (['Validation' => $validationUrl, 'Confirmation' => $confirmationUrl] as $label => $url) {
+            $issue = $this->publicHttpsIssue($url);
+
+            if ($issue !== null) {
+                return ['ok' => false, 'result_code' => null, 'result_desc' => $label.' URL: '.$issue];
+            }
+        }
+
+        try {
+            $token = $this->accessToken();
+        } catch (RuntimeException $e) {
+            return ['ok' => false, 'result_code' => 'auth', 'result_desc' => $e->getMessage()];
+        }
+
+        $response = Http::timeout(20)->connectTimeout(5)
+            ->withToken($token)
+            ->acceptJson()
+            ->post($this->settings->baseUrl().'/mpesa/c2b/v1/registerurl', [
+                'ShortCode' => $shortcode,
+                'CommandName' => $this->settings->transactionType() === 'CustomerBuyGoodsOnline'
+                    ? 'BusinessBuyGoods'
+                    : 'CustomerPayBillOnline',
+                'ConfirmationURL' => $confirmationUrl,
+                'ValidationURL' => $validationUrl,
+                'ResponseType' => 0,
+            ]);
+
+        $body = $response->json() ?? [];
+
+        if (! $response->successful()) {
+            Log::error('M-Pesa paybill callback registration failed', [
+                'status' => $response->status(),
+                'body' => $body ?: $response->body(),
+            ]);
+
+            return [
+                'ok' => false,
+                'result_code' => isset($body['errorCode']) ? (string) $body['errorCode'] : (string) $response->status(),
+                'result_desc' => (string) ($body['errorMessage'] ?? $body['ResultDesc'] ?? 'Safaricom answered with HTTP '.$response->status().'.'),
+            ];
+        }
+
+        $code = isset($body['ResultCode']) ? (string) $body['ResultCode'] : null;
+
+        return [
+            'ok' => $code === '0',
+            'result_code' => $code,
+            'result_desc' => (string) ($body['ResultDesc'] ?? 'Safaricom did not answer.'),
+        ];
+    }
+
+    private function publicHttpsIssue(string $url): ?string
+    {
+        if (! filter_var($url, FILTER_VALIDATE_URL)) {
+            return 'is not a complete URL.';
+        }
+
+        if (! str_starts_with(strtolower($url), 'https://')) {
+            return 'must use HTTPS.';
+        }
+
+        if (in_array(strtolower((string) parse_url($url, PHP_URL_HOST)), ['127.0.0.1', 'localhost', '::1'], true)) {
+            return 'points at this computer, which Safaricom cannot reach. Set APP_URL to the public site address first.';
+        }
+
+        return null;
+    }
+
+    public function accessToken(): string
     {
         $cacheKey = 'finance.mpesa.oauth_token.'.$this->settings->environment();
 

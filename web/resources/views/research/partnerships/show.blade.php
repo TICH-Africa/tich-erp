@@ -39,7 +39,9 @@
                 @else
                     <div><dt class="tich-caption">About them</dt><dd style="white-space:pre-wrap;">{{ $request->individual_details }}</dd></div>
                 @endif
-                <div><dt class="tich-caption">What they do</dt><dd style="white-space:pre-wrap;">{{ $request->what_they_do }}</dd></div>
+                @if ($request->what_they_do)
+                    <div><dt class="tich-caption">What they do</dt><dd style="white-space:pre-wrap;">{{ $request->what_they_do }}</dd></div>
+                @endif
                 <div><dt class="tich-caption">Why partnership</dt><dd style="white-space:pre-wrap;">{{ $request->why_partnership }}</dd></div>
             </dl>
 

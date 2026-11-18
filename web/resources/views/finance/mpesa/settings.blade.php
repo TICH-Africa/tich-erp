@@ -13,7 +13,7 @@
 
     <x-page-toolbar
         title="M-Pesa payment settings"
-        meta="Safaricom Daraja STK push credentials, callback URL, and recent payment requests"
+        meta="Student fee paybill, Daraja credentials, paybill callback URLs, and the M-Pesa transaction logs"
     >
         <x-slot:actions>
             <button type="button" class="tich-btn tich-btn-primary" data-open-modal="mpesa-settings-modal">
@@ -24,15 +24,27 @@
 
     <div class="tich-grid tich-grid--3 tich-mt-8">
         <article class="tich-card tich-stat">
-            <p class="tich-caption">Live STK push</p>
+            <p class="tich-caption">Paybill for student fees</p>
+            <p class="tich-stat__value" style="font-size:1.4rem;">
+                {{ $settings->shortcode ?: 'Not set' }}
+            </p>
+            <p class="tich-caption tich-mt-2">
+                Students type this number themselves and use their admission number as the account
+                number. No prompt goes to their phone.
+            </p>
+        </article>
+        <article class="tich-card tich-stat">
+            <p class="tich-caption">Live M-Pesa</p>
             <p class="tich-stat__value" style="font-size:1.1rem;">
                 {{ $settings->is_enabled ? 'Enabled' : 'Disabled' }}
             </p>
             <p class="tich-caption tich-mt-2">
                 @if ($settings->is_enabled)
-                    Students pay via Safaricom STK push.
+                    Paybill money is recorded as Safaricom confirms it, and application fees still
+                    send an STK push.
                 @else
-                    Portal uses simulated M-Pesa for testing.
+                    Application fees cannot send an STK push. Paybill payments still land, because
+                    Safaricom does not ask us first.
                 @endif
             </p>
         </article>
@@ -42,15 +54,12 @@
             <p class="tich-caption tich-mt-2">
                 Credentials {{ $credentialsReady ? 'ready' : 'incomplete' }}
             </p>
-        </article>
-        <article class="tich-card tich-stat">
-            <p class="tich-caption">Last updated</p>
-            <p class="tich-stat__value" style="font-size:1rem;">
-                {{ $settings->updated_at?->format('d M Y H:i') ?? 'Never' }}
+            <p class="tich-caption tich-mt-1">
+                Updated {{ $settings->updated_at?->format('d M Y H:i') ?? 'never' }}
+                @if ($settings->updater)
+                    by {{ $settings->updater->fullName() }}
+                @endif
             </p>
-            @if ($settings->updater)
-                <p class="tich-caption tich-mt-2">By {{ $settings->updater->fullName() }}</p>
-            @endif
         </article>
     </div>
 
@@ -58,7 +67,7 @@
         <h2 class="tich-h3 tich-mb-4">Current configuration</h2>
         <dl style="display:grid; gap:1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));">
             <div>
-                <dt class="tich-caption">Business shortcode / paybill</dt>
+                <dt class="tich-caption">Paybill students type</dt>
                 <dd>{{ $settings->shortcode ?: '-' }}</dd>
             </div>
             <div>
@@ -80,6 +89,10 @@
             <div>
                 <dt class="tich-caption">Account reference prefix</dt>
                 <dd><code>{{ $settings->account_reference_prefix }}</code></dd>
+                <p class="tich-caption tich-mt-1">
+                    Only STK push puts this in front of an account number. Student fee payments arrive
+                    with the admission number on its own, which is how we tie the money to the right bill.
+                </p>
             </div>
             <div style="grid-column: 1 / -1;">
                 <dt class="tich-caption">Callback URL</dt>
@@ -97,8 +110,114 @@
 
     <section class="tich-dept-panel tich-mt-8">
         <div class="tich-dept-panel__head">
-            <h2 class="tich-h2 tich-dept-panel__title">Recent STK push requests</h2>
+            <h2 class="tich-h2 tich-dept-panel__title">Paybill callback URLs</h2>
+            @can('finance.payments.manage')
+                <form method="POST" action="{{ route('finance.mpesa.settings.register-callbacks') }}" class="tich-inline">
+                    @csrf
+                    <button type="submit" class="tich-btn tich-btn-secondary tich-btn-sm">Send both to Safaricom</button>
+                </form>
+            @endcan
         </div>
+        <p class="tich-caption">
+            Sending them hands both URLs to Safaricom's C2B registration against the shortcode above, so
+            nothing has to be typed into the Daraja portal. Copy them and paste them under C2B Admin →
+            URL Registration instead if you prefer.
+            @if ($callbackSecretSet)
+                Sending them appends the configured <code>token</code> secret to each URL itself, so the
+                copy below is the URL without it.
+            @endif
+        </p>
+        <div class="tich-card tich-mt-4" style="display:grid; gap:1rem;">
+            @foreach ($c2bCallbacks as $callback)
+                <div>
+                    <p class="tich-caption">{{ $callback['label'] }}</p>
+                    <p><code id="c2b-{{ \Illuminate\Support\Str::slug($callback['label']) }}" style="word-break: break-all;">{{ $callback['url'] }}</code></p>
+                    <p class="tich-caption tich-mt-1">{{ $callback['hint'] }}</p>
+                    <button
+                        type="button"
+                        class="tich-btn tich-btn-secondary tich-btn-sm tich-mt-2"
+                        data-copy-target="c2b-{{ \Illuminate\Support\Str::slug($callback['label']) }}"
+                    >Copy {{ \Illuminate\Support\Str::lower($callback['label']) }}</button>
+                </div>
+            @endforeach
+        </div>
+    </section>
+
+    <section class="tich-dept-panel tich-mt-8">
+        <div class="tich-dept-panel__head">
+            <h2 class="tich-h2 tich-dept-panel__title">Paybill transactions</h2>
+            <a href="{{ route('finance.mpesa.paybill') }}" class="tich-btn tich-btn-secondary tich-btn-sm">Open the paybill desk</a>
+        </div>
+        <p class="tich-caption">
+            Every question Safaricom asked us, answered. A refused validation bounced the money back to
+            the payer; an unmatched confirmation holds money we could not tie to an open bill.
+            Search, filter and export them on the paybill desk.
+        </p>
+        <div class="tich-grid tich-grid--4 tich-mt-4">
+            <div class="tich-card tich-stat">
+                <p class="tich-caption">Booked</p>
+                <p class="tich-stat__value" style="font-size:1.4rem;">KES {{ number_format($paybillSummary['booked'], 2) }}</p>
+                <p class="tich-caption tich-mt-2">{{ $paybillSummary['booked_count'] }} payment{{ $paybillSummary['booked_count'] === 1 ? '' : 's' }} posted without anyone typing them.</p>
+            </div>
+            <div class="tich-card tich-stat">
+                <p class="tich-caption">Needs reconciling</p>
+                <p class="tich-stat__value" style="font-size:1.4rem;">{{ $paybillSummary['unmatched_count'] }}</p>
+                <p class="tich-caption tich-mt-2">Receipts we could not match to a student with an open bill.</p>
+            </div>
+            <div class="tich-card tich-stat">
+                <p class="tich-caption">Already recorded</p>
+                <p class="tich-stat__value" style="font-size:1.4rem;">{{ $paybillSummary['duplicate_count'] }}</p>
+                <p class="tich-caption tich-mt-2">Safaricom repeated a receipt we had taken; the student was billed once.</p>
+            </div>
+            <div class="tich-card tich-stat">
+                <p class="tich-caption">Refused</p>
+                <p class="tich-stat__value" style="font-size:1.4rem;">{{ $paybillSummary['refused_count'] }}</p>
+                <p class="tich-caption tich-mt-2">Money returned to the payer before it reached us.</p>
+            </div>
+        </div>
+        @if ($recentPaybill->isNotEmpty())
+            <div class="tich-card tich-table-panel tich-mt-4">
+                <table class="tich-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Account number</th>
+                            <th>Student</th>
+                            <th>Receipt</th>
+                            <th>Amount</th>
+                            <th>Outcome</th>
+                            <th>When</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($recentPaybill as $transaction)
+                            <tr>
+                                <td><code>{{ $transaction->bill_ref_number ?: '-' }}</code></td>
+                                <td>{{ $transaction->student?->displayName() ?? 'Not matched' }}</td>
+                                <td>{{ $transaction->receipt_number ?: '-' }}</td>
+                                <td>KES {{ number_format((float) $transaction->amount, 2) }}</td>
+                                <td>
+                                    {{ $transaction->outcomeLabel() }}
+                                    @if ($transaction->result_desc)
+                                        <p class="tich-caption tich-mt-1">{{ $transaction->result_desc }}</p>
+                                    @endif
+                                </td>
+                                <td>{{ $transaction->created_at?->format('d M Y H:i') }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </section>
+
+    <section class="tich-dept-panel tich-mt-8">
+        <div class="tich-dept-panel__head">
+            <h2 class="tich-h2 tich-dept-panel__title">Application fee STK push requests</h2>
+        </div>
+        <p class="tich-caption">
+            Student fees no longer use STK push, so these are the prompts sent to applicants paying the
+            application fee.
+        </p>
         <div class="tich-card tich-table-panel tich-mt-4">
             <table class="tich-admin-table">
                 <thead>
@@ -178,7 +297,10 @@
                             <input type="checkbox" name="is_enabled" value="1" @checked(old('is_enabled', $settings->is_enabled))>
                             Enable live M-Pesa STK push payments
                         </label>
-                        <p class="tich-caption tich-mt-1">When disabled, the student portal simulates M-Pesa payments for testing.</p>
+                        <p class="tich-caption tich-mt-1">
+                            This only drives the application-fee prompt. Student fees go to the paybill
+                            number below and are booked from Safaricom's confirmation, switch or not.
+                        </p>
                     </div>
 
                     <div class="tich-form-group" style="margin: 0;">
@@ -190,8 +312,12 @@
                     </div>
 
                     <div class="tich-form-group" style="margin: 0;">
-                        <label class="tich-label" for="mpesa-shortcode">Business shortcode / paybill</label>
+                        <label class="tich-label" for="mpesa-shortcode">Paybill / till students type</label>
                         <input type="text" id="mpesa-shortcode" name="shortcode" class="tich-input" value="{{ old('shortcode', $settings->shortcode) }}" placeholder="174379">
+                        <p class="tich-caption tich-mt-1">
+                            This is the number shown on the student portal and the fees structure. Students pay
+                            fees with their admission number as the account number, so keep it filled.
+                        </p>
                     </div>
 
                     <div class="tich-form-group" style="margin: 0;">
@@ -220,6 +346,10 @@
                     <div class="tich-form-group" style="margin: 0;">
                         <label class="tich-label" for="mpesa-account-prefix">Account reference prefix</label>
                         <input type="text" id="mpesa-account-prefix" name="account_reference_prefix" class="tich-input" value="{{ old('account_reference_prefix', $settings->account_reference_prefix) }}" maxlength="30" required>
+                        <p class="tich-caption tich-mt-1">
+                            Only STK push prepends this. Student fee payments arrive with the admission
+                            number alone, which is what we match the bill against.
+                        </p>
                     </div>
 
                     <div class="tich-form-group" style="margin: 0;">
@@ -238,6 +368,7 @@
     </div>
 
     @include('admin.partials.tich-modal-assets')
+    <script src="{{ asset('js/tich-copy-value.js') }}" defer></script>
 
     @if ($openEditModal)
         <script>document.body.style.overflow = 'hidden';</script>
