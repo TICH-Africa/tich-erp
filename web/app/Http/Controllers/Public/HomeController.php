@@ -14,6 +14,7 @@ use App\Services\HomepageService;
 use App\Services\PrintDocumentService;
 use App\Support\KenyaDataProtectionNotice;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -77,12 +78,15 @@ class HomeController extends Controller
             }
         }
 
+        // Four resources to a page, so a long list stays the length the visitor can scan at a glance.
+        $resources = Schema::hasTable('research_resources')
+            ? ResearchResource::query()->active()->orderByDesc('year')->orderByDesc('id')->paginate(4)->withQueryString()
+            : new LengthAwarePaginator(collect(), 0, 4);
+
         return view('pages.research', [
             'projects' => $projects,
             'partners' => $partners,
-            'resources' => Schema::hasTable('research_resources')
-                ? ResearchResource::query()->active()->orderByDesc('year')->orderByDesc('id')->get()
-                : collect(),
+            'resources' => $resources,
             'featured' => $this->homepageService->getFeaturedResearch(),
         ]);
     }

@@ -4052,6 +4052,25 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     background-color: rgba(255, 255, 255, 0.14);
 }
 
+/* A pale study colour is the office's choice for that block, so it keeps the light theme's ink even
+   when the visitor reads the rest of the site in dark mode — dark mode would otherwise lift these
+   words to near-white and leave them unreadable on the wash. */
+[data-theme="dark"] .tich-research-hub--pale {
+    --tich-green: #6cab33;
+    --tich-blue: #1669a6;
+    --tich-blue-dark: #125a8c;
+    --tich-blue-light: #d6e8f5;
+    --tich-grey: #494c50;
+    --tich-white: #ffffff;
+    --tich-neutral: #f5f6f6;
+    --tich-neutral-border: #e2e4e5;
+    --tich-neutral-muted: #6b6e72;
+}
+
+[data-theme="dark"] .tich-research-hub--pale h2.tich-h2 {
+    color: #494c50;
+}
+
 .tich-research-card {
     /* The homepage feature tile wears the study's own page colour, so it reads as the page it describes. */
     background: var(--study-page-bg, transparent);
@@ -12935,6 +12954,55 @@ a.tich-tabs__btn {
     color: #7dd3fc !important;
 }
 
+/* The same on the study's own page: when the office picked a pale colour, that page keeps its
+   approved dark ink and light panels even while the rest of the site is read in dark mode. */
+[data-theme="dark"] .research-public-show--pale {
+    --tich-green: #6cab33;
+    --tich-blue: #1669a6;
+    --tich-blue-dark: #125a8c;
+    --tich-blue-light: #d6e8f5;
+    --tich-grey: #494c50;
+    --tich-white: #ffffff;
+    --tich-neutral: #f5f6f6;
+    --tich-neutral-border: #e2e4e5;
+    --tich-neutral-muted: #6b6e72;
+
+    background: var(--study-page-bg, #ffffff);
+    color: #494c50;
+}
+
+[data-theme="dark"] .research-public-show--pale .research-public-show__title,
+[data-theme="dark"] .research-public-show--pale .research-public-show__subtitle,
+[data-theme="dark"] .research-public-show--pale .research-public-show__meta,
+[data-theme="dark"] .research-public-show--pale .research-public-show__summary,
+[data-theme="dark"] .research-public-show--pale .research-public-show__body,
+[data-theme="dark"] .research-public-show--pale .research-public-show__body *,
+[data-theme="dark"] .research-public-show--pale .research-public-show__heading,
+[data-theme="dark"] .research-public-show--pale .research-public-show__objective,
+[data-theme="dark"] .research-public-show--pale .research-public-show__doc-note,
+[data-theme="dark"] .research-public-show--pale .research-public-show__facts dt,
+[data-theme="dark"] .research-public-show--pale .research-public-show__facts dd,
+[data-theme="dark"] .research-public-show--pale .research-public-show__aside-title {
+    color: #494c50 !important;
+}
+
+[data-theme="dark"] .research-public-show--pale .research-public-show__body a,
+[data-theme="dark"] .research-public-show--pale .research-public-show__docs a,
+[data-theme="dark"] .research-public-show--pale .research-public-show__facts dd a,
+[data-theme="dark"] .research-public-show--pale .research-public-show__back a,
+[data-theme="dark"] .research-public-show--pale .research-public-show__status {
+    color: #1669a6 !important;
+}
+
+[data-theme="dark"] .research-public-show--pale .research-public-show__aside {
+    background: #f4f5f7;
+    border-color: #e2e4e5;
+}
+
+[data-theme="dark"] .research-public-show--pale .research-public-show__header {
+    border-bottom-color: #e2e4e5;
+}
+
 .qa-form-page {
     max-width: none;
     width: 100%;
@@ -16065,9 +16133,9 @@ input[type="time"]::-moz-calendar-picker-indicator {
     color: var(--tich-white);
 }
 
-/* The heading sits over a centred wall of logos, so it is centred too and wears the house blue. */
+/* The heading sits over a centred wall of logos, so the blade gives it tich-text-center like the
+   "Research resources" title above, and it wears the house blue. */
 h2.tich-h2.research-partners__head {
-    /* The heading sits over the left edge of the logo wall, like every other section title on the page. */
     color: var(--tich-blue);
 }
 
@@ -16117,14 +16185,50 @@ h2.tich-h2.research-partners__head {
     }
 }
 
+/* Two cards across, two rows deep, with the arrows beside the block, so fifteen posted papers stay
+   four on the page instead of filling it. The rail keeps the grid and the arrows on one line; the list
+   itself takes whatever width is left. */
+.research-resources__rail {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .research-resources {
-    margin: 1.5rem 0 0;
+    margin: 0;
     padding: 0;
     list-style: none;
+    flex: 1 1 auto;
+    min-width: 0;
     display: grid;
-    /* Two columns, so a posted book or paper reads as a pair of cards rather than a long single list. */
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
+}
+
+.research-resources__arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid var(--tich-blue);
+    border-radius: 50%;
+    background: var(--tich-blue);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.research-resources__arrow:hover {
+    background: var(--tich-blue-dark);
+    border-color: var(--tich-blue-dark);
+    color: #ffffff;
+}
+
+/* The dark theme's blue is a light tone, so the arrow head is dark ink on it. */
+[data-theme="dark"] .research-resources__arrow,
+[data-theme="dark"] .research-resources__arrow:hover {
+    color: #0b1220;
 }
 
 @media (max-width: 639px) {
@@ -16151,7 +16255,26 @@ h2.tich-h2.research-partners__head {
     font-weight: 600;
     letter-spacing: 0.02em;
     text-transform: uppercase;
-    color: var(--tich-neutral-muted);
+    /* The year and publisher read as the card's label, so they carry the house blue instead of the
+       grey the title and the rest of the lines use. */
+    color: var(--tich-blue);
+}
+
+/* The year sits in its own filled chip so the card opens like the page numbers do, with the
+   publisher beside it. */
+.research-resources__year {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: var(--tich-blue);
+    color: #ffffff;
+    vertical-align: middle;
+}
+
+[data-theme="dark"] .research-resources__year {
+    color: #0b1220;
 }
 
 .research-resources__title {
@@ -16160,7 +16283,7 @@ h2.tich-h2.research-partners__head {
     font-size: 1.0625rem;
     font-weight: 700;
     line-height: 1.35;
-    color: var(--tich-text);
+    color: var(--tich-grey);
 }
 
 .research-resources__authors,
@@ -16171,9 +16294,60 @@ h2.tich-h2.research-partners__head {
     color: var(--tich-neutral-muted);
 }
 
+/* Four resources to a page, so the numbered links are the whole way through the list. A page link
+   carries #research-resources, which lands the visitor back on the list rather than at the top of
+   the file, and the margin keeps the fixed menu bar from covering the heading they arrive under. */
+#research-resources {
+    scroll-margin-top: calc(var(--tich-header-height) + 1rem);
+}
+
+.research-resources__pager {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.research-resources__page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-sm);
+    background: var(--tich-white);
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    color: var(--tich-blue);
+}
+
+.research-resources__page:hover {
+    border-color: var(--tich-blue);
+}
+
+.research-resources__page--current,
+.research-resources__page--current:hover {
+    background: var(--tich-blue);
+    border-color: var(--tich-blue);
+    color: #ffffff;
+}
+
+/* In dark mode the house blue is a light tone, so the number on it flips to dark ink and stays readable. */
+[data-theme="dark"] .research-resources__page--current,
+[data-theme="dark"] .research-resources__page--current:hover {
+    color: #0b1220;
+}
+
 @media (max-width: 767px) {
     .research-resources {
-        grid-template-columns: 1fr;
         gap: 0.75rem;
     }
 

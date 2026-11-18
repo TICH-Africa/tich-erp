@@ -4,9 +4,10 @@
 ])
 
 @php
-    // The banner speaks for the event the office titled in the form, so the wording follows a
-    // rename instead of going stale under a hand-written caption.
-    $label = $caption ?: ('The countdown to '.\Illuminate\Support\Str::limit((string) ($event->title ?? 'the event'), 46).' is on!');
+    // The line above the rings is the event's own Title, typed in the form, printed as it stands.
+    // Wrapping words around it used to repeat the sentence when an officer titles the event with
+    // the announcement itself, so the Title is the whole line now.
+    $label = $caption ?: trim((string) ($event->title ?? ''));
 
     // The timer only ever speaks for an event that has not started yet. A past date means no markup
     // at all, so the banner goes back to plain words on the next page load and the script removes

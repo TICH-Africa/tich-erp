@@ -190,22 +190,25 @@ class UserAccessController extends Controller
         $this->passwordReset->ictReset($user, $validated['password'], $request->user(), $request);
 
         $audience = $this->resolveAudience($request, $user);
+        // The desk used to say only "Password reset", and the user went straight back to a locked
+        // sign-in that reports the same credentials error as a wrong password.
+        $status = 'Password reset for '.$user->email.'. The lock from failed attempts is cleared, so they can sign in now.';
 
         if ($audience === 'students') {
             return redirect()
                 ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'students'])
-                ->with('status', 'Password reset for '.$user->email.'.');
+                ->with('status', $status);
         }
 
         if ($this->accessContext()->prefix === 'ict') {
             return redirect()
                 ->route('ict.users.show', $user)
-                ->with('status', 'Password reset for '.$user->email.'.');
+                ->with('status', $status);
         }
 
         return redirect()
             ->route($this->accessContext()->prefix.'.users.index', ['audience' => 'staff'])
-            ->with('status', 'Password reset for '.$user->email.'.');
+            ->with('status', $status);
     }
 
     private function updateStudentAccess(Request $request, User $user): RedirectResponse

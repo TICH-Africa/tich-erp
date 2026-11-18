@@ -33,7 +33,8 @@
                         </div>
 
                         @if (!empty($event->is_important))
-                            <x-event-countdown :event="$event" />
+                            {{-- The Title is the heading one line away, so the timer says what it counts. --}}
+                            <x-event-countdown :event="$event" caption="Starts in" />
                         @endif
                     </div>
                 </div>

@@ -7,9 +7,12 @@
     @php
         // The colour chosen on the study's form paints this page; a study that never picked one stays site-white.
         $pageColor = $activity->pageColor();
+        // That colour, not the visitor's theme, has to pick the ink: pale words on a dark wash,
+        // dark words on a light wash even while the site is in dark mode.
+        $washInk = $pageColor ? ($activity->backgroundIsDark() ? 'tinted' : 'pale') : null;
     @endphp
     <article
-        class="research-public-show{{ $pageColor && $activity->backgroundIsDark() ? ' research-public-show--tinted' : '' }}"
+        class="research-public-show{{ $washInk ? ' research-public-show--'.$washInk : '' }}"
         @if ($pageColor) style="--study-page-bg: {{ $pageColor }};" @endif
     >
         <div class="research-public-show__inner">

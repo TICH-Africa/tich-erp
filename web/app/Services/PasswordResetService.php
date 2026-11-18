@@ -130,6 +130,7 @@ class PasswordResetService
         }
 
         $user->password_hash = Hash::make($password);
+        $this->clearLoginLock($user);
         $user->save();
 
         DB::table('password_reset_tokens')->where('email', $email)->delete();
@@ -175,6 +176,7 @@ class PasswordResetService
     public function ictReset(User $target, string $newPassword, User $actor, ?Request $request = null): void
     {
         $target->password_hash = Hash::make($newPassword);
+        $this->clearLoginLock($target);
         $target->save();
 
         $email = Str::lower((string) $target->email);
@@ -230,6 +232,17 @@ class PasswordResetService
     private function generateOtp(): string
     {
         return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Five bad sign-ins lock an account for fifteen minutes and nothing else lifted that, so a desk
+     * that had just saved a new password still sent the user a credentials error. A reset always
+     * clears the lock with it. The caller's save persists both fields.
+     */
+    private function clearLoginLock(User $user): void
+    {
+        $user->locked_until = null;
+        $user->failed_login_attempts = 0;
     }
 
     private function findUserByAnyEmail(string $email): ?User
