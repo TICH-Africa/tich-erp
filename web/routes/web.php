@@ -76,6 +76,8 @@ Route::get('/mobile-app/download/{platform}', [\App\Http\Controllers\Public\Mobi
     ->whereIn('platform', ['android', 'ios'])
     ->middleware('throttle:60,1')
     ->name('mobile-app.download');
+Route::get('/e-fundi', [\App\Http\Controllers\Public\EfundiController::class, 'index'])->name('e-fundi.index');
+Route::get('/e-fundi/{opportunity}', [\App\Http\Controllers\Public\EfundiController::class, 'show'])->name('e-fundi.show');
 Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.index');
 Route::get('/programs/{code}', [ProgramsController::class, 'show'])->name('programs.show');
 Route::get('/how-to-apply-hef', [HomeController::class, 'hefGuide'])->name('hef.guide');
@@ -477,6 +479,14 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::post('/reports/{report}/distribute', [\App\Http\Controllers\Marketing\ReportsController::class, 'distribute'])->name('marketing.reports.distribute');
 
         Route::get('/analytics', [\App\Http\Controllers\Marketing\AnalyticsController::class, 'index'])->name('marketing.analytics.index');
+
+        Route::get('/efundi', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'index'])->name('marketing.efundi.index');
+        Route::get('/efundi/create', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'create'])->name('marketing.efundi.create');
+        Route::post('/efundi', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'store'])->name('marketing.efundi.store');
+        Route::get('/efundi/{opportunity}/edit', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'edit'])->name('marketing.efundi.edit');
+        Route::put('/efundi/{opportunity}', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'update'])->name('marketing.efundi.update');
+        Route::delete('/efundi/{opportunity}', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'destroy'])->name('marketing.efundi.destroy');
+        Route::post('/efundi/{opportunity}/notify', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'notify'])->name('marketing.efundi.notify');
 
         $registerModuleBudgeting('marketing');
         $registerModuleMeReports('marketing');
@@ -1105,6 +1115,14 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/mobile-app', [\App\Http\Controllers\Ict\MobileAppReleaseController::class, 'index'])->name('ict.mobile-app.index');
         Route::post('/mobile-app', [\App\Http\Controllers\Ict\MobileAppReleaseController::class, 'store'])->name('ict.mobile-app.store');
         Route::delete('/mobile-app/{release}', [\App\Http\Controllers\Ict\MobileAppReleaseController::class, 'destroy'])->name('ict.mobile-app.destroy');
+
+        Route::get('/efundi', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'index'])->name('ict.efundi.index');
+        Route::get('/efundi/create', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'create'])->name('ict.efundi.create');
+        Route::post('/efundi', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'store'])->name('ict.efundi.store');
+        Route::get('/efundi/{opportunity}/edit', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'edit'])->name('ict.efundi.edit');
+        Route::put('/efundi/{opportunity}', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'update'])->name('ict.efundi.update');
+        Route::delete('/efundi/{opportunity}', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'destroy'])->name('ict.efundi.destroy');
+        Route::post('/efundi/{opportunity}/notify', [\App\Http\Controllers\EfundiOpportunityAdminController::class, 'notify'])->name('ict.efundi.notify');
 
         Route::prefix('content')->name('ict.content.')->group(function () {
             Route::get('/about', [\App\Http\Controllers\Ict\Content\AboutController::class, 'index'])->name('about.index');

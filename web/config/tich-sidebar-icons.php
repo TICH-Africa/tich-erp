@@ -47,6 +47,8 @@ return [
         'monitoring_evaluation.budgeting.index' => 'wallet',
         'ict.dashboard' => 'dashboard',
         'ict.mobile-app.index' => 'smartphone',
+        'ict.efundi.index' => 'briefcase',
+        'marketing.efundi.index' => 'briefcase',
         'ict.users.index' => 'users',
         'ict.roles.index' => 'shield',
         'hr.staff.index' => 'users',

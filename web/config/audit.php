@@ -56,6 +56,8 @@ return [
         'auth.mobile.otp_verified' => ['module' => 'auth', 'sensitive' => false],
         'ict.mobile_app.published' => ['module' => 'ict', 'sensitive' => false],
         'ict.mobile_app.unpublished' => ['module' => 'ict', 'sensitive' => false],
+        'efundi.opportunity.published' => ['module' => 'efundi', 'sensitive' => false],
+        'efundi.opportunity.deleted' => ['module' => 'efundi', 'sensitive' => false],
         'auth.mfa.verify.success' => ['module' => 'auth', 'sensitive' => false],
         'auth.mfa.verify.failed' => ['module' => 'auth', 'sensitive' => false],
         'auth.mfa.enabled' => ['module' => 'auth', 'sensitive' => false],
