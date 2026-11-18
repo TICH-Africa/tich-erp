@@ -232,7 +232,7 @@
 
                 @if ($resources->isNotEmpty())
                     <x-animated-section animation="bottom">
-                        <div class="tich-mt-10 tich-mb-8">
+                        <div class="tich-mt-10 tich-mb-8" id="research-resources">
                             <h2 class="tich-h2 tich-text-center" style="margin: 0;">Research resources</h2>
                             <p class="tich-text tich-text-center tich-mt-2">Books, papers and reports from our teams, posted here for download.</p>
                             <ul class="research-resources tich-mt-6">
@@ -260,6 +260,18 @@
                                     </li>
                                 @endforeach
                             </ul>
+
+                            @if ($resources->hasPages())
+                                <nav class="research-resources__pager" aria-label="Research resources pages">
+                                    @for ($page = 1; $page <= $resources->lastPage(); $page++)
+                                        @if ($page === $resources->currentPage())
+                                            <span class="research-resources__page research-resources__page--current" aria-current="page">{{ $page }}</span>
+                                        @else
+                                            <a class="research-resources__page" href="{{ $resources->url($page) }}#research-resources">{{ $page }}</a>
+                                        @endif
+                                    @endfor
+                                </nav>
+                            @endif
                         </div>
                     </x-animated-section>
                 @endif

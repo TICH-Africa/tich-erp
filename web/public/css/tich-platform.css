@@ -16197,6 +16197,58 @@ h2.tich-h2.research-partners__head {
     color: var(--tich-neutral-muted);
 }
 
+/* Four resources to a page, so the numbered links are the whole way through the list. A page link
+   carries #research-resources, which lands the visitor back on the list rather than at the top of
+   the file, and the margin keeps the fixed menu bar from covering the heading they arrive under. */
+#research-resources {
+    scroll-margin-top: calc(var(--tich-header-height) + 1rem);
+}
+
+.research-resources__pager {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.research-resources__page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--tich-neutral-border);
+    border-radius: var(--radius-sm);
+    background: var(--tich-white);
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    color: var(--tich-blue);
+}
+
+.research-resources__page:hover {
+    border-color: var(--tich-blue);
+}
+
+.research-resources__page--current,
+.research-resources__page--current:hover {
+    background: var(--tich-blue);
+    border-color: var(--tich-blue);
+    color: #ffffff;
+}
+
+/* In dark mode the house blue is a light tone, so the number on it flips to dark ink and stays readable. */
+[data-theme="dark"] .research-resources__page--current,
+[data-theme="dark"] .research-resources__page--current:hover {
+    color: #0b1220;
+}
+
 @media (max-width: 767px) {
     .research-resources {
         grid-template-columns: 1fr;
