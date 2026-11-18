@@ -16089,9 +16089,9 @@ input[type="time"]::-moz-calendar-picker-indicator {
     color: var(--tich-white);
 }
 
-/* The heading sits over a centred wall of logos, so it is centred too and wears the house blue. */
+/* The heading sits over a centred wall of logos, so the blade gives it tich-text-center like the
+   "Research resources" title above, and it wears the house blue. */
 h2.tich-h2.research-partners__head {
-    /* The heading sits over the left edge of the logo wall, like every other section title on the page. */
     color: var(--tich-blue);
 }
 

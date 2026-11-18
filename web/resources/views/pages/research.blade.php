@@ -291,7 +291,7 @@
                 @if ($partners->isNotEmpty())
                     <x-animated-section animation="bottom">
                         <div class="tich-mt-10 tich-mb-8">
-                            <h2 class="tich-h2 research-partners__head" style="margin: 0;">Our partners</h2>
+                            <h2 class="tich-h2 tich-text-center research-partners__head" style="margin: 0;">Our partners</h2>
                             <ul class="research-partners tich-mt-6">
                                 @foreach ($partners as $partner)
                                     <li class="research-partners__item{{ $partner->name ? '' : ' research-partners__item--logo-only' }}{{ $partner->backgroundIsDark() ? ' research-partners__item--tinted' : '' }}" style="background-color: {{ $partner->backgroundColor() }};">
