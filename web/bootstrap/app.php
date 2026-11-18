@@ -68,6 +68,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'employee.time-logs.complete' => \App\Http\Middleware\RestrictEmployeeUntilWeeklyTimeLogsComplete::class,
             'employee.profile.complete' => \App\Http\Middleware\EnsureEmployeeProfileComplete::class,
             'employee.unassigned.restrict' => \App\Http\Middleware\RestrictUnassignedEmployeeAccess::class,
+            'mobile.verified' => \App\Http\Middleware\EnsureMobileAppVerified::class,
             'resolve.academics.hub' => \App\Http\Middleware\ResolveAcademicsHub::class,
             'academics.budgeting' => \App\Http\Middleware\EnsureAcademicsBudgetingAccess::class,
             'redirect.legacy.academics' => \App\Http\Middleware\RedirectLegacyAcademicsUrls::class,

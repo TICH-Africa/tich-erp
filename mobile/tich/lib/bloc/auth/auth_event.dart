@@ -48,3 +48,16 @@ final class AuthAppPaused extends AuthEvent {
 final class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
 }
+
+final class AuthMobileOtpSubmitted extends AuthEvent {
+  const AuthMobileOtpSubmitted(this.code);
+
+  final String code;
+
+  @override
+  List<Object?> get props => [code];
+}
+
+final class AuthMobileOtpResendRequested extends AuthEvent {
+  const AuthMobileOtpResendRequested();
+}

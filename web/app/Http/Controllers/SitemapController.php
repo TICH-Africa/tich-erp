@@ -27,6 +27,8 @@ class SitemapController extends Controller
             ['loc' => route('privacy'), 'changefreq' => 'yearly', 'priority' => '0.4'],
             ['loc' => route('privacy.data-request'), 'changefreq' => 'yearly', 'priority' => '0.4'],
             ['loc' => route('terms'), 'changefreq' => 'yearly', 'priority' => '0.4'],
+            ['loc' => route('mobile-app.index'), 'changefreq' => 'weekly', 'priority' => '0.7'],
+            ['loc' => route('e-fundi.index'), 'changefreq' => 'daily', 'priority' => '0.8'],
         ];
 
         if (Schema::hasTable('academic_programs')) {
