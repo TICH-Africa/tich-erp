@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
+import '../config/mobile_client.dart';
 import '../models/auth_user.dart';
 import 'api_client.dart';
 
@@ -20,10 +21,30 @@ class LoginResult {
   const LoginResult({
     required this.token,
     required this.user,
+    this.mobileOtpRequired = false,
+    this.otpSent = false,
+    this.otpExpiresMinutes = 15,
+    this.emailMasked,
+    this.message,
   });
 
   final String token;
   final AuthUser user;
+  final bool mobileOtpRequired;
+  final bool otpSent;
+  final int otpExpiresMinutes;
+  final String? emailMasked;
+  final String? message;
+}
+
+class MeResult {
+  const MeResult({
+    required this.user,
+    this.mobileOtpRequired = false,
+  });
+
+  final AuthUser user;
+  final bool mobileOtpRequired;
 }
 
 class AuthApi {
@@ -33,6 +54,13 @@ class AuthApi {
 
   static const Duration _timeout = ApiClient.timeout;
 
+  Map<String, String> _jsonHeaders({String? token}) => {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...tichMobileClientHeaders,
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+
   Future<LoginResult> login({
     required String email,
     required String password,
@@ -40,10 +68,7 @@ class AuthApi {
     final response = await _client
         .post(
           ApiConfig.uri('/auth/login'),
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
+          headers: _jsonHeaders(),
           body: jsonEncode({
             'login': email.trim(),
             'password': password,
@@ -68,6 +93,12 @@ class AuthApi {
       return LoginResult(
         token: token,
         user: AuthUser.fromJson(userMap),
+        mobileOtpRequired: body['mobile_otp_required'] == true,
+        otpSent: body['otp_sent'] == true,
+        otpExpiresMinutes:
+            int.tryParse(body['otp_expires_minutes']?.toString() ?? '') ?? 15,
+        emailMasked: body['email_masked']?.toString(),
+        message: body['message']?.toString(),
       );
     }
 
@@ -77,14 +108,11 @@ class AuthApi {
     );
   }
 
-  Future<AuthUser> me(String token) async {
+  Future<MeResult> me(String token) async {
     final response = await _client
         .get(
           ApiConfig.uri('/auth/me'),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
+          headers: _jsonHeaders(token: token),
         )
         .timeout(_timeout);
 
@@ -100,14 +128,60 @@ class AuthApi {
         userMap['roles'] = body['roles'];
       }
       if (userMap['name'] == null || userMap['name'].toString().isEmpty) {
-        // /me may return raw User without name - fall back to email local-part.
-        userMap['name'] = userMap['email']?.toString().split('@').first ?? 'User';
+        userMap['name'] =
+            userMap['email']?.toString().split('@').first ?? 'User';
       }
-      return AuthUser.fromJson(userMap);
+      return MeResult(
+        user: AuthUser.fromJson(userMap),
+        mobileOtpRequired: body['mobile_otp_required'] == true,
+      );
     }
 
     throw AuthApiException(
-      body['message']?.toString() ?? 'Session check failed (${response.statusCode})',
+      body['message']?.toString() ??
+          'Session check failed (${response.statusCode})',
+      statusCode: response.statusCode,
+    );
+  }
+
+  Future<void> verifyMobileOtp({
+    required String token,
+    required String code,
+  }) async {
+    final response = await _client
+        .post(
+          ApiConfig.uri('/auth/mobile/otp/verify'),
+          headers: _jsonHeaders(token: token),
+          body: jsonEncode({'code': code.trim()}),
+        )
+        .timeout(_timeout);
+
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+    throw AuthApiException(
+      body['message']?.toString() ??
+          'Could not verify code (${response.statusCode})',
+      statusCode: response.statusCode,
+    );
+  }
+
+  Future<int> resendMobileOtp(String token) async {
+    final response = await _client
+        .post(
+          ApiConfig.uri('/auth/mobile/otp/resend'),
+          headers: _jsonHeaders(token: token),
+        )
+        .timeout(_timeout);
+
+    final body = _decode(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return int.tryParse(body['otp_expires_minutes']?.toString() ?? '') ?? 15;
+    }
+    throw AuthApiException(
+      body['message']?.toString() ??
+          'Could not resend code (${response.statusCode})',
       statusCode: response.statusCode,
     );
   }
@@ -121,11 +195,7 @@ class AuthApi {
     final response = await _client
         .post(
           ApiConfig.uri('/auth/change-password'),
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
+          headers: _jsonHeaders(token: token),
           body: jsonEncode({
             'current_password': currentPassword,
             'password': password,
@@ -139,7 +209,8 @@ class AuthApi {
       return;
     }
     throw AuthApiException(
-      body['message']?.toString() ?? 'Could not change password (${response.statusCode})',
+      body['message']?.toString() ??
+          'Could not change password (${response.statusCode})',
       statusCode: response.statusCode,
     );
   }
@@ -148,10 +219,7 @@ class AuthApi {
     final response = await _client
         .post(
           ApiConfig.uri('/auth/logout'),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
+          headers: _jsonHeaders(token: token),
         )
         .timeout(_timeout);
 
@@ -159,7 +227,6 @@ class AuthApi {
       return;
     }
 
-    // Still clear local session even if server logout fails.
     final body = _decode(response);
     throw AuthApiException(
       body['message']?.toString() ?? 'Logout failed (${response.statusCode})',

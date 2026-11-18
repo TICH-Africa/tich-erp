@@ -147,6 +147,14 @@ class TichNotifications {
 
   Future<bool> notificationPermissionGranted() async {
     if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return true;
+    if (Platform.isIOS) {
+      final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+      final options = await iosPlugin?.checkPermissions();
+      if (options != null) {
+        return options.isEnabled;
+      }
+    }
     return Permission.notification.isGranted;
   }
 
@@ -154,6 +162,16 @@ class TichNotifications {
   Future<void> requestNotificationPermissions() async {
     try {
       if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return;
+      if (Platform.isIOS) {
+        final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
+        await iosPlugin?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        return;
+      }
       final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       await Permission.notification.request();
