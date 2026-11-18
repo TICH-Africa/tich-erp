@@ -113,9 +113,14 @@ class MobileAppReleaseService
         $maxKb = 262144; // 256 MB
 
         if ($platform === MobileAppRelease::PLATFORM_ANDROID) {
+            if ($ext === 'aab') {
+                throw ValidationException::withMessages([
+                    'file' => 'Upload an APK for direct download on /mobile-app. Play Store bundles (.aab) must be uploaded in Google Play Console, then paste the Play Store link here (optional).',
+                ]);
+            }
             if ($ext !== 'apk') {
                 throw ValidationException::withMessages([
-                    'file' => 'Android builds must be an .apk file for direct download.',
+                    'file' => 'Android must be an .apk file (not .aab or other formats).',
                 ]);
             }
         } else {

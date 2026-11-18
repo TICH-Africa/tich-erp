@@ -9359,6 +9359,50 @@ a.tich-tabs__btn {
     border-color: rgba(239, 68, 68, 0.35);
 }
 
+/* --- Public mobile app download (/mobile-app) ------------------------- */
+
+.tich-mobile-app-page {
+    background: var(--tich-neutral);
+}
+
+.tich-mobile-app-panel {
+    border: none;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+}
+
+.tich-mobile-app-install {
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--tich-surface);
+    padding: 1.25rem 1.5rem;
+}
+
+.tich-mobile-app-steps {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--tich-text, var(--tich-grey));
+    font-size: var(--text-body);
+    line-height: 1.65;
+}
+
+.tich-mobile-app-steps li {
+    margin-bottom: 0.65rem;
+}
+
+.tich-mobile-app-steps li:last-child {
+    margin-bottom: 0;
+}
+
+[data-theme="dark"] .tich-mobile-app-page {
+    background: var(--tich-neutral);
+}
+
+[data-theme="dark"] .tich-mobile-app-install {
+    background: var(--tich-surface-muted);
+}
+
 /* ??? Careers & job applications ??????????????????????????????????????? */
 
 .tich-careers-page {

@@ -47,13 +47,25 @@ class MobileAppRelease extends Model
 
     public function downloadFilename(): string
     {
-        if ($this->original_filename) {
+        if ($this->platform === self::PLATFORM_ANDROID) {
+            $name = 'tich-mobile-'.$this->version_label;
+            if ($this->build_number) {
+                $name .= '-build'.$this->build_number;
+            }
+
+            return $name.'-android.apk';
+        }
+
+        if ($this->original_filename && str_ends_with(strtolower($this->original_filename), '.ipa')) {
             return $this->original_filename;
         }
 
-        $ext = $this->platform === self::PLATFORM_ANDROID ? 'apk' : 'ipa';
+        $name = 'tich-mobile-'.$this->version_label;
+        if ($this->build_number) {
+            $name .= '-build'.$this->build_number;
+        }
 
-        return 'tich-mobile-'.$this->platform.'-'.$this->version_label.'.'.$ext;
+        return $name.'-ios.ipa';
     }
 
     public function formattedFileSize(): ?string

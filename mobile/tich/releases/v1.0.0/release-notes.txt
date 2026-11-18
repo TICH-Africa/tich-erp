@@ -1,0 +1,9 @@
+TICH mobile 1.0.0 — first public release
+
+• Sign in with your TICH ERP account (email OTP on first mobile login).
+• Employee portal: leave, clock in/out, payslips, documents, policies, feedback, and more.
+• Student, staff, and procurement portals where your account has access.
+• Push-style local notifications and in-app notification centre.
+• Secure session storage; connects to https://tich.africa.
+
+Install Android builds from the official download page after ICT publishes this release.

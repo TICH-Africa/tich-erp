@@ -1,5 +1,7 @@
 # TICH mobile (`mobile/tich`)
 
+**Current release:** **1.0.0** (build **1**) — `pubspec.yaml` `version: 1.0.0+1`. See [`CHANGELOG.md`](CHANGELOG.md) and [`releases/v1.0.0/`](releases/v1.0.0/).
+
 Flutter client for the TICH ERP Laravel API - **My Employee Portal**.
 
 ## Features
