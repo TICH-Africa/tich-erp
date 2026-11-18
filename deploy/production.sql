@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-11-10 15:09:44 EAT
+-- Generated: 2026-11-17 19:30:46 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -4101,6 +4101,47 @@ CALL `tich_ensure_unique`('exam_eligibility_matrix', 'exam_eligibility_matrix_st
 CALL `tich_ensure_index`('exam_eligibility_matrix', 'exam_eligibility_matrix_unit_id_foreign', '`unit_id`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `exam_marks_locks`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `exam_marks_locks` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `unit_id` bigint(20) unsigned NOT NULL,
+  `semester_id` bigint(20) unsigned NOT NULL,
+  `locked_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `locked_by` bigint(20) unsigned DEFAULT NULL,
+  `unlocked_at` timestamp NULL DEFAULT NULL,
+  `unlocked_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `exam_marks_locks_unit_id_semester_id_unique` (`unit_id`,`semester_id`),
+  KEY `exam_marks_locks_semester_id_foreign` (`semester_id`),
+  KEY `exam_marks_locks_locked_by_foreign` (`locked_by`),
+  KEY `exam_marks_locks_unlocked_by_foreign` (`unlocked_by`),
+  CONSTRAINT `exam_marks_locks_locked_by_foreign` FOREIGN KEY (`locked_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `exam_marks_locks_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `exam_marks_locks_unit_id_foreign` FOREIGN KEY (`unit_id`) REFERENCES `units` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `exam_marks_locks_unlocked_by_foreign` FOREIGN KEY (`unlocked_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `exam_marks_locks` (add only if missing)
+CALL `tich_ensure_column`('exam_marks_locks', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('exam_marks_locks', 'unit_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('exam_marks_locks', 'semester_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('exam_marks_locks', 'locked_at', 'timestamp NOT NULL DEFAULT current_timestamp()');
+CALL `tich_ensure_column`('exam_marks_locks', 'locked_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('exam_marks_locks', 'unlocked_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('exam_marks_locks', 'unlocked_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('exam_marks_locks', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('exam_marks_locks', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `exam_marks_locks` (add only if missing)
+CALL `tich_ensure_index`('exam_marks_locks', 'exam_marks_locks_locked_by_foreign', '`locked_by`');
+CALL `tich_ensure_index`('exam_marks_locks', 'exam_marks_locks_semester_id_foreign', '`semester_id`');
+CALL `tich_ensure_unique`('exam_marks_locks', 'exam_marks_locks_unit_id_semester_id_unique', '`unit_id`, `semester_id`');
+CALL `tich_ensure_index`('exam_marks_locks', 'exam_marks_locks_unlocked_by_foreign', '`unlocked_by`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `exam_results`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `exam_results` (
@@ -4111,6 +4152,9 @@ CREATE TABLE IF NOT EXISTS `exam_results` (
   `semester_id` bigint(20) unsigned NOT NULL,
   `cat_total` decimal(5,2) NOT NULL DEFAULT 0.00,
   `practical_total` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `cat_avg_entry` decimal(5,2) DEFAULT NULL,
+  `practical_avg_entry` decimal(5,2) DEFAULT NULL,
+  `attendance_pct_entry` decimal(5,2) DEFAULT NULL,
   `final_exam_score` decimal(5,2) NOT NULL DEFAULT 0.00,
   `final_total_score` decimal(5,2) NOT NULL DEFAULT 0.00,
   `grade_letter` varchar(5) DEFAULT NULL,
@@ -4155,6 +4199,9 @@ CALL `tich_ensure_column`('exam_results', 'unit_id', 'bigint(20) unsigned NOT NU
 CALL `tich_ensure_column`('exam_results', 'semester_id', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('exam_results', 'cat_total', 'decimal(5,2) NOT NULL DEFAULT \'0.00\'');
 CALL `tich_ensure_column`('exam_results', 'practical_total', 'decimal(5,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('exam_results', 'cat_avg_entry', 'decimal(5,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('exam_results', 'practical_avg_entry', 'decimal(5,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('exam_results', 'attendance_pct_entry', 'decimal(5,2) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('exam_results', 'final_exam_score', 'decimal(5,2) NOT NULL DEFAULT \'0.00\'');
 CALL `tich_ensure_column`('exam_results', 'final_total_score', 'decimal(5,2) NOT NULL DEFAULT \'0.00\'');
 CALL `tich_ensure_column`('exam_results', 'grade_letter', 'varchar(5) NULL DEFAULT NULL');
@@ -7571,6 +7618,7 @@ CREATE TABLE IF NOT EXISTS `objective_assessments` (
   `available_from` datetime DEFAULT NULL,
   `available_until` datetime DEFAULT NULL,
   `show_results_immediately` tinyint(1) NOT NULL DEFAULT 1,
+  `shuffle_questions` tinyint(1) NOT NULL DEFAULT 0,
   `allow_multiple_attempts` tinyint(1) NOT NULL DEFAULT 0,
   `max_attempts` smallint(5) unsigned DEFAULT NULL,
   `student_started_at` datetime DEFAULT NULL,
@@ -7604,6 +7652,7 @@ CALL `tich_ensure_column`('objective_assessments', 'time_limit_minutes', 'int(11
 CALL `tich_ensure_column`('objective_assessments', 'available_from', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('objective_assessments', 'available_until', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('objective_assessments', 'show_results_immediately', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('objective_assessments', 'shuffle_questions', 'tinyint(1) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('objective_assessments', 'allow_multiple_attempts', 'tinyint(1) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('objective_assessments', 'max_attempts', 'smallint(5) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('objective_assessments', 'student_started_at', 'datetime NULL DEFAULT NULL');
@@ -7670,6 +7719,9 @@ CREATE TABLE IF NOT EXISTS `objective_submissions` (
   `student_submitted_at` datetime DEFAULT NULL,
   `time_taken_seconds` int(11) DEFAULT NULL,
   `attempt_number` smallint(5) unsigned NOT NULL DEFAULT 1,
+  `open_from` datetime DEFAULT NULL,
+  `open_until` datetime DEFAULT NULL,
+  `shuffle_seed` varchar(32) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `obj_sub_unique` (`objective_assessment_id`,`student_id`),
   KEY `objective_submissions_student_id_foreign` (`student_id`),
@@ -7693,6 +7745,9 @@ CALL `tich_ensure_column`('objective_submissions', 'student_started_at', 'dateti
 CALL `tich_ensure_column`('objective_submissions', 'student_submitted_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('objective_submissions', 'time_taken_seconds', 'int(11) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('objective_submissions', 'attempt_number', 'smallint(5) unsigned NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('objective_submissions', 'open_from', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('objective_submissions', 'open_until', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('objective_submissions', 'shuffle_seed', 'varchar(32) NULL DEFAULT NULL');
 
 -- Indexes for `objective_submissions` (add only if missing)
 CALL `tich_ensure_index`('objective_submissions', 'objective_submissions_student_id_foreign', '`student_id`');
@@ -10176,6 +10231,36 @@ CALL `tich_ensure_index`('research_focus_areas', 'research_focus_areas_created_b
 CALL `tich_ensure_index`('research_focus_areas', 'research_focus_areas_updated_by_foreign', '`updated_by`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `research_partners`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `research_partners` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(300) DEFAULT NULL,
+  `logo_path` varchar(500) DEFAULT NULL,
+  `bg_color` char(7) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `research_partners` (add only if missing)
+CALL `tich_ensure_column`('research_partners', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('research_partners', 'name', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_partners', 'logo_path', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_partners', 'bg_color', 'char(7) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_partners', 'is_active', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('research_partners', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_partners', 'updated_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_partners', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_partners', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `research_partners` (add only if missing)
+-- (no secondary indexes)
+
+-- -----------------------------------------------------------------------------
 -- Table: `research_projects`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `research_projects` (
@@ -10187,9 +10272,12 @@ CREATE TABLE IF NOT EXISTS `research_projects` (
   `status_locked` tinyint(1) NOT NULL DEFAULT 0,
   `focus_area_id` bigint(20) unsigned DEFAULT NULL,
   `summary` text NOT NULL,
+  `project_url` varchar(500) DEFAULT NULL,
+  `objective` text DEFAULT NULL,
   `abstract` longtext DEFAULT NULL,
   `body` longtext DEFAULT NULL,
   `cover_image_path` varchar(500) DEFAULT NULL,
+  `bg_color` char(7) DEFAULT NULL,
   `start_date` date DEFAULT NULL,
   `duration_value` int(10) unsigned DEFAULT NULL,
   `duration_unit` varchar(20) DEFAULT NULL,
@@ -10223,9 +10311,12 @@ CALL `tich_ensure_column`('research_projects', 'status', 'varchar(50) NOT NULL')
 CALL `tich_ensure_column`('research_projects', 'status_locked', 'tinyint(1) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('research_projects', 'focus_area_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('research_projects', 'summary', 'text NOT NULL');
+CALL `tich_ensure_column`('research_projects', 'project_url', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_projects', 'objective', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('research_projects', 'abstract', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('research_projects', 'body', 'longtext NULL DEFAULT NULL');
 CALL `tich_ensure_column`('research_projects', 'cover_image_path', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_projects', 'bg_color', 'char(7) NULL DEFAULT NULL');
 CALL `tich_ensure_column`('research_projects', 'start_date', 'date NULL DEFAULT NULL');
 CALL `tich_ensure_column`('research_projects', 'duration_value', 'int(10) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('research_projects', 'duration_unit', 'varchar(20) NULL DEFAULT NULL');
@@ -10327,6 +10418,50 @@ CALL `tich_ensure_column`('research_publications', 'updated_by', 'bigint(20) uns
 -- Indexes for `research_publications` (add only if missing)
 CALL `tich_ensure_index`('research_publications', 'research_publications_created_by_foreign', '`created_by`');
 CALL `tich_ensure_index`('research_publications', 'research_publications_updated_by_foreign', '`updated_by`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `research_resources`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `research_resources` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(500) NOT NULL,
+  `authors` varchar(500) DEFAULT NULL,
+  `publisher` varchar(300) DEFAULT NULL,
+  `year` varchar(20) DEFAULT NULL,
+  `isbn` varchar(150) DEFAULT NULL,
+  `doi` varchar(300) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `file_path` varchar(500) DEFAULT NULL,
+  `original_name` varchar(255) DEFAULT NULL,
+  `mime_type` varchar(150) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `research_resources` (add only if missing)
+CALL `tich_ensure_column`('research_resources', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('research_resources', 'title', 'varchar(500) NOT NULL');
+CALL `tich_ensure_column`('research_resources', 'authors', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'publisher', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'year', 'varchar(20) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'isbn', 'varchar(150) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'doi', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'description', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'file_path', 'varchar(500) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'original_name', 'varchar(255) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'mime_type', 'varchar(150) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'is_active', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('research_resources', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'updated_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('research_resources', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `research_resources` (add only if missing)
+-- (no secondary indexes)
 
 -- -----------------------------------------------------------------------------
 -- Table: `rfqs`
@@ -13640,6 +13775,44 @@ CALL `tich_ensure_index`('unit_allocations', 'unit_allocations_status_index', '`
 CALL `tich_ensure_index`('unit_allocations', 'unit_allocations_unit_id_semester_id_index', '`unit_id`, `semester_id`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `unit_assessment_columns`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `unit_assessment_columns` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `unit_id` bigint(20) unsigned NOT NULL,
+  `semester_id` bigint(20) unsigned NOT NULL,
+  `assessment_name` varchar(200) NOT NULL,
+  `assessment_type` varchar(50) NOT NULL,
+  `max_score` decimal(5,2) NOT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unit_assessment_columns_unit_semester_name_unique` (`unit_id`,`semester_id`,`assessment_name`),
+  KEY `unit_assessment_columns_semester_id_foreign` (`semester_id`),
+  KEY `unit_assessment_columns_created_by_foreign` (`created_by`),
+  CONSTRAINT `unit_assessment_columns_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `staff` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `unit_assessment_columns_semester_id_foreign` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `unit_assessment_columns_unit_id_foreign` FOREIGN KEY (`unit_id`) REFERENCES `units` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `unit_assessment_columns` (add only if missing)
+CALL `tich_ensure_column`('unit_assessment_columns', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('unit_assessment_columns', 'unit_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('unit_assessment_columns', 'semester_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('unit_assessment_columns', 'assessment_name', 'varchar(200) NOT NULL');
+CALL `tich_ensure_column`('unit_assessment_columns', 'assessment_type', 'varchar(50) NOT NULL');
+CALL `tich_ensure_column`('unit_assessment_columns', 'max_score', 'decimal(5,2) NOT NULL');
+CALL `tich_ensure_column`('unit_assessment_columns', 'created_by', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('unit_assessment_columns', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('unit_assessment_columns', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `unit_assessment_columns` (add only if missing)
+CALL `tich_ensure_index`('unit_assessment_columns', 'unit_assessment_columns_created_by_foreign', '`created_by`');
+CALL `tich_ensure_index`('unit_assessment_columns', 'unit_assessment_columns_semester_id_foreign', '`semester_id`');
+CALL `tich_ensure_unique`('unit_assessment_columns', 'unit_assessment_columns_unit_semester_name_unique', '`unit_id`, `semester_id`, `assessment_name`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `unit_contents`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `unit_contents` (
@@ -13648,6 +13821,8 @@ CREATE TABLE IF NOT EXISTS `unit_contents` (
   `unit_allocation_id` bigint(20) unsigned DEFAULT NULL,
   `created_by` bigint(20) unsigned NOT NULL,
   `title` varchar(300) NOT NULL,
+  `section_title` varchar(300) DEFAULT NULL,
+  `lesson_number` smallint(5) unsigned DEFAULT NULL,
   `content_type` varchar(50) NOT NULL DEFAULT 'lesson_note',
   `content_text` text DEFAULT NULL,
   `file_path` varchar(255) DEFAULT NULL,
@@ -13677,6 +13852,8 @@ CALL `tich_ensure_column`('unit_contents', 'unit_id', 'bigint(20) unsigned NOT N
 CALL `tich_ensure_column`('unit_contents', 'unit_allocation_id', 'bigint(20) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('unit_contents', 'created_by', 'bigint(20) unsigned NOT NULL');
 CALL `tich_ensure_column`('unit_contents', 'title', 'varchar(300) NOT NULL');
+CALL `tich_ensure_column`('unit_contents', 'section_title', 'varchar(300) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('unit_contents', 'lesson_number', 'smallint(5) unsigned NULL DEFAULT NULL');
 CALL `tich_ensure_column`('unit_contents', 'content_type', 'varchar(50) NOT NULL DEFAULT \'\\\'lesson_note\\\'\'');
 CALL `tich_ensure_column`('unit_contents', 'content_text', 'text NULL DEFAULT NULL');
 CALL `tich_ensure_column`('unit_contents', 'file_path', 'varchar(255) NULL DEFAULT NULL');
@@ -13714,6 +13891,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `is_active` tinyint(4) NOT NULL DEFAULT 1,
   `email_verified_at` datetime DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL,
+  `mobile_app_verified_at` timestamp NULL DEFAULT NULL,
   `failed_login_attempts` int(11) NOT NULL DEFAULT 0,
   `locked_until` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
@@ -13749,6 +13927,7 @@ CALL `tich_ensure_column`('users', 'mfa_verified', 'tinyint(4) NOT NULL DEFAULT 
 CALL `tich_ensure_column`('users', 'is_active', 'tinyint(4) NOT NULL DEFAULT \'1\'');
 CALL `tich_ensure_column`('users', 'email_verified_at', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('users', 'last_login_at', 'datetime NULL DEFAULT NULL');
+CALL `tich_ensure_column`('users', 'mobile_app_verified_at', 'timestamp NULL DEFAULT NULL');
 CALL `tich_ensure_column`('users', 'failed_login_attempts', 'int(11) NOT NULL DEFAULT \'0\'');
 CALL `tich_ensure_column`('users', 'locked_until', 'datetime NULL DEFAULT NULL');
 CALL `tich_ensure_column`('users', 'created_at', 'datetime NOT NULL DEFAULT current_timestamp()');
@@ -14272,6 +14451,12 @@ CALL `tich_ensure_fk`('exam_cards', 'exam_cards_voided_by_foreign', '`voided_by`
 CALL `tich_ensure_fk`('exam_eligibility_matrix', 'exam_eligibility_matrix_semester_id_foreign', '`semester_id`', 'semesters', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('exam_eligibility_matrix', 'exam_eligibility_matrix_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('exam_eligibility_matrix', 'exam_eligibility_matrix_unit_id_foreign', '`unit_id`', 'units', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `exam_marks_locks`
+CALL `tich_ensure_fk`('exam_marks_locks', 'exam_marks_locks_locked_by_foreign', '`locked_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('exam_marks_locks', 'exam_marks_locks_semester_id_foreign', '`semester_id`', 'semesters', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('exam_marks_locks', 'exam_marks_locks_unit_id_foreign', '`unit_id`', 'units', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('exam_marks_locks', 'exam_marks_locks_unlocked_by_foreign', '`unlocked_by`', 'users', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `exam_results`
 CALL `tich_ensure_fk`('exam_results', 'exam_results_entered_by_foreign', '`entered_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
@@ -15073,6 +15258,11 @@ CALL `tich_ensure_fk`('unit_allocations', 'unit_allocations_campus_id_foreign', 
 CALL `tich_ensure_fk`('unit_allocations', 'unit_allocations_semester_id_foreign', '`semester_id`', 'semesters', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('unit_allocations', 'unit_allocations_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
 CALL `tich_ensure_fk`('unit_allocations', 'unit_allocations_unit_id_foreign', '`unit_id`', 'units', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `unit_assessment_columns`
+CALL `tich_ensure_fk`('unit_assessment_columns', 'unit_assessment_columns_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('unit_assessment_columns', 'unit_assessment_columns_semester_id_foreign', '`semester_id`', 'semesters', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('unit_assessment_columns', 'unit_assessment_columns_unit_id_foreign', '`unit_id`', 'units', '`id`', 'RESTRICT', 'CASCADE');
 
 -- Foreign keys for `unit_contents`
 CALL `tich_ensure_fk`('unit_contents', 'unit_contents_created_by_foreign', '`created_by`', 'staff', '`id`', 'RESTRICT', 'RESTRICT');
