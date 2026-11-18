@@ -24,7 +24,8 @@ class User extends Authenticatable
         'email', 'password_hash', 'user_type',
         'mfa_enabled', 'mfa_method', 'mfa_secret', 'mfa_secret_temp', 'mfa_verified',
         'mfa_backup_codes', 'mfa_enabled_at', 'mfa_last_verified_at',
-        'login_attempts', 'locked_until', 'last_login_at', 'staff_id', 'student_id',
+        'login_attempts', 'locked_until', 'last_login_at', 'mobile_app_verified_at',
+        'staff_id', 'student_id',
         'is_active', 'failed_login_attempts', 'created_by',
     ];
 
@@ -36,6 +37,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
+        'mobile_app_verified_at' => 'datetime',
         'locked_until' => 'datetime',
         'mfa_enabled_at' => 'datetime',
         'mfa_last_verified_at' => 'datetime',

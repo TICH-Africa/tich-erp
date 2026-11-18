@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-10-20
+-- Last updated: 2026-11-17
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -2701,6 +2701,82 @@ CREATE TABLE IF NOT EXISTS `student_application_document_submissions` (
     CONSTRAINT `student_app_doc_sub_uploaded_by_user_id_foreign` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`),
     CONSTRAINT `student_app_doc_sub_reviewed_by_user_id_foreign` FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- Mobile app download releases (ICT uploads → public /mobile-app)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `mobile_app_releases` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `platform` varchar(20) NOT NULL,
+    `version_label` varchar(50) NOT NULL,
+    `build_number` int unsigned DEFAULT NULL,
+    `storage_path` varchar(500) DEFAULT NULL,
+    `original_filename` varchar(255) DEFAULT NULL,
+    `file_size` bigint unsigned DEFAULT NULL,
+    `external_url` varchar(500) DEFAULT NULL,
+    `release_notes` text DEFAULT NULL,
+    `is_published` tinyint(1) NOT NULL DEFAULT 1,
+    `uploaded_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `mobile_app_releases_platform_published_created_index` (`platform`, `is_published`, `created_at`),
+    KEY `mobile_app_releases_uploaded_by_user_id_foreign` (`uploaded_by_user_id`),
+    CONSTRAINT `mobile_app_releases_uploaded_by_user_id_foreign` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- Mobile app first sign-in: email OTP gate (migration 2026_11_17_120000)
+-- -----------------------------------------------------------------------------
+SET @u_has_mobile_app_verified := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'users'
+      AND column_name = 'mobile_app_verified_at'
+);
+SET @sql_u_mobile_app_verified := IF(@u_has_mobile_app_verified = 0,
+    'ALTER TABLE `users` ADD COLUMN `mobile_app_verified_at` timestamp NULL DEFAULT NULL AFTER `last_login_at`',
+    'SELECT 1');
+PREPARE stmt_u_mobile_app_verified FROM @sql_u_mobile_app_verified;
+EXECUTE stmt_u_mobile_app_verified;
+DEALLOCATE PREPARE stmt_u_mobile_app_verified;
+
+-- -----------------------------------------------------------------------------
+-- e-Fundi student opportunities (migration 2026_11_18_110000)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `efundi_opportunities` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `title` varchar(255) NOT NULL,
+    `slug` varchar(255) NOT NULL,
+    `opportunity_type` varchar(32) NOT NULL,
+    `opportunity_scope` varchar(20) NOT NULL DEFAULT 'external',
+    `job_vacancy_id` bigint(20) unsigned DEFAULT NULL,
+    `organization_name` varchar(255) DEFAULT NULL,
+    `location` varchar(255) DEFAULT NULL,
+    `summary` text DEFAULT NULL,
+    `description` longtext DEFAULT NULL,
+    `application_url` varchar(500) DEFAULT NULL,
+    `application_email` varchar(255) DEFAULT NULL,
+    `application_deadline` date DEFAULT NULL,
+    `is_published` tinyint(1) NOT NULL DEFAULT 0,
+    `published_at` timestamp NULL DEFAULT NULL,
+    `posted_via` varchar(20) NOT NULL,
+    `posted_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `students_notified_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `efundi_opportunities_slug_unique` (`slug`),
+    KEY `efundi_opportunities_is_published_application_deadline_index` (`is_published`, `application_deadline`),
+    KEY `efundi_opportunities_opportunity_type_index` (`opportunity_type`),
+    KEY `efundi_opportunities_posted_by_user_id_foreign` (`posted_by_user_id`),
+    KEY `efundi_opportunities_job_vacancy_id_foreign` (`job_vacancy_id`),
+    CONSTRAINT `efundi_opportunities_posted_by_user_id_foreign` FOREIGN KEY (`posted_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `efundi_opportunities_job_vacancy_id_foreign` FOREIGN KEY (`job_vacancy_id`) REFERENCES `job_vacancies` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `efundi_opportunities`
+    ADD COLUMN IF NOT EXISTS `opportunity_scope` varchar(20) NOT NULL DEFAULT 'external' AFTER `opportunity_type`,
+    ADD COLUMN IF NOT EXISTS `job_vacancy_id` bigint(20) unsigned DEFAULT NULL AFTER `opportunity_scope`;
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';
