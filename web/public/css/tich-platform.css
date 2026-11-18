@@ -4052,6 +4052,25 @@ body.tich-body:has(.tich-admin) .tich-header--solid:not(.tich-header--over-hero)
     background-color: rgba(255, 255, 255, 0.14);
 }
 
+/* A pale study colour is the office's choice for that block, so it keeps the light theme's ink even
+   when the visitor reads the rest of the site in dark mode — dark mode would otherwise lift these
+   words to near-white and leave them unreadable on the wash. */
+[data-theme="dark"] .tich-research-hub--pale {
+    --tich-green: #6cab33;
+    --tich-blue: #1669a6;
+    --tich-blue-dark: #125a8c;
+    --tich-blue-light: #d6e8f5;
+    --tich-grey: #494c50;
+    --tich-white: #ffffff;
+    --tich-neutral: #f5f6f6;
+    --tich-neutral-border: #e2e4e5;
+    --tich-neutral-muted: #6b6e72;
+}
+
+[data-theme="dark"] .tich-research-hub--pale h2.tich-h2 {
+    color: #494c50;
+}
+
 .tich-research-card {
     /* The homepage feature tile wears the study's own page colour, so it reads as the page it describes. */
     background: var(--study-page-bg, transparent);
@@ -12889,6 +12908,55 @@ a.tich-tabs__btn {
 [data-theme="dark"] .research-public-show__facts dd a,
 [data-theme="dark"] .research-public-show__back a {
     color: #7dd3fc !important;
+}
+
+/* The same on the study's own page: when the office picked a pale colour, that page keeps its
+   approved dark ink and light panels even while the rest of the site is read in dark mode. */
+[data-theme="dark"] .research-public-show--pale {
+    --tich-green: #6cab33;
+    --tich-blue: #1669a6;
+    --tich-blue-dark: #125a8c;
+    --tich-blue-light: #d6e8f5;
+    --tich-grey: #494c50;
+    --tich-white: #ffffff;
+    --tich-neutral: #f5f6f6;
+    --tich-neutral-border: #e2e4e5;
+    --tich-neutral-muted: #6b6e72;
+
+    background: var(--study-page-bg, #ffffff);
+    color: #494c50;
+}
+
+[data-theme="dark"] .research-public-show--pale .research-public-show__title,
+[data-theme="dark"] .research-public-show--pale .research-public-show__subtitle,
+[data-theme="dark"] .research-public-show--pale .research-public-show__meta,
+[data-theme="dark"] .research-public-show--pale .research-public-show__summary,
+[data-theme="dark"] .research-public-show--pale .research-public-show__body,
+[data-theme="dark"] .research-public-show--pale .research-public-show__body *,
+[data-theme="dark"] .research-public-show--pale .research-public-show__heading,
+[data-theme="dark"] .research-public-show--pale .research-public-show__objective,
+[data-theme="dark"] .research-public-show--pale .research-public-show__doc-note,
+[data-theme="dark"] .research-public-show--pale .research-public-show__facts dt,
+[data-theme="dark"] .research-public-show--pale .research-public-show__facts dd,
+[data-theme="dark"] .research-public-show--pale .research-public-show__aside-title {
+    color: #494c50 !important;
+}
+
+[data-theme="dark"] .research-public-show--pale .research-public-show__body a,
+[data-theme="dark"] .research-public-show--pale .research-public-show__docs a,
+[data-theme="dark"] .research-public-show--pale .research-public-show__facts dd a,
+[data-theme="dark"] .research-public-show--pale .research-public-show__back a,
+[data-theme="dark"] .research-public-show--pale .research-public-show__status {
+    color: #1669a6 !important;
+}
+
+[data-theme="dark"] .research-public-show--pale .research-public-show__aside {
+    background: #f4f5f7;
+    border-color: #e2e4e5;
+}
+
+[data-theme="dark"] .research-public-show--pale .research-public-show__header {
+    border-bottom-color: #e2e4e5;
 }
 
 .qa-form-page {

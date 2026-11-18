@@ -1,5 +1,12 @@
 @if ($research)
-<section class="tich-section tich-section--white tich-research-hub{{ !empty($research->page_dark) ? ' tich-research-hub--tinted' : '' }}" id="research" @if (!empty($research->page_color)) style="--study-page-bg: {{ $research->page_color }};" @endif>
+    @php
+        // The study's own colour paints this block, so that colour and not the visitor's theme has
+        // to pick the ink: --tinted carries pale words on a dark wash, --pale keeps dark words on a
+        // light wash even when the site is in dark mode.
+        $wash = !empty($research->page_color) ? trim((string) $research->page_color) : null;
+        $washInk = $wash ? (!empty($research->page_dark) ? 'tinted' : 'pale') : null;
+    @endphp
+<section class="tich-section tich-section--white tich-research-hub{{ $washInk ? ' tich-research-hub--'.$washInk : '' }}" id="research" @if ($wash) style="--study-page-bg: {{ $wash }};" @endif>
     <div class="tich-container">
         <div class="tich-grid tich-grid--2" style="align-items: center; gap: 2rem;" data-home-reveal data-home-reveal-cols="2">
             <div class="tich-home-reveal">
