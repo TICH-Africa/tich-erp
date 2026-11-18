@@ -501,6 +501,41 @@ class AuthService
         return $user->createToken($name)->plainTextToken;
     }
 
+    public function isMobileClient(?Request $request): bool
+    {
+        if (! $request) {
+            return false;
+        }
+
+        return strtolower(trim((string) $request->header('X-TICH-Client', ''))) === 'mobile';
+    }
+
+    public function needsMobileLoginOtp(User $user, ?Request $request): bool
+    {
+        if (! $this->isMobileClient($request)) {
+            return false;
+        }
+
+        return $user->mobile_app_verified_at === null;
+    }
+
+    public function markMobileAppVerified(User $user, ?Request $request = null): void
+    {
+        $user->forceFill(['mobile_app_verified_at' => now()])->save();
+
+        $this->auditService->log(
+            'auth.mobile.otp_verified',
+            'users',
+            $user->id,
+            null,
+            ['channel' => $this->channel($request)],
+            null,
+            'success',
+            $user->id,
+            $request
+        );
+    }
+
     public function loginResponse(User $user, Request $request): array
     {
         $token = $this->issueApiToken($user, $request->userAgent() ?? 'api');
@@ -512,6 +547,8 @@ class AuthService
             'mfa_enabled' => (bool) $user->mfa_enabled,
             'mfa_setup_required' => $this->mfaService->isMFARequired($user) && ! $user->mfa_enabled,
             'roles' => $this->rbacService->getUserRoles($user),
+            'mobile_app_verified' => $user->mobile_app_verified_at !== null,
+            'mobile_otp_required' => false,
         ];
     }
 

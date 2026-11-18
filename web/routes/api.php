@@ -16,7 +16,7 @@ use App\Http\Controllers\RBACController;
 use Illuminate\Broadcasting\BroadcastController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'mobile.verified'])->group(function () {
     Route::get('/realtime/config', MobileRealtimeController::class);
     Route::post('/broadcasting/auth', [BroadcastController::class, 'authenticate']);
     Route::post('/mobile/web-handoff', [MobileWebHandoffController::class, 'store']);
@@ -27,6 +27,8 @@ Route::prefix('auth')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/mobile/otp/verify', [AuthController::class, 'verifyMobileLoginOtp'])->middleware('throttle:mfa');
+        Route::post('/mobile/otp/resend', [AuthController::class, 'resendMobileLoginOtp'])->middleware('throttle:mfa');
         Route::post('/mfa/challenge', [AuthController::class, 'mfaChallenge'])->middleware('throttle:mfa');
         Route::post('/mfa/setup', [AuthController::class, 'mfaSetup'])->middleware('throttle:mfa');
         Route::post('/mfa/setup/verify', [AuthController::class, 'mfaSetupVerify'])->middleware('throttle:mfa');
@@ -137,7 +139,7 @@ Route::get('/session-check', function () {
 | Mobile / Sanctum employee self-service portal.
 | MFA is intentionally not required here (product: mobile v1).
 */
-Route::middleware(['auth:sanctum', 'employee.portal', 'employee.time-logs.complete'])->prefix('employee')->group(function () {
+Route::middleware(['auth:sanctum', 'mobile.verified', 'employee.portal', 'employee.time-logs.complete'])->prefix('employee')->group(function () {
     Route::get('/time-log-compliance', \App\Http\Controllers\Api\Employee\mobile\TimeLogComplianceController::class);
     Route::get('/dashboard', \App\Http\Controllers\Api\Employee\mobile\DashboardController::class);
     Route::get('/notifications', \App\Http\Controllers\Api\Employee\mobile\NotificationController::class);
@@ -185,7 +187,7 @@ Route::middleware(['auth:sanctum', 'employee.portal', 'employee.time-logs.comple
 | Mobile / Sanctum student self-service portal.
 | MFA is intentionally not required here (product: mobile v1).
 */
-Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(function () {
+Route::middleware(['auth:sanctum', 'mobile.verified', 'student.portal'])->prefix('student')->group(function () {
     Route::get('/dashboard', \App\Http\Controllers\Api\Student\mobile\DashboardController::class);
     Route::get('/sidebar-notifications', \App\Http\Controllers\Api\Student\mobile\SidebarNotificationsController::class);
     Route::get('/academics', \App\Http\Controllers\Api\Student\mobile\AcademicsController::class);
@@ -235,7 +237,7 @@ Route::middleware(['auth:sanctum', 'student.portal'])->prefix('student')->group(
 | Mobile / Sanctum teaching Staff Portal (separate from Employee HR portal).
 | MFA intentionally not required (mobile v1).
 */
-Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(function () {
+Route::middleware(['auth:sanctum', 'mobile.verified', 'staff.portal'])->prefix('staff')->group(function () {
     Route::get('/dashboard', \App\Http\Controllers\Api\Staff\mobile\DashboardController::class);
     Route::get('/notifications', \App\Http\Controllers\Api\Staff\mobile\NotificationController::class);
     Route::get('/units', \App\Http\Controllers\Api\Staff\mobile\UnitsController::class);
@@ -268,7 +270,7 @@ Route::middleware(['auth:sanctum', 'staff.portal'])->prefix('staff')->group(func
     Route::post('/content', [\App\Http\Controllers\Api\Staff\mobile\ContentController::class, 'store']);
 });
 
-Route::middleware(['auth:sanctum', 'permission:procurement.read'])->prefix('procurement')->group(function () {
+Route::middleware(['auth:sanctum', 'mobile.verified', 'permission:procurement.read'])->prefix('procurement')->group(function () {
     Route::get('/dashboard', \App\Http\Controllers\Api\Procurement\mobile\DashboardController::class);
     Route::get('/sidebar-notifications', \App\Http\Controllers\Api\Procurement\mobile\SidebarNotificationsController::class);
 

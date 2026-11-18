@@ -23,6 +23,8 @@
         @include('partials.navigation.sidebar-link', ['href' => route('ict.content.events.index'), 'label' => 'Events', 'icon' => 'calendar', 'active' => request()->routeIs('ict.content.events.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('ict.content.courses.index'), 'label' => 'Courses', 'icon' => 'graduation-cap', 'active' => request()->routeIs('ict.content.courses.*')])
 
+        @include('partials.navigation.sidebar-link', ['href' => route('ict.mobile-app.index'), 'label' => 'Mobile app releases', 'icon' => 'smartphone', 'active' => request()->routeIs('ict.mobile-app.*')])
+        @include('partials.navigation.sidebar-link', ['href' => route('ict.efundi.index'), 'label' => 'e-Fundi opportunities', 'icon' => 'briefcase', 'active' => request()->routeIs('ict.efundi.*')])
         @include('partials.navigation.sidebar-link', ['href' => route('ict.registration-invites.index'), 'label' => 'ERP registration invites', 'icon' => 'mail', 'active' => request()->routeIs('ict.registration-invites.*'), 'badgeKey' => 'invites'])
         @include('partials.navigation.sidebar-link', ['href' => route('ict.student-invites.index'), 'label' => 'Student portal invites', 'icon' => 'mail', 'active' => request()->routeIs('ict.student-invites.*'), 'badgeKey' => 'student_invites'])
         @can('users.access.manage')
