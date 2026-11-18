@@ -16141,9 +16141,9 @@ h2.tich-h2.research-partners__head {
     }
 }
 
-/* One row of four, with the arrows beside it, so fifteen posted papers stay the height of one row
-   instead of filling the page. The rail keeps the cards and the arrows on one line; the list itself
-   takes whatever width is left. */
+/* Two cards across, two rows deep, with the arrows beside the block, so fifteen posted papers stay
+   four on the page instead of filling it. The rail keeps the grid and the arrows on one line; the list
+   itself takes whatever width is left. */
 .research-resources__rail {
     display: flex;
     align-items: center;
@@ -16157,7 +16157,7 @@ h2.tich-h2.research-partners__head {
     flex: 1 1 auto;
     min-width: 0;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
 }
 
@@ -16185,12 +16185,6 @@ h2.tich-h2.research-partners__head {
 [data-theme="dark"] .research-resources__arrow,
 [data-theme="dark"] .research-resources__arrow:hover {
     color: #0b1220;
-}
-
-@media (max-width: 1023px) {
-    .research-resources {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
 }
 
 @media (max-width: 639px) {
