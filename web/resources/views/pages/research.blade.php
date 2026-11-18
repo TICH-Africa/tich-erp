@@ -230,33 +230,11 @@
                     </x-animated-card>
                 </div>
 
-                @if ($partners->isNotEmpty())
-                    <x-animated-section animation="bottom">
-                        <div class="tich-mt-10 tich-mb-8">
-                            <h2 class="tich-h2 research-partners__head" style="margin: 0;">Our partners</h2>
-                            <ul class="research-partners tich-mt-6">
-                                @foreach ($partners as $partner)
-                                    <li class="research-partners__item{{ $partner->name ? '' : ' research-partners__item--logo-only' }}{{ $partner->backgroundIsDark() ? ' research-partners__item--tinted' : '' }}" style="background-color: {{ $partner->backgroundColor() }};">
-                                        @if ($partner->logoUrl())
-                                            <img src="{{ $partner->logoUrl() }}" alt="{{ $partner->displayLabel() }}" class="research-partners__logo" loading="lazy">
-                                        @else
-                                            <span class="research-partners__logo research-partners__logo--text" aria-hidden="true">{{ $partner->name }}</span>
-                                        @endif
-                                        @if ($partner->name)
-                                            <span class="research-partners__name">{{ $partner->name }}</span>
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </x-animated-section>
-                @endif
-
                 @if ($resources->isNotEmpty())
                     <x-animated-section animation="bottom">
                         <div class="tich-mt-10 tich-mb-8">
-                            <h2 class="tich-h2" style="margin: 0;">Research resources</h2>
-                            <p class="tich-text tich-mt-2">Books, papers and reports from our teams, posted here for download.</p>
+                            <h2 class="tich-h2 tich-text-center" style="margin: 0;">Research resources</h2>
+                            <p class="tich-text tich-text-center tich-mt-2">Books, papers and reports from our teams, posted here for download.</p>
                             <ul class="research-resources tich-mt-6">
                                 @foreach ($resources as $resource)
                                     <li class="research-resources__item">
@@ -278,6 +256,28 @@
                                         @endif
                                         @if ($resource->hasFile())
                                             <a href="{{ route('research.resource.download', $resource) }}" class="tich-btn tich-btn-primary tich-mt-4">Download</a>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </x-animated-section>
+                @endif
+
+                @if ($partners->isNotEmpty())
+                    <x-animated-section animation="bottom">
+                        <div class="tich-mt-10 tich-mb-8">
+                            <h2 class="tich-h2 research-partners__head" style="margin: 0;">Our partners</h2>
+                            <ul class="research-partners tich-mt-6">
+                                @foreach ($partners as $partner)
+                                    <li class="research-partners__item{{ $partner->name ? '' : ' research-partners__item--logo-only' }}{{ $partner->backgroundIsDark() ? ' research-partners__item--tinted' : '' }}" style="background-color: {{ $partner->backgroundColor() }};">
+                                        @if ($partner->logoUrl())
+                                            <img src="{{ $partner->logoUrl() }}" alt="{{ $partner->displayLabel() }}" class="research-partners__logo" loading="lazy">
+                                        @else
+                                            <span class="research-partners__logo research-partners__logo--text" aria-hidden="true">{{ $partner->name }}</span>
+                                        @endif
+                                        @if ($partner->name)
+                                            <span class="research-partners__name">{{ $partner->name }}</span>
                                         @endif
                                     </li>
                                 @endforeach

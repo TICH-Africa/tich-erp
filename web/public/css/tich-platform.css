@@ -16175,7 +16175,9 @@ h2.tich-h2.research-partners__head {
     font-weight: 600;
     letter-spacing: 0.02em;
     text-transform: uppercase;
-    color: var(--tich-neutral-muted);
+    /* The year and publisher read as the card's label, so they carry the house blue instead of the
+       grey the title and the rest of the lines use. */
+    color: var(--tich-blue);
 }
 
 .research-resources__title {
@@ -16184,7 +16186,7 @@ h2.tich-h2.research-partners__head {
     font-size: 1.0625rem;
     font-weight: 700;
     line-height: 1.35;
-    color: var(--tich-text);
+    color: var(--tich-grey);
 }
 
 .research-resources__authors,
