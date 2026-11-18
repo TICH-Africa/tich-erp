@@ -3,13 +3,14 @@ import '../settings/app_settings.dart';
 import 'auth_api.dart';
 import 'auth_token_store.dart';
 
-enum SessionRestoreResultType { none, authenticated, locked, expired }
+enum SessionRestoreResultType { none, authenticated, locked, expired, mobileOtp }
 
 class SessionRestoreResult {
-  const SessionRestoreResult._(this.type, {this.user});
+  const SessionRestoreResult._(this.type, {this.user, this.otpExpiresMinutes});
 
   final SessionRestoreResultType type;
   final AuthUser? user;
+  final int? otpExpiresMinutes;
 
   factory SessionRestoreResult.none() =>
       const SessionRestoreResult._(SessionRestoreResultType.none);
@@ -22,6 +23,31 @@ class SessionRestoreResult {
 
   factory SessionRestoreResult.expired() =>
       const SessionRestoreResult._(SessionRestoreResultType.expired);
+
+  factory SessionRestoreResult.mobileOtp(AuthUser user, {int expiresMinutes = 15}) =>
+      SessionRestoreResult._(
+        SessionRestoreResultType.mobileOtp,
+        user: user,
+        otpExpiresMinutes: expiresMinutes,
+      );
+}
+
+class LoginSession {
+  const LoginSession({
+    required this.user,
+    required this.mobileOtpRequired,
+    this.emailMasked,
+    this.otpExpiresMinutes = 15,
+    this.otpSent = true,
+    this.message,
+  });
+
+  final AuthUser user;
+  final bool mobileOtpRequired;
+  final String? emailMasked;
+  final int otpExpiresMinutes;
+  final bool otpSent;
+  final String? message;
 }
 
 class AuthRepository {
@@ -64,11 +90,14 @@ class AuthRepository {
     onTokenChanged?.call(token);
 
     try {
-      final user = await _api.me(token);
-      if (_settings.needsUnlock) {
-        return SessionRestoreResult.locked(user);
+      final me = await _api.me(token);
+      if (me.mobileOtpRequired) {
+        return SessionRestoreResult.mobileOtp(me.user);
       }
-      return SessionRestoreResult.authenticated(user);
+      if (_settings.needsUnlock) {
+        return SessionRestoreResult.locked(me.user);
+      }
+      return SessionRestoreResult.authenticated(me.user);
     } on AuthApiException catch (e) {
       if (e.statusCode == 401 || e.statusCode == 403) {
         await _clearToken();
@@ -79,33 +108,63 @@ class AuthRepository {
     }
   }
 
-  Future<AuthUser> login({
+  Future<LoginSession> login({
     required String email,
     required String password,
   }) async {
     final result = await _api.login(email: email, password: password);
     await _persistToken(result.token);
-    await _settings.markSignedIn();
+    if (!result.mobileOtpRequired) {
+      await _settings.markSignedIn();
+    }
     try {
-      return await _api.me(result.token);
+      final me = await _api.me(result.token);
+      final user = me.user;
+      final otpRequired = result.mobileOtpRequired || me.mobileOtpRequired;
+      return LoginSession(
+        user: user,
+        mobileOtpRequired: otpRequired,
+        emailMasked: result.emailMasked ?? _maskEmail(user.email),
+        otpExpiresMinutes: result.otpExpiresMinutes,
+        otpSent: result.otpSent,
+        message: result.message,
+      );
     } catch (_) {
-      return result.user;
+      return LoginSession(
+        user: result.user,
+        mobileOtpRequired: result.mobileOtpRequired,
+        emailMasked: result.emailMasked ?? _maskEmail(result.user.email),
+        otpExpiresMinutes: result.otpExpiresMinutes,
+        otpSent: result.otpSent,
+        message: result.message,
+      );
     }
   }
 
-  Future<AuthUser> unlockWithPassword({
+  Future<AuthUser> verifyMobileOtp(String code) async {
+    final token = await _tokenStore.read();
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('Not signed in.');
+    }
+    await _api.verifyMobileOtp(token: token, code: code);
+    await _settings.markSignedIn();
+    final me = await _api.me(token);
+    return me.user;
+  }
+
+  Future<int> resendMobileOtp() async {
+    final token = await _tokenStore.read();
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('Not signed in.');
+    }
+    return _api.resendMobileOtp(token);
+  }
+
+  Future<LoginSession> unlockWithPassword({
     required String email,
     required String password,
   }) async {
-    // Re-auth with password without discarding token until success.
-    final result = await _api.login(email: email, password: password);
-    await _persistToken(result.token);
-    await _settings.markSignedIn();
-    try {
-      return await _api.me(result.token);
-    } catch (_) {
-      return result.user;
-    }
+    return login(email: email, password: password);
   }
 
   Future<void> changePassword({
@@ -136,5 +195,14 @@ class AuthRepository {
     }
     await _clearToken();
     await _settings.clearSessionMeta();
+  }
+
+  static String _maskEmail(String email) {
+    final parts = email.split('@');
+    if (parts.length != 2) return email;
+    final local = parts[0];
+    final visible = local.length <= 2 ? local : local.substring(0, 2);
+    final masked = '$visible${'•' * (local.length - visible.length).clamp(1, 8)}';
+    return '$masked@${parts[1]}';
   }
 }
