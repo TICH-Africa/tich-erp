@@ -5,6 +5,8 @@
     $businessName = (string) ($finance['business_name'] ?? '');
     $admissionNumber = (string) ($finance['admission_number'] ?? '');
     $outstanding = (float) $finance['summary']['outstanding_balance'];
+    // A student who owes money must always get the paybill instructions, even before an invoice row is posted.
+    $canPay = $payableInvoices->isNotEmpty() || $outstanding > 0;
 @endphp
 
 <x-page-toolbar title="Finance" meta="Fee accounts, invoices, payments, and M-Pesa paybill">
@@ -12,7 +14,7 @@
         <a href="{{ route('portal.fee-statement.print') }}" target="_blank" rel="noopener" class="tich-btn tich-btn-secondary">Print statement</a>
         <a href="{{ route('portal.fee-statement.pdf') }}" class="tich-btn tich-btn-secondary">Download statement</a>
         <a href="{{ route('portal.fee-structure.pdf') }}" class="tich-btn tich-btn-secondary">Download fees structure</a>
-        @if ($payableInvoices->isNotEmpty())
+        @if ($canPay)
             <a href="#pay-with-mpesa" class="tich-btn tich-btn-primary">Pay by M-Pesa paybill</a>
         @endif
     </x-slot:actions>
@@ -45,7 +47,7 @@
     </article>
 </div>
 
-@if ($payableInvoices->isNotEmpty())
+@if ($canPay)
     <section id="pay-with-mpesa" class="tich-dept-panel tich-mt-8">
         <div class="tich-dept-panel__head">
             <h2 class="tich-h2 tich-dept-panel__title">Pay fees by M-Pesa paybill</h2>
@@ -109,26 +111,23 @@
                 Pay the whole figure or part of it. Anything you send above what has been billed stays on your account and comes off the next bill.
             </p>
 
-            <div class="tich-grid tich-grid--2 tich-mt-4" style="gap: 1rem;">
-                @foreach ($payableInvoices as $invoice)
-                    <p class="tich-caption" style="margin: 0;">
-                        {{ $invoice->invoice_number }} · {{ ucwords(str_replace('_', ' ', $invoice->invoice_type)) }} · balance KES {{ number_format((float) $invoice->balance, 2) }}
-                    </p>
-                @endforeach
-            </div>
+            @if ($payableInvoices->isNotEmpty())
+                <div class="tich-grid tich-grid--2 tich-mt-4" style="gap: 1rem;">
+                    @foreach ($payableInvoices as $invoice)
+                        <p class="tich-caption" style="margin: 0;">
+                            {{ $invoice->invoice_number }} · {{ ucwords(str_replace('_', ' ', $invoice->invoice_type)) }} · balance KES {{ number_format((float) $invoice->balance, 2) }}
+                        </p>
+                    @endforeach
+                </div>
+            @else
+                <p class="tich-caption tich-mt-4" style="margin: 0;">
+                    The finance office has not posted a bill for this term yet. The amount above is the balance on your account.
+                </p>
+            @endif
 
             <a href="{{ route('portal.fee-structure.pdf') }}" class="tich-btn tich-btn-primary tich-mt-4">Download fees structure</a>
         </article>
     </section>
-@elseif ($outstanding > 0)
-    <article class="tich-card tich-mt-8">
-        <h2 class="tich-h3">Balance on account</h2>
-        <p class="tich-text tich-mt-2">
-            You have an outstanding balance of
-            <strong>KES {{ number_format($outstanding, 2) }}</strong>.
-            A payable invoice has not been posted to your portal yet. Contact the finance office if you need to pay now.
-        </p>
-    </article>
 @endif
 
 @if ($finance['accounts']->isNotEmpty())
@@ -301,6 +300,6 @@
     ])
 @endif
 
-@if ($payableInvoices->isNotEmpty() && $paybill !== '')
+@if ($canPay && $paybill !== '')
     <script src="{{ asset('js/tich-copy-value.js') }}" defer></script>
 @endif
