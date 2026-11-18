@@ -2,6 +2,8 @@
 
 Use this when completing the store listing, Data safety form, and app review. **Do not commit real passwords or production test accounts to git** — paste credentials only in Play Console.
 
+**iOS / App Store:** bundle id `com.tich.africa.tich`, TestFlight, and App Privacy — see [`app-store-connect.md`](app-store-connect.md).
+
 ## Privacy policy
 
 - **URL (must match app and listing):** `https://tich.africa/privacy`

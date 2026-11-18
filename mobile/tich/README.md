@@ -49,6 +49,22 @@ The app defaults to the production API (`https://tich.africa`). For local develo
 
 Android emulator alternative: `http://10.0.2.2:8000`.
 
+### iOS (physical device / simulator)
+
+Requires a Mac with Xcode for device builds and App Store upload.
+
+```bash
+cd mobile/tich
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://192.168.0.102:8000
+```
+
+- **Bundle ID:** `com.tich.africa.tich` (same as Android application id).
+- **LAN HTTP (debug):** iOS 14+ allows HTTP to local network hosts via `NSAllowsLocalNetworking` in `Info.plist`. Use your PC’s Wi‑Fi IP, not `127.0.0.1`, on a physical iPhone.
+- **Production:** HTTPS only (`https://tich.africa`).
+
+See [`docs/app-store-connect.md`](docs/app-store-connect.md) for TestFlight, signing, and App Privacy.
+
 ## Production
 
 ```bash
@@ -57,7 +73,9 @@ flutter run --dart-define=API_BASE_URL=https://tich.africa
 
 The release build can omit the define when connecting to production because the production URL is the default.
 
-Release/profile builds use **HTTPS only** on Android. Plain `http://` LAN URLs work in **debug** builds only (see `android/app/src/debug/res/xml/network_security_config.xml`).
+Release/profile builds use **HTTPS only** in production. Plain `http://` LAN URLs work in **debug** on Android (`android/app/src/debug/res/xml/network_security_config.xml`) and on **iOS 14+** for local network hosts (`ios/Runner/Info.plist` ATS).
+
+**Session tokens:** Android uses encrypted shared preferences; iOS uses Keychain (`AuthTokenStore`).
 
 ## Google Play release (Android App Bundle)
 
@@ -87,7 +105,7 @@ flutter build appbundle --release
 
 Output: `build/app/outputs/bundle/release/app-release.aab` — upload in Play Console (**Release** → **Create new release**).
 
-For **Data safety**, **App access** (reviewer credentials), privacy URL, and permission notes, see [`docs/google-play-console.md`](docs/google-play-console.md).
+For **Data safety**, **App access** (reviewer credentials), privacy URL, and permission notes, see [`docs/google-play-console.md`](docs/google-play-console.md). For **App Store / TestFlight**, see [`docs/app-store-connect.md`](docs/app-store-connect.md).
 
 `assembleRelease` / `bundleRelease` **fail** if `key.properties` is missing, so debug-signed builds cannot be uploaded by mistake.
 
