@@ -2703,6 +2703,29 @@ CREATE TABLE IF NOT EXISTS `student_application_document_submissions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
+-- Mobile app download releases (ICT uploads → public /mobile-app)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `mobile_app_releases` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `platform` varchar(20) NOT NULL,
+    `version_label` varchar(50) NOT NULL,
+    `build_number` int unsigned DEFAULT NULL,
+    `storage_path` varchar(500) DEFAULT NULL,
+    `original_filename` varchar(255) DEFAULT NULL,
+    `file_size` bigint unsigned DEFAULT NULL,
+    `external_url` varchar(500) DEFAULT NULL,
+    `release_notes` text DEFAULT NULL,
+    `is_published` tinyint(1) NOT NULL DEFAULT 1,
+    `uploaded_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `mobile_app_releases_platform_published_created_index` (`platform`, `is_published`, `created_at`),
+    KEY `mobile_app_releases_uploaded_by_user_id_foreign` (`uploaded_by_user_id`),
+    CONSTRAINT `mobile_app_releases_uploaded_by_user_id_foreign` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
 -- Mobile app first sign-in: email OTP gate (migration 2026_11_17_120000)
 -- -----------------------------------------------------------------------------
 SET @u_has_mobile_app_verified := (

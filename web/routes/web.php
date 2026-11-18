@@ -71,6 +71,11 @@ Route::post('/privacy/data-request', [\App\Http\Controllers\Public\DataSubjectRe
     ->middleware('throttle:10,1')
     ->name('privacy.data-request.store');
 Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
+Route::get('/mobile-app', [\App\Http\Controllers\Public\MobileAppPageController::class, 'index'])->name('mobile-app.index');
+Route::get('/mobile-app/download/{platform}', [\App\Http\Controllers\Public\MobileAppDownloadController::class, 'platform'])
+    ->whereIn('platform', ['android', 'ios'])
+    ->middleware('throttle:60,1')
+    ->name('mobile-app.download');
 Route::get('/programs', [ProgramsController::class, 'index'])->name('programs.index');
 Route::get('/programs/{code}', [ProgramsController::class, 'show'])->name('programs.show');
 Route::get('/how-to-apply-hef', [HomeController::class, 'hefGuide'])->name('hef.guide');
@@ -1096,6 +1101,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/student-invites', [\App\Http\Controllers\Ict\StudentInviteController::class, 'index'])->name('ict.student-invites.index');
         Route::post('/student-invites', [\App\Http\Controllers\Ict\StudentInviteController::class, 'store'])->name('ict.student-invites.store');
         Route::post('/student-invites/{student}/resend', [\App\Http\Controllers\Ict\StudentInviteController::class, 'resend'])->name('ict.student-invites.resend');
+
+        Route::get('/mobile-app', [\App\Http\Controllers\Ict\MobileAppReleaseController::class, 'index'])->name('ict.mobile-app.index');
+        Route::post('/mobile-app', [\App\Http\Controllers\Ict\MobileAppReleaseController::class, 'store'])->name('ict.mobile-app.store');
+        Route::delete('/mobile-app/{release}', [\App\Http\Controllers\Ict\MobileAppReleaseController::class, 'destroy'])->name('ict.mobile-app.destroy');
 
         Route::prefix('content')->name('ict.content.')->group(function () {
             Route::get('/about', [\App\Http\Controllers\Ict\Content\AboutController::class, 'index'])->name('about.index');
