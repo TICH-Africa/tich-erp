@@ -60,9 +60,32 @@ return [
     'default_withholding_rate' => 5,
 
     /*
+     | Employee statutory amounts on monthly gross / pensionable pay (Kenya, Feb 2026 schedule).
+     | PAYE bands remain editable under HR → Payroll → Settings; NSSF tiers, SHIF floor, and AHL
+     | use these rules in KenyaStatutoryPayrollCalculator.
+     */
+    'kenya_statutory' => [
+        'nssf' => [
+            'rate_percent' => 6,
+            'tier1_ceiling' => 9000,
+            'tier1_max_employee' => 540,
+            'tier2_ceiling' => 108000,
+            'tier2_max_employee' => 5940,
+            'max_employee' => 6480,
+        ],
+        'shif' => [
+            'rate_percent' => 2.75,
+            'monthly_floor' => 300,
+            /** Gross at or below this uses the flat floor only. */
+            'floor_applies_up_to_gross' => 10909,
+        ],
+        'ahl' => [
+            'rate_percent' => 1.5,
+        ],
+    ],
+
+    /*
      | Kenya employee payroll (KRA) — structure provisioned on HR → Payroll → Settings.
-     | PAYE band rates follow KRA monthly bands; NSSF / SHA·SHIF / AHL matrix rates are
-     | entered per PAYE bracket until tiered NSSF / SHIF floor logic is fully automated.
      */
     'kenya_defaults' => [
         'personal_relief' => 2400,

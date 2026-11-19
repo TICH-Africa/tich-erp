@@ -114,7 +114,7 @@
                 <div class="tich-card tich-table-panel tich-mb-8">
                     <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap: wrap; gap: 0.75rem;">
                         <div>
-                            <p class="tich-caption">Configure income brackets and PAYE rates. Higher bands must stay after lower bands when reordering.</p>
+                            <p class="tich-caption">Configure income brackets and PAYE rates. NSSF, SHA/SHIF, and AHL are computed from Kenya tier rules (not per-band % columns). Higher bands must stay after lower bands when reordering.</p>
                         </div>
                         <button type="button" class="tich-btn tich-btn-ghost" id="add-band-btn">+ Add band</button>
                     </div>
