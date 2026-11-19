@@ -7,6 +7,7 @@ use App\Models\PayrollBandDeductionRate;
 use App\Models\PayrollDeductionType;
 use App\Models\PayrollTaxBand;
 use App\Models\Staff;
+use App\Services\KenyaPayrollTaxProvisioner;
 use App\Services\KenyaPayrollTaxService;
 use App\Services\PrintDocumentService;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +20,7 @@ class PayrollController extends Controller
 {
     public function __construct(
         protected KenyaPayrollTaxService $taxService,
+        protected KenyaPayrollTaxProvisioner $payrollProvisioner,
         protected PrintDocumentService $printDocuments,
     ) {}
 
@@ -39,6 +41,8 @@ class PayrollController extends Controller
 
     public function index(Request $request): View
     {
+        $this->payrollProvisioner->ensureConfigured();
+
         $staff = Staff::query()
             ->excludePlatformOperators()
             ->with(['department', 'activeAllowances'])
@@ -114,6 +118,8 @@ class PayrollController extends Controller
 
     public function settings(): View
     {
+        $this->payrollProvisioner->ensureConfigured();
+
         $deductionTypes = PayrollDeductionType::query()->orderBy('display_order')->orderBy('label')->get();
         $bands = PayrollTaxBand::query()
             ->with(['deductionRates'])
@@ -224,7 +230,7 @@ class PayrollController extends Controller
         if ($keptTypeIds !== []) {
             PayrollDeductionType::query()
                 ->whereNotIn('id', $keptTypeIds)
-                ->where('code', '!=', 'withholding_tax')
+                ->whereNotIn('code', $this->payrollProvisioner->lockedDeductionCodes())
                 ->delete();
         }
 

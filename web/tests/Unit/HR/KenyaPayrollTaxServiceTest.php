@@ -60,17 +60,18 @@ class KenyaPayrollTaxServiceTest extends TestCase
 
         $sha = PayrollDeductionType::query()->create([
             'code' => 'sha',
-            'label' => 'SHA',
+            'label' => 'SHA / SHIF',
             'value_type' => 'band_percent',
+            'reduces_taxable' => 1,
             'display_order' => 3,
             'is_active' => 1,
         ]);
 
         $ahl = PayrollDeductionType::query()->create([
             'code' => 'ahl',
-            'label' => 'AHL',
+            'label' => 'Affordable Housing Levy (AHL)',
             'value_type' => 'band_percent',
-            'employer_rate_percent' => 1.5,
+            'reduces_taxable' => 1,
             'display_order' => 4,
             'is_active' => 1,
         ]);

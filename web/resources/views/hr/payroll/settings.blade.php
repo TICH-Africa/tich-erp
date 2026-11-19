@@ -4,11 +4,15 @@
 
 @section('hr-content')
     @php
+        $lockedDeductionCodes = app(\App\Services\KenyaPayrollTaxProvisioner::class)->lockedDeductionCodes();
+
         $settingsPayload = [
+            'lockedDeductionCodes' => array_values(array_diff($lockedDeductionCodes, ['withholding_tax'])),
             'deductionTypes' => $deductionTypes
                 ->reject(fn ($type) => $type->code === 'withholding_tax')
                 ->map(fn ($type) => [
                 'id' => $type->id,
+                'code' => $type->code,
                 'label' => $type->label,
                 'value_type' => $type->value_type,
                 'fixed_amount' => $type->fixed_amount,
@@ -40,11 +44,13 @@
         ];
     @endphp
 
-    <x-page-toolbar title="KRA tax settings" meta="PAYE bands, statutory deductions, and withholding tax">
+    <x-page-toolbar title="Payroll tax settings" meta="PAYE, NSSF, SHA/SHIF, AHL (employee) — aligned with KRA monthly payroll">
         <x-slot:actions>
             <a href="{{ route('hr.payroll.index') }}" class="tich-btn tich-btn-secondary">&larr; Back to payroll</a>
         </x-slot:actions>
     </x-page-toolbar>
+
+    @include('hr.payroll.partials.settings-overview')
 
     <div class="tich-card tich-mb-8">
         <h2 class="tich-h3">Consultants &amp; independent contractors</h2>

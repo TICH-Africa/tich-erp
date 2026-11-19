@@ -9,10 +9,19 @@
     }
 
     var boot = JSON.parse(dataEl.textContent || '{}');
+    var lockedDeductionCodes = boot.lockedDeductionCodes || [];
     var state = {
         deductionTypes: boot.deductionTypes || [],
         bands: boot.bands || [],
     };
+
+    function isLockedDeductionType(type) {
+        if (!type || !type.code) {
+            return false;
+        }
+
+        return lockedDeductionCodes.indexOf(type.code) !== -1;
+    }
 
     var nextTempTypeKey = 1;
     var nextTempBandKey = 1;
@@ -521,7 +530,7 @@
         setModalField('deduction-item-employer-rate', type.employer_rate_percent === '' || type.employer_rate_percent == null ? '' : formatNum(type.employer_rate_percent));
         setModalField('deduction-item-reduces-taxable', type.reduces_taxable);
         setModalField('deduction-item-active', type.is_active);
-        deleteBtn.hidden = isNew;
+        deleteBtn.hidden = isNew || isLockedDeductionType(type);
         toggleDeductionTypeFields();
 
         if (window.tichOpenModal) {
@@ -584,7 +593,11 @@
         var key = modal.dataset.editKey || '';
         var type = findType(key);
 
-        if (!type || !window.confirm('Delete tax item "' + type.label + '"?')) {
+        if (!type || isLockedDeductionType(type)) {
+            return;
+        }
+
+        if (!window.confirm('Delete tax item "' + type.label + '"?')) {
             return;
         }
 

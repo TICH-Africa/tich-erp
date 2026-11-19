@@ -58,4 +58,50 @@ return [
     ],
 
     'default_withholding_rate' => 5,
+
+    /*
+     | Kenya employee payroll (KRA) — structure provisioned on HR → Payroll → Settings.
+     | PAYE band rates follow KRA monthly bands; NSSF / SHA·SHIF / AHL matrix rates are
+     | entered per PAYE bracket until tiered NSSF / SHIF floor logic is fully automated.
+     */
+    'kenya_defaults' => [
+        'personal_relief' => 2400,
+        'paye_bands' => [
+            ['label' => 'First KES 24,000', 'min_amount' => 0, 'max_amount' => 24000, 'rate_percent' => 10, 'display_order' => 1],
+            ['label' => 'KES 24,001 – 32,333', 'min_amount' => 24000, 'max_amount' => 32333, 'rate_percent' => 25, 'display_order' => 2],
+            ['label' => 'KES 32,334 – 500,000', 'min_amount' => 32333, 'max_amount' => 500000, 'rate_percent' => 30, 'display_order' => 3],
+            ['label' => 'KES 500,001 – 800,000', 'min_amount' => 500000, 'max_amount' => 800000, 'rate_percent' => 32.5, 'display_order' => 4],
+            ['label' => 'Above KES 800,000', 'min_amount' => 800000, 'max_amount' => null, 'rate_percent' => 35, 'display_order' => 5],
+        ],
+        'statutory_deductions' => [
+            [
+                'code' => 'nssf',
+                'label' => 'NSSF',
+                'value_type' => 'band_percent',
+                'reduces_taxable' => true,
+                'display_order' => 2,
+            ],
+            [
+                'code' => 'sha',
+                'label' => 'SHA / SHIF',
+                'value_type' => 'band_percent',
+                'reduces_taxable' => true,
+                'display_order' => 3,
+            ],
+            [
+                'code' => 'ahl',
+                'label' => 'Affordable Housing Levy (AHL)',
+                'value_type' => 'band_percent',
+                'reduces_taxable' => true,
+                'display_order' => 4,
+            ],
+        ],
+        'locked_deduction_codes' => [
+            'personal_relief',
+            'nssf',
+            'sha',
+            'ahl',
+            'withholding_tax',
+        ],
+    ],
 ];
