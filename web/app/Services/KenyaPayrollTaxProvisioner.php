@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\PayrollBandDeductionRate;
 use App\Models\PayrollDeductionType;
+use App\Models\PayrollKenyaStatutorySetting;
 use App\Models\PayrollTaxBand;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Ensures PAYE bands and employee statutory deduction rows exist before HR enters rates.
@@ -14,10 +16,22 @@ class KenyaPayrollTaxProvisioner
 {
     public function ensureConfigured(): void
     {
+        $this->ensureStatutorySettingsRow();
+        app(PayrollStatutoryBracketService::class)->ensureConfigured();
         $bands = $this->ensurePayeBands();
         $this->ensurePersonalRelief();
         $statutoryTypes = $this->ensureStatutoryDeductionTypes();
+        $this->normalizeStatutoryTaxItems();
         $this->ensureBandDeductionMatrix($bands, $statutoryTypes);
+    }
+
+    public function ensureStatutorySettingsRow(): void
+    {
+        if (! Schema::hasTable('payroll_kenya_statutory_settings')) {
+            return;
+        }
+
+        PayrollKenyaStatutorySetting::current();
     }
 
     /**
@@ -105,10 +119,40 @@ class KenyaPayrollTaxProvisioner
      * @param  Collection<int, PayrollTaxBand>  $bands
      * @param  Collection<int, PayrollDeductionType>  $statutoryTypes
      */
+    protected function normalizeStatutoryTaxItems(): void
+    {
+        $locked = ['nssf', 'sha', 'ahl'];
+
+        $typeIds = PayrollDeductionType::query()
+            ->whereIn('code', $locked)
+            ->pluck('id')
+            ->all();
+
+        if ($typeIds !== []) {
+            PayrollBandDeductionRate::query()
+                ->whereIn('payroll_deduction_type_id', $typeIds)
+                ->delete();
+
+            PayrollDeductionType::query()
+                ->whereIn('code', $locked)
+                ->update([
+                    'value_type' => 'global_fixed',
+                    'fixed_amount' => null,
+                    'reduces_taxable' => true,
+                ]);
+        }
+    }
+
     protected function ensureBandDeductionMatrix(Collection $bands, Collection $statutoryTypes): void
     {
+        $locked = $this->lockedDeductionCodes();
+
         foreach ($bands as $band) {
             foreach ($statutoryTypes as $type) {
+                if (in_array($type->code, $locked, true)) {
+                    continue;
+                }
+
                 if (! $type->isBandPercent()) {
                     continue;
                 }

@@ -89,8 +89,13 @@
         .tich-drag-handle:active { cursor: grabbing; }
         .payroll-settings-tabs__nav {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 0.5rem;
+        }
+        @media (max-width: 720px) {
+            .payroll-settings-tabs__nav {
+                grid-template-columns: 1fr;
+            }
         }
         .payroll-settings-tabs__nav .tich-tabs__btn {
             width: 100%;
@@ -107,6 +112,7 @@
         <div class="tich-tabs tich-mb-6" data-tabs>
             <div class="tich-tabs__nav payroll-settings-tabs__nav">
                 <button type="button" class="tich-tabs__btn is-active" data-tab="bands">PAYE tax bands (KRA)</button>
+                <button type="button" class="tich-tabs__btn" data-tab="statutory">NSSF / SHIF / AHL</button>
                 <button type="button" class="tich-tabs__btn" data-tab="items">Tax items</button>
             </div>
 
@@ -114,7 +120,7 @@
                 <div class="tich-card tich-table-panel tich-mb-8">
                     <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap: wrap; gap: 0.75rem;">
                         <div>
-                            <p class="tich-caption">Configure income brackets and PAYE rates. NSSF, SHA/SHIF, and AHL are computed from Kenya tier rules (not per-band % columns). Higher bands must stay after lower bands when reordering.</p>
+                            <p class="tich-caption">KRA income tax brackets and PAYE rates only. NSSF, SHA/SHIF, and AHL are configured on the next tab, each with its own bracket table.</p>
                         </div>
                         <button type="button" class="tich-btn tich-btn-ghost" id="add-band-btn">+ Add band</button>
                     </div>
@@ -127,12 +133,13 @@
                                 <tr id="bands-header-row"></tr>
                             </thead>
                             <tbody id="bands-tbody"></tbody>
-                            <tfoot>
-                                <tr id="cumulative-footer-row"></tr>
-                            </tfoot>
                         </table>
                     </div>
                 </div>
+            </div>
+
+            <div class="tich-tabs__panel" data-panel="statutory">
+                @include('hr.payroll.partials.settings-statutory-brackets', ['statutoryBrackets' => $statutoryBrackets])
             </div>
 
             <div class="tich-tabs__panel" data-panel="items">
@@ -265,8 +272,6 @@
                         <input type="checkbox" id="band-active" value="1" checked> Active
                     </label>
                 </div>
-                <h3 class="tich-h4 tich-mt-4 tich-mb-2">Deduction rates for this band</h3>
-                <div class="tich-grid tich-grid--3" id="band-deduction-fields"></div>
             </div>
             <footer class="tich-modal__footer">
                 <button type="button" class="tich-btn tich-btn-ghost" id="band-delete-btn" style="color: #c0392b; margin-right: auto;">Delete</button>

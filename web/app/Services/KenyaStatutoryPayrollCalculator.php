@@ -2,18 +2,39 @@
 
 namespace App\Services;
 
+use App\Models\PayrollStatutoryBracket;
+
 /**
  * Kenya employee statutory deductions on monthly gross (NSSF tiers, SHA/SHIF, AHL).
  */
 class KenyaStatutoryPayrollCalculator
 {
+    public function __construct(
+        protected KenyaPayrollStatutoryConfig $statutoryConfig,
+    ) {}
+
     /**
      * @return array{amount: float, tier1: float, tier2: float, pensionable: float, rate_percent: float}
      */
     public function employeeNssf(float $pensionableMonthly): array
     {
         $pensionable = max(0, round($pensionableMonthly, 2));
-        $cfg = config('tich-payroll.kenya_statutory.nssf', []);
+
+        if ($this->statutoryConfig->usesBracketTables()) {
+            return $this->nssfFromBrackets($pensionable);
+        }
+
+        $cfg = $this->statutoryConfig->resolve()['nssf'] ?? [];
+
+        return $this->nssfFromFlatConfig($pensionable, $cfg);
+    }
+
+    /**
+     * @param  array<string, mixed>  $cfg
+     * @return array{amount: float, tier1: float, tier2: float, pensionable: float, rate_percent: float}
+     */
+    protected function nssfFromFlatConfig(float $pensionable, array $cfg): array
+    {
         $rate = ((float) ($cfg['rate_percent'] ?? 6)) / 100;
         $tier1Ceiling = (float) ($cfg['tier1_ceiling'] ?? 9000);
         $tier2Ceiling = (float) ($cfg['tier2_ceiling'] ?? 108000);
@@ -48,12 +69,69 @@ class KenyaStatutoryPayrollCalculator
     }
 
     /**
+     * @return array{amount: float, tier1: float, tier2: float, pensionable: float, rate_percent: float}
+     */
+    protected function nssfFromBrackets(float $pensionable): array
+    {
+        $brackets = $this->statutoryConfig->activeBrackets(PayrollStatutoryBracket::SCHEME_NSSF);
+        $tier1Row = $brackets->first();
+        $tier2Row = $brackets->skip(1)->first();
+
+        $rate = ((float) ($tier1Row?->rate_percent ?? 6)) / 100;
+        $tier1Ceiling = (float) ($tier1Row?->max_amount ?? 9000);
+        $tier2Ceiling = (float) ($tier2Row?->max_amount ?? 108000);
+        $tier1Max = (float) ($tier1Row?->cap_amount ?? 540);
+        $tier2Max = (float) ($tier2Row?->cap_amount ?? 5940);
+        $overallMax = $tier1Max + $tier2Max;
+
+        return $this->nssfFromFlatConfig($pensionable, [
+            'rate_percent' => $rate * 100,
+            'tier1_ceiling' => $tier1Ceiling,
+            'tier1_max_employee' => $tier1Max,
+            'tier2_ceiling' => $tier2Ceiling,
+            'tier2_max_employee' => $tier2Max,
+            'max_employee' => $overallMax,
+        ]);
+    }
+
+    /**
      * @return array{amount: float, rate_percent: float, gross: float, used_floor: bool}
      */
     public function employeeShif(float $monthlyGross): array
     {
         $gross = max(0, round($monthlyGross, 2));
-        $cfg = config('tich-payroll.kenya_statutory.shif', []);
+
+        if ($this->statutoryConfig->usesBracketTables()) {
+            $brackets = $this->statutoryConfig->activeBrackets(PayrollStatutoryBracket::SCHEME_SHIF);
+            $fixedBand = $brackets->firstWhere('calculation', 'fixed');
+            $rateBand = $brackets->firstWhere('calculation', 'percent_floor')
+                ?? $brackets->firstWhere('calculation', 'percent');
+
+            $floorCap = (float) ($fixedBand?->max_amount ?? 10909);
+            $floorAmount = (float) ($fixedBand?->fixed_amount ?? 300);
+            $rate = ((float) ($rateBand?->rate_percent ?? 2.75)) / 100;
+            $rateFloor = (float) ($rateBand?->fixed_amount ?? $floorAmount);
+
+            if ($gross <= $floorCap) {
+                return [
+                    'amount' => $floorAmount,
+                    'rate_percent' => (float) ($rateBand?->rate_percent ?? 2.75),
+                    'gross' => $gross,
+                    'used_floor' => true,
+                ];
+            }
+
+            $percentAmount = round($gross * $rate, 2);
+
+            return [
+                'amount' => max($rateFloor, $percentAmount),
+                'rate_percent' => (float) ($rateBand?->rate_percent ?? 2.75),
+                'gross' => $gross,
+                'used_floor' => $percentAmount < $rateFloor,
+            ];
+        }
+
+        $cfg = $this->statutoryConfig->resolve()['shif'] ?? [];
         $rate = ((float) ($cfg['rate_percent'] ?? 2.75)) / 100;
         $floor = (float) ($cfg['monthly_floor'] ?? 300);
         $floorCapGross = (float) ($cfg['floor_applies_up_to_gross'] ?? 10909);
@@ -83,7 +161,19 @@ class KenyaStatutoryPayrollCalculator
     public function employeeAhl(float $monthlyGrossCash): array
     {
         $gross = max(0, round($monthlyGrossCash, 2));
-        $cfg = config('tich-payroll.kenya_statutory.ahl', []);
+
+        if ($this->statutoryConfig->usesBracketTables()) {
+            $row = $this->statutoryConfig->activeBrackets(PayrollStatutoryBracket::SCHEME_AHL)->first();
+            $rate = ((float) ($row?->rate_percent ?? 1.5)) / 100;
+
+            return [
+                'amount' => round($gross * $rate, 2),
+                'rate_percent' => (float) ($row?->rate_percent ?? 1.5),
+                'gross' => $gross,
+            ];
+        }
+
+        $cfg = $this->statutoryConfig->resolve()['ahl'] ?? [];
         $rate = ((float) ($cfg['rate_percent'] ?? 1.5)) / 100;
 
         return [

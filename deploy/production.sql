@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-11-18 10:22:51 EAT
+-- Generated: 2026-11-19 15:25:20 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -8471,6 +8471,44 @@ CALL `tich_ensure_index`('payroll_items', 'payroll_items_processed_by_foreign', 
 CALL `tich_ensure_index`('payroll_items', 'payroll_items_staff_id_pay_period_year_pay_period_month_index', '`staff_id`, `pay_period_year`, `pay_period_month`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `payroll_kenya_statutory_settings`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `payroll_kenya_statutory_settings` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `nssf_rate_percent` decimal(7,4) NOT NULL DEFAULT 6.0000,
+  `nssf_tier1_ceiling` decimal(12,2) NOT NULL DEFAULT 9000.00,
+  `nssf_tier1_max_employee` decimal(12,2) NOT NULL DEFAULT 540.00,
+  `nssf_tier2_ceiling` decimal(12,2) NOT NULL DEFAULT 108000.00,
+  `nssf_tier2_max_employee` decimal(12,2) NOT NULL DEFAULT 5940.00,
+  `nssf_max_employee` decimal(12,2) NOT NULL DEFAULT 6480.00,
+  `shif_rate_percent` decimal(7,4) NOT NULL DEFAULT 2.7500,
+  `shif_monthly_floor` decimal(12,2) NOT NULL DEFAULT 300.00,
+  `shif_floor_applies_up_to_gross` decimal(12,2) NOT NULL DEFAULT 10909.00,
+  `ahl_rate_percent` decimal(7,4) NOT NULL DEFAULT 1.5000,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `payroll_kenya_statutory_settings` (add only if missing)
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'nssf_rate_percent', 'decimal(7,4) NOT NULL DEFAULT \'6.0000\'');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'nssf_tier1_ceiling', 'decimal(12,2) NOT NULL DEFAULT \'9000.00\'');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'nssf_tier1_max_employee', 'decimal(12,2) NOT NULL DEFAULT \'540.00\'');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'nssf_tier2_ceiling', 'decimal(12,2) NOT NULL DEFAULT \'108000.00\'');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'nssf_tier2_max_employee', 'decimal(12,2) NOT NULL DEFAULT \'5940.00\'');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'nssf_max_employee', 'decimal(12,2) NOT NULL DEFAULT \'6480.00\'');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'shif_rate_percent', 'decimal(7,4) NOT NULL DEFAULT \'2.7500\'');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'shif_monthly_floor', 'decimal(12,2) NOT NULL DEFAULT \'300.00\'');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'shif_floor_applies_up_to_gross', 'decimal(12,2) NOT NULL DEFAULT \'10909.00\'');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'ahl_rate_percent', 'decimal(7,4) NOT NULL DEFAULT \'1.5000\'');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('payroll_kenya_statutory_settings', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `payroll_kenya_statutory_settings` (add only if missing)
+-- (no secondary indexes)
+
+-- -----------------------------------------------------------------------------
 -- Table: `payroll_runs`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `payroll_runs` (
@@ -8541,6 +8579,45 @@ CALL `tich_ensure_index`('payroll_runs', 'payroll_runs_period_index', '`pay_peri
 CALL `tich_ensure_index`('payroll_runs', 'payroll_runs_posted_by_foreign', '`posted_by`');
 CALL `tich_ensure_unique`('payroll_runs', 'payroll_runs_run_number_unique', '`run_number`');
 CALL `tich_ensure_index`('payroll_runs', 'payroll_runs_status_index', '`status`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `payroll_statutory_brackets`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `payroll_statutory_brackets` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `scheme` varchar(16) NOT NULL,
+  `label` varchar(120) NOT NULL,
+  `min_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `max_amount` decimal(12,2) DEFAULT NULL,
+  `calculation` varchar(24) NOT NULL DEFAULT 'percent',
+  `rate_percent` decimal(7,4) DEFAULT NULL,
+  `fixed_amount` decimal(12,2) DEFAULT NULL,
+  `cap_amount` decimal(12,2) DEFAULT NULL,
+  `display_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `payroll_statutory_brackets_scheme_display_order_index` (`scheme`,`display_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `payroll_statutory_brackets` (add only if missing)
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'scheme', 'varchar(16) NOT NULL');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'label', 'varchar(120) NOT NULL');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'min_amount', 'decimal(12,2) NOT NULL DEFAULT \'0.00\'');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'max_amount', 'decimal(12,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'calculation', 'varchar(24) NOT NULL DEFAULT \'\\\'percent\\\'\'');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'rate_percent', 'decimal(7,4) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'fixed_amount', 'decimal(12,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'cap_amount', 'decimal(12,2) NULL DEFAULT NULL');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'display_order', 'smallint(5) unsigned NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'is_active', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('payroll_statutory_brackets', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `payroll_statutory_brackets` (add only if missing)
+CALL `tich_ensure_index`('payroll_statutory_brackets', 'payroll_statutory_brackets_scheme_display_order_index', '`scheme`, `display_order`');
 
 -- -----------------------------------------------------------------------------
 -- Table: `payroll_statutory_rates`

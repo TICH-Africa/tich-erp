@@ -2778,5 +2778,98 @@ ALTER TABLE `efundi_opportunities`
     ADD COLUMN IF NOT EXISTS `opportunity_scope` varchar(20) NOT NULL DEFAULT 'external' AFTER `opportunity_type`,
     ADD COLUMN IF NOT EXISTS `job_vacancy_id` bigint(20) unsigned DEFAULT NULL AFTER `opportunity_scope`;
 
+-- -----------------------------------------------------------------------------
+-- Kenya payroll statutory settings (migration 2026_11_19_120000)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `payroll_kenya_statutory_settings` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `nssf_rate_percent` decimal(7,4) NOT NULL DEFAULT 6.0000,
+    `nssf_tier1_ceiling` decimal(12,2) NOT NULL DEFAULT 9000.00,
+    `nssf_tier1_max_employee` decimal(12,2) NOT NULL DEFAULT 540.00,
+    `nssf_tier2_ceiling` decimal(12,2) NOT NULL DEFAULT 108000.00,
+    `nssf_tier2_max_employee` decimal(12,2) NOT NULL DEFAULT 5940.00,
+    `nssf_max_employee` decimal(12,2) NOT NULL DEFAULT 6480.00,
+    `shif_rate_percent` decimal(7,4) NOT NULL DEFAULT 2.7500,
+    `shif_monthly_floor` decimal(12,2) NOT NULL DEFAULT 300.00,
+    `shif_floor_applies_up_to_gross` decimal(12,2) NOT NULL DEFAULT 10909.00,
+    `ahl_rate_percent` decimal(7,4) NOT NULL DEFAULT 1.5000,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `payroll_kenya_statutory_settings` (
+    `id`,
+    `nssf_rate_percent`,
+    `nssf_tier1_ceiling`,
+    `nssf_tier1_max_employee`,
+    `nssf_tier2_ceiling`,
+    `nssf_tier2_max_employee`,
+    `nssf_max_employee`,
+    `shif_rate_percent`,
+    `shif_monthly_floor`,
+    `shif_floor_applies_up_to_gross`,
+    `ahl_rate_percent`,
+    `created_at`,
+    `updated_at`
+)
+SELECT
+    1,
+    6.0000,
+    9000.00,
+    540.00,
+    108000.00,
+    5940.00,
+    6480.00,
+    2.7500,
+    300.00,
+    10909.00,
+    1.5000,
+    NOW(),
+    NOW()
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `payroll_kenya_statutory_settings` LIMIT 1);
+
+-- -----------------------------------------------------------------------------
+-- Kenya payroll statutory brackets (migration 2026_11_19_140000)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `payroll_statutory_brackets` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `scheme` varchar(16) NOT NULL,
+    `label` varchar(120) NOT NULL,
+    `min_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+    `max_amount` decimal(12,2) DEFAULT NULL,
+    `calculation` varchar(24) NOT NULL DEFAULT 'percent',
+    `rate_percent` decimal(7,4) DEFAULT NULL,
+    `fixed_amount` decimal(12,2) DEFAULT NULL,
+    `cap_amount` decimal(12,2) DEFAULT NULL,
+    `display_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+    `is_active` tinyint(1) NOT NULL DEFAULT 1,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `payroll_statutory_brackets_scheme_display_order_index` (`scheme`,`display_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_amount`, `calculation`, `rate_percent`, `fixed_amount`, `cap_amount`, `display_order`, `is_active`, `created_at`, `updated_at`)
+SELECT 'nssf', 'Tier I (pensionable up to KES 9,000)', 0.00, 9000.00, 'percent_capped', 6.0000, NULL, 540.00, 1, 1, NOW(), NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `payroll_statutory_brackets` WHERE `scheme` = 'nssf' LIMIT 1);
+
+INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_amount`, `calculation`, `rate_percent`, `fixed_amount`, `cap_amount`, `display_order`, `is_active`, `created_at`, `updated_at`)
+SELECT 'nssf', 'Tier II (KES 9,001 – 108,000)', 9001.00, 108000.00, 'percent_capped', 6.0000, NULL, 5940.00, 2, 1, NOW(), NOW()
+FROM DUAL WHERE (SELECT COUNT(*) FROM `payroll_statutory_brackets` WHERE `scheme` = 'nssf') < 2;
+
+INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_amount`, `calculation`, `rate_percent`, `fixed_amount`, `cap_amount`, `display_order`, `is_active`, `created_at`, `updated_at`)
+SELECT 'shif', 'Minimum contribution (low gross)', 0.00, 10909.00, 'fixed', NULL, 300.00, NULL, 1, 1, NOW(), NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `payroll_statutory_brackets` WHERE `scheme` = 'shif' LIMIT 1);
+
+INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_amount`, `calculation`, `rate_percent`, `fixed_amount`, `cap_amount`, `display_order`, `is_active`, `created_at`, `updated_at`)
+SELECT 'shif', 'Percentage of gross', 10910.00, NULL, 'percent_floor', 2.7500, 300.00, NULL, 2, 1, NOW(), NOW()
+FROM DUAL WHERE (SELECT COUNT(*) FROM `payroll_statutory_brackets` WHERE `scheme` = 'shif') < 2;
+
+INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_amount`, `calculation`, `rate_percent`, `fixed_amount`, `cap_amount`, `display_order`, `is_active`, `created_at`, `updated_at`)
+SELECT 'ahl', 'All gross cash pay', 0.00, NULL, 'percent', 1.5000, NULL, NULL, 1, 1, NOW(), NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `payroll_statutory_brackets` WHERE `scheme` = 'ahl' LIMIT 1);
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';
