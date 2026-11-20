@@ -44,17 +44,10 @@ class _StudentExamRequestsPageState extends State<StudentExamRequestsPage> {
       },
       setFuture: (f) => _future = f,
       fetch: () => widget.api.academicsExamRequests(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
+      liveRefreshDelayWhenCached: const Duration(seconds: 8),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (_dataCache != null) {
-        Future<void>.delayed(const Duration(seconds: 8), () {
-          if (mounted) _liveRefresh();
-        });
-        return;
-      }
-      _liveRefresh();
-    });
   }
 
   void _primeUnitSelection(Object? cache) {

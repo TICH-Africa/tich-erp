@@ -38,6 +38,9 @@ void staffPrimeScreen({
   required void Function(Object? cache) setCache,
   required void Function(Future<Map<String, dynamic>> future) setFuture,
   required Future<Map<String, dynamic>> Function() fetch,
+  bool Function()? mounted,
+  VoidCallback? scheduleLiveRefresh,
+  Duration liveRefreshDelayWhenCached = const Duration(seconds: 12),
 }) {
   TichScreenCache.primeMapScreen(
     persistKey: persistKey,
@@ -45,6 +48,14 @@ void staffPrimeScreen({
     applyFuture: setFuture,
     fetch: fetch,
   );
+  if (mounted != null && scheduleLiveRefresh != null) {
+    tichScheduleInitialLiveRefresh(
+      mounted: mounted,
+      persistKey: persistKey,
+      onRefresh: scheduleLiveRefresh,
+      delayWhenCached: liveRefreshDelayWhenCached,
+    );
+  }
 }
 
 String staffDetailCacheKey(String namespace, int id) => '$namespace.$id';

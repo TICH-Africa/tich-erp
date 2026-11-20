@@ -5,12 +5,17 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Models\PayrollBandDeductionRate;
 use App\Models\PayrollDeductionType;
+use App\Models\PayrollKenyaStatutorySetting;
+use App\Models\PayrollStatutoryBracket;
 use App\Models\PayrollTaxBand;
 use App\Models\Staff;
+use App\Services\KenyaPayrollTaxProvisioner;
 use App\Services\KenyaPayrollTaxService;
+use App\Services\PayrollStatutoryBracketService;
 use App\Services\PrintDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -19,6 +24,8 @@ class PayrollController extends Controller
 {
     public function __construct(
         protected KenyaPayrollTaxService $taxService,
+        protected KenyaPayrollTaxProvisioner $payrollProvisioner,
+        protected PayrollStatutoryBracketService $statutoryBracketService,
         protected PrintDocumentService $printDocuments,
     ) {}
 
@@ -39,6 +46,8 @@ class PayrollController extends Controller
 
     public function index(Request $request): View
     {
+        $this->payrollProvisioner->ensureConfigured();
+
         $staff = Staff::query()
             ->excludePlatformOperators()
             ->with(['department', 'activeAllowances'])
@@ -114,6 +123,8 @@ class PayrollController extends Controller
 
     public function settings(): View
     {
+        $this->payrollProvisioner->ensureConfigured();
+
         $deductionTypes = PayrollDeductionType::query()->orderBy('display_order')->orderBy('label')->get();
         $bands = PayrollTaxBand::query()
             ->with(['deductionRates'])
@@ -125,7 +136,38 @@ class PayrollController extends Controller
             'bands' => $bands,
             'deductionTypes' => $deductionTypes,
             'withholdingRate' => $this->taxService->withholdingTaxRate(),
+            'statutorySettings' => $this->resolveStatutorySettingsForForm(),
+            'statutoryBrackets' => $this->resolveStatutoryBracketsForForm(),
         ]);
+    }
+
+    /**
+     * @return array<string, \Illuminate\Support\Collection<int, PayrollStatutoryBracket>>
+     */
+    protected function resolveStatutoryBracketsForForm(): array
+    {
+        if (! Schema::hasTable('payroll_statutory_brackets')) {
+            return [
+                PayrollStatutoryBracket::SCHEME_NSSF => collect(),
+                PayrollStatutoryBracket::SCHEME_SHIF => collect(),
+                PayrollStatutoryBracket::SCHEME_AHL => collect(),
+            ];
+        }
+
+        return [
+            PayrollStatutoryBracket::SCHEME_NSSF => PayrollStatutoryBracket::forScheme(PayrollStatutoryBracket::SCHEME_NSSF)->get(),
+            PayrollStatutoryBracket::SCHEME_SHIF => PayrollStatutoryBracket::forScheme(PayrollStatutoryBracket::SCHEME_SHIF)->get(),
+            PayrollStatutoryBracket::SCHEME_AHL => PayrollStatutoryBracket::forScheme(PayrollStatutoryBracket::SCHEME_AHL)->get(),
+        ];
+    }
+
+    protected function resolveStatutorySettingsForForm(): PayrollKenyaStatutorySetting
+    {
+        if (! Schema::hasTable('payroll_kenya_statutory_settings')) {
+            return new PayrollKenyaStatutorySetting(PayrollKenyaStatutorySetting::defaultsFromConfig());
+        }
+
+        return PayrollKenyaStatutorySetting::current();
     }
 
     public function updateSettings(Request $request): RedirectResponse
@@ -152,6 +194,30 @@ class PayrollController extends Controller
             'bands.*.is_active' => 'nullable|boolean',
             'bands.*.deductions' => 'nullable|array',
             'bands.*.deductions.*' => 'nullable|numeric|min:0|max:100',
+            'kenya_statutory' => 'nullable|array',
+            'kenya_statutory.nssf_rate_percent' => 'nullable|numeric|min:0|max:100',
+            'kenya_statutory.nssf_tier1_ceiling' => 'nullable|numeric|min:0',
+            'kenya_statutory.nssf_tier1_max_employee' => 'nullable|numeric|min:0',
+            'kenya_statutory.nssf_tier2_ceiling' => 'nullable|numeric|min:0',
+            'kenya_statutory.nssf_tier2_max_employee' => 'nullable|numeric|min:0',
+            'kenya_statutory.nssf_max_employee' => 'nullable|numeric|min:0',
+            'kenya_statutory.shif_rate_percent' => 'nullable|numeric|min:0|max:100',
+            'kenya_statutory.shif_monthly_floor' => 'nullable|numeric|min:0',
+            'kenya_statutory.shif_floor_applies_up_to_gross' => 'nullable|numeric|min:0',
+            'kenya_statutory.ahl_rate_percent' => 'nullable|numeric|min:0|max:100',
+            'statutory_brackets' => 'nullable|array',
+            'statutory_brackets.nssf' => 'nullable|array',
+            'statutory_brackets.shif' => 'nullable|array',
+            'statutory_brackets.ahl' => 'nullable|array',
+            'statutory_brackets.*.*.id' => 'nullable|integer|exists:payroll_statutory_brackets,id',
+            'statutory_brackets.*.*.label' => 'required|string|max:120',
+            'statutory_brackets.*.*.min_amount' => 'nullable|numeric|min:0',
+            'statutory_brackets.*.*.max_amount' => 'nullable|numeric|min:0',
+            'statutory_brackets.*.*.calculation' => 'required|in:percent,fixed,percent_capped,percent_floor',
+            'statutory_brackets.*.*.rate_percent' => 'nullable|numeric|min:0|max:100',
+            'statutory_brackets.*.*.fixed_amount' => 'nullable|numeric|min:0',
+            'statutory_brackets.*.*.cap_amount' => 'nullable|numeric|min:0',
+            'statutory_brackets.*.*.is_active' => 'nullable|boolean',
         ]);
 
         if (array_key_exists('withholding_tax_rate', $validated) && $validated['withholding_tax_rate'] !== null && $validated['withholding_tax_rate'] !== '') {
@@ -224,7 +290,7 @@ class PayrollController extends Controller
         if ($keptTypeIds !== []) {
             PayrollDeductionType::query()
                 ->whereNotIn('id', $keptTypeIds)
-                ->where('code', '!=', 'withholding_tax')
+                ->whereNotIn('code', $this->payrollProvisioner->lockedDeductionCodes())
                 ->delete();
         }
 
@@ -290,7 +356,40 @@ class PayrollController extends Controller
 
         PayrollTaxBand::query()->whereNotIn('id', $keptBandIds)->delete();
 
-        return redirect()->route('hr.payroll.settings')->with('success', 'KRA tax bands and deductions updated.');
+        if (! empty($validated['kenya_statutory'])) {
+            $this->saveKenyaStatutorySettings($validated['kenya_statutory']);
+        }
+
+        if (! empty($validated['statutory_brackets'])) {
+            $this->statutoryBracketService->saveGrouped($validated['statutory_brackets']);
+        }
+
+        return redirect()->route($this->routePrefix().'.settings')->with('success', 'Payroll tax and statutory settings updated.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    protected function saveKenyaStatutorySettings(array $input): void
+    {
+        if (! Schema::hasTable('payroll_kenya_statutory_settings')) {
+            return;
+        }
+
+        $row = PayrollKenyaStatutorySetting::current();
+
+        $row->update([
+            'nssf_rate_percent' => round((float) ($input['nssf_rate_percent'] ?? $row->nssf_rate_percent), 4),
+            'nssf_tier1_ceiling' => round((float) ($input['nssf_tier1_ceiling'] ?? $row->nssf_tier1_ceiling), 2),
+            'nssf_tier1_max_employee' => round((float) ($input['nssf_tier1_max_employee'] ?? $row->nssf_tier1_max_employee), 2),
+            'nssf_tier2_ceiling' => round((float) ($input['nssf_tier2_ceiling'] ?? $row->nssf_tier2_ceiling), 2),
+            'nssf_tier2_max_employee' => round((float) ($input['nssf_tier2_max_employee'] ?? $row->nssf_tier2_max_employee), 2),
+            'nssf_max_employee' => round((float) ($input['nssf_max_employee'] ?? $row->nssf_max_employee), 2),
+            'shif_rate_percent' => round((float) ($input['shif_rate_percent'] ?? $row->shif_rate_percent), 4),
+            'shif_monthly_floor' => round((float) ($input['shif_monthly_floor'] ?? $row->shif_monthly_floor), 2),
+            'shif_floor_applies_up_to_gross' => round((float) ($input['shif_floor_applies_up_to_gross'] ?? $row->shif_floor_applies_up_to_gross), 2),
+            'ahl_rate_percent' => round((float) ($input['ahl_rate_percent'] ?? $row->ahl_rate_percent), 4),
+        ]);
     }
 
     public function report(Request $request): View

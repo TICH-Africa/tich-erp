@@ -6,6 +6,7 @@ import '../../config/api_config.dart';
 import '../../data/auth_api.dart';
 import '../../data/auth_repository.dart';
 import '../../data/tich_realtime.dart';
+import '../../data/tich_cold_start.dart';
 import '../../data/tich_screen_cache.dart';
 import '../../models/auth_user.dart';
 import '../../settings/app_settings.dart';
@@ -28,6 +29,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthPasswordUnlockSubmitted>(_onPasswordUnlock);
     on<AuthAppPaused>(_onAppPaused);
     on<AuthLogoutRequested>(_onLogout);
+    on<AuthMobileOtpSubmitted>(_onMobileOtpSubmitted);
+    on<AuthMobileOtpResendRequested>(_onMobileOtpResend);
   }
 
   final AuthRepository _repository;
@@ -53,6 +56,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         case SessionRestoreResultType.authenticated:
           await _startCacheForUser(result.user!);
           emit(AuthAuthenticated(result.user!));
+        case SessionRestoreResultType.mobileOtp:
+          emit(AuthMobileOtpPending(
+            result.user!,
+            expiresMinutes: result.otpExpiresMinutes ?? 15,
+          ));
       }
     } catch (e) {
       emit(AuthUnauthenticated(
@@ -68,12 +76,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthLoading());
     try {
-      final user = await _repository.login(
+      final session = await _repository.login(
         email: event.email,
         password: event.password,
       );
-      await _startCacheForUser(user);
-      emit(AuthAuthenticated(user));
+      if (session.mobileOtpRequired) {
+        emit(AuthMobileOtpPending(
+          session.user,
+          emailMasked: session.emailMasked,
+          expiresMinutes: session.otpExpiresMinutes,
+          otpSent: session.otpSent,
+          message: session.message,
+        ));
+        return;
+      }
+      await _startCacheForUser(session.user);
+      emit(AuthAuthenticated(session.user));
     } on AuthApiException catch (e) {
       emit(AuthUnauthenticated(message: e.message));
     } catch (e) {
@@ -87,9 +105,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _startCacheForUser(AuthUser user) async {
     TichScreenCache.assignUser(user.id);
     await TichScreenCache.hydrateFromDisk();
-    // Warm the newest screens behind the first frame so the tab the user lands
-    // on paints from cache instead of waiting on the network.
-    unawaited(TichScreenCache.preloadRecent());
+    TichColdStart.beginSession();
   }
 
   Future<void> _onBiometricUnlock(
@@ -118,12 +134,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     emit(const AuthLoading());
     try {
-      final user = await _repository.unlockWithPassword(
+      final session = await _repository.unlockWithPassword(
         email: event.email,
         password: event.password,
       );
-      await _startCacheForUser(user);
-      emit(AuthAuthenticated(user));
+      if (session.mobileOtpRequired) {
+        emit(AuthMobileOtpPending(
+          session.user,
+          emailMasked: session.emailMasked,
+          expiresMinutes: session.otpExpiresMinutes,
+          otpSent: session.otpSent,
+          message: session.message,
+        ));
+        return;
+      }
+      await _startCacheForUser(session.user);
+      emit(AuthAuthenticated(session.user));
     } on AuthApiException catch (e) {
       emit(AuthLocked(current.user, message: e.message));
     } catch (e) {
@@ -140,6 +166,72 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (_settings.lockOnExit || _settings.biometricEnabled) {
       await _settings.markNeedsUnlock();
       emit(AuthLocked((state as AuthAuthenticated).user));
+    }
+  }
+
+  Future<void> _onMobileOtpSubmitted(
+    AuthMobileOtpSubmitted event,
+    Emitter<AuthState> emit,
+  ) async {
+    final current = state;
+    if (current is! AuthMobileOtpPending) return;
+
+    emit(const AuthLoading());
+    try {
+      final user = await _repository.verifyMobileOtp(event.code);
+      await _startCacheForUser(user);
+      emit(AuthAuthenticated(user));
+    } on AuthApiException catch (e) {
+      emit(AuthMobileOtpPending(
+        current.user,
+        emailMasked: current.emailMasked,
+        expiresMinutes: current.expiresMinutes,
+        otpSent: current.otpSent,
+        message: e.message,
+      ));
+    } catch (e) {
+      emit(AuthMobileOtpPending(
+        current.user,
+        emailMasked: current.emailMasked,
+        expiresMinutes: current.expiresMinutes,
+        otpSent: current.otpSent,
+        message: e.toString(),
+      ));
+    }
+  }
+
+  Future<void> _onMobileOtpResend(
+    AuthMobileOtpResendRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final current = state;
+    if (current is! AuthMobileOtpPending) return;
+
+    emit(AuthMobileOtpPending(
+      current.user,
+      emailMasked: current.emailMasked,
+      expiresMinutes: current.expiresMinutes,
+      otpSent: current.otpSent,
+      resending: true,
+    ));
+
+    try {
+      final minutes = await _repository.resendMobileOtp();
+      emit(AuthMobileOtpPending(
+        current.user,
+        emailMasked: current.emailMasked,
+        expiresMinutes: minutes,
+        otpSent: true,
+        message: 'A new code was sent to your email.',
+      ));
+    } on AuthApiException catch (e) {
+      emit(AuthMobileOtpPending(
+        current.user,
+        emailMasked: current.emailMasked,
+        expiresMinutes: current.expiresMinutes,
+        otpSent: current.otpSent,
+        message: e.message,
+      ));
     }
   }
 

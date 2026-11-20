@@ -7,7 +7,7 @@
 -- production.sql is non-destructive (add-only). This file applies the deltas.
 -- Safe to re-run: uses IF EXISTS / checks where possible.
 --
--- Last updated: 2026-10-20
+-- Last updated: 2026-11-17
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -2701,6 +2701,175 @@ CREATE TABLE IF NOT EXISTS `student_application_document_submissions` (
     CONSTRAINT `student_app_doc_sub_uploaded_by_user_id_foreign` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`),
     CONSTRAINT `student_app_doc_sub_reviewed_by_user_id_foreign` FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- Mobile app download releases (ICT uploads → public /mobile-app)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `mobile_app_releases` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `platform` varchar(20) NOT NULL,
+    `version_label` varchar(50) NOT NULL,
+    `build_number` int unsigned DEFAULT NULL,
+    `storage_path` varchar(500) DEFAULT NULL,
+    `original_filename` varchar(255) DEFAULT NULL,
+    `file_size` bigint unsigned DEFAULT NULL,
+    `external_url` varchar(500) DEFAULT NULL,
+    `release_notes` text DEFAULT NULL,
+    `is_published` tinyint(1) NOT NULL DEFAULT 1,
+    `uploaded_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `mobile_app_releases_platform_published_created_index` (`platform`, `is_published`, `created_at`),
+    KEY `mobile_app_releases_uploaded_by_user_id_foreign` (`uploaded_by_user_id`),
+    CONSTRAINT `mobile_app_releases_uploaded_by_user_id_foreign` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- Mobile app first sign-in: email OTP gate (migration 2026_11_17_120000)
+-- -----------------------------------------------------------------------------
+SET @u_has_mobile_app_verified := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'users'
+      AND column_name = 'mobile_app_verified_at'
+);
+SET @sql_u_mobile_app_verified := IF(@u_has_mobile_app_verified = 0,
+    'ALTER TABLE `users` ADD COLUMN `mobile_app_verified_at` timestamp NULL DEFAULT NULL AFTER `last_login_at`',
+    'SELECT 1');
+PREPARE stmt_u_mobile_app_verified FROM @sql_u_mobile_app_verified;
+EXECUTE stmt_u_mobile_app_verified;
+DEALLOCATE PREPARE stmt_u_mobile_app_verified;
+
+-- -----------------------------------------------------------------------------
+-- e-Fundi student opportunities (migration 2026_11_18_110000)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `efundi_opportunities` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `title` varchar(255) NOT NULL,
+    `slug` varchar(255) NOT NULL,
+    `opportunity_type` varchar(32) NOT NULL,
+    `opportunity_scope` varchar(20) NOT NULL DEFAULT 'external',
+    `job_vacancy_id` bigint(20) unsigned DEFAULT NULL,
+    `organization_name` varchar(255) DEFAULT NULL,
+    `location` varchar(255) DEFAULT NULL,
+    `summary` text DEFAULT NULL,
+    `description` longtext DEFAULT NULL,
+    `application_url` varchar(500) DEFAULT NULL,
+    `application_email` varchar(255) DEFAULT NULL,
+    `application_deadline` date DEFAULT NULL,
+    `is_published` tinyint(1) NOT NULL DEFAULT 0,
+    `published_at` timestamp NULL DEFAULT NULL,
+    `posted_via` varchar(20) NOT NULL,
+    `posted_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `students_notified_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `efundi_opportunities_slug_unique` (`slug`),
+    KEY `efundi_opportunities_is_published_application_deadline_index` (`is_published`, `application_deadline`),
+    KEY `efundi_opportunities_opportunity_type_index` (`opportunity_type`),
+    KEY `efundi_opportunities_posted_by_user_id_foreign` (`posted_by_user_id`),
+    KEY `efundi_opportunities_job_vacancy_id_foreign` (`job_vacancy_id`),
+    CONSTRAINT `efundi_opportunities_posted_by_user_id_foreign` FOREIGN KEY (`posted_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `efundi_opportunities_job_vacancy_id_foreign` FOREIGN KEY (`job_vacancy_id`) REFERENCES `job_vacancies` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `efundi_opportunities`
+    ADD COLUMN IF NOT EXISTS `opportunity_scope` varchar(20) NOT NULL DEFAULT 'external' AFTER `opportunity_type`,
+    ADD COLUMN IF NOT EXISTS `job_vacancy_id` bigint(20) unsigned DEFAULT NULL AFTER `opportunity_scope`;
+
+-- -----------------------------------------------------------------------------
+-- Kenya payroll statutory settings (migration 2026_11_19_120000)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `payroll_kenya_statutory_settings` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `nssf_rate_percent` decimal(7,4) NOT NULL DEFAULT 6.0000,
+    `nssf_tier1_ceiling` decimal(12,2) NOT NULL DEFAULT 9000.00,
+    `nssf_tier1_max_employee` decimal(12,2) NOT NULL DEFAULT 540.00,
+    `nssf_tier2_ceiling` decimal(12,2) NOT NULL DEFAULT 108000.00,
+    `nssf_tier2_max_employee` decimal(12,2) NOT NULL DEFAULT 5940.00,
+    `nssf_max_employee` decimal(12,2) NOT NULL DEFAULT 6480.00,
+    `shif_rate_percent` decimal(7,4) NOT NULL DEFAULT 2.7500,
+    `shif_monthly_floor` decimal(12,2) NOT NULL DEFAULT 300.00,
+    `shif_floor_applies_up_to_gross` decimal(12,2) NOT NULL DEFAULT 10909.00,
+    `ahl_rate_percent` decimal(7,4) NOT NULL DEFAULT 1.5000,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `payroll_kenya_statutory_settings` (
+    `id`,
+    `nssf_rate_percent`,
+    `nssf_tier1_ceiling`,
+    `nssf_tier1_max_employee`,
+    `nssf_tier2_ceiling`,
+    `nssf_tier2_max_employee`,
+    `nssf_max_employee`,
+    `shif_rate_percent`,
+    `shif_monthly_floor`,
+    `shif_floor_applies_up_to_gross`,
+    `ahl_rate_percent`,
+    `created_at`,
+    `updated_at`
+)
+SELECT
+    1,
+    6.0000,
+    9000.00,
+    540.00,
+    108000.00,
+    5940.00,
+    6480.00,
+    2.7500,
+    300.00,
+    10909.00,
+    1.5000,
+    NOW(),
+    NOW()
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `payroll_kenya_statutory_settings` LIMIT 1);
+
+-- -----------------------------------------------------------------------------
+-- Kenya payroll statutory brackets (migration 2026_11_19_140000)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `payroll_statutory_brackets` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `scheme` varchar(16) NOT NULL,
+    `label` varchar(120) NOT NULL,
+    `min_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+    `max_amount` decimal(12,2) DEFAULT NULL,
+    `calculation` varchar(24) NOT NULL DEFAULT 'percent',
+    `rate_percent` decimal(7,4) DEFAULT NULL,
+    `fixed_amount` decimal(12,2) DEFAULT NULL,
+    `cap_amount` decimal(12,2) DEFAULT NULL,
+    `display_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+    `is_active` tinyint(1) NOT NULL DEFAULT 1,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `payroll_statutory_brackets_scheme_display_order_index` (`scheme`,`display_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_amount`, `calculation`, `rate_percent`, `fixed_amount`, `cap_amount`, `display_order`, `is_active`, `created_at`, `updated_at`)
+SELECT 'nssf', 'Tier I (pensionable up to KES 9,000)', 0.00, 9000.00, 'percent_capped', 6.0000, NULL, 540.00, 1, 1, NOW(), NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `payroll_statutory_brackets` WHERE `scheme` = 'nssf' LIMIT 1);
+
+INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_amount`, `calculation`, `rate_percent`, `fixed_amount`, `cap_amount`, `display_order`, `is_active`, `created_at`, `updated_at`)
+SELECT 'nssf', 'Tier II (KES 9,001 – 108,000)', 9001.00, 108000.00, 'percent_capped', 6.0000, NULL, 5940.00, 2, 1, NOW(), NOW()
+FROM DUAL WHERE (SELECT COUNT(*) FROM `payroll_statutory_brackets` WHERE `scheme` = 'nssf') < 2;
+
+INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_amount`, `calculation`, `rate_percent`, `fixed_amount`, `cap_amount`, `display_order`, `is_active`, `created_at`, `updated_at`)
+SELECT 'shif', 'Minimum contribution (low gross)', 0.00, 10909.00, 'fixed', NULL, 300.00, NULL, 1, 1, NOW(), NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `payroll_statutory_brackets` WHERE `scheme` = 'shif' LIMIT 1);
+
+INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_amount`, `calculation`, `rate_percent`, `fixed_amount`, `cap_amount`, `display_order`, `is_active`, `created_at`, `updated_at`)
+SELECT 'shif', 'Percentage of gross', 10910.00, NULL, 'percent_floor', 2.7500, 300.00, NULL, 2, 1, NOW(), NOW()
+FROM DUAL WHERE (SELECT COUNT(*) FROM `payroll_statutory_brackets` WHERE `scheme` = 'shif') < 2;
+
+INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_amount`, `calculation`, `rate_percent`, `fixed_amount`, `cap_amount`, `display_order`, `is_active`, `created_at`, `updated_at`)
+SELECT 'ahl', 'All gross cash pay', 0.00, NULL, 'percent', 1.5000, NULL, NULL, 1, 1, NOW(), NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `payroll_statutory_brackets` WHERE `scheme` = 'ahl' LIMIT 1);
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

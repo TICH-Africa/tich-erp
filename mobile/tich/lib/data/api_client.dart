@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,7 +7,9 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import '../config/api_config.dart';
+import '../config/mobile_client.dart';
 import 'auth_token_store.dart';
+import 'tich_cold_start.dart';
 import 'tich_realtime_signals.dart';
 
 class ApiException implements Exception {
@@ -97,10 +100,33 @@ class ApiClient {
   static const Duration uploadTimeout = Duration(minutes: 3);
 
   /// Reuse in-flight GETs and recent successful GET bodies (nav + tab overlap).
-  static const Duration getDedupeTtl = Duration(seconds: 25);
+  static Duration get getDedupeTtl => Duration(
+        seconds: TichColdStart.isEmptyDiskSession ? 120 : 25,
+      );
 
   String? _cachedToken;
   final Map<String, _GetDedupeEntry> _getDedupe = {};
+
+  static int _coldGetInflight = 0;
+  static final Queue<Completer<void>> _coldGetWaiters = Queue();
+
+  static Future<void> _acquireColdGetSlot() async {
+    if (!TichColdStart.isEmptyDiskSession) return;
+    while (_coldGetInflight >= TichColdStart.maxConcurrentHttpGets) {
+      final waiter = Completer<void>();
+      _coldGetWaiters.add(waiter);
+      await waiter.future;
+    }
+    _coldGetInflight++;
+  }
+
+  static void _releaseColdGetSlot() {
+    if (!TichColdStart.isEmptyDiskSession) return;
+    if (_coldGetInflight > 0) _coldGetInflight--;
+    if (_coldGetWaiters.isNotEmpty) {
+      _coldGetWaiters.removeFirst().complete();
+    }
+  }
 
   Future<String?> _token() async {
     if (_cachedToken != null && _cachedToken!.isNotEmpty) {
@@ -121,7 +147,10 @@ class ApiClient {
   }
 
   Future<Map<String, String>> _headers({bool json = true}) async {
-    final headers = <String, String>{'Accept': 'application/json'};
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      ...tichMobileClientHeaders,
+    };
     if (json) {
       headers['Content-Type'] = 'application/json';
     }
@@ -144,17 +173,22 @@ class ApiClient {
     }
     final headers = await _headers(json: false);
     headers['Accept'] = accept;
-    final response = await _client
-        .get(uri, headers: headers)
-        .timeout(timeout ?? ApiClient.timeout);
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return response.bodyBytes;
+    await _acquireColdGetSlot();
+    try {
+      final response = await _client
+          .get(uri, headers: headers)
+          .timeout(timeout ?? ApiClient.timeout);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.bodyBytes;
+      }
+      final message = _messageFromErrorBody(response.statusCode, response.body);
+      throw ApiException(
+        message ?? 'Request failed (${response.statusCode})',
+        statusCode: response.statusCode,
+      );
+    } finally {
+      _releaseColdGetSlot();
     }
-    final message = _messageFromErrorBody(response.statusCode, response.body);
-    throw ApiException(
-      message ?? 'Request failed (${response.statusCode})',
-      statusCode: response.statusCode,
-    );
   }
 
   static String? _messageFromErrorBody(int statusCode, String body) {
@@ -218,10 +252,15 @@ class ApiClient {
     Uri uri, {
     Duration? timeout,
   }) async {
-    final response = await _client
-        .get(uri, headers: await _headers())
-        .timeout(timeout ?? ApiClient.timeout);
-    return _decode(response);
+    await _acquireColdGetSlot();
+    try {
+      final response = await _client
+          .get(uri, headers: await _headers())
+          .timeout(timeout ?? ApiClient.timeout);
+      return _decode(response);
+    } finally {
+      _releaseColdGetSlot();
+    }
   }
 
   Future<Map<String, dynamic>> post(

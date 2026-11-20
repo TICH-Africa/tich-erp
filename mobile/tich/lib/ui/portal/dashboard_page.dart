@@ -11,11 +11,11 @@ import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/employee_avatar.dart';
 import '../widgets/portal_hero.dart';
-import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import 'attendance_page.dart';
 import 'employee_module_nav.dart';
+import 'portal_helpers.dart';
 import 'profile_page.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -48,12 +48,14 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.dashboard');
-    _future = TichScreenCache.ensure('portal.dashboard', () => widget.api.dashboard());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _liveRefresh();
-    });
+    portalPrimeScreen(
+      persistKey: 'portal.dashboard',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.dashboard(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
+    );
   }
 
   @override

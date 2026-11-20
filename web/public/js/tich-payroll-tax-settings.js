@@ -9,10 +9,19 @@
     }
 
     var boot = JSON.parse(dataEl.textContent || '{}');
+    var lockedDeductionCodes = boot.lockedDeductionCodes || [];
     var state = {
         deductionTypes: boot.deductionTypes || [],
         bands: boot.bands || [],
     };
+
+    function isLockedDeductionType(type) {
+        if (!type || !type.code) {
+            return false;
+        }
+
+        return lockedDeductionCodes.indexOf(type.code) !== -1;
+    }
 
     var nextTempTypeKey = 1;
     var nextTempBandKey = 1;
@@ -21,7 +30,6 @@
     var itemsTbody = document.getElementById('deduction-items-tbody');
     var bandsTbody = document.getElementById('bands-tbody');
     var bandsHeaderRow = document.getElementById('bands-header-row');
-    var bandsFooterRow = document.getElementById('cumulative-footer-row');
     var bandOrderStatus = document.getElementById('band-order-status');
     var itemOrderStatus = document.getElementById('item-order-status');
 
@@ -38,8 +46,14 @@
         return Math.round(parseNum(value) * 100) / 100;
     }
 
+    var statutoryMatrixCodes = ['nssf', 'sha', 'ahl'];
+
     function matrixColumns() {
         return state.deductionTypes.filter(function (type) {
+            if (statutoryMatrixCodes.indexOf(type.code) !== -1) {
+                return false;
+            }
+
             return type.value_type === 'band_percent' && type.is_active;
         });
     }
@@ -144,9 +158,15 @@
             return;
         }
 
+        var statutoryBracketCodes = { nssf: true, sha: true, ahl: true };
+
         itemsTbody.innerHTML = state.deductionTypes.map(function (type, index) {
-            var details = type.value_type === 'global_fixed'
-                ? 'Fixed KES ' + formatNum(type.fixed_amount)
+            var details = statutoryBracketCodes[type.code]
+                ? 'Own bracket table (NSSF / SHIF / AHL tab)'
+                : type.value_type === 'global_fixed'
+                ? (type.fixed_amount != null && type.fixed_amount !== ''
+                    ? 'Fixed KES ' + formatNum(type.fixed_amount)
+                    : 'Configured elsewhere')
                 : 'Per-band %';
 
             if (type.value_type === 'band_percent' && type.employer_rate_percent) {
@@ -175,23 +195,13 @@
     }
 
     function renderBandsTable() {
-        var columns = matrixColumns();
-
         if (bandsHeaderRow) {
-            var staticHeaders = `
+            bandsHeaderRow.innerHTML = `
                 <th style="width: 2.5rem;"></th>
                 <th>Label</th>
                 <th>Min (KES)</th>
                 <th>Max (KES)</th>
                 <th>PAYE %</th>
-            `;
-
-            var columnHeaders = columns.map(function (type) {
-                return `<th>${escapeHtml(type.label)} %</th>`;
-            }).join('');
-
-            bandsHeaderRow.innerHTML = staticHeaders + columnHeaders + `
-                <th>Cumulative %</th>
                 <th>Active</th>
                 <th style="width: 6rem;"></th>
             `;
@@ -202,17 +212,11 @@
         }
 
         if (!state.bands.length) {
-            bandsTbody.innerHTML = '<tr><td colspan="20" class="tich-table-empty">No PAYE bands yet.</td></tr>';
-            renderBandsFooter(columns);
+            bandsTbody.innerHTML = '<tr><td colspan="7" class="tich-table-empty">No PAYE bands yet.</td></tr>';
             return;
         }
 
         bandsTbody.innerHTML = state.bands.map(function (band) {
-            var columnCells = columns.map(function (type) {
-                var rate = band.deductions[typeKey(type)];
-                return `<td>${rate == null || rate === '' ? '-' : formatNum(rate)}</td>`;
-            }).join('');
-
             return `
                 <tr data-sortable-band data-band-key="${escapeHtml(bandKey(band))}">
                     <td class="tich-drag-handle" title="Drag to reorder">⋮⋮</td>
@@ -220,50 +224,13 @@
                     <td>${formatNum(band.min_amount)}</td>
                     <td>${band.max_amount == null || band.max_amount === '' ? 'No limit' : formatNum(band.max_amount)}</td>
                     <td>${formatNum(band.rate_percent)}</td>
-                    ${columnCells}
-                    <td class="tich-caption cumulative-cell">${formatNum(cumulativeForBand(band))}</td>
                     <td>${band.is_active ? 'Active' : 'Inactive'}</td>
                     <td><button type="button" class="tich-btn tich-btn-ghost edit-band" data-band-key="${escapeHtml(bandKey(band))}">Edit</button></td>
                 </tr>
             `;
         }).join('');
 
-        renderBandsFooter(columns);
         initBandSortable();
-    }
-
-    function renderBandsFooter(columns) {
-        if (!bandsFooterRow) {
-            return;
-        }
-
-        var columnFooters = columns.map(function (type) {
-            var sum = 0;
-
-            state.bands.forEach(function (band) {
-                sum += parseNum(band.deductions[typeKey(type)]);
-            });
-
-            return `<td class="tich-caption">${formatNum(sum)}</td>`;
-        }).join('');
-
-        var payeSum = 0;
-        var deductionSum = 0;
-
-        state.bands.forEach(function (band) {
-            payeSum += parseNum(band.rate_percent);
-            matrixColumns().forEach(function (type) {
-                deductionSum += parseNum(band.deductions[typeKey(type)]);
-            });
-        });
-
-        bandsFooterRow.innerHTML = `
-            <td></td>
-            <td colspan="4"><strong>Cumulative (sum of rates)</strong></td>
-            ${columnFooters}
-            <td class="tich-caption" id="footer-cumulative-total">${formatNum(payeSum + deductionSum)}</td>
-            <td colspan="2"></td>
-        `;
     }
 
     function renderAll() {
@@ -521,7 +488,7 @@
         setModalField('deduction-item-employer-rate', type.employer_rate_percent === '' || type.employer_rate_percent == null ? '' : formatNum(type.employer_rate_percent));
         setModalField('deduction-item-reduces-taxable', type.reduces_taxable);
         setModalField('deduction-item-active', type.is_active);
-        deleteBtn.hidden = isNew;
+        deleteBtn.hidden = isNew || isLockedDeductionType(type);
         toggleDeductionTypeFields();
 
         if (window.tichOpenModal) {
@@ -584,7 +551,11 @@
         var key = modal.dataset.editKey || '';
         var type = findType(key);
 
-        if (!type || !window.confirm('Delete tax item "' + type.label + '"?')) {
+        if (!type || isLockedDeductionType(type)) {
+            return;
+        }
+
+        if (!window.confirm('Delete tax item "' + type.label + '"?')) {
             return;
         }
 
@@ -601,32 +572,6 @@
         if (window.tichCloseModal) {
             window.tichCloseModal('deduction-item-modal');
         }
-    }
-
-    function renderBandDeductionFields(band) {
-        var container = document.getElementById('band-deduction-fields');
-
-        if (!container) {
-            return;
-        }
-
-        var columns = matrixColumns();
-
-        if (!columns.length) {
-            container.innerHTML = '<p class="tich-caption">Add band-percentage tax items (NSSF, SHA/SHIF, etc.) to set rates per bracket.</p>';
-            return;
-        }
-
-        container.innerHTML = columns.map(function (type) {
-            var rate = band ? band.deductions[typeKey(type)] : '';
-
-            return `
-                <div class="tich-form-group">
-                    <label class="tich-label">${escapeHtml(type.label)} (%)</label>
-                    <input type="number" class="tich-input band-modal-deduction" data-type-key="${escapeHtml(typeKey(type))}" min="0" max="100" step="0.01" value="${rate == null ? '' : formatNum(rate)}">
-                </div>
-            `;
-        }).join('');
     }
 
     function openBandModal(key) {
@@ -654,7 +599,6 @@
         setModalField('band-rate-percent', band.rate_percent === '' || band.rate_percent == null ? '' : formatNum(band.rate_percent));
         setModalField('band-active', band.is_active);
         deleteBtn.hidden = isNew;
-        renderBandDeductionFields(band);
 
         if (window.tichOpenModal) {
             window.tichOpenModal('band-modal');
@@ -680,11 +624,6 @@
             is_active: readModalField('band-active'),
             deductions: {},
         };
-
-        document.querySelectorAll('.band-modal-deduction').forEach(function (input) {
-            var typeKeyValue = input.getAttribute('data-type-key');
-            payload.deductions[typeKeyValue] = input.value === '' ? '' : round2(input.value);
-        });
 
         if (isNew) {
             payload._tempKey = 'new_band_' + (nextTempBandKey++);

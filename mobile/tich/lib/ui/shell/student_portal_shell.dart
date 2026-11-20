@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/student_api.dart';
+import '../../data/tich_cold_start.dart';
 import '../../data/tich_portal_warmup.dart';
 import '../../data/tich_screen_cache.dart';
 import '../student/academics_hub_page.dart';
@@ -178,6 +179,9 @@ class _StudentPortalShellState extends State<StudentPortalShell>
 
   Future<void> _loadProfilePhoto(StudentApi api) async {
     if (_profilePhotoLoaded && _profilePhotoUrl != null) return;
+    if (TichColdStart.isEmptyDiskSession) {
+      await TichScreenCache.waitForKey('student.home');
+    }
     final cached = TichScreenCache.read<Map<String, dynamic>>('student.home');
     if (cached != null) {
       if (!mounted) return;
@@ -190,22 +194,7 @@ class _StudentPortalShellState extends State<StudentPortalShell>
       });
       return;
     }
-    try {
-      final data = await TichScreenCache.ensure(
-        'student.home',
-        () => api.dashboard(),
-      );
-      if (!mounted) return;
-      final student =
-          Map<String, dynamic>.from(data['student'] as Map? ?? {});
-      final url = student['photo_url']?.toString().trim();
-      setState(() {
-        _profilePhotoUrl = (url != null && url.isNotEmpty) ? url : null;
-        _profilePhotoLoaded = true;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _profilePhotoLoaded = true);
-    }
+    if (mounted) setState(() => _profilePhotoLoaded = true);
   }
 
   @override

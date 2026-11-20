@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../data/api_client.dart';
+import '../data/tich_cold_start.dart';
 import '../data/tich_power_policy.dart';
 import '../sync/tich_background_sync.dart';
 import '../ui/widgets/tich_brand_logo.dart';
@@ -147,6 +148,14 @@ class TichNotifications {
 
   Future<bool> notificationPermissionGranted() async {
     if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return true;
+    if (Platform.isIOS) {
+      final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+      final options = await iosPlugin?.checkPermissions();
+      if (options != null) {
+        return options.isEnabled;
+      }
+    }
     return Permission.notification.isGranted;
   }
 
@@ -154,6 +163,16 @@ class TichNotifications {
   Future<void> requestNotificationPermissions() async {
     try {
       if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return;
+      if (Platform.isIOS) {
+        final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
+        await iosPlugin?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        return;
+      }
       final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       await Permission.notification.request();
@@ -225,10 +244,15 @@ class TichNotifications {
       return;
     }
     unawaited(registerDeviceToken());
-    if (!isStudent) {
+    if (!isStudent && !TichColdStart.isEmptyDiskSession) {
       unawaited(refreshClockInRemindersFromServer());
     }
-    unawaited(syncFromServerInBackground(isStudent: isStudent));
+    Future<void>.delayed(
+      TichColdStart.isEmptyDiskSession
+          ? const Duration(seconds: 25)
+          : Duration.zero,
+      () => unawaited(syncFromServerInBackground(isStudent: isStudent)),
+    );
   }
 
   /// Keeps clock-in alarms current (any signed-in staff, any portal tab).

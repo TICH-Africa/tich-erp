@@ -4,11 +4,15 @@
 
 @section('hr-content')
     @php
+        $lockedDeductionCodes = app(\App\Services\KenyaPayrollTaxProvisioner::class)->lockedDeductionCodes();
+
         $settingsPayload = [
+            'lockedDeductionCodes' => array_values(array_diff($lockedDeductionCodes, ['withholding_tax'])),
             'deductionTypes' => $deductionTypes
                 ->reject(fn ($type) => $type->code === 'withholding_tax')
                 ->map(fn ($type) => [
                 'id' => $type->id,
+                'code' => $type->code,
                 'label' => $type->label,
                 'value_type' => $type->value_type,
                 'fixed_amount' => $type->fixed_amount,
@@ -40,11 +44,13 @@
         ];
     @endphp
 
-    <x-page-toolbar title="KRA tax settings" meta="PAYE bands, statutory deductions, and withholding tax">
+    <x-page-toolbar title="Payroll tax settings" meta="PAYE, NSSF, SHA/SHIF, AHL (employee) — aligned with KRA monthly payroll">
         <x-slot:actions>
             <a href="{{ route('hr.payroll.index') }}" class="tich-btn tich-btn-secondary">&larr; Back to payroll</a>
         </x-slot:actions>
     </x-page-toolbar>
+
+    @include('hr.payroll.partials.settings-overview')
 
     <div class="tich-card tich-mb-8">
         <h2 class="tich-h3">Consultants &amp; independent contractors</h2>
@@ -83,8 +89,13 @@
         .tich-drag-handle:active { cursor: grabbing; }
         .payroll-settings-tabs__nav {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 0.5rem;
+        }
+        @media (max-width: 720px) {
+            .payroll-settings-tabs__nav {
+                grid-template-columns: 1fr;
+            }
         }
         .payroll-settings-tabs__nav .tich-tabs__btn {
             width: 100%;
@@ -101,6 +112,7 @@
         <div class="tich-tabs tich-mb-6" data-tabs>
             <div class="tich-tabs__nav payroll-settings-tabs__nav">
                 <button type="button" class="tich-tabs__btn is-active" data-tab="bands">PAYE tax bands (KRA)</button>
+                <button type="button" class="tich-tabs__btn" data-tab="statutory">NSSF / SHIF / AHL</button>
                 <button type="button" class="tich-tabs__btn" data-tab="items">Tax items</button>
             </div>
 
@@ -108,7 +120,7 @@
                 <div class="tich-card tich-table-panel tich-mb-8">
                     <div class="tich-flex tich-flex--between tich-mb-4" style="flex-wrap: wrap; gap: 0.75rem;">
                         <div>
-                            <p class="tich-caption">Configure income brackets and PAYE rates. Higher bands must stay after lower bands when reordering.</p>
+                            <p class="tich-caption">KRA income tax brackets and PAYE rates only. NSSF, SHA/SHIF, and AHL are configured on the next tab, each with its own bracket table.</p>
                         </div>
                         <button type="button" class="tich-btn tich-btn-ghost" id="add-band-btn">+ Add band</button>
                     </div>
@@ -121,12 +133,13 @@
                                 <tr id="bands-header-row"></tr>
                             </thead>
                             <tbody id="bands-tbody"></tbody>
-                            <tfoot>
-                                <tr id="cumulative-footer-row"></tr>
-                            </tfoot>
                         </table>
                     </div>
                 </div>
+            </div>
+
+            <div class="tich-tabs__panel" data-panel="statutory">
+                @include('hr.payroll.partials.settings-statutory-brackets', ['statutoryBrackets' => $statutoryBrackets])
             </div>
 
             <div class="tich-tabs__panel" data-panel="items">
@@ -259,8 +272,6 @@
                         <input type="checkbox" id="band-active" value="1" checked> Active
                     </label>
                 </div>
-                <h3 class="tich-h4 tich-mt-4 tich-mb-2">Deduction rates for this band</h3>
-                <div class="tich-grid tich-grid--3" id="band-deduction-fields"></div>
             </div>
             <footer class="tich-modal__footer">
                 <button type="button" class="tich-btn tich-btn-ghost" id="band-delete-btn" style="color: #c0392b; margin-right: auto;">Delete</button>

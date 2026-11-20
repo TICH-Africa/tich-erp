@@ -8,6 +8,9 @@ use Illuminate\Support\Collection;
 
 class KenyaPayrollTaxService
 {
+    public function __construct(
+        protected KenyaStatutoryPayrollCalculator $statutoryCalculator,
+    ) {}
     /**
      * @param  array{allowances?: float, other_deductions?: float, employee_name?: string, employee_number?: string, payroll_scheme?: string}  $options
      * @return array<string, mixed>
@@ -207,78 +210,63 @@ class KenyaPayrollTaxService
             ->get();
 
         $deductionTypes = PayrollDeductionType::activeOrdered()->get();
-        $bandPercentTypes = $deductionTypes->filter(fn (PayrollDeductionType $type) => $type->isBandPercent());
         $globalFixedTypes = $deductionTypes->filter(fn (PayrollDeductionType $type) => $type->isGlobalFixed());
 
-        $grossSlices = $this->sliceAmountAcrossBands($grossTotal, $bands);
-        $statutoryTotals = [];
-        $employerTotals = [];
+        $pensionable = max(0, (float) ($options['pensionable'] ?? $grossTotal));
+        $statutory = $this->statutoryCalculator->employeeStatutoryBundle($grossTotal, [
+            'pensionable' => $pensionable,
+        ]);
 
-        foreach ($bandPercentTypes as $type) {
-            $statutoryTotals[$type->code] = ['label' => $type->label, 'amount' => 0.0, 'employer' => 0.0];
-        }
+        $typeLabels = $deductionTypes->keyBy('code');
+        $statutoryTotals = [
+            'nssf' => [
+                'label' => $typeLabels->get('nssf')?->label ?? 'NSSF',
+                'amount' => $statutory['nssf']['amount'],
+                'employer' => 0.0,
+                'detail' => $statutory['nssf'],
+            ],
+            'sha' => [
+                'label' => $typeLabels->get('sha')?->label ?? 'SHA / SHIF',
+                'amount' => $statutory['shif']['amount'],
+                'employer' => 0.0,
+                'detail' => $statutory['shif'],
+            ],
+            'ahl' => [
+                'label' => $typeLabels->get('ahl')?->label ?? 'Affordable Housing Levy (AHL)',
+                'amount' => $statutory['ahl']['amount'],
+                'employer' => 0.0,
+                'detail' => $statutory['ahl'],
+            ],
+        ];
 
-        foreach ($bands as $band) {
-            $slice = $grossSlices[$band->id] ?? 0;
-
-            if ($slice <= 0) {
-                continue;
-            }
-
-            foreach ($band->deductionRates as $bandRate) {
-                $type = $bandRate->deductionType;
-
-                if (! $type || ! $type->is_active || ! $type->isBandPercent()) {
-                    continue;
-                }
-
-                $rate = (float) ($bandRate->rate_percent ?? 0);
-
-                if ($rate <= 0) {
-                    continue;
-                }
-
-                $employeeAmount = round($slice * $rate / 100, 2);
-                $employerRate = (float) ($type->employer_rate_percent ?? 0);
-                $employerAmount = $employerRate > 0 ? round($slice * $employerRate / 100, 2) : 0;
-
-                $statutoryTotals[$type->code]['amount'] += $employeeAmount;
-                $statutoryTotals[$type->code]['employer'] += $employerAmount;
-            }
-        }
-
-        $taxableReduction = 0;
-
-        foreach ($bandPercentTypes as $type) {
-            if ($type->reduces_taxable) {
-                $taxableReduction += $statutoryTotals[$type->code]['amount'] ?? 0;
-            }
-        }
-
-        $taxableIncome = max(0, round($grossTotal - $taxableReduction, 2));
+        $taxableIncome = max(0, round($grossTotal - $statutory['total_reduces_taxable'], 2));
         $bandBreakdown = $this->calculatePayeBandBreakdown($taxableIncome, $bands);
 
         $payeBeforeRelief = $bandBreakdown['total'];
         $personalRelief = (float) ($globalFixedTypes->firstWhere('code', 'personal_relief')?->fixed_amount ?? 2400);
         $paye = max(0, round($payeBeforeRelief - $personalRelief, 2));
 
-        $employeeDeductions = collect([
-            $this->deductionRow('paye', 'PAYE (KRA)', $paye, $taxableIncome, null, $personalRelief),
-        ]);
+        $employeeDeductions = collect();
 
-        foreach ($statutoryTotals as $code => $totals) {
-            if ($totals['amount'] <= 0 && ! in_array($code, ['nssf', 'sha', 'ahl'], true)) {
-                continue;
-            }
+        foreach (['nssf', 'sha', 'ahl'] as $code) {
+            $totals = $statutoryTotals[$code];
+            $base = $code === 'nssf'
+                ? (float) ($totals['detail']['pensionable'] ?? $grossTotal)
+                : $grossTotal;
+            $rate = (float) ($totals['detail']['rate_percent'] ?? 0);
 
             $employeeDeductions->push($this->deductionRow(
                 $code,
                 $totals['label'],
                 $totals['amount'],
-                $grossTotal,
-                $this->effectiveRate($totals['amount'], $grossTotal),
+                $base,
+                $rate > 0 ? $rate : $this->effectiveRate($totals['amount'], $base),
             ));
         }
+
+        $employeeDeductions->push(
+            $this->deductionRow('paye', 'PAYE (KRA)', $paye, $taxableIncome, null, $personalRelief),
+        );
 
         if ($otherDeductions > 0) {
             $employeeDeductions->push([
@@ -319,6 +307,11 @@ class KenyaPayrollTaxService
             'total_employer_cost' => round($grossTotal + $employerContributions->sum('amount'), 2),
             'deductions' => $employeeDeductions->values()->all(),
             'employer_contributions' => $employerContributions->all(),
+            'statutory_breakdown' => [
+                'nssf' => $statutory['nssf'],
+                'shif' => $statutory['shif'],
+                'ahl' => $statutory['ahl'],
+            ],
             'band_breakdown' => $bandBreakdown['lines'],
             'bands' => $this->formatBandsForOutput($bands),
             'deduction_types' => $deductionTypes->map(fn (PayrollDeductionType $type) => [

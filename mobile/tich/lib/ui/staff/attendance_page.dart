@@ -47,17 +47,10 @@ class _StaffAttendancePageState extends State<StaffAttendancePage> {
       setCache: (c) => _dataCache = c,
       setFuture: (f) => _future = f,
       fetch: () => widget.api.attendance(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
+      liveRefreshDelayWhenCached: const Duration(seconds: 10),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (_dataCache != null) {
-        Future<void>.delayed(const Duration(seconds: 10), () {
-          if (mounted) _liveRefresh();
-        });
-        return;
-      }
-      _liveRefresh();
-    });
   }
 
   Future<void> _createManualSession(Map<String, dynamic> data) async {

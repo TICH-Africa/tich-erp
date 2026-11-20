@@ -34,11 +34,9 @@ class _StudentFinancePageState extends State<StudentFinancePage> {
       setCache: (c) => _dataCache = c,
       setFuture: (f) => _future = f,
       fetch: () => widget.api.finance(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _liveRefresh();
-    });
   }
 
   Future<void> _reload() => studentCachedReload(

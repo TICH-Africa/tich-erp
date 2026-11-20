@@ -52,15 +52,6 @@
                         </li>
                     @endforeach
                 </ul>
-
-                <form method="POST" action="#" class="tich-footer__newsletter tich-mt-4" onsubmit="return false;">
-                    <label for="newsletter-email" class="tich-label">Newsletter</label>
-                    <div class="tich-footer__newsletter-row">
-                        <input type="email" id="newsletter-email" class="tich-input" placeholder="Your email address">
-                        <button type="submit" class="tich-btn tich-btn-blue">Subscribe</button>
-                    </div>
-                    <p class="tich-caption tich-mt-2">Stay updated on admissions, events, and research.</p>
-                </form>
             </div>
         </div>
 

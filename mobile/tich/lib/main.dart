@@ -12,6 +12,7 @@ import 'data/api_client.dart';
 import 'data/auth_repository.dart';
 import 'data/auth_token_store.dart';
 import 'data/tich_api_scope.dart';
+import 'data/tich_cold_start.dart';
 import 'data/tich_portal_warmup.dart';
 import 'data/tich_screen_cache.dart';
 import 'data/tich_screen_cache_store.dart';
@@ -24,6 +25,7 @@ import 'notifications/tich_notifications.dart';
 import 'settings/app_settings.dart';
 import 'theme/tich_theme.dart';
 import 'ui/auth/unlock_page.dart';
+import 'ui/auth/mobile_otp_page.dart';
 import 'ui/login_page.dart';
 import 'ui/portal/portal_chooser_page.dart';
 import 'ui/shell/portal_shell.dart';
@@ -292,7 +294,7 @@ class _AuthGateState extends State<_AuthGate> {
     final key = '${state.user.id}:${state.user.isStudent}';
     if (_primedUserKey == key) return;
     _primedUserKey = key;
-    Future<void>.delayed(const Duration(seconds: 4), () {
+    Future<void>.delayed(TichColdStart.notificationsPrimeDelay, () {
       unawaited(
         TichNotifications.instance.onAuthenticated(
           isStudent: state.user.isStudent,
@@ -313,7 +315,7 @@ class _AuthGateState extends State<_AuthGate> {
           _primeIfNeeded(state);
           final client = context.read<ApiClient>();
           TichPortalWarmup.prefetchHome(state.user, client);
-          Future<void>.delayed(const Duration(seconds: 3), () {
+          Future<void>.delayed(TichColdStart.realtimeConnectDelay, () {
             if (!context.mounted) return;
             unawaited(TichRealtime.connect(client));
           });
@@ -322,13 +324,21 @@ class _AuthGateState extends State<_AuthGate> {
             TichNotificationRouter.instance.applyPending(context);
           });
         } else {
+          TichColdStart.reset();
           unawaited(TichRealtime.disconnect());
         }
       },
-      buildWhen: (prev, next) => prev.runtimeType != next.runtimeType ||
-          (next is AuthAuthenticated && prev is AuthAuthenticated &&
+      buildWhen: (prev, next) =>
+          prev.runtimeType != next.runtimeType ||
+          (next is AuthAuthenticated &&
+              prev is AuthAuthenticated &&
               next.user.id != prev.user.id) ||
-          next is AuthLocked,
+          next is AuthLocked ||
+          (next is AuthMobileOtpPending &&
+              (prev is! AuthMobileOtpPending ||
+                  next.message != prev.message ||
+                  next.resending != prev.resending ||
+                  next.expiresMinutes != prev.expiresMinutes)),
       builder: (context, state) {
         late final Widget child;
         late final Key childKey;
@@ -340,6 +350,17 @@ class _AuthGateState extends State<_AuthGate> {
           _primedUserKey = null;
           childKey = ValueKey('unlock-${state.user.id}');
           child = UnlockPage(user: state.user, message: state.message);
+        } else if (state is AuthMobileOtpPending) {
+          _primedUserKey = null;
+          childKey = ValueKey('mobile-otp-${state.user.id}');
+          child = MobileOtpPage(
+            user: state.user,
+            emailMasked: state.emailMasked,
+            expiresMinutes: state.expiresMinutes,
+            otpSent: state.otpSent,
+            message: state.message,
+            resending: state.resending,
+          );
         } else if (state is AuthInitial || state is AuthChecking) {
           childKey = const ValueKey('auth-checking');
           child = const Scaffold(

@@ -37,19 +37,10 @@ class _StudentAcademicsLazySectionState extends State<StudentAcademicsLazySectio
       setCache: (c) => _cache = c,
       setFuture: (f) => _future = f,
       fetch: widget.fetch,
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
+      liveRefreshDelayWhenCached: const Duration(seconds: 10),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final cached = studentReadCache(widget.cacheKey);
-      if (cached != null) {
-        Future<void>.delayed(const Duration(seconds: 10), () {
-          if (!mounted) return;
-          _liveRefresh();
-        });
-        return;
-      }
-      _liveRefresh();
-    });
   }
 
   void _liveRefresh() {

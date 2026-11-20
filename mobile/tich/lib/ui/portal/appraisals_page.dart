@@ -4,8 +4,8 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../../adaptive/adaptive.dart';
 import '../widgets/tich_widgets.dart';
-import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
+import 'portal_helpers.dart';
 
 class AppraisalsPage extends StatefulWidget {
   const AppraisalsPage({super.key, required this.api});
@@ -23,8 +23,14 @@ class _AppraisalsPageState extends State<AppraisalsPage> {
   @override
   void initState() {
     super.initState();
-    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.appraisals');
-    _future = TichScreenCache.ensure('portal.appraisals', () => widget.api.appraisals());
+    portalPrimeScreen(
+      persistKey: 'portal.appraisals',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.appraisals(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
+    );
   }
 
   Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(

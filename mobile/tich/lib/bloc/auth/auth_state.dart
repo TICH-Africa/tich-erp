@@ -51,3 +51,26 @@ final class AuthUnauthenticated extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+/// Password accepted; waiting for the one-time 6-digit email code (first mobile sign-in).
+final class AuthMobileOtpPending extends AuthState {
+  const AuthMobileOtpPending(
+    this.user, {
+    this.emailMasked,
+    this.expiresMinutes = 15,
+    this.otpSent = true,
+    this.message,
+    this.resending = false,
+  });
+
+  final AuthUser user;
+  final String? emailMasked;
+  final int expiresMinutes;
+  final bool otpSent;
+  final String? message;
+  final bool resending;
+
+  @override
+  List<Object?> get props =>
+      [user, emailMasked, expiresMinutes, otpSent, message, resending];
+}

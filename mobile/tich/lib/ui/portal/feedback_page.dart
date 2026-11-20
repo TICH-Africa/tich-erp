@@ -6,8 +6,8 @@ import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
 import '../widgets/tich_widgets.dart';
-import '../../data/tich_screen_cache.dart';
 import '../widgets/tich_live_refresh.dart';
+import 'portal_helpers.dart';
 
 class FeedbackPage extends StatefulWidget {
   const FeedbackPage({super.key, required this.api});
@@ -25,8 +25,14 @@ class _FeedbackPageState extends State<FeedbackPage> {
   @override
   void initState() {
     super.initState();
-    _dataCache = TichScreenCache.read<Map<String, dynamic>>('portal.feedback');
-    _future = TichScreenCache.ensure('portal.feedback', () => widget.api.feedback());
+    portalPrimeScreen(
+      persistKey: 'portal.feedback',
+      setCache: (c) => _dataCache = c,
+      setFuture: (f) => _future = f,
+      fetch: () => widget.api.feedback(),
+      mounted: () => mounted,
+      scheduleLiveRefresh: _liveRefresh,
+    );
   }
 
   Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
