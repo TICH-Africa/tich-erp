@@ -88,7 +88,7 @@
                 </div>
 
                 <div class="uf-field">
-                    <label for="medical_certificate">Supporting document (if required)</label>
+                    <label for="medical_certificate">Supporting document (optional for sick leave)</label>
                     <input type="file" id="medical_certificate" name="medical_certificate" accept=".pdf,.jpg,.jpeg,.png">
                 </div>
 

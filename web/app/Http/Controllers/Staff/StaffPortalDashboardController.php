@@ -240,6 +240,7 @@ class StaffPortalDashboardController extends Controller
                         'accrual_type' => ($def['accrual'] ?? 'none') === 'monthly' ? 'monthly' : 'none',
                         'accrual_rate' => $def['accrual_rate'] ?? $type->accrual_rate,
                         'requires_document' => ! empty($def['requires_document']),
+                        'allows_document' => ! empty($def['allows_document']),
                         'document_label' => $def['document_label'] ?? 'Supporting document',
                         'requires_family_relation' => ! empty($def['requires_family_relation']),
                         'gender_restriction' => $def['gender_restriction'] ?? 'any',

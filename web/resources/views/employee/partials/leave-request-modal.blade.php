@@ -118,6 +118,7 @@
                                 data-accrual-type="{{ $meta['accrual_type'] ?? $type->accrual_type }}"
                                 data-accrual-rate="{{ $meta['accrual_rate'] ?? $type->accrual_rate }}"
                                 data-requires-document="{{ ! empty($meta['requires_document']) ? '1' : '0' }}"
+                                data-allows-document="{{ ! empty($meta['allows_document']) ? '1' : '0' }}"
                                 data-document-label="{{ $meta['document_label'] ?? 'Supporting document' }}"
                                 data-requires-family-relation="{{ ! empty($meta['requires_family_relation']) ? '1' : '0' }}"
                                 data-days-allowed="{{ $meta['days_allowed'] ?? $type->days_allowed_per_year }}"
@@ -298,6 +299,7 @@
                         }
 
                         const requiresDocument = option.dataset.requiresDocument === '1';
+                        const allowsDocument = option.dataset.allowsDocument === '1';
                         const documentLabel = option.dataset.documentLabel || 'Supporting document';
                         const requiresFamily = option.dataset.requiresFamilyRelation === '1';
                         const description = option.dataset.description || '';
@@ -307,7 +309,7 @@
                         daysAvailable.textContent = (balance !== undefined && balance !== '')
                             ? (parseFloat(balance).toFixed(1).replace(/\.0$/, '') + ' day(s)')
                             : '-';
-                        certificateField.style.display = requiresDocument ? 'block' : 'none';
+                        certificateField.style.display = (requiresDocument || allowsDocument) ? 'block' : 'none';
                         certificateLabel.textContent = documentLabel;
                         familyField.style.display = requiresFamily ? 'block' : 'none';
                         familySelect.required = requiresFamily;

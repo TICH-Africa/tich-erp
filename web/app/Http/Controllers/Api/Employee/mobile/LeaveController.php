@@ -39,6 +39,7 @@ class LeaveController extends Controller
                 'name' => $type->leave_name,
                 'calculation_type' => $def['calculation'] ?? $type->calculation_type,
                 'requires_document' => ! empty($def['requires_document']),
+                'allows_document' => ! empty($def['allows_document']),
                 'document_label' => $def['document_label'] ?? 'Supporting document',
                 'requires_family_relation' => ! empty($def['requires_family_relation']),
                 'gender_restriction' => $def['gender_restriction'] ?? 'any',
