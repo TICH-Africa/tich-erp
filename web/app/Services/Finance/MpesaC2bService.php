@@ -2,12 +2,14 @@
 
 namespace App\Services\Finance;
 
+use App\Models\Applicant;
 use App\Models\Invoice;
 use App\Models\MpesaC2bTransaction;
 use App\Models\Payment;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\StudentNotification;
+use App\Services\ApplicationFeeService;
 use App\Services\Sidebar\PortalSidebarBroadcastService;
 use App\Support\SchemaProbe;
 use Illuminate\Database\QueryException;
@@ -20,6 +22,10 @@ use Illuminate\Validation\ValidationException;
  * Paybill (C2B) fees payments. The student dials the paybill themselves, so Safaricom
  * asks us two questions: may this account number take the money (validation), and the
  * money has arrived (confirmation). Only the confirmation may book a payment.
+ *
+ * An account number is either a student's admission number (their fee bill) or an
+ * applicant's application number (the one-off application fee, paid before any student
+ * record exists).
  */
 class MpesaC2bService
 {
@@ -32,6 +38,7 @@ class MpesaC2bService
         protected PaymentService $payments,
         protected MpesaSettingsService $settings,
         protected PortalSidebarBroadcastService $sidebarBroadcast,
+        protected ApplicationFeeService $applicationFees,
     ) {}
 
     /**
@@ -53,10 +60,12 @@ class MpesaC2bService
         } else {
             $student = $this->findStudent($billRef);
 
-            if (! $student) {
-                $reason = 'That admission number is not on our register.';
-            } elseif (! $this->payableInvoice($student)) {
-                $reason = 'That student has no open fee bill.';
+            if ($student) {
+                if (! $this->payableInvoice($student)) {
+                    $reason = 'That student has no open fee bill.';
+                }
+            } elseif (! $this->payableApplicant($billRef)) {
+                $reason = 'That account number is not on our register or application list.';
             }
         }
 
@@ -102,14 +111,26 @@ class MpesaC2bService
 
         $student = $billRef === '' ? null : $this->findStudent($billRef);
         $invoice = $student ? $this->payableInvoice($student) : null;
+        $applicant = $invoice === null ? $this->payableApplicant($billRef) : null;
+
+        if ($applicant) {
+            return $this->bookApplicationFee($payload, $applicant, $amount, $receipt);
+        }
 
         if (! $student || ! $invoice) {
+            // Safaricom repeats a confirmation it believes we missed. If that receipt is
+            // already on the log - booked for a bill, booked for an application fee, or
+            // logged as unmatched - answer again and write nothing a second time.
+            if ($this->findClaim($payload) !== null) {
+                return self::ACCEPT;
+            }
+
             // The money left the payer but we cannot tie it to an open bill. Keep it on
             // the log so Finance can trace the receipt rather than dropping it silently.
             $this->record(MpesaC2bTransaction::KIND_CONFIRMATION, $payload, [
                 'student_id' => $student?->id,
                 'status' => MpesaC2bTransaction::STATUS_UNMATCHED,
-                'result_desc' => $student ? 'No open fee bill for that admission number.' : 'That admission number is not on our register.',
+                'result_desc' => $student ? 'No open fee bill for that admission number.' : 'That account number is not on our register or application list.',
             ]);
 
             Log::warning('M-Pesa paybill confirmation could not be matched', [
@@ -340,7 +361,7 @@ class MpesaC2bService
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function claim(array $payload, int $studentId): ?MpesaC2bTransaction
+    private function claim(array $payload, ?int $studentId): ?MpesaC2bTransaction
     {
         $attributes = $this->payloadColumns(MpesaC2bTransaction::KIND_CONFIRMATION, $payload) + [
             'student_id' => $studentId,
@@ -507,6 +528,67 @@ class MpesaC2bService
             ->whereRaw('UPPER(TRIM(registration_number)) = ?', [$billRef])
             ->orderBy('id')
             ->first();
+    }
+
+    /**
+     * An account number that is no admission number can still be an application number,
+     * and only an application standing at the payment stage may take the money.
+     */
+    private function payableApplicant(string $billRef): ?Applicant
+    {
+        $applicant = $this->applicationFees->findByAccountReference($billRef);
+
+        return $applicant !== null && $applicant->canPayApplicationFee() ? $applicant : null;
+    }
+
+    /**
+     * The application fee has no invoice before the money arrives, so the receipt settles
+     * the applicant record and ApplicationFeeService posts the Finance side behind it.
+     */
+    private function bookApplicationFee(array $payload, Applicant $applicant, ?float $amount, string $receipt): array
+    {
+        $claimed = $this->claim($payload, null);
+
+        if ($claimed === null || $claimed->status === MpesaC2bTransaction::STATUS_BOOKED) {
+            return self::ACCEPT;
+        }
+
+        try {
+            $this->applicationFees->markPaidFromMpesa($applicant, $receipt, $amount);
+        } catch (\Throwable $e) {
+            // The money is with us but the record could not be settled. Keep the receipt on
+            // the log so Finance can confirm the fee by hand instead of losing it.
+            $claimed->update([
+                'status' => MpesaC2bTransaction::STATUS_UNMATCHED,
+                'result_desc' => 'Application fee '.$applicant->application_number.' could not be verified: '.$e->getMessage(),
+            ]);
+
+            Log::warning('M-Pesa paybill application fee could not be settled', [
+                'receipt' => $receipt,
+                'applicant_id' => $applicant->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return self::ACCEPT;
+        }
+
+        $claimed->update([
+            'payment_id' => Payment::query()
+                ->where('payment_reference', $receipt)
+                ->where('status', 'SUCCESS')
+                ->value('id'),
+            'status' => MpesaC2bTransaction::STATUS_BOOKED,
+            'result_code' => '0',
+            'result_desc' => 'Application fee '.$applicant->application_number.' verified from receipt '.$receipt.'.',
+        ]);
+
+        Log::info('M-Pesa paybill application fee booked', [
+            'receipt' => $receipt,
+            'applicant_id' => $applicant->id,
+            'amount' => $amount,
+        ]);
+
+        return self::ACCEPT;
     }
 
     private function payableInvoice(Student $student): ?Invoice

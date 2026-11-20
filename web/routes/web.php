@@ -1697,7 +1697,6 @@ Route::prefix('apply')->group(function () {
     Route::match(['get', 'post'], '/check-status', [ApplicationController::class, 'checkStatus'])->name('apply.status');
     Route::get('/pay', [ApplicationPaymentController::class, 'show'])->name('apply.pay');
     Route::post('/pay', [ApplicationPaymentController::class, 'store'])->name('apply.pay.store');
-    Route::get('/pay/stk/{stkRequest}/status', [ApplicationPaymentController::class, 'status'])->name('apply.pay.stk.status');
     Route::post('/reset', [ApplicationController::class, 'reset'])->name('apply.reset');
 });
 

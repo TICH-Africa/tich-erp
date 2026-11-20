@@ -5,11 +5,9 @@ namespace App\Services;
 use App\Models\Applicant;
 use App\Models\FeeStructure;
 use App\Models\Invoice;
-use App\Models\MpesaStkRequest;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Services\Finance\InvoiceService;
-use App\Services\Finance\MpesaDarajaService;
 use App\Services\Finance\MpesaSettingsService;
 use App\Services\Finance\PaymentService;
 use Illuminate\Support\Facades\Log;
@@ -21,7 +19,7 @@ class ApplicationFeeService
 {
     public function __construct(
         protected MpesaSettingsService $mpesaSettings,
-        protected MpesaDarajaService $mpesaDaraja,
+        protected SiteSettingsService $siteSettings,
         protected AuditService $auditService,
         protected ApplicationMailService $mailService,
     ) {}
@@ -49,6 +47,35 @@ class ApplicationFeeService
         return strtoupper(substr($digits, 0, 12));
     }
 
+    /**
+     * The applicant pays on the same paybill the students use, so the account number they
+     * type is their own application reference. Safaricom sends that reference back on the
+     * confirmation and MpesaC2bService settles the fee with it.
+     */
+    public function findByAccountReference(string $accountReference): ?Applicant
+    {
+        $reference = strtoupper(preg_replace('/[^A-Z0-9]/i', '', trim($accountReference)) ?? '');
+
+        if ($reference === '') {
+            return null;
+        }
+
+        return Applicant::query()
+            ->whereRaw("LEFT(REPLACE(UPPER(application_number), '-', ''), 12) = ?", [$reference])
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    public function paybill(): string
+    {
+        return trim((string) ($this->mpesaSettings->shortcode() ?? ''));
+    }
+
+    public function paybillName(): string
+    {
+        return trim((string) ($this->siteSettings->documentBranding()['name'] ?? ''));
+    }
+
     public function payUrl(Applicant $applicant): string
     {
         return route('apply.pay', [
@@ -58,13 +85,15 @@ class ApplicationFeeService
     }
 
     /**
-     * @return array{amount: float, account_reference: string, pay_url: string}
+     * @return array{amount: float, account_reference: string, paybill: string, paybill_name: string, pay_url: string}
      */
     public function paymentInstructions(Applicant $applicant): array
     {
         return [
             'amount' => $this->amountDue($applicant),
             'account_reference' => $this->accountReference($applicant),
+            'paybill' => $this->paybill(),
+            'paybill_name' => $this->paybillName(),
             'pay_url' => $this->payUrl($applicant),
         ];
     }
@@ -74,79 +103,11 @@ class ApplicationFeeService
         return $this->mpesaSettings->isEnabled();
     }
 
-    /**
-     * @return list<string>
-     */
-    public function mpesaStkBlockers(): array
-    {
-        return $this->mpesaSettings->stkPushBlockers();
-    }
-
-    public function initiateStk(Applicant $applicant, string $phoneNumber): MpesaStkRequest
-    {
-        $this->assertPayable($applicant);
-
-        if (! $this->mpesaEnabled()) {
-            throw ValidationException::withMessages([
-                'phone_number' => 'M-Pesa is not enabled. If you have already paid, Finance can confirm the receipt manually.',
-            ]);
-        }
-
-        $amount = $this->amountDue($applicant);
-        abort_if($amount <= 0, 422, 'No application fee is configured for this programme.');
-
-        $normalizedPhone = $this->mpesaDaraja->normalizePhone($phoneNumber);
-
-        $recentPending = MpesaStkRequest::query()
-            ->where('applicant_id', $applicant->id)
-            ->where('status', MpesaStkRequest::STATUS_PENDING)
-            ->where('created_at', '>=', now()->subMinutes(3))
-            ->exists();
-
-        abort_if($recentPending, 422, 'An M-Pesa prompt is already pending. Check your phone or wait a moment.');
-
-        $accountReference = $this->accountReference($applicant);
-
-        $stkRequest = MpesaStkRequest::query()->create([
-            'invoice_id' => null,
-            'student_id' => null,
-            'applicant_id' => $applicant->id,
-            'amount' => $amount,
-            'phone' => $normalizedPhone,
-            'account_reference' => $accountReference,
-            'status' => MpesaStkRequest::STATUS_PENDING,
-        ]);
-
-        try {
-            $response = $this->mpesaDaraja->stkPush(
-                $amount,
-                $normalizedPhone,
-                $accountReference,
-                'TICH application fee '.$applicant->application_number,
-            );
-
-            $stkRequest->update([
-                'merchant_request_id' => $response['merchant_request_id'],
-                'checkout_request_id' => $response['checkout_request_id'],
-            ]);
-        } catch (Throwable $e) {
-            $stkRequest->update([
-                'status' => MpesaStkRequest::STATUS_FAILED,
-                'result_desc' => $e->getMessage(),
-                'completed_at' => now(),
-            ]);
-
-            throw $e;
-        }
-
-        return $stkRequest->fresh();
-    }
-
     public function simulateLocalPayment(Applicant $applicant): Applicant
     {
         if (! config('finance.mpesa.allow_local_simulate')) {
             throw ValidationException::withMessages([
-                'phone_number' => 'Local payment simulation is disabled. Enable M-Pesa sandbox credentials to test STK push.',
+                'application' => 'Local payment simulation is disabled. Enable M-Pesa sandbox credentials to test paybill payments.',
             ]);
         }
 
@@ -160,7 +121,7 @@ class ApplicationFeeService
     }
 
     /**
-     * Undo a recorded application fee payment so STK testing can be repeated.
+     * Undo a recorded application fee payment so paybill testing can be repeated.
      */
     public function revertApplicationFeePayment(Applicant $applicant, ?int $actorId = null): Applicant
     {

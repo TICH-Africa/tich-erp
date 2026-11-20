@@ -110,9 +110,10 @@
                             Ready for Stage 5 onboarding.
                         @else
                             <strong>Payment stage.</strong>
-                            Application fee of KES {{ number_format((float) ($feeInstructions['amount'] ?? 0), 2) }} is due.
-                            M-Pesa uses account reference <strong>{{ $feeInstructions['account_reference'] ?? $applicant->application_number }}</strong>
-                            and updates this record automatically when the STK callback succeeds.
+                            Application fee of KES {{ number_format((float) ($feeInstructions['amount'] ?? 0), 2) }} is due on paybill
+                            <strong>{{ $feeInstructions['paybill'] ?? 'not set' }}</strong>.
+                            The applicant types account reference <strong>{{ $feeInstructions['account_reference'] ?? $applicant->application_number }}</strong>
+                            themselves and this record updates automatically when Safaricom reports the paybill receipt.
                         @endif
                     </p>
                 </div>
