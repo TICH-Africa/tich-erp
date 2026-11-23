@@ -2871,6 +2871,12 @@ INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_
 SELECT 'ahl', 'All gross cash pay', 0.00, NULL, 'percent', 1.5000, NULL, NULL, 1, 1, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `payroll_statutory_brackets` WHERE `scheme` = 'ahl' LIMIT 1);
 
+
+
+
+
+
+
 -- -----------------------------------------------------------------------------
 -- Offboarding exit questionnaires (migration 2026_11_23_120000)
 -- -----------------------------------------------------------------------------
@@ -2929,10 +2935,6 @@ CREATE TABLE IF NOT EXISTS `offboarding_questionnaire_answers` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `offboarding_q_answer_unique` (`invitation_id`,`question_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Consolidate legacy consultant / independent_contractor into consultancy (2026-11-23).
-UPDATE `staff` SET `employment_category` = 'consultancy' WHERE `employment_category` IN ('consultant', 'independent_contractor');
-UPDATE `staff_contracts` SET `contract_type` = 'consultancy' WHERE `contract_type` IN ('consultant', 'independent_contractor');
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';
