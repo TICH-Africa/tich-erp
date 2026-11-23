@@ -36,6 +36,14 @@ class TimeLogController extends Controller
 
         return response()->json(Cache::remember($cacheKey, 15, function () use ($staff) {
             $current = $this->timeLogs->currentWeekMeta();
+            $hold = $this->timeLogs->portalComplianceHold($staff);
+
+            $year = $hold['year'] ?? $current['year'];
+            $month = $hold['month'] ?? $current['month'];
+            $weekNumber = $current['week']['week_number'] ?? 1;
+            if ($hold && $hold['incomplete_weeks'] !== []) {
+                $weekNumber = $hold['incomplete_weeks'][0]['week_number'];
+            }
 
             $logs = StaffWeeklyTimeLog::query()
                 ->where('staff_id', $staff->id)
@@ -47,11 +55,13 @@ class TimeLogController extends Controller
 
             return [
                 'weeks' => $logs->map(fn (StaffWeeklyTimeLog $log) => $this->serializeListItem($log))->values(),
+                'hold' => $hold,
                 'meta' => [
-                    'current_year' => $current['year'],
-                    'current_month' => $current['month'],
-                    'current_week_number' => $current['week']['week_number'] ?? 1,
+                    'current_year' => $year,
+                    'current_month' => $month,
+                    'current_week_number' => $weekNumber,
                     'can_self_endorse' => $this->timeLogs->canSelfEndorse($staff),
+                    'week_options' => $this->timeLogs->weeksForMonthForStaff($staff, (int) $year, (int) $month),
                 ],
             ];
         }));
@@ -59,11 +69,12 @@ class TimeLogController extends Controller
 
     public function weeks(Request $request): JsonResponse
     {
+        $staff = $this->portalStaff($request);
         $year = (int) $request->query('year', now()->year);
         $month = (int) $request->query('month', now()->month);
 
         return response()->json([
-            'weeks' => $this->timeLogs->weeksForMonth($year, $month),
+            'weeks' => $this->timeLogs->weeksForMonthForStaff($staff, $year, $month),
         ]);
     }
 

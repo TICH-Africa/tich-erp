@@ -13,10 +13,17 @@
 
     @if ($employeeTimeLogHold ?? null)
         <div class="tich-alert tich-alert--warning tich-mt-4">
-            Complete and submit your weekly time sheets for {{ $employeeTimeLogHold['month_label'] }} before using other employee portal sections.
+            <p>Complete and submit your weekly time sheets for <strong>{{ $employeeTimeLogHold['month_label'] }}</strong> before using other employee portal sections.</p>
             @if (! empty($employeeTimeLogHold['incomplete_weeks']))
-                Still open:
-                {{ collect($employeeTimeLogHold['incomplete_weeks'])->pluck('week_ref')->implode(', ') }}.
+                <p class="tich-mt-2" style="margin-bottom:0;">Still required:</p>
+                <ul class="wtl-hold-weeks tich-mt-2">
+                    @foreach ($employeeTimeLogHold['incomplete_weeks'] as $openWeek)
+                        <li>
+                            <span class="tich-badge tich-badge--warning">{{ $openWeek['label'] }} · {{ $openWeek['week_ref'] }}</span>
+                            <span class="tich-caption"> - open below and submit</span>
+                        </li>
+                    @endforeach
+                </ul>
             @endif
         </div>
     @endif
@@ -53,9 +60,18 @@
                     <label class="tich-label" for="wtl-week">Week</label>
                     <select id="wtl-week" name="week_number" class="tich-input" required>
                         @foreach ($weeks as $week)
-                            <option value="{{ $week['week_number'] }}" @selected((int) $currentWeek === (int) $week['week_number'])>{{ $week['label'] }} · {{ $week['week_ref'] }}</option>
+                            <option
+                                value="{{ $week['week_number'] }}"
+                                @selected((int) $currentWeek === (int) $week['week_number'])
+                                @if (! empty($week['needs_attention'])) data-needs-attention="1" @endif
+                            >
+                                {{ $week['label'] }} · {{ $week['week_ref'] }}@if (! empty($week['needs_attention'])) · Submit required @endif
+                            </option>
                         @endforeach
                     </select>
+                    <p id="wtl-week-hint" class="tich-caption tich-mt-1 @if (! ($employeeTimeLogHold ?? null)) hidden @endif">
+                        Weeks marked <strong>Submit required</strong> are still locking the portal.
+                    </p>
                 </div>
             </div>
             <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Open week</button>
@@ -97,25 +113,86 @@
         @endif
     </div>
 
+    <style>
+        .wtl-hold-weeks {
+            margin: 0;
+            padding-left: 1.1rem;
+            list-style: disc;
+        }
+
+        .wtl-hold-weeks li + li {
+            margin-top: 0.35rem;
+        }
+
+        #wtl-week option[data-needs-attention="1"] {
+            font-weight: 700;
+            color: #b45309;
+        }
+
+        .tich-dropdown__option.wtl-dropdown-option--required {
+            background: #fff3e0;
+            color: #9a3412;
+            font-weight: 600;
+        }
+
+        .tich-dropdown__option.wtl-dropdown-option--required:hover,
+        .tich-dropdown__option.wtl-dropdown-option--required:focus-visible {
+            background: #ffe0b2;
+            color: #7c2d12;
+        }
+    </style>
+
     <script>
     (function () {
         var yearEl = document.getElementById('wtl-year');
         var monthEl = document.getElementById('wtl-month');
         var weekEl = document.getElementById('wtl-week');
+        var hintEl = document.getElementById('wtl-week-hint');
+        var hold = @json($employeeTimeLogHold ?? null);
         var url = @json(route('employee.time-logs.weeks'));
+
         function reloadWeeks() {
             fetch(url + '?year=' + encodeURIComponent(yearEl.value) + '&month=' + encodeURIComponent(monthEl.value), {
                 headers: { 'Accept': 'application/json' }
             }).then(function (r) { return r.json(); }).then(function (data) {
+                var previous = weekEl.value;
                 weekEl.innerHTML = '';
+                var firstRequired = null;
+                var anyRequired = false;
                 (data.weeks || []).forEach(function (w) {
                     var opt = document.createElement('option');
                     opt.value = w.week_number;
-                    opt.textContent = w.label + ' · ' + w.week_ref;
+                    opt.textContent = w.label + ' · ' + w.week_ref + (w.needs_attention ? ' · Submit required' : '');
+                    if (w.needs_attention) {
+                        opt.dataset.needsAttention = '1';
+                        anyRequired = true;
+                        if (firstRequired === null) {
+                            firstRequired = w.week_number;
+                        }
+                    }
                     weekEl.appendChild(opt);
                 });
+
+                if (hintEl) {
+                    hintEl.classList.toggle('hidden', !anyRequired);
+                }
+
+                var holdMatchesMonth = hold
+                    && Number(hold.year) === Number(yearEl.value)
+                    && Number(hold.month) === Number(monthEl.value);
+
+                if (holdMatchesMonth && firstRequired !== null) {
+                    weekEl.value = String(firstRequired);
+                } else if (previous && weekEl.querySelector('option[value="' + previous + '"]')) {
+                    weekEl.value = previous;
+                }
+
+                if (weekEl.tichDropdownWrapper && typeof weekEl.tichDropdownLabel !== 'undefined') {
+                    weekEl.dispatchEvent(new Event('change', { bubbles: true }));
+                }
             }).catch(function () {});
         }
+
         yearEl.addEventListener('change', reloadWeeks);
         monthEl.addEventListener('change', reloadWeeks);
     })();

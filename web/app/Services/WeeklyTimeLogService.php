@@ -877,7 +877,7 @@ class WeeklyTimeLogService
     /**
      * When set, the employee may only use weekly time sheet screens until open weeks are submitted.
      *
-     * @return array{month_label: string, incomplete_weeks: list<array{week_number: int, week_ref: string, label: string}>}|null
+     * @return array{month_label: string, year: int, month: int, incomplete_weeks: list<array{week_number: int, week_ref: string, label: string}>}|null
      */
     public function portalComplianceHold(Staff $staff, ?Carbon $today = null): ?array
     {
@@ -905,8 +905,29 @@ class WeeklyTimeLogService
 
         return [
             'month_label' => $monthLabel,
+            'year' => $year,
+            'month' => $month,
             'incomplete_weeks' => $incomplete,
         ];
+    }
+
+    /**
+     * Month week buckets with {@see incompleteWeeksForStaff()} flagged as {@code needs_attention}.
+     *
+     * @return list<array{week_number: int, week_ref: string, period_start: string, period_end: string, label: string, days: list<array{date: string, day_label: string, in_month: bool}>, needs_attention: bool}>
+     */
+    public function weeksForMonthForStaff(Staff $staff, int $year, int $month, ?Carbon $today = null): array
+    {
+        $incompleteNumbers = array_flip(array_map(
+            fn (array $week) => $week['week_number'],
+            $this->incompleteWeeksForStaff($staff, $year, $month, $today),
+        ));
+
+        return array_map(function (array $week) use ($incompleteNumbers) {
+            $week['needs_attention'] = isset($incompleteNumbers[$week['week_number']]);
+
+            return $week;
+        }, $this->weeksForMonth($year, $month));
     }
 
     public function reminderSentForMonth(int $userId, string $entityId, string $title): bool

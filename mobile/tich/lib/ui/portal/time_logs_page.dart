@@ -64,6 +64,11 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
     var weekOptions = (meta['week_options'] as List? ?? const [])
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
+    final hold = data['hold'] as Map?;
+    if (hold != null) {
+      year = (hold['year'] as num?)?.toInt() ?? year;
+      month = (hold['month'] as num?)?.toInt() ?? month;
+    }
     var weekNumber = (meta['current_week_number'] as num?)?.toInt() ??
         (weekOptions.isNotEmpty
             ? (weekOptions.first['week_number'] as num?)?.toInt() ?? 1
@@ -88,7 +93,14 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                   weekOptions = (res['weeks'] as List? ?? const [])
                       .map((e) => Map<String, dynamic>.from(e as Map))
                       .toList();
-                  if (weekOptions.isNotEmpty) {
+                  final needsAttention = weekOptions
+                      .where((w) => w['needs_attention'] == true)
+                      .toList();
+                  if (needsAttention.isNotEmpty) {
+                    weekNumber =
+                        (needsAttention.first['week_number'] as num?)?.toInt() ??
+                            weekNumber;
+                  } else if (weekOptions.isNotEmpty) {
                     weekNumber =
                         (weekOptions.first['week_number'] as num?)?.toInt() ??
                             weekNumber;
@@ -163,7 +175,13 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                             DropdownMenuItem(
                               value: (w['week_number'] as num).toInt(),
                               child: Text(
-                                '${w['label'] ?? 'Week'} · ${w['week_ref'] ?? ''}',
+                                '${w['label'] ?? 'Week'} · ${w['week_ref'] ?? ''}${w['needs_attention'] == true ? ' · Submit required' : ''}',
+                                style: w['needs_attention'] == true
+                                    ? const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF9A3412),
+                                      )
+                                    : null,
                               ),
                             ),
                         ],
@@ -268,6 +286,7 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
             }
             final data = merged! as Map<String, dynamic>;
             final weeks = data['weeks'] as List? ?? const [];
+            final hold = data['hold'] as Map?;
             final message = data['message']?.toString();
             if (weeks.isEmpty) {
               return Center(
@@ -291,10 +310,45 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
               onRefresh: () async => _reload(),
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-                itemCount: weeks.length,
+                itemCount: weeks.length + (hold != null ? 1 : 0),
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, i) {
-                  final w = Map<String, dynamic>.from(weeks[i] as Map);
+                  if (hold != null && i == 0) {
+                    final open = (hold['incomplete_weeks'] as List? ?? const []);
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFFED7AA)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Submit time sheets for ${hold['month_label'] ?? 'this month'} to unlock the portal.',
+                            style: tichUi(fontWeight: FontWeight.w600),
+                          ),
+                          if (open.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            for (final row in open)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text(
+                                  '· ${row['label'] ?? 'Week'} · ${row['week_ref'] ?? ''}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF9A3412),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }
+                  final idx = hold != null ? i - 1 : i;
+                  final w = Map<String, dynamic>.from(weeks[idx] as Map);
                   final id = (w['id'] as num?)?.toInt();
                   return TichCard(
                     onTap: id == null ? null : () => _openExisting(id),
