@@ -96,7 +96,7 @@
 
     <section class="tich-doc-section">
         <p>
-            NOTE: To be filled on a daily basis. You may also complete every week at month end.
+            NOTE: To be filled on a daily basis. Submit each month through the week of the 20th.
             TOTAL HOURS is time in to time out less one hour for lunch. TOTAL UNITS is double those hours.
         </p>
     </section>

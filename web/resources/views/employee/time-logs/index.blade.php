@@ -3,7 +3,7 @@
 @section('title', 'Weekly Time Sheet')
 
 @section('employee-content')
-    <x-page-toolbar title="Weekly Time Sheet" meta="Fill weekly, or complete every week at month end · Submitted to HR">
+    <x-page-toolbar title="Weekly Time Sheet" meta="Submit each month through the week of the 20th · Portal lock runs 20th to 20th · Submitted to HR">
         @unless ($employeeTimeLogHold ?? null)
             <x-slot:actions>
                 <a href="{{ route('employee.dashboard') }}" class="tich-btn tich-btn-ghost">Back</a>
@@ -13,7 +13,7 @@
 
     @if ($employeeTimeLogHold ?? null)
         <div class="tich-alert tich-alert--warning tich-mt-4">
-            <p>Complete and submit your weekly time sheets for <strong>{{ $employeeTimeLogHold['month_label'] }}</strong> before using other employee portal sections.</p>
+            <p>Complete and submit your weekly time sheets for <strong>{{ $employeeTimeLogHold['month_label'] }}</strong> through the week of the <strong>20th</strong>@if (! empty($employeeTimeLogHold['window_end'])) (compliance window ends {{ \Carbon\Carbon::parse($employeeTimeLogHold['window_end'])->format('j M Y') }})@endif before using other employee portal sections.</p>
             @if (! empty($employeeTimeLogHold['incomplete_weeks']))
                 <p class="tich-mt-2" style="margin-bottom:0;">Still required:</p>
                 <ul class="wtl-hold-weeks tich-mt-2">

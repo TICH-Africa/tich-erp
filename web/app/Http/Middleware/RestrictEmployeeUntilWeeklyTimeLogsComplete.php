@@ -33,7 +33,10 @@ class RestrictEmployeeUntilWeeklyTimeLogsComplete
             return $next($request);
         }
 
+        $dueBy = $hold['window_end'] ?? null;
         $message = 'Complete and submit your weekly time sheets for '.$hold['month_label']
+            .' through the week of the 20th'
+            .($dueBy ? ' (compliance window ends '.$dueBy.')' : '')
             .' before using other employee portal sections.';
 
         if ($request->expectsJson()) {

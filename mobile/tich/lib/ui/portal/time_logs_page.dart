@@ -326,7 +326,9 @@ class _TimeLogsPageState extends State<TimeLogsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Submit time sheets for ${hold['month_label'] ?? 'this month'} to unlock the portal.',
+                            hold['window_end'] != null
+                                ? 'Submit time sheets for ${hold['month_label'] ?? 'this month'} through the week of the 20th (window ends ${hold['window_end']}) to unlock the portal.'
+                                : 'Submit time sheets for ${hold['month_label'] ?? 'this month'} through the week of the 20th to unlock the portal.',
                             style: tichUi(fontWeight: FontWeight.w600),
                           ),
                           if (open.isNotEmpty) ...[

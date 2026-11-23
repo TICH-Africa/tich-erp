@@ -131,7 +131,7 @@
         </table>
     </div>
     <p class="tich-caption tich-mt-3">TOTAL HOURS is worked out from time in to time out less one hour for lunch. TOTAL UNITS is double those hours. Both count only days inside the month.</p>
-    <p class="tich-caption tich-mt-1">NOTE: To be filled on a daily basis. You may also complete every week at month end.</p>
+    <p class="tich-caption tich-mt-1">NOTE: To be filled on a daily basis. Submit each month through the week of the 20th; weeks after that are optional until the next compliance cycle.</p>
 </div>
 
 <div class="tich-card tich-mt-4">

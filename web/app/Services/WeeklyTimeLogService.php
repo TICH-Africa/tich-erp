@@ -24,6 +24,9 @@ class WeeklyTimeLogService
     /** One worked hour counts as two unit hours. */
     public const UNIT_TIME_MULTIPLIER = 2.0;
 
+    /** Portal lock and reminders use the 20th of each month as the cycle boundary. */
+    public const PORTAL_COMPLIANCE_CUTOFF_DAY = 20;
+
     /** @var array<int, Collection<int, Department>> */
     private array $departmentsForStaffCache = [];
 
@@ -864,20 +867,73 @@ class WeeklyTimeLogService
             ->paginate($perPage);
     }
 
-    /** True from seven days before month-end through the last day of the month (inclusive). */
-    public function isMonthEndReminderWindow(?Carbon $today = null): bool
+    /**
+     * Active enforcement window: 20th of the previous calendar month through the 20th of the current
+     * month while today is on or before this month's 20th; otherwise 20th of this month through 20th of next month.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    public function portalComplianceWindow(?Carbon $today = null): array
     {
         $today = ($today ?? now())->copy()->startOfDay();
-        $endOfMonth = $today->copy()->endOfMonth()->startOfDay();
-        $daysUntilEnd = (int) $today->diffInDays($endOfMonth, false);
+        $thisMonthCutoff = $today->copy()->startOfMonth()->day(self::PORTAL_COMPLIANCE_CUTOFF_DAY)->startOfDay();
 
-        return $daysUntilEnd >= 0 && $daysUntilEnd <= 7;
+        if ($today->gt($thisMonthCutoff)) {
+            $windowStart = $thisMonthCutoff->copy();
+            $windowEnd = $thisMonthCutoff->copy()->addMonth()->startOfDay();
+        } else {
+            $windowStart = $thisMonthCutoff->copy()->subMonth()->startOfDay();
+            $windowEnd = $thisMonthCutoff->copy();
+        }
+
+        return [$windowStart, $windowEnd];
+    }
+
+    public function isPortalComplianceEnforcementWindow(?Carbon $today = null): bool
+    {
+        $today = ($today ?? now())->copy()->startOfDay();
+        [$windowStart, $windowEnd] = $this->portalComplianceWindow($today);
+
+        return $today->gte($windowStart) && $today->lte($windowEnd);
+    }
+
+    /** @deprecated Use {@see isPortalComplianceEnforcementWindow()} */
+    public function isMonthEndReminderWindow(?Carbon $today = null): bool
+    {
+        return $this->isPortalComplianceEnforcementWindow($today);
+    }
+
+    public function monthlyComplianceCutoffDate(int $year, int $month): Carbon
+    {
+        return Carbon::create($year, $month, self::PORTAL_COMPLIANCE_CUTOFF_DAY)->startOfDay();
+    }
+
+    /** Week bucket in a calendar month that contains the compliance cutoff (day 20). */
+    public function cutoffWeekNumberForMonth(int $year, int $month): ?int
+    {
+        $cutoff = $this->monthlyComplianceCutoffDate($year, $month);
+        foreach ($this->weeksForMonth($year, $month) as $week) {
+            $start = Carbon::parse($week['period_start'])->startOfDay();
+            $end = Carbon::parse($week['period_end'])->startOfDay();
+            if ($cutoff->gte($start) && $cutoff->lte($end)) {
+                return (int) $week['week_number'];
+            }
+        }
+
+        $lastOnOrBefore = null;
+        foreach ($this->weeksForMonth($year, $month) as $week) {
+            if (Carbon::parse($week['period_start'])->startOfDay()->lte($cutoff)) {
+                $lastOnOrBefore = (int) $week['week_number'];
+            }
+        }
+
+        return $lastOnOrBefore;
     }
 
     /**
      * When set, the employee may only use weekly time sheet screens until open weeks are submitted.
      *
-     * @return array{month_label: string, year: int, month: int, incomplete_weeks: list<array{week_number: int, week_ref: string, label: string}>}|null
+     * @return array{month_label: string, year: int, month: int, window_start: string, window_end: string, incomplete_weeks: list<array{week_number: int, week_ref: string, label: string}>}|null
      */
     public function portalComplianceHold(Staff $staff, ?Carbon $today = null): ?array
     {
@@ -886,29 +942,74 @@ class WeeklyTimeLogService
         }
 
         $today = ($today ?? now())->copy()->startOfDay();
-        $year = (int) $today->year;
-        $month = (int) $today->month;
-        $incomplete = $this->incompleteWeeksForStaff($staff, $year, $month, $today);
+        $incomplete = $this->incompleteWeeksForPortalCompliance($staff, $today);
         if ($incomplete === []) {
             return null;
         }
 
-        $monthLabel = $today->copy()->startOfMonth()->format('F Y');
-        $entityId = sprintf('%04d-%02d', $year, $month);
-        $notificationTitle = 'Weekly time sheets due — '.$monthLabel;
-        $inWindow = $this->isMonthEndReminderWindow($today);
-        $reminded = $this->reminderSentForMonth((int) $staff->user_id, $entityId, $notificationTitle);
-
-        if (! $inWindow && ! $reminded) {
-            return null;
-        }
+        [$windowStart, $windowEnd] = $this->portalComplianceWindow($today);
+        $accountYear = (int) $windowEnd->year;
+        $accountMonth = (int) $windowEnd->month;
+        $monthLabel = Carbon::create($accountYear, $accountMonth, 1)->format('F Y');
 
         return [
             'month_label' => $monthLabel,
-            'year' => $year,
-            'month' => $month,
-            'incomplete_weeks' => $incomplete,
+            'year' => $accountYear,
+            'month' => $accountMonth,
+            'window_start' => $windowStart->toDateString(),
+            'window_end' => $windowEnd->toDateString(),
+            'incomplete_weeks' => array_map(
+                static fn (array $week): array => [
+                    'week_number' => $week['week_number'],
+                    'week_ref' => $week['week_ref'],
+                    'label' => $week['label'],
+                ],
+                $incomplete
+            ),
         ];
+    }
+
+    /**
+     * Open weeks that block portal access (through each month's day-20 week only; grace after that until next cycle).
+     *
+     * @return list<array{week_number: int, week_ref: string, label: string, year: int, month: int}>
+     */
+    public function incompleteWeeksForPortalCompliance(Staff $staff, ?Carbon $today = null): array
+    {
+        if (! SchemaProbe::hasTable('staff_weekly_time_logs')) {
+            return [];
+        }
+
+        $today = ($today ?? now())->copy()->startOfDay();
+        [, $windowEnd] = $this->portalComplianceWindow($today);
+
+        $monthsToCheck = [
+            [(int) $windowEnd->year, (int) $windowEnd->month],
+        ];
+
+        $priorCutoff = $windowEnd->copy()->subMonth()->startOfDay();
+        $priorYear = (int) $priorCutoff->year;
+        $priorMonth = (int) $priorCutoff->month;
+        if ($today->gt($this->monthlyComplianceCutoffDate($priorYear, $priorMonth))) {
+            $monthsToCheck[] = [$priorYear, $priorMonth];
+        }
+
+        $merged = [];
+        $seen = [];
+        foreach ($monthsToCheck as [$year, $month]) {
+            foreach ($this->incompleteWeeksForStaff($staff, $year, $month, $today, true) as $week) {
+                $key = $week['week_ref'];
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+                $week['year'] = $year;
+                $week['month'] = $month;
+                $merged[] = $week;
+            }
+        }
+
+        return $merged;
     }
 
     /**
@@ -918,9 +1019,13 @@ class WeeklyTimeLogService
      */
     public function weeksForMonthForStaff(Staff $staff, int $year, int $month, ?Carbon $today = null): array
     {
+        $portalIncomplete = array_values(array_filter(
+            $this->incompleteWeeksForPortalCompliance($staff, $today),
+            static fn (array $week): bool => (int) $week['year'] === $year && (int) $week['month'] === $month,
+        ));
         $incompleteNumbers = array_flip(array_map(
             fn (array $week) => $week['week_number'],
-            $this->incompleteWeeksForStaff($staff, $year, $month, $today),
+            $portalIncomplete,
         ));
 
         return array_map(function (array $week) use ($incompleteNumbers) {
@@ -987,14 +1092,23 @@ class WeeklyTimeLogService
     /**
      * @return list<array{week_number: int, week_ref: string, label: string}>
      */
-    public function incompleteWeeksForStaff(Staff $staff, int $year, int $month, ?Carbon $today = null): array
-    {
+    public function incompleteWeeksForStaff(
+        Staff $staff,
+        int $year,
+        int $month,
+        ?Carbon $today = null,
+        bool $throughMonthlyCutoffOnly = false,
+    ): array {
         if (! SchemaProbe::hasTable('staff_weekly_time_logs')) {
             return [];
         }
 
         $today = ($today ?? now())->copy()->startOfDay();
         $weeks = $this->weeksForMonth($year, $month);
+        $maxWeekNumber = $throughMonthlyCutoffOnly
+            ? $this->cutoffWeekNumberForMonth($year, $month)
+            : null;
+
         $logs = StaffWeeklyTimeLog::query()
             ->where('staff_id', $staff->id)
             ->where('log_year', $year)
@@ -1004,12 +1118,16 @@ class WeeklyTimeLogService
 
         $incomplete = [];
         foreach ($weeks as $week) {
+            $weekNumber = (int) $week['week_number'];
+            if ($maxWeekNumber !== null && $weekNumber > $maxWeekNumber) {
+                continue;
+            }
+
             $periodStart = Carbon::parse($week['period_start'])->startOfDay();
             if ($periodStart->gt($today)) {
                 continue;
             }
 
-            $weekNumber = (int) $week['week_number'];
             $log = $logs->get($weekNumber);
             if ($this->weekNeedsEmployeeAttention($log)) {
                 $incomplete[] = [
