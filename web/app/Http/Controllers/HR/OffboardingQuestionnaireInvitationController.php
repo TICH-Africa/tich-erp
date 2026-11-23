@@ -10,6 +10,7 @@ use App\Models\StaffContract;
 use App\Services\OffboardingQuestionnaireService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class OffboardingQuestionnaireInvitationController extends Controller
@@ -74,7 +75,11 @@ class OffboardingQuestionnaireInvitationController extends Controller
     {
         $validated = $request->validate([
             'staff_id' => ['required', 'integer', 'exists:staff,id'],
-            'template_id' => ['nullable', 'integer', 'exists:offboarding_questionnaire_templates,id'],
+            'template_id' => [
+                'required',
+                'integer',
+                Rule::exists('offboarding_questionnaire_templates', 'id')->where('is_active', true),
+            ],
             'staff_contract_id' => ['nullable', 'integer', 'exists:staff_contracts,id'],
         ]);
 
@@ -84,7 +89,7 @@ class OffboardingQuestionnaireInvitationController extends Controller
             $invitation = $this->questionnaires->sendToStaff(
                 $staff,
                 $request->user(),
-                $validated['template_id'] ?? null,
+                (int) $validated['template_id'],
                 $validated['staff_contract_id'] ?? null,
             );
         } catch (\InvalidArgumentException $e) {

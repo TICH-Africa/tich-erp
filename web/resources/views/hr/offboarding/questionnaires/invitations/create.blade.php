@@ -12,6 +12,14 @@
     @error('send')
         <div class="tich-alert tich-alert--error tich-mt-4">{{ $message }}</div>
     @enderror
+    @error('template_id')
+        <div class="tich-alert tich-alert--error tich-mt-4">{{ $message }}</div>
+    @enderror
+    @if ($templates->isEmpty())
+        <div class="tich-alert tich-alert--warning tich-mt-4">
+            No active questionnaire templates. <a href="{{ route('hr.offboarding.questionnaires.templates.index') }}">Create or activate a template</a> before sending.
+        </div>
+    @endif
 
     <div class="tich-card tich-mb-6" style="padding: 1.25rem;">
         <h2 class="tich-h4">Contracts expiring soon</h2>
@@ -67,18 +75,24 @@
         </div>
 
         <div class="uf-field">
-            <label for="template_id">Template (optional)</label>
-            <select name="template_id" id="template_id" class="tich-input">
-                <option value="">Auto — match employee type</option>
+            <label for="template_id">Questionnaire template <span class="uf-req">*</span></label>
+            <select name="template_id" id="template_id" class="tich-input" required @disabled($templates->isEmpty())>
+                <option value="">Select template</option>
                 @foreach ($templates as $template)
+                    @php
+                        $typeLabels = array_map(
+                            fn ($code) => $categoryLabels[$code] ?? \App\Support\EmploymentCategory::label($code),
+                            $template->employment_categories ?? []
+                        );
+                    @endphp
                     <option value="{{ $template->id }}" @selected(old('template_id') == $template->id)>
-                        {{ $template->title }}
+                        {{ $template->title }} · {{ implode(', ', $typeLabels) }}
                     </option>
                 @endforeach
             </select>
-            <p class="uf-hint">If left blank, the active template assigned to that employee’s category is used.</p>
+            <p class="uf-hint">Choose the template that matches this employee’s category. Sending will fail if the template does not apply to them.</p>
         </div>
 
-        <button type="submit" class="tich-btn tich-btn-primary tich-mt-4">Send to employee</button>
+        <button type="submit" class="tich-btn tich-btn-primary tich-mt-4" @disabled($templates->isEmpty())>Send to employee</button>
     </form>
 @endsection

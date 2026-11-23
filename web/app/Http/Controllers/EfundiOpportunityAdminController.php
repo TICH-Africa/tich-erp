@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Illuminate\View\View;
 
 class EfundiOpportunityAdminController extends Controller
@@ -49,6 +50,7 @@ class EfundiOpportunityAdminController extends Controller
             'types' => EfundiOpportunity::types(),
             'scopes' => EfundiOpportunity::scopes(),
             'linkableVacancies' => $this->linkableVacancies(),
+            'publicUrl' => route('e-fundi.index'),
         ]);
     }
 
@@ -101,6 +103,7 @@ class EfundiOpportunityAdminController extends Controller
             'types' => EfundiOpportunity::types(),
             'scopes' => EfundiOpportunity::scopes(),
             'linkableVacancies' => $this->linkableVacancies($opportunity),
+            'publicUrl' => route('e-fundi.index'),
         ]);
     }
 
@@ -203,10 +206,16 @@ class EfundiOpportunityAdminController extends Controller
             'location' => ['nullable', 'string', 'max:255'],
             'summary' => ['nullable', 'string', 'max:1000'],
             'description' => ['nullable', 'string', 'max:50000'],
-            'application_url' => ['nullable', 'url', 'max:500'],
-            'application_email' => ['nullable', 'email', 'max:255'],
+            'application_url' => ['nullable', 'string', 'max:500'],
+            'application_email' => ['nullable', 'string', 'max:255'],
             'application_deadline' => ['nullable', 'date'],
         ]);
+
+        $validator = validator($validated);
+        $this->validateApplicationContact($validator, $validated);
+        $validator->validate();
+
+        $validated = $validator->validated();
 
         if ($validated['opportunity_scope'] === EfundiOpportunity::SCOPE_INTERNAL) {
             $request->validate([
@@ -223,6 +232,45 @@ class EfundiOpportunityAdminController extends Controller
         }
 
         return $validated;
+    }
+
+    /** @param  array<string, mixed>  $validated */
+    protected function validateApplicationContact(Validator $validator, array &$validated): void
+    {
+        $url = trim((string) ($validated['application_url'] ?? ''));
+        $email = trim((string) ($validated['application_email'] ?? ''));
+
+        $validated['application_url'] = $url !== '' ? $url : null;
+        $validated['application_email'] = $email !== '' ? $email : null;
+
+        $validator->after(function (Validator $v) use (&$validated): void {
+            $url = (string) ($validated['application_url'] ?? '');
+            $email = (string) ($validated['application_email'] ?? '');
+
+            if ($url !== '') {
+                if (filter_var($url, FILTER_VALIDATE_EMAIL)) {
+                    $v->errors()->add('application_url', 'Use Application email for email addresses, not Application link.');
+
+                    return;
+                }
+
+                if (! preg_match('#^https?://#i', $url) || ! filter_var($url, FILTER_VALIDATE_URL)) {
+                    $v->errors()->add('application_url', 'Application link must be a valid URL starting with http:// or https://.');
+                }
+            }
+
+            if ($email !== '') {
+                if (preg_match('#^[a-z]+://#i', $email) || str_contains($email, 'www.')) {
+                    $v->errors()->add('application_email', 'Use Application link for website URLs, not Application email.');
+
+                    return;
+                }
+
+                if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $v->errors()->add('application_email', 'Application email must be a valid email address.');
+                }
+            }
+        });
     }
 
     protected function linkableVacancies(?EfundiOpportunity $current = null): Collection
