@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/employee_api.dart';
-import '../../navigation/tich_root_nav.dart';
 import '../shell/employee_portal_menu_scope.dart';
 import '../shell/portal_nav_counts_scope.dart';
 import '../widgets/tich_global_more_footer.dart';
