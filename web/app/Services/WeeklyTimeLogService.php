@@ -888,7 +888,7 @@ class WeeklyTimeLogService
         $today = ($today ?? now())->copy()->startOfDay();
         $year = (int) $today->year;
         $month = (int) $today->month;
-        $incomplete = $this->incompleteWeeksForStaff($staff, $year, $month, $today);
+        $incomplete = $this->incompleteWeeksForStaff($staff, $year, $month, $today, onlyClosedWeeks: true);
         if ($incomplete === []) {
             return null;
         }
@@ -966,8 +966,13 @@ class WeeklyTimeLogService
     /**
      * @return list<array{week_number: int, week_ref: string, label: string}>
      */
-    public function incompleteWeeksForStaff(Staff $staff, int $year, int $month, ?Carbon $today = null): array
-    {
+    public function incompleteWeeksForStaff(
+        Staff $staff,
+        int $year,
+        int $month,
+        ?Carbon $today = null,
+        bool $onlyClosedWeeks = false,
+    ): array {
         if (! SchemaProbe::hasTable('staff_weekly_time_logs')) {
             return [];
         }
@@ -985,6 +990,11 @@ class WeeklyTimeLogService
         foreach ($weeks as $week) {
             $periodStart = Carbon::parse($week['period_start'])->startOfDay();
             if ($periodStart->gt($today)) {
+                continue;
+            }
+
+            // A week still being worked is not owed yet, so it must not hold the portal.
+            if ($onlyClosedWeeks && Carbon::parse($week['period_end'])->startOfDay()->gte($today)) {
                 continue;
             }
 
