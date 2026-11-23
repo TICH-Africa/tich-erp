@@ -100,7 +100,7 @@
                                     <span class="tich-caption">—</span>
                                 @endif
                             </td>
-                            <td class="tich-caption">{{ config('tich-payroll.employment_categories.'.$member->employment_category, ucfirst(str_replace('_', ' ', $member->employment_category))) }}</td>
+                            <td class="tich-caption">{{ \App\Support\EmploymentCategory::label($member->employment_category) }}</td>
                             <td>
                                 <span class="tich-badge tich-badge--{{ $member->employment_status === 'active' ? 'success' : 'warning' }}">
                                     {{ ucfirst($member->employment_status) }}

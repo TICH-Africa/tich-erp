@@ -68,7 +68,7 @@ class DocumentGenerationService
             'staff_job_title' => $staff->job_title,
             'staff_department' => $staff->department->dept_name ?? '',
             'staff_campus' => $staff->campus->campus_name ?? '',
-            'staff_employment_category' => ucfirst($staff->employment_category),
+            'staff_employment_category' => \App\Support\EmploymentCategory::label($staff->employment_category),
             'staff_employment_start_date' => $staff->employment_start_date?->format('F j, Y') ?? '',
             'staff_contract_end_date' => $staff->contract_end_date?->format('F j, Y') ?? 'Ongoing',
             'staff_gross_monthly_salary' => number_format($staff->gross_monthly_salary, 2),

@@ -27,11 +27,7 @@
                                 <option value="">Select staff</option>
                                 @foreach ($staff as $s)
                                     @php
-                                        $optionContractType = match ($s->employment_category) {
-                                            'consultant', 'independent_contractor' => 'consultancy',
-                                            'permanent', 'contract', 'intern', 'visiting', 'casual', 'probation', 'consultancy', 'volunteer' => $s->employment_category,
-                                            default => '',
-                                        };
+                                        $optionContractType = \App\Support\EmploymentCategory::contractTypeFromEmploymentCategory($s->employment_category) ?? '';
                                     @endphp
                                     <option
                                         value="{{ $s->id }}"

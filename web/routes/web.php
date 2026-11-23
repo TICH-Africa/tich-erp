@@ -1349,6 +1349,20 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::get('/training/{training}/edit', [\App\Http\Controllers\HR\TrainingController::class, 'edit'])->name('hr.training.edit');
             Route::put('/training/{training}', [\App\Http\Controllers\HR\TrainingController::class, 'update'])->name('hr.training.update');
             Route::delete('/training/{training}', [\App\Http\Controllers\HR\TrainingController::class, 'destroy'])->name('hr.training.destroy');
+            Route::prefix('offboarding/questionnaires')->name('hr.offboarding.questionnaires.')->group(function () {
+                Route::get('/templates', [\App\Http\Controllers\HR\OffboardingQuestionnaireTemplateController::class, 'index'])->name('templates.index');
+                Route::get('/templates/create', [\App\Http\Controllers\HR\OffboardingQuestionnaireTemplateController::class, 'create'])->name('templates.create');
+                Route::post('/templates', [\App\Http\Controllers\HR\OffboardingQuestionnaireTemplateController::class, 'store'])->name('templates.store');
+                Route::get('/templates/{template}/edit', [\App\Http\Controllers\HR\OffboardingQuestionnaireTemplateController::class, 'edit'])->name('templates.edit');
+                Route::put('/templates/{template}', [\App\Http\Controllers\HR\OffboardingQuestionnaireTemplateController::class, 'update'])->name('templates.update');
+                Route::delete('/templates/{template}', [\App\Http\Controllers\HR\OffboardingQuestionnaireTemplateController::class, 'destroy'])->name('templates.destroy');
+
+                Route::get('/invitations', [\App\Http\Controllers\HR\OffboardingQuestionnaireInvitationController::class, 'index'])->name('invitations.index');
+                Route::get('/invitations/create', [\App\Http\Controllers\HR\OffboardingQuestionnaireInvitationController::class, 'create'])->name('invitations.create');
+                Route::post('/invitations', [\App\Http\Controllers\HR\OffboardingQuestionnaireInvitationController::class, 'store'])->name('invitations.store');
+                Route::get('/invitations/{invitation}', [\App\Http\Controllers\HR\OffboardingQuestionnaireInvitationController::class, 'show'])->name('invitations.show');
+            });
+
             Route::get('/offboarding', [\App\Http\Controllers\HR\OffboardingController::class, 'index'])->name('hr.offboarding.index');
             Route::get('/offboarding/create', [\App\Http\Controllers\HR\OffboardingController::class, 'create'])->name('hr.offboarding.create');
             Route::post('/offboarding', [\App\Http\Controllers\HR\OffboardingController::class, 'store'])->name('hr.offboarding.store');
@@ -1592,6 +1606,10 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::put('/time-logs/{timeLog}', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'update'])->name('employee.time-logs.update');
         Route::post('/time-logs/{timeLog}/submit', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'submit'])->name('employee.time-logs.submit');
         Route::post('/time-logs/{timeLog}/endorse', [\App\Http\Controllers\Employee\EmployeeWeeklyTimeLogController::class, 'endorse'])->name('employee.time-logs.endorse');
+
+        Route::get('/offboarding-questionnaires', [\App\Http\Controllers\Employee\EmployeeOffboardingQuestionnaireController::class, 'index'])->name('employee.offboarding-questionnaires.index');
+        Route::get('/offboarding-questionnaires/{invitation}', [\App\Http\Controllers\Employee\EmployeeOffboardingQuestionnaireController::class, 'show'])->name('employee.offboarding-questionnaires.show');
+        Route::post('/offboarding-questionnaires/{invitation}', [\App\Http\Controllers\Employee\EmployeeOffboardingQuestionnaireController::class, 'submit'])->name('employee.offboarding-questionnaires.submit');
 
         Route::get('/wfh', [\App\Http\Controllers\Employee\EmployeeWfhController::class, 'index'])->name('employee.wfh.index');
         Route::get('/wfh/create', [\App\Http\Controllers\Employee\EmployeeWfhController::class, 'create'])->name('employee.wfh.create');

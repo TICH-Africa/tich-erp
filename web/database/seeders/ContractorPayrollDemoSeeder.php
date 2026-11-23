@@ -40,7 +40,7 @@ class ContractorPayrollDemoSeeder extends Seeder
                 'surname' => 'Mutua',
                 'job_title' => 'HR Systems Consultant',
                 'department_id' => $hrDepartmentId,
-                'employment_category' => 'consultant',
+                'employment_category' => 'consultancy',
                 'payroll_scheme' => 'withholding',
                 'gross_monthly_salary' => 120000,
                 'kra_pin' => 'A012345678Z',
@@ -51,7 +51,7 @@ class ContractorPayrollDemoSeeder extends Seeder
                 'surname' => 'Hassan',
                 'job_title' => 'Independent Financial Auditor',
                 'department_id' => $financeDepartmentId,
-                'employment_category' => 'independent_contractor',
+                'employment_category' => 'consultancy',
                 'payroll_scheme' => 'withholding',
                 'gross_monthly_salary' => 85000,
                 'kra_pin' => 'A987654321Y',
@@ -62,7 +62,7 @@ class ContractorPayrollDemoSeeder extends Seeder
                 'surname' => 'Wekesa',
                 'job_title' => 'Curriculum Development Consultant',
                 'department_id' => $academicDepartmentId,
-                'employment_category' => 'consultant',
+                'employment_category' => 'consultancy',
                 'payroll_scheme' => 'withholding',
                 'gross_monthly_salary' => 95000,
                 'kra_pin' => 'A564738291X',
@@ -101,7 +101,7 @@ class ContractorPayrollDemoSeeder extends Seeder
             );
         }
 
-        $this->command?->info('Seeded demo consultants/contractors for withholding-tax payroll (CON-HR-001, CON-FIN-001, CON-CHS-001).');
+        $this->command?->info('Seeded demo consultancy/Independent contractor staff for withholding-tax payroll (CON-HR-001, CON-FIN-001, CON-CHS-001).');
     }
 
     private function ensureWithholdingTaxSetting(): void

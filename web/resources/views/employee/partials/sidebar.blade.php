@@ -37,6 +37,12 @@
                 'active' => request()->routeIs('employee.wfh.*'),
             ])
             @include('partials.navigation.sidebar-link', [
+                'href' => route('employee.offboarding-questionnaires.index'),
+                'label' => 'Offboarding questionnaire',
+                'icon' => 'clipboard-list',
+                'active' => request()->routeIs('employee.offboarding-questionnaires.*'),
+            ])
+            @include('partials.navigation.sidebar-link', [
                 'href' => route('employee.appraisals.index'),
                 'label' => 'Performance appraisals',
                 'icon' => 'clipboard-check',

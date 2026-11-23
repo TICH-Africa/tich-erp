@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
         $this->call(DepartmentModulesSeeder::class);
         $this->call(HmdCcUnitsSeeder::class);
         $this->call(AcademicCalendarDemoSeeder::class);
+        $this->call(OffboardingQuestionnaireTemplateSeeder::class);
 
         // Demo / sample data - local and staging only.
         if (! app()->environment('production')) {

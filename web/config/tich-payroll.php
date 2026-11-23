@@ -8,9 +8,7 @@ return [
         'visiting' => 'Visiting',
         'casual' => 'Casual',
         'probation' => 'Probation',
-        'consultancy' => 'Consultancy',
-        'consultant' => 'Consultant',
-        'independent_contractor' => 'Independent contractor',
+        'consultancy' => 'Consultancy/Independent contractor',
         'volunteer' => 'Volunteer (unpaid)',
     ],
 
@@ -21,7 +19,7 @@ return [
         'visiting' => 'Visiting',
         'casual' => 'Casual',
         'probation' => 'Probation',
-        'consultancy' => 'Consultancy',
+        'consultancy' => 'Consultancy/Independent contractor',
         'volunteer' => 'Volunteer (unpaid)',
     ],
 
@@ -52,8 +50,6 @@ return [
     ],
 
     'withholding_employment_categories' => [
-        'consultant',
-        'independent_contractor',
         'consultancy',
     ],
 

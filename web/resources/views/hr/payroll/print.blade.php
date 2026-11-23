@@ -178,7 +178,7 @@
 
         <p class="tich-payslip__note">
             @if ($isWithholding)
-                Computer-generated payment statement for consultant or independent contractor fees at the configured withholding tax rate only.
+                Computer-generated payment statement for Consultancy/Independent contractor fees at the configured withholding tax rate only.
             @elseif ($isStipend)
                 Stipend payment — no PAYE, NSSF, SHA/SHIF, or Affordable Housing Levy deductions.
             @else
