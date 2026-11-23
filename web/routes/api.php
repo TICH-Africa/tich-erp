@@ -170,6 +170,7 @@ Route::middleware(['auth:sanctum', 'mobile.verified', 'employee.portal', 'employ
 
     Route::get('/wfh', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'wfh']);
     Route::post('/wfh', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'storeWfh']);
+    Route::post('/wfh/{wfh}/cancel', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'cancelWfh']);
     Route::get('/concerns', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'concerns']);
     Route::post('/concerns', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'storeConcern']);
     Route::get('/appraisals', [\App\Http\Controllers\Api\Employee\mobile\PortalListsController::class, 'appraisals']);

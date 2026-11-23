@@ -5,7 +5,7 @@
 @elseif (request()->boolean('timetable_edit'))
     @if (in_array(request()->string('timetable_workspace')->toString(), ['builder', 'upload'], true))
         @include('academics.programs.partials.curriculum-section-timetable-edit')
-    @else
+@else
         @include('academics.programs.partials.curriculum-section-timetable-choose')
     @endif
 @else

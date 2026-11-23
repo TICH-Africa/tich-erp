@@ -48,11 +48,21 @@ class PortalListsController extends Controller
                 'earliest_bookable_date' => $wfh->firstBookableDate()->toDateString(),
             ],
             'entitlement' => $wfh->entitlementSnapshot($staff),
-            'requests' => $requests->map(fn ($r) => [
+            'requests' => $requests->map(fn (WorkFromHomeRequest $r) => [
                 'id' => $r->id,
+                'request_code' => $r->request_code,
                 'work_date' => optional($r->work_date)?->format('Y-m-d'),
+                'start_time' => $r->start_time ? substr((string) $r->start_time, 0, 5) : null,
+                'end_time' => $r->end_time ? substr((string) $r->end_time, 0, 5) : null,
+                'total_hours' => $r->total_hours !== null ? (float) $r->total_hours : null,
                 'status' => $r->status,
-                'reason' => $r->reason,
+                'status_label' => $r->statusLabel(),
+                'remote_tasks' => $r->remote_tasks ?? [],
+                'can_cancel' => in_array($r->status, [
+                    WorkFromHomeRequest::STATUS_PENDING_HR,
+                    WorkFromHomeRequest::STATUS_RETURNED,
+                ], true),
+                'submitted_at' => optional($r->submitted_at)?->toIso8601String(),
             ])->values(),
         ]);
     }
@@ -78,24 +88,21 @@ class PortalListsController extends Controller
                     }
                 },
             ],
-            'start_time' => ['nullable', 'date_format:H:i'],
-            'end_time' => ['nullable', 'date_format:H:i'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'total_hours' => ['nullable', 'numeric', 'min:0.5', 'max:24'],
+            'period_start' => ['nullable', 'date'],
+            'period_end' => ['nullable', 'date', 'after_or_equal:period_start'],
             'remote_tasks' => ['required', 'array', 'min:1', 'max:5'],
             'remote_tasks.*' => ['nullable', 'string', 'max:500'],
-            'reason' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $validated['start_time'] = $validated['start_time'] ?? '08:00';
-        $validated['end_time'] = $validated['end_time'] ?? '17:00';
         $tasks = array_values(array_filter(
             array_map(static fn ($t) => trim((string) $t), $validated['remote_tasks'] ?? []),
             static fn ($t) => $t !== ''
         ));
-        if ($tasks === [] && filled($validated['reason'] ?? null)) {
-            $tasks = [trim((string) $validated['reason'])];
-        }
         if ($tasks === []) {
-            return response()->json(['message' => 'List at least one remote task.'], 422);
+            return response()->json(['message' => 'List at least one task to accomplish while working remotely.'], 422);
         }
         $validated['remote_tasks'] = $tasks;
 
@@ -106,13 +113,37 @@ class PortalListsController extends Controller
         }
 
         return response()->json([
-            'message' => 'WFH request submitted.',
+            'message' => 'Work from home request submitted to HR.',
             'request' => [
                 'id' => $created->id,
+                'request_code' => $created->request_code,
                 'work_date' => optional($created->work_date)?->format('Y-m-d'),
                 'status' => $created->status,
+                'status_label' => $created->statusLabel(),
             ],
         ], 201);
+    }
+
+    public function cancelWfh(Request $request, WorkFromHomeRequest $wfh, WorkFromHomeRequestService $wfhService): JsonResponse
+    {
+        if (! \App\Support\WorkFromHomePortal::enabled()) {
+            return response()->json([
+                'message' => \App\Support\WorkFromHomePortal::UNAVAILABLE_MESSAGE,
+            ], 403);
+        }
+
+        $staff = $this->portalStaff($request);
+        if ($wfh->staff_id !== $staff->id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        try {
+            $wfhService->cancel($wfh, $staff, $request->user());
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['message' => 'Work from home request cancelled.']);
     }
 
     public function concerns(Request $request): JsonResponse
