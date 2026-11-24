@@ -65,11 +65,7 @@ class ContractViewController extends Controller
 
     private function contractTypeFromEmploymentCategory(?string $category): ?string
     {
-        return match ($category) {
-            'consultant', 'independent_contractor' => 'consultancy',
-            'permanent', 'contract', 'intern', 'visiting', 'casual', 'probation', 'consultancy', 'volunteer' => $category,
-            default => null,
-        };
+        return \App\Support\EmploymentCategory::contractTypeFromEmploymentCategory($category);
     }
 
     public function store(Request $request)

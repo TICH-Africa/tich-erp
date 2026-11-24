@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Schema;
 
 class RemindWeeklyTimeLogs extends Command
 {
-    protected $signature = 'hr:remind-weekly-time-logs {--dry-run : List recipients without sending} {--force : Run even outside the last week of the month}';
+    protected $signature = 'hr:remind-weekly-time-logs {--dry-run : List recipients without sending} {--force : Run even outside the 20th-to-20th compliance window}';
 
-    protected $description = 'Remind employees to complete weekly time sheets during the last week of each month (HR email + in-app notification)';
+    protected $description = 'Remind employees to complete weekly time sheets for the 20th-to-20th compliance window (HR email + in-app notification)';
 
     public function handle(
         WeeklyTimeLogService $timeLogs,
@@ -23,8 +23,8 @@ class RemindWeeklyTimeLogs extends Command
         $force = (bool) $this->option('force');
         $today = now()->startOfDay();
 
-        if (! $force && ! $timeLogs->isMonthEndReminderWindow($today)) {
-            $this->info('Outside the month-end reminder window (last 7 days of the month). Use --force to override.');
+        if (! $force && ! $timeLogs->isPortalComplianceEnforcementWindow($today)) {
+            $this->info('Outside the monthly compliance window (20th of previous month through 20th of current month). Use --force to override.');
 
             return self::SUCCESS;
         }
@@ -35,10 +35,11 @@ class RemindWeeklyTimeLogs extends Command
             return self::SUCCESS;
         }
 
-        $year = (int) $today->year;
-        $month = (int) $today->month;
-        $monthLabel = $today->copy()->startOfMonth()->format('F Y');
-        $daysUntilMonthEnd = (int) $today->diffInDays($today->copy()->endOfMonth()->startOfDay(), false);
+        [, $windowEnd] = $timeLogs->portalComplianceWindow($today);
+        $year = (int) $windowEnd->year;
+        $month = (int) $windowEnd->month;
+        $monthLabel = $windowEnd->copy()->startOfMonth()->format('F Y');
+        $daysUntilDeadline = (int) $today->diffInDays($windowEnd, false);
         $entityId = sprintf('%04d-%02d', $year, $month);
         $notificationTitle = 'Weekly time sheets due — '.$monthLabel;
         $portalUrl = route('employee.time-logs.index');
@@ -48,7 +49,7 @@ class RemindWeeklyTimeLogs extends Command
         $failed = 0;
 
         foreach ($timeLogs->staffEligibleForTimeLogReminders() as $staff) {
-            $incomplete = $timeLogs->incompleteWeeksForStaff($staff, $year, $month, $today);
+            $incomplete = $timeLogs->incompleteWeeksForPortalCompliance($staff, $today);
             if ($incomplete === []) {
                 $skipped++;
 
@@ -81,7 +82,7 @@ class RemindWeeklyTimeLogs extends Command
             $mailResult = ModuleMail::trySend(
                 ModuleMail::HR,
                 $email,
-                new WeeklyTimeLogReminderMail($staff, $monthLabel, $daysUntilMonthEnd, $incomplete, $portalUrl),
+                new WeeklyTimeLogReminderMail($staff, $monthLabel, $daysUntilDeadline, $incomplete, $portalUrl),
             );
 
             if (! $mailResult['sent']) {
@@ -93,7 +94,7 @@ class RemindWeeklyTimeLogs extends Command
 
             $weekList = implode(', ', array_column($incomplete, 'week_ref'));
             $body = 'Human Resources reminds you to complete and submit your weekly time sheets for '.$monthLabel
-                .' before month end. Still open: '.$weekList.'.';
+                .' through the week of the 20th (due by '.$windowEnd->format('j M Y').'). Still open: '.$weekList.'.';
 
             $notifications->notifyUser(
                 $userId,

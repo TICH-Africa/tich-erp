@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../adaptive/adaptive.dart';
 import '../../data/employee_api.dart';
-import '../../navigation/tich_root_nav.dart';
 import '../shell/employee_portal_menu_scope.dart';
 import '../shell/portal_nav_counts_scope.dart';
 import '../widgets/tich_global_more_footer.dart';
 import '../widgets/tich_more_drawer.dart';
 import 'employee_module_nav.dart';
 import 'employee_prefetch.dart';
-import 'wfh_page.dart';
 
 class MorePage extends StatelessWidget {
   const MorePage({super.key, required this.api});
@@ -47,7 +45,8 @@ class MorePage extends StatelessWidget {
       TichMoreItem(
         label: 'Work from home',
         icon: Icons.home_work_outlined,
-        onTap: () => TichRootNav.push(const WfhPage()),
+        onTapDown: (_) => EmployeePrefetch.wfh(api),
+        onTap: () => openEmployeeWfh(api),
       ),
       TichMoreItem(
         label: 'Weekly time sheets',

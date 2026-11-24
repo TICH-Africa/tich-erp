@@ -91,17 +91,25 @@ class EmployeeApi {
 
   Future<Map<String, dynamic>> submitWfh({
     required String workDate,
-    required String reason,
+    required List<String> remoteTasks,
     String startTime = '08:00',
     String endTime = '17:00',
+    double? totalHours,
+    String? periodStart,
+    String? periodEnd,
   }) =>
       _client.post('/employee/wfh', body: {
         'work_date': workDate,
         'start_time': startTime,
         'end_time': endTime,
-        'remote_tasks': [reason],
-        'reason': reason,
+        if (totalHours != null) 'total_hours': totalHours,
+        if (periodStart != null) 'period_start': periodStart,
+        if (periodEnd != null) 'period_end': periodEnd,
+        'remote_tasks': remoteTasks,
       });
+
+  Future<Map<String, dynamic>> cancelWfh(int id) =>
+      _client.post('/employee/wfh/$id/cancel');
 
   Future<Map<String, dynamic>> concerns() => _client.get('/employee/concerns');
 

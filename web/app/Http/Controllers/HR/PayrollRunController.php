@@ -124,7 +124,7 @@ class PayrollRunController extends Controller
 
         return $this->printDocuments->render($this->printView(), [
             'documentTitle' => ($breakdown['payroll_scheme'] ?? 'employee') === 'withholding'
-                ? 'Consultant Payment Statement'
+                ? \App\Support\EmploymentCategory::WITHHOLDING_PAYMENT_STATEMENT_TITLE
                 : 'Monthly Payslip',
             'documentSubtitle' => ($breakdown['employee_name'] ?? 'Staff member').' · '.$run?->periodLabel(),
             'documentRef' => $this->printDocuments->documentRef('PAY', $payrollItem->payslip_number),

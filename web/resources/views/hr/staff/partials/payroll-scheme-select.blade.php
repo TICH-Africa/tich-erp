@@ -10,7 +10,7 @@
             <option value="{{ $value }}" {{ $selected === $value ? 'selected' : '' }}>{{ $label }}</option>
         @endforeach
     </select>
-    <p class="tich-caption tich-mt-1">Permanent and contract staff use PAYE plus NSSF, SHA/SHIF, and Affordable Housing Levy. Interns use stipend (no statutory deductions). Volunteers are unpaid. Consultants typically use withholding tax only.</p>
+    <p class="tich-caption tich-mt-1">Permanent and contract staff use PAYE plus NSSF, SHA/SHIF, and Affordable Housing Levy. Interns use stipend (no statutory deductions). Volunteers are unpaid. Consultancy/Independent contractor placements typically use withholding tax only.</p>
 </div>
 
 <script>

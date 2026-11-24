@@ -53,7 +53,7 @@ class EmployeePayslipController extends Controller
 
         return $this->printDocuments->render('hr.payroll.print', [
             'documentTitle' => ($breakdown['payroll_scheme'] ?? 'employee') === 'withholding'
-                ? 'Consultant Payment Statement'
+                ? \App\Support\EmploymentCategory::WITHHOLDING_PAYMENT_STATEMENT_TITLE
                 : 'Monthly Payslip',
             'documentSubtitle' => ($breakdown['employee_name'] ?? $staff->fullName()).' · '.$period,
             'documentRef' => $this->printDocuments->documentRef('PAY', $payrollItem->payslip_number),
@@ -84,7 +84,7 @@ class EmployeePayslipController extends Controller
             'hr.payroll.print',
             [
                 'documentTitle' => ($breakdown['payroll_scheme'] ?? 'employee') === 'withholding'
-                    ? 'Consultant Payment Statement'
+                    ? \App\Support\EmploymentCategory::WITHHOLDING_PAYMENT_STATEMENT_TITLE
                     : 'Monthly Payslip',
                 'documentSubtitle' => ($breakdown['employee_name'] ?? $staff->fullName()).' · '.$period,
                 'documentRef' => $this->printDocuments->documentRef('PAY', $payrollItem->payslip_number),

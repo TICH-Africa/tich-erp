@@ -22,6 +22,8 @@ return [
         'Sign in' => 'log-in',
         'Sign out' => 'log-out',
         'Apply / Register' => 'user-plus',
+        'e-Fundi' => 'briefcase',
+        'Mobile app' => 'smartphone',
     ],
 
     'paths' => [
@@ -34,6 +36,8 @@ return [
         '/staff' => 'book-open',
         '/portal' => 'graduation-cap',
         '/employee' => 'user',
+        '/e-fundi' => 'briefcase',
+        '/mobile-app' => 'smartphone',
     ],
 
 ];

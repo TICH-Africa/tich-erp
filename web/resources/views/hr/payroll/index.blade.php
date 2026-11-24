@@ -81,7 +81,7 @@
                             <td class="tich-caption">{{ ucfirst(str_replace('_', ' ', $member->employment_status)) }}</td>
                             @if ($breakdown)
                                 <td class="tich-caption">
-                                    {{ config('tich-payroll.employment_categories.'.$member->employment_category, ucfirst(str_replace('_', ' ', (string) $member->employment_category)) ?: '-') }}
+                                    {{ \App\Support\EmploymentCategory::label($member->employment_category) }}
                                 </td>
                                 <td class="tich-caption">
                                     @if ($member->usesUnpaidPayroll())

@@ -146,7 +146,7 @@
                 <div class="tich-dl__row"><dt class="tich-dl__label">Campus</dt><dd class="tich-dl__value">{{ $staff->campus->campus_name ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Job title</dt><dd class="tich-dl__value">{{ $staff->job_title ?: '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Grade</dt><dd class="tich-dl__value">{{ $staff->job_grade ?? '-' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Category</dt><dd class="tich-dl__value">{{ config('tich-payroll.employment_categories.'.$staff->employment_category, ucfirst(str_replace('_', ' ', $staff->employment_category))) }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Category</dt><dd class="tich-dl__value">{{ \App\Support\EmploymentCategory::label($staff->employment_category) }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Payroll scheme</dt><dd class="tich-dl__value">{{ $staff->payrollSchemeLabel() }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Start date</dt><dd class="tich-dl__value">{{ $staff->employment_start_date?->format('d M Y') ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Contract end</dt><dd class="tich-dl__value">{{ $staff->contract_end_date?->format('d M Y') ?? '-' }}</dd></div>
@@ -232,7 +232,7 @@
                 @endphp
                 <a href="{{ route('hr.contracts.show', $contract) }}" class="tich-list-item" style="display:block; padding:0.65rem 0; border-bottom:1px solid var(--tich-neutral-border); text-decoration:none;">
                     <strong>{{ $contract->contract_number }}</strong>
-                    <span class="tich-badge tich-badge--info tich-ml-2">{{ ucfirst($contract->contract_type) }}</span>
+                    <span class="tich-badge tich-badge--info tich-ml-2">{{ \App\Support\EmploymentCategory::label($contract->contract_type) }}</span>
                     <span class="tich-badge tich-badge--{{ $renewalBadge }} tich-ml-2">{{ $contract->renewalStatusLabel() }}</span>
                     <p class="tich-caption tich-mt-1">{{ $contract->start_date?->format('d M Y') }} → {{ $contract->end_date?->format('d M Y') ?? 'Ongoing' }}</p>
                 </a>

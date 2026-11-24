@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TICH ERP - production schema sync (idempotent, non-destructive)
 -- =============================================================================
--- Generated: 2026-11-19 15:25:20 EAT
+-- Generated: 2026-11-23 12:12:35 EAT
 -- Source DB: tich_erp
 -- Time zone: Africa/Nairobi (GMT+3)
 --
@@ -7859,6 +7859,146 @@ CALL `tich_ensure_index`('objective_submissions', 'objective_submissions_student
 CALL `tich_ensure_unique`('objective_submissions', 'obj_sub_unique', '`objective_assessment_id`, `student_id`');
 
 -- -----------------------------------------------------------------------------
+-- Table: `offboarding_questionnaire_answers`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `offboarding_questionnaire_answers` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `invitation_id` bigint(20) unsigned NOT NULL,
+  `question_id` bigint(20) unsigned NOT NULL,
+  `answer_text` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `offboarding_q_answer_unique` (`invitation_id`,`question_id`),
+  KEY `offboarding_questionnaire_answers_question_id_foreign` (`question_id`),
+  CONSTRAINT `offboarding_questionnaire_answers_invitation_id_foreign` FOREIGN KEY (`invitation_id`) REFERENCES `offboarding_questionnaire_invitations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `offboarding_questionnaire_answers_question_id_foreign` FOREIGN KEY (`question_id`) REFERENCES `offboarding_questionnaire_questions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `offboarding_questionnaire_answers` (add only if missing)
+CALL `tich_ensure_column`('offboarding_questionnaire_answers', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('offboarding_questionnaire_answers', 'invitation_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_answers', 'question_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_answers', 'answer_text', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_answers', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_answers', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `offboarding_questionnaire_answers` (add only if missing)
+CALL `tich_ensure_index`('offboarding_questionnaire_answers', 'offboarding_questionnaire_answers_question_id_foreign', '`question_id`');
+CALL `tich_ensure_unique`('offboarding_questionnaire_answers', 'offboarding_q_answer_unique', '`invitation_id`, `question_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `offboarding_questionnaire_invitations`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `offboarding_questionnaire_invitations` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `staff_id` bigint(20) unsigned NOT NULL,
+  `template_id` bigint(20) unsigned NOT NULL,
+  `staff_contract_id` bigint(20) unsigned DEFAULT NULL,
+  `status` varchar(32) NOT NULL DEFAULT 'pending',
+  `prefill_snapshot` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`prefill_snapshot`)),
+  `sent_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `submitted_at` timestamp NULL DEFAULT NULL,
+  `hr_acknowledged_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `offboarding_questionnaire_invitations_template_id_foreign` (`template_id`),
+  KEY `offboarding_questionnaire_invitations_staff_contract_id_foreign` (`staff_contract_id`),
+  KEY `offboarding_questionnaire_invitations_sent_by_user_id_foreign` (`sent_by_user_id`),
+  KEY `ob_q_inv_staff_status_idx` (`staff_id`,`status`),
+  KEY `ob_q_inv_status_sub_idx` (`status`,`submitted_at`),
+  CONSTRAINT `offboarding_questionnaire_invitations_sent_by_user_id_foreign` FOREIGN KEY (`sent_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `offboarding_questionnaire_invitations_staff_contract_id_foreign` FOREIGN KEY (`staff_contract_id`) REFERENCES `staff_contracts` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `offboarding_questionnaire_invitations_staff_id_foreign` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `offboarding_questionnaire_invitations_template_id_foreign` FOREIGN KEY (`template_id`) REFERENCES `offboarding_questionnaire_templates` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `offboarding_questionnaire_invitations` (add only if missing)
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'staff_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'template_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'staff_contract_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'status', 'varchar(32) NOT NULL DEFAULT \'\\\'pending\\\'\'');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'prefill_snapshot', 'longtext NOT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'sent_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'sent_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'submitted_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'hr_acknowledged_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_invitations', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `offboarding_questionnaire_invitations` (add only if missing)
+CALL `tich_ensure_index`('offboarding_questionnaire_invitations', 'ob_q_inv_staff_status_idx', '`staff_id`, `status`');
+CALL `tich_ensure_index`('offboarding_questionnaire_invitations', 'ob_q_inv_status_sub_idx', '`status`, `submitted_at`');
+CALL `tich_ensure_index`('offboarding_questionnaire_invitations', 'offboarding_questionnaire_invitations_sent_by_user_id_foreign', '`sent_by_user_id`');
+CALL `tich_ensure_index`('offboarding_questionnaire_invitations', 'offboarding_questionnaire_invitations_staff_contract_id_foreign', '`staff_contract_id`');
+CALL `tich_ensure_index`('offboarding_questionnaire_invitations', 'offboarding_questionnaire_invitations_template_id_foreign', '`template_id`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `offboarding_questionnaire_questions`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `offboarding_questionnaire_questions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `template_id` bigint(20) unsigned NOT NULL,
+  `question_text` varchar(1000) NOT NULL,
+  `input_type` varchar(32) NOT NULL DEFAULT 'textarea',
+  `options` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`options`)),
+  `is_required` tinyint(1) NOT NULL DEFAULT 1,
+  `display_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ob_q_questions_tpl_order_idx` (`template_id`,`display_order`),
+  CONSTRAINT `offboarding_questionnaire_questions_template_id_foreign` FOREIGN KEY (`template_id`) REFERENCES `offboarding_questionnaire_templates` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `offboarding_questionnaire_questions` (add only if missing)
+CALL `tich_ensure_column`('offboarding_questionnaire_questions', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('offboarding_questionnaire_questions', 'template_id', 'bigint(20) unsigned NOT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_questions', 'question_text', 'varchar(1000) NOT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_questions', 'input_type', 'varchar(32) NOT NULL DEFAULT \'\\\'textarea\\\'\'');
+CALL `tich_ensure_column`('offboarding_questionnaire_questions', 'options', 'longtext NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_questions', 'is_required', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('offboarding_questionnaire_questions', 'display_order', 'smallint(5) unsigned NOT NULL DEFAULT \'0\'');
+CALL `tich_ensure_column`('offboarding_questionnaire_questions', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_questions', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `offboarding_questionnaire_questions` (add only if missing)
+CALL `tich_ensure_index`('offboarding_questionnaire_questions', 'ob_q_questions_tpl_order_idx', '`template_id`, `display_order`');
+
+-- -----------------------------------------------------------------------------
+-- Table: `offboarding_questionnaire_templates`
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `offboarding_questionnaire_templates` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(200) NOT NULL,
+  `description` text DEFAULT NULL,
+  `employment_categories` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`employment_categories`)),
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by_user_id` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `offboarding_questionnaire_templates_created_by_user_id_foreign` (`created_by_user_id`),
+  CONSTRAINT `offboarding_questionnaire_templates_created_by_user_id_foreign` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Columns for `offboarding_questionnaire_templates` (add only if missing)
+CALL `tich_ensure_column`('offboarding_questionnaire_templates', 'id', 'bigint(20) unsigned NOT NULL AUTO_INCREMENT');
+CALL `tich_ensure_column`('offboarding_questionnaire_templates', 'title', 'varchar(200) NOT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_templates', 'description', 'text NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_templates', 'employment_categories', 'longtext NOT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_templates', 'is_active', 'tinyint(1) NOT NULL DEFAULT \'1\'');
+CALL `tich_ensure_column`('offboarding_questionnaire_templates', 'created_by_user_id', 'bigint(20) unsigned NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_templates', 'created_at', 'timestamp NULL DEFAULT NULL');
+CALL `tich_ensure_column`('offboarding_questionnaire_templates', 'updated_at', 'timestamp NULL DEFAULT NULL');
+
+-- Indexes for `offboarding_questionnaire_templates` (add only if missing)
+CALL `tich_ensure_index`('offboarding_questionnaire_templates', 'offboarding_questionnaire_templates_created_by_user_id_foreign', '`created_by_user_id`');
+
+-- -----------------------------------------------------------------------------
 -- Table: `offboarding_requests`
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `offboarding_requests` (
@@ -14961,6 +15101,22 @@ CALL `tich_ensure_fk`('objective_questions', 'objective_questions_objective_asse
 -- Foreign keys for `objective_submissions`
 CALL `tich_ensure_fk`('objective_submissions', 'objective_submissions_objective_assessment_id_foreign', '`objective_assessment_id`', 'objective_assessments', '`id`', 'RESTRICT', 'CASCADE');
 CALL `tich_ensure_fk`('objective_submissions', 'objective_submissions_student_id_foreign', '`student_id`', 'students', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `offboarding_questionnaire_answers`
+CALL `tich_ensure_fk`('offboarding_questionnaire_answers', 'offboarding_questionnaire_answers_invitation_id_foreign', '`invitation_id`', 'offboarding_questionnaire_invitations', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('offboarding_questionnaire_answers', 'offboarding_questionnaire_answers_question_id_foreign', '`question_id`', 'offboarding_questionnaire_questions', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `offboarding_questionnaire_invitations`
+CALL `tich_ensure_fk`('offboarding_questionnaire_invitations', 'offboarding_questionnaire_invitations_sent_by_user_id_foreign', '`sent_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('offboarding_questionnaire_invitations', 'offboarding_questionnaire_invitations_staff_contract_id_foreign', '`staff_contract_id`', 'staff_contracts', '`id`', 'RESTRICT', 'SET NULL');
+CALL `tich_ensure_fk`('offboarding_questionnaire_invitations', 'offboarding_questionnaire_invitations_staff_id_foreign', '`staff_id`', 'staff', '`id`', 'RESTRICT', 'CASCADE');
+CALL `tich_ensure_fk`('offboarding_questionnaire_invitations', 'offboarding_questionnaire_invitations_template_id_foreign', '`template_id`', 'offboarding_questionnaire_templates', '`id`', 'RESTRICT', 'RESTRICT');
+
+-- Foreign keys for `offboarding_questionnaire_questions`
+CALL `tich_ensure_fk`('offboarding_questionnaire_questions', 'offboarding_questionnaire_questions_template_id_foreign', '`template_id`', 'offboarding_questionnaire_templates', '`id`', 'RESTRICT', 'CASCADE');
+
+-- Foreign keys for `offboarding_questionnaire_templates`
+CALL `tich_ensure_fk`('offboarding_questionnaire_templates', 'offboarding_questionnaire_templates_created_by_user_id_foreign', '`created_by_user_id`', 'users', '`id`', 'RESTRICT', 'SET NULL');
 
 -- Foreign keys for `offboarding_requests`
 CALL `tich_ensure_fk`('offboarding_requests', 'offboarding_requests_approved_by_foreign', '`approved_by`', 'staff', '`id`', 'RESTRICT', 'SET NULL');
