@@ -7,6 +7,7 @@ import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
 import '../../theme/tich_theme.dart';
 import '../widgets/date_time_pickers.dart';
+import '../widgets/tich_form_input_guard.dart';
 import '../widgets/tich_live_refresh.dart';
 import '../widgets/tich_widgets.dart';
 import '../shell/employee_portal_signals.dart';
@@ -66,10 +67,15 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
 
   Future<Map<String, dynamic>> _load() {
     return widget.api.timeLog(widget.timeLogId).then((res) {
-      _hydrateDays(res['log'] as Map? ?? {});
+      if (!_shouldSkipHydrateFromServer()) {
+        _hydrateDays(res['log'] as Map? ?? {});
+      }
       return res;
     });
   }
+
+  bool _shouldSkipHydrateFromServer() =>
+      _autosaving || _hasUnsavedTyping || tichTextInputHasFocus();
 
   Future<void> _reload() => portalCachedReload(
         mounted: () => mounted,
@@ -77,19 +83,28 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
         fetch: _load,
         onData: (data) {
           _dataCache = data;
-          _hydrateDays(data['log'] as Map? ?? {});
+          if (!_shouldSkipHydrateFromServer()) {
+            _hydrateDays(data['log'] as Map? ?? {});
+          }
         },
         persistKey: _cacheKey,
+        // User may pull to refresh while a field still has the keyboard up.
+        respectTypingGuard: false,
       );
 
   void _liveRefresh() {
+    if (_shouldSkipHydrateFromServer()) {
+      return;
+    }
     tichSilentReload(
       mounted: () => mounted,
       setState: setState,
       fetch: _load,
       onData: (data) {
         _dataCache = data;
-        _hydrateDays(data['log'] as Map? ?? {});
+        if (!_shouldSkipHydrateFromServer()) {
+          _hydrateDays(data['log'] as Map? ?? {});
+        }
       },
       persistKey: _cacheKey,
     );
@@ -166,7 +181,6 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
       _dataCache = res;
       _hydrateDays(Map<String, dynamic>.from(res['log'] as Map? ?? const {}));
       setState(() {
-        _future = Future.value(res);
         _autosaveNote = 'Auto-saved ${_clockNow()}';
       });
     } on ApiException catch (e) {
@@ -197,10 +211,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res['message']?.toString() ?? 'Saved')),
       );
-      setState(() {
-        _future = Future.value(res);
-        _autosaveNote = null;
-      });
+      setState(() => _autosaveNote = null);
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
@@ -239,10 +250,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res['message']?.toString() ?? 'Submitted')),
       );
-      setState(() {
-        _future = Future.value(res);
-        _autosaveNote = null;
-      });
+      setState(() => _autosaveNote = null);
       EmployeePortalNavSignals.onTimeLogComplianceChanged?.call();
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -272,7 +280,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
   Widget build(BuildContext context) {
     return TichLiveRefreshBinder(
       onLiveRefresh: _liveRefresh,
-      enabled: !_busy,
+      enabled: !_busy && !_autosaving,
       child: AdaptiveScaffold(
         title: 'Weekly time sheet',
         body: FutureBuilder<Map<String, dynamic>>(
@@ -377,6 +385,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                   ..._dayEditors.entries.map((entry) {
                     final editor = entry.value;
                     return Padding(
+                      key: ValueKey('wtl-day-${entry.key}'),
                       padding: const EdgeInsets.only(bottom: 10),
                       child: TichCard(
                         child: Column(
@@ -399,6 +408,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                                 Expanded(
                                   child: TextField(
                                     controller: editor.timeIn,
+                                    focusNode: editor.focusTimeIn,
                                     enabled: editable && !_busy && !editor.timeInLocked,
                                     decoration: const InputDecoration(
                                       labelText: 'Time in',
@@ -410,6 +420,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                                 Expanded(
                                   child: TextField(
                                     controller: editor.timeOut,
+                                    focusNode: editor.focusTimeOut,
                                     enabled: editable && !_busy && !editor.timeOutLocked,
                                     decoration: const InputDecoration(
                                       labelText: 'Time out',
@@ -422,6 +433,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                             const SizedBox(height: 10),
                             TextField(
                               controller: editor.tasks,
+                              focusNode: editor.focusTasks,
                               enabled: editable && !_busy,
                               maxLines: 3,
                               decoration: const InputDecoration(
@@ -518,6 +530,9 @@ class _DayEditor {
     required this.timeIn,
     required this.timeOut,
     required this.tasks,
+    required this.focusTimeIn,
+    required this.focusTimeOut,
+    required this.focusTasks,
     required this.deptIds,
     required this.clockIn,
     required this.clockOut,
@@ -531,6 +546,9 @@ class _DayEditor {
   final TextEditingController timeIn;
   final TextEditingController timeOut;
   final TextEditingController tasks;
+  final FocusNode focusTimeIn;
+  final FocusNode focusTimeOut;
+  final FocusNode focusTasks;
   final Set<int> deptIds;
   void Function()? onChanged;
 
@@ -599,6 +617,9 @@ class _DayEditor {
       timeIn: TextEditingController(text: inText),
       timeOut: TextEditingController(text: outText),
       tasks: TextEditingController(text: tasksText),
+      focusTimeIn: FocusNode(),
+      focusTimeOut: FocusNode(),
+      focusTasks: FocusNode(),
       deptIds: depts.toSet(),
       clockIn: clockIn,
       clockOut: clockOut,
@@ -634,9 +655,9 @@ class _DayEditor {
 
     if (dirty) return;
 
-    if (nextIn != timeIn.text) timeIn.text = nextIn;
-    if (nextOut != timeOut.text) timeOut.text = nextOut;
-    if (nextTasks != tasks.text) tasks.text = nextTasks;
+    tichSyncControllerText(timeIn, nextIn, focus: focusTimeIn);
+    tichSyncControllerText(timeOut, nextOut, focus: focusTimeOut);
+    tichSyncControllerText(tasks, nextTasks, focus: focusTasks);
     if (!_sameIds(deptIds, nextDepts)) {
       deptIds
         ..clear()
@@ -680,5 +701,8 @@ class _DayEditor {
     timeIn.dispose();
     timeOut.dispose();
     tasks.dispose();
+    focusTimeIn.dispose();
+    focusTimeOut.dispose();
+    focusTasks.dispose();
   }
 }

@@ -91,7 +91,7 @@ class _StaffAttendanceSessionPageState
       );
 
   void _liveRefresh() {
-    if (_busy) return;
+    if (_busy || _pendingTicks) return;
     tichSilentReload(
       mounted: () => mounted,
       setState: setState,

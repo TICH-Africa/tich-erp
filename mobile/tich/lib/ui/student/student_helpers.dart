@@ -17,6 +17,7 @@ Future<void> studentCachedReload({
   required Future<Map<String, dynamic>> Function() fetch,
   required void Function(Map<String, dynamic> data) onData,
   String? persistKey,
+  bool respectTypingGuard = true,
 }) =>
     tichRefreshCached<Map<String, dynamic>>(
       mounted: mounted,
@@ -24,6 +25,7 @@ Future<void> studentCachedReload({
       fetch: fetch,
       onData: onData,
       persistKey: persistKey,
+      respectTypingGuard: respectTypingGuard,
     );
 
 Map<String, dynamic>? studentReadCache(String key) =>
