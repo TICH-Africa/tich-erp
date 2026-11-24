@@ -37,6 +37,7 @@ class _StaffAttendanceSessionPageState
   late Future<Map<String, dynamic>> _future;
   Object? _dataCache;
   final Set<int> _present = {};
+  bool _pendingTicks = false;
   bool _busy = false;
   bool _locked = false;
 
@@ -45,14 +46,18 @@ class _StaffAttendanceSessionPageState
 
   void _applySessionPayload(Map<String, dynamic> data) {
     final records = data['records'] as List? ?? const [];
-    _present
-      ..clear()
-      ..addAll(
-        records
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .where((r) => r['is_present'] == true)
-            .map((r) => (r['student_id'] as num).toInt()),
-      );
+    // Ticks the lecturer has made but not saved yet belong to the screen, not to
+    // the server, so a background refresh must not pull them back out.
+    if (!_pendingTicks) {
+      _present
+        ..clear()
+        ..addAll(
+          records
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .where((r) => r['is_present'] == true)
+              .map((r) => (r['student_id'] as num).toInt()),
+        );
+    }
     final session = Map<String, dynamic>.from(data['session'] as Map? ?? {});
     _locked = session['is_locked'] == true;
   }
@@ -170,6 +175,7 @@ class _StaffAttendanceSessionPageState
         lock: lock,
       );
       if (!mounted) return;
+      _pendingTicks = false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(lock ? 'Attendance submitted.' : 'Roster saved.'),
@@ -330,6 +336,7 @@ class _StaffAttendanceSessionPageState
                             ? null
                             : (v) {
                                 setState(() {
+                                  _pendingTicks = true;
                                   if (v == true) {
                                     _present.add(id);
                                   } else {
