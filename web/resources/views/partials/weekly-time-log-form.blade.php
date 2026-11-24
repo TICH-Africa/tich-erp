@@ -92,15 +92,19 @@
                         <td>
                             @if ($disabled)
                                 @php
-                                    $labels = collect($selectedDepts)->map(fn ($id) => $deptMap->get($id)?->dept_code ?? $deptMap->get($id)?->dept_name)->filter()->implode(', ');
+                                    $labels = collect($selectedDepts)->map(fn ($id) => $deptMap->get((int) $id)?->dept_code ?? $deptMap->get((int) $id)?->dept_name)->filter()->implode(', ');
+                                    $labels = $labels !== '' ? $labels : ((string) ($log->staff?->department?->dept_code ?: $log->staff?->department?->dept_name));
                                 @endphp
                                 {{ $labels !== '' ? $labels : '-' }}
                             @else
-                                <select class="tich-input" name="days[{{ $dateKey }}][department_ids][]" multiple size="{{ min(4, max(2, $departments->count())) }}">
+                                <div class="wtl-dept-pick">
                                     @foreach ($departments as $dept)
-                                        <option value="{{ $dept->id }}" @selected(in_array($dept->id, $selectedDepts, false))>{{ $dept->dept_code }} - {{ $dept->dept_name }}</option>
+                                        <label class="wtl-dept-option">
+                                            <input type="checkbox" name="days[{{ $dateKey }}][department_ids][]" value="{{ $dept->id }}" @checked(in_array($dept->id, $selectedDepts, false))>
+                                            <span>{{ $dept->dept_code ?: $dept->dept_name }}</span>
+                                        </label>
                                     @endforeach
-                                </select>
+                                </div>
                             @endif
                         </td>
                         <td>{{ $day->approval_sign ?: '-' }}</td>
@@ -130,6 +134,9 @@
             </tfoot>
         </table>
     </div>
+    @if ($editable && $departments->count() > 1)
+        <p class="tich-caption tich-mt-3">DEPT: tick the department you worked in on each day. A day you leave unticked stays with your own department.</p>
+    @endif
     <p class="tich-caption tich-mt-3">TOTAL HOURS is worked out from time in to time out less one hour for lunch. TOTAL UNITS is double those hours. Both count only days inside the month.</p>
     <p class="tich-caption tich-mt-1">NOTE: To be filled on a daily basis. Submit each month through the week of the 20th; weeks after that are optional until the next compliance cycle.</p>
 </div>

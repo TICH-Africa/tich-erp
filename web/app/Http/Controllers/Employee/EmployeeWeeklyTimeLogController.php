@@ -103,11 +103,7 @@ class EmployeeWeeklyTimeLogController extends Controller
             'canSelfEndorse' => (int) $timeLog->staff_id === (int) $staff->id && $this->timeLogs->canSelfEndorse($staff),
             'isOwner' => (int) $timeLog->staff_id === (int) $staff->id,
             'canSubmit' => (int) $timeLog->staff_id === (int) $staff->id
-                && ! $timeLog->manager_signed_at
-                && in_array($timeLog->status, [
-                    StaffWeeklyTimeLog::STATUS_DRAFT,
-                    StaffWeeklyTimeLog::STATUS_RETURNED,
-                ], true),
+                && $timeLog->canBeSubmittedByEmployee(),
         ]);
     }
 
@@ -199,7 +195,7 @@ class EmployeeWeeklyTimeLogController extends Controller
             return back()->withErrors(['time_log' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'Time sheet endorsed. The form is now locked for the employee.');
+        return back()->with('status', 'Time sheet endorsed.');
     }
 
     private function staff(Request $request): \App\Models\Staff

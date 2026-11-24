@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class StaffWeeklyTimeLog extends Model
 {
@@ -77,22 +78,67 @@ class StaffWeeklyTimeLog extends Model
 
     public function isEditableByEmployee(): bool
     {
-        if ($this->manager_signed_at) {
-            return false;
+        if (in_array($this->status, [
+            self::STATUS_DRAFT,
+            self::STATUS_RETURNED,
+        ], true)) {
+            return true;
         }
 
-        // Editable until line-manager endorsement locks the form (incl. pending_hr).
-        return in_array($this->status, [
+        // A week still being worked stays open even after it has been sent to HR or
+        // endorsed, so the days that had not arrived at submit time can still be
+        // recorded. Handing in the whole week is what closes the sheet.
+        if (in_array($this->status, [
+            self::STATUS_PENDING_HR,
+            self::STATUS_APPROVED,
+        ], true)) {
+            return ! $this->isWeekFullyRecorded();
+        }
+
+        return false;
+    }
+
+    public function canBeSubmittedByEmployee(): bool
+    {
+        return $this->isEditableByEmployee() && in_array($this->status, [
             self::STATUS_DRAFT,
             self::STATUS_RETURNED,
             self::STATUS_PENDING_HR,
         ], true);
     }
 
+    /**
+     * The days of this week the employee answers for: inside the month and not a
+     * weekend, whether or not they have been filled in yet.
+     *
+     * @return Collection<int, StaffWeeklyTimeLogDay>
+     */
+    public function workingDays(): Collection
+    {
+        $days = $this->relationLoaded('days') ? $this->days : $this->load('days')->days;
+
+        return $days->filter(
+            static fn (StaffWeeklyTimeLogDay $day): bool => $day->in_month
+                && $day->work_date !== null
+                && ! $day->work_date->isWeekend(),
+        );
+    }
+
+    /** Every working day carries a time in, a time out and its tasks, so the week is complete. */
+    public function isWeekFullyRecorded(): bool
+    {
+        $working = $this->workingDays();
+
+        return $working->isNotEmpty() && $working->every(
+            static fn (StaffWeeklyTimeLogDay $day): bool => filled($day->time_in)
+                && filled($day->time_out)
+                && filled($day->tasks_accomplished),
+        );
+    }
+
     public function isLocked(): bool
     {
-        return (bool) $this->manager_signed_at
-            || in_array($this->status, [self::STATUS_APPROVED, self::STATUS_REJECTED], true);
+        return ! $this->isEditableByEmployee();
     }
 
     public function monthLabel(): string
