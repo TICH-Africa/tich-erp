@@ -3,7 +3,8 @@
 @section('title', 'e-Fundi opportunities')
 
 @section('department-content')
-    <x-page-toolbar title="e-Fundi opportunities" :meta="'Jobs, internships, and scholarships for students. Public: ' . $publicUrl">
+    <x-page-toolbar title="e-Fundi opportunities" meta="Jobs, internships, and scholarships for students.">
+        <a href="{{ $publicUrl }}" class="tich-btn tich-btn-ghost" target="_blank" rel="noopener">Public e-Fundi page</a>
         <a href="{{ route('marketing.efundi.create') }}" class="tich-btn tich-btn-primary">New opportunity</a>
     </x-page-toolbar>
 

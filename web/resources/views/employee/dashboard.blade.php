@@ -120,7 +120,7 @@
                     @endif
                     @if ($currentContract)
                         <div><span class="tich-kv-grid__label">Contract no.</span><span class="tich-kv-grid__value">{{ $currentContract->contract_number }}</span></div>
-                        <div><span class="tich-kv-grid__label">Contract type</span><span class="tich-kv-grid__value">{{ ucfirst(str_replace('_', ' ', $currentContract->contract_type)) }}</span></div>
+                        <div><span class="tich-kv-grid__label">Contract type</span><span class="tich-kv-grid__value">{{ \App\Support\EmploymentCategory::label($currentContract->contract_type) }}</span></div>
                     @endif
                 </div>
                 @if (filled($staff->job_description))
@@ -176,7 +176,7 @@
             @forelse ($staff->contracts as $contractItem)
                 <div class="tich-mt-4" style="padding-bottom:0.75rem; border-bottom:1px solid var(--tich-neutral-border);">
                     <strong>{{ $contractItem->contract_number }}</strong>
-                    <span class="tich-caption"> · {{ ucfirst(str_replace('_', ' ', $contractItem->contract_type)) }}</span>
+                    <span class="tich-caption"> · {{ \App\Support\EmploymentCategory::label($contractItem->contract_type) }}</span>
                     <p class="tich-caption tich-mt-2">
                         {{ $contractItem->start_date?->format('d M Y') }} → {{ $contractItem->end_date?->format('d M Y') ?? 'Ongoing' }}
                         @if ($contractItem->isExpired())

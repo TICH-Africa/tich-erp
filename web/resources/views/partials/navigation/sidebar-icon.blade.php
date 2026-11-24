@@ -162,6 +162,9 @@
     @case('check-circle')
         <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
         @break
+    @case('smartphone')
+        <svg width="18" height="18" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        @break
     @default
         <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></svg>
 @endswitch

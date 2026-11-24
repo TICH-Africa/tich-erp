@@ -142,12 +142,35 @@
             'active' => request()->routeIs('hr.documents.index') || request()->routeIs('hr.documents.show') || request()->routeIs('hr.staff.documents.*'),
             'badgeKey' => 'documents',
         ])
-        @include('partials.navigation.sidebar-link', [
-            'href' => route('hr.offboarding.index'),
+        @include('partials.navigation.sidebar-group', [
             'label' => 'Offboarding',
             'icon' => 'log-out',
+            'open' => request()->routeIs('hr.offboarding.*'),
             'active' => request()->routeIs('hr.offboarding.*'),
             'badgeKey' => 'offboarding',
+            'items' => [
+                [
+                    'href' => route('hr.offboarding.index'),
+                    'label' => 'Exit clearance',
+                    'icon' => 'log-out',
+                    'active' => request()->routeIs('hr.offboarding.index')
+                        || request()->routeIs('hr.offboarding.create')
+                        || request()->routeIs('hr.offboarding.show'),
+                ],
+                [
+                    'href' => route('hr.offboarding.questionnaires.templates.index'),
+                    'label' => 'Questionnaire templates',
+                    'icon' => 'clipboard-list',
+                    'active' => request()->routeIs('hr.offboarding.questionnaires.templates.*'),
+                ],
+                [
+                    'href' => route('hr.offboarding.questionnaires.invitations.index'),
+                    'label' => 'Questionnaires sent',
+                    'icon' => 'inbox',
+                    'active' => request()->routeIs('hr.offboarding.questionnaires.invitations.*'),
+                    'badgeKey' => 'offboarding.questionnaires',
+                ],
+            ],
         ])
         @include('partials.navigation.sidebar-link', ['href' => route('hr.training.index'), 'label' => 'Training', 'icon' => 'presentation', 'active' => request()->routeIs('hr.training.*')])
 

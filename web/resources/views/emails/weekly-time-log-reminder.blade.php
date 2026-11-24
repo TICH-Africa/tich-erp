@@ -20,7 +20,7 @@
                                 Weekly time sheets due for {{ $monthLabel }}
                             </h1>
                             <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#494c50;">
-                                Dear {{ $staff->fullName() }}, with {{ $daysUntilMonthEnd === 0 ? 'the end of the month today' : ($daysUntilMonthEnd === 1 ? 'one day' : $daysUntilMonthEnd.' days') }} left in {{ $monthLabel }}, please complete and submit your weekly time sheets in the employee portal.
+                                Dear {{ $staff->fullName() }}, with {{ $daysUntilMonthEnd === 0 ? 'the compliance deadline today' : ($daysUntilMonthEnd === 1 ? 'one day' : $daysUntilMonthEnd.' days') }} until the 20th ({{ $monthLabel }} cycle), please complete and submit your weekly time sheets through the week of the 20th in the employee portal.
                             </p>
                             @if ($incompleteWeeks !== [])
                                 <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:#494c50;">

@@ -43,7 +43,7 @@
                 <option value="">Select published vacancy…</option>
                 @foreach ($linkableVacancies as $vacancy)
                     <option value="{{ $vacancy->id }}" @selected((int) old('job_vacancy_id', $opportunity->job_vacancy_id) === (int) $vacancy->id)">
-                        {{ $vacancy->job_title }} ({{ $vacancy->vacancy_number ?? 'VAC-'.$vacancy->id }}) — {{ $vacancy->department->dept_name ?? 'TICH' }}
+                        {{ $vacancy->job_title }} ({{ $vacancy->vacancy_number ?? 'VAC-'.$vacancy->id }}) - {{ $vacancy->department->dept_name ?? 'TICH' }}
                     </option>
                 @endforeach
             </select>
@@ -68,12 +68,20 @@
 
     <div id="efundi-external-fields" class="tich-grid tich-grid--2 tich-mt-2 @if($selectedScope === 'internal') hidden @endif" style="gap: 1rem;">
         <div>
-            <label class="tich-label" for="efundi-url">Application link</label>
-            <input id="efundi-url" type="url" name="application_url" class="tich-input" placeholder="https://..." value="{{ old('application_url', $opportunity->application_url) }}">
+            <label class="tich-label" for="efundi-url">Application link (URL)</label>
+            <input id="efundi-url" type="url" name="application_url" class="tich-input @error('application_url') is-invalid @enderror" placeholder="https://employer.com/apply" inputmode="url" autocomplete="url" value="{{ old('application_url', $opportunity->application_url) }}">
+            <p class="tich-caption tich-mt-1">Website address only - must start with http:// or https://</p>
+            @error('application_url')
+                <p class="uf-error">{{ $message }}</p>
+            @enderror
         </div>
         <div>
             <label class="tich-label" for="efundi-email">Application email</label>
-            <input id="efundi-email" type="email" name="application_email" class="tich-input" value="{{ old('application_email', $opportunity->application_email) }}">
+            <input id="efundi-email" type="email" name="application_email" class="tich-input @error('application_email') is-invalid @enderror" placeholder="careers@example.com" inputmode="email" autocomplete="email" value="{{ old('application_email', $opportunity->application_email) }}">
+            <p class="tich-caption tich-mt-1">Email address only - not a web link</p>
+            @error('application_email')
+                <p class="uf-error">{{ $message }}</p>
+            @enderror
         </div>
     </div>
 

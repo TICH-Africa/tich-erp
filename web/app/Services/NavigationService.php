@@ -15,6 +15,12 @@ class NavigationService
         return $this->resolveMenu('header', config('tich-navigation.header', []));
     }
 
+    /** @return list<array<string, mixed>> */
+    public function getHeaderMoreMenu(): array
+    {
+        return $this->normalizeFallback(config('tich-navigation.header_more', []));
+    }
+
     public function getFooterPrimaryMenu(): array
     {
         return $this->resolveMenu('footer_primary', config('tich-navigation.footer_primary', []));

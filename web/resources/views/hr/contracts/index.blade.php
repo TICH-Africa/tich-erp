@@ -42,7 +42,7 @@
                                 <strong>{{ $contract->staff->fullName() ?? '-' }}</strong>
                                 <p class="tich-caption">{{ $contract->staff->employee_number ?? '' }}</p>
                             </td>
-                            <td class="tich-caption">{{ ucfirst($contract->contract_type) }}</td>
+                            <td class="tich-caption">{{ \App\Support\EmploymentCategory::label($contract->contract_type) }}</td>
                             <td class="tich-caption">{{ $contract->start_date?->format('Y-m-d') }}</td>
                             <td class="tich-caption">{{ $contract->end_date?->format('Y-m-d') ?? 'Ongoing' }}</td>
                             <td>

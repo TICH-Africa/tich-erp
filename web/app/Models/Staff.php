@@ -580,7 +580,7 @@ class Staff extends Model
             return $this->payroll_scheme;
         }
 
-        return in_array($this->employment_category, config('tich-payroll.withholding_employment_categories', []), true)
+        return \App\Support\EmploymentCategory::isWithholdingEmployment($this->employment_category)
             ? 'withholding'
             : 'employee';
     }

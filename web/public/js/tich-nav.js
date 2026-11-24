@@ -191,7 +191,8 @@ function initNavOverflow() {
         return;
     }
 
-    const overflowItems = [...linksContainer.querySelectorAll('[data-nav-overflow-item]')];
+    const overflowItems = [...linksContainer.querySelectorAll('[data-nav-overflow-item]:not([data-nav-more-only])')];
+    const moreOnlyItems = [...linksContainer.querySelectorAll('[data-nav-more-only]')];
     let resizeTimer = null;
     let isOpen = false;
     let isLayoutScheduled = false;
@@ -276,6 +277,19 @@ function initNavOverflow() {
 
     const fits = () => linksContainer.scrollWidth <= linksContainer.clientWidth + 1;
 
+    const appendMoreOnlyLinks = () => {
+        moreOnlyItems.forEach((item) => {
+            item.hidden = true;
+            const clone = cloneLinkForMore(item);
+            if (clone) {
+                moreMenu.append(clone);
+            }
+            cloneNestedForMore(item).forEach((node) => {
+                moreMenu.append(node);
+            });
+        });
+    };
+
     const layout = () => {
         isLayoutScheduled = false;
         const wasOpen = isOpen;
@@ -285,6 +299,9 @@ function initNavOverflow() {
 
         overflowItems.forEach((item) => {
             item.hidden = false;
+        });
+        moreOnlyItems.forEach((item) => {
+            item.hidden = true;
         });
 
         moreWrap.hidden = true;
@@ -318,6 +335,8 @@ function initNavOverflow() {
             });
             lastItem.hidden = true;
         }
+
+        appendMoreOnlyLinks();
 
         if (moreMenu.children.length === 0) {
             moreWrap.hidden = true;

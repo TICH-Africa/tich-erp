@@ -471,6 +471,7 @@ class ContractService
                 'permanent', 'contract' => 'employee',
                 'volunteer' => 'unpaid',
                 'intern' => 'stipend',
+                'consultancy' => 'withholding',
                 default => $contract->payroll_scheme ?: $contract->staff->payroll_scheme ?: 'employee',
             },
             'salary_scale' => $contract->salary_scale,

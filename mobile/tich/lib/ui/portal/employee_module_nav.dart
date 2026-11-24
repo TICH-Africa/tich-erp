@@ -11,6 +11,7 @@ import 'notifications_page.dart';
 import 'policies_page.dart';
 import 'profile_page.dart';
 import 'time_logs_page.dart';
+import 'wfh_page.dart';
 void employeePushPage(BuildContext context, EmployeeApi api, Widget page) {
   Navigator.of(context).push(
     MaterialPageRoute(builder: (_) => page),
@@ -49,6 +50,11 @@ void openEmployeeAppraisals(EmployeeApi api) {
 void openEmployeeConcerns(EmployeeApi api) {
   EmployeePrefetch.concerns(api);
   employeePushFromRoot(api, ConcernsPage(api: api));
+}
+
+void openEmployeeWfh(EmployeeApi api) {
+  EmployeePrefetch.wfh(api);
+  employeePushFromRoot(api, WfhPage(api: api));
 }
 
 void openEmployeeFeedback(EmployeeApi api) {

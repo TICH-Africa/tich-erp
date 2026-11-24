@@ -18,6 +18,11 @@
                             @include('partials.navigation.menu-item', ['item' => $item])
                         </div>
                     @endforeach
+                    @foreach ($headerMoreMenu ?? [] as $item)
+                        <div class="tich-nav__item" data-nav-item data-nav-overflow-item data-nav-more-only hidden>
+                            @include('partials.navigation.menu-item', ['item' => $item])
+                        </div>
+                    @endforeach
                 </div>
 
                 @include('partials.navigation.nav-more')
@@ -61,6 +66,9 @@
             <div class="tich-nav-drawer__scroll">
                 <nav class="tich-container tich-nav-drawer__inner" aria-label="Mobile navigation">
                     @foreach ($headerMenu as $item)
+                        @include('partials.navigation.menu-item', ['item' => $item, 'mobile' => true])
+                    @endforeach
+                    @foreach ($headerMoreMenu ?? [] as $item)
                         @include('partials.navigation.menu-item', ['item' => $item, 'mobile' => true])
                     @endforeach
 

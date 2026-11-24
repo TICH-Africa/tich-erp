@@ -16,6 +16,12 @@ return [
         ['label' => 'Careers', 'url' => '/careers'],
     ],
 
+    /** Shown in the desktop nav “More” menu (not in the primary bar). */
+    'header_more' => [
+        ['label' => 'e-Fundi', 'url' => 'route:e-fundi.index', 'icon_name' => 'briefcase'],
+        ['label' => 'Mobile app', 'url' => 'route:mobile-app.index', 'icon_name' => 'smartphone'],
+    ],
+
     'footer_primary' => [
         ['label' => 'Home', 'url' => '/'],
         ['label' => 'About Us', 'url' => '/about'],
@@ -35,6 +41,8 @@ return [
         ['label' => 'How to apply HEF', 'url' => '/how-to-apply-hef'],
         ['label' => 'Donate', 'url' => '/donate'],
         ['label' => 'Sponsor a Student', 'url' => '/sponsor'],
+        ['label' => 'e-Fundi', 'url' => 'route:e-fundi.index'],
+        ['label' => 'Mobile app', 'url' => 'route:mobile-app.index'],
         ['label' => 'Contact', 'url' => '/contact'],
         ['label' => 'Privacy Policy', 'url' => '/privacy'],
         ['label' => 'Data subject requests', 'url' => '/privacy/data-request'],

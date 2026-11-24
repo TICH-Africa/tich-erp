@@ -188,6 +188,9 @@
         var text = document.createElement('span');
         text.className = 'tich-dropdown__option-text';
         text.textContent = option.textContent.trim();
+        if (option.dataset.needsAttention === '1') {
+            button.classList.add('wtl-dropdown-option--required');
+        }
 
         button.appendChild(text);
         button.insertAdjacentHTML('beforeend', CHECK);
