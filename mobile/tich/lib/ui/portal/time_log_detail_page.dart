@@ -30,6 +30,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
   late Future<Map<String, dynamic>> _future;
   Object? _dataCache;
   final _dayEditors = <String, _DayEditor>{};
+  final _formScroll = ScrollController();
   bool _busy = false;
   bool _editable = false;
   Timer? _autosaveTimer;
@@ -254,6 +255,7 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
   @override
   void dispose() {
     _autosaveTimer?.cancel();
+    _formScroll.dispose();
     if (_editable && _hasUnsavedTyping) {
       // The last keystrokes belong on the server even if the debounce never fired.
       unawaited(widget.api
@@ -301,200 +303,207 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
               _hydrateDays(log);
             }
 
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                TichCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        log['log_code']?.toString() ?? 'Time sheet',
-                        style: tichUi(fontWeight: FontWeight.w700, fontSize: 16),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${log['week_ref'] ?? ''} · ${formatDate(log['period_start'])} – ${formatDate(log['period_end'])}',
-                        style: tichUi(fontSize: 13, color: TichColors.neutralMuted),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          TichStatusChip(status, tone: toneForStatus(status)),
-                          const SizedBox(width: 8),
-                          if (log['total_hours'] != null)
-                            Text(
-                              '${log['total_hours']} h total',
-                              style: tichUi(fontWeight: FontWeight.w600),
-                            ),
-                        ],
-                      ),
-                      if (_autosaveNote != null) ...[
-                        const SizedBox(height: 6),
+            return Scrollbar(
+              controller: _formScroll,
+              thumbVisibility: true,
+              thickness: 9,
+              radius: const Radius.circular(4),
+              child: ListView(
+                controller: _formScroll,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  TichCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          _autosaveNote!,
-                          style: tichUi(
-                            fontSize: 12,
-                            color: TichColors.neutralMuted,
-                          ),
+                          log['log_code']?.toString() ?? 'Time sheet',
+                          style: tichUi(fontWeight: FontWeight.w700, fontSize: 16),
                         ),
-                      ],
-                      if ((log['hr_notes']?.toString() ?? '').isNotEmpty &&
-                          status == 'returned') ...[
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 4),
                         Text(
-                          'HR: ${log['hr_notes']}',
-                          style: tichUi(
-                            fontSize: 13,
-                            color: TichColors.blueDark,
-                          ),
+                          '${log['week_ref'] ?? ''} · ${formatDate(log['period_start'])} – ${formatDate(log['period_end'])}',
+                          style: tichUi(fontSize: 13, color: TichColors.neutralMuted),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const TichSectionHeader('Daily entries'),
-                if (editable) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'What you type saves by itself, a moment after you stop.',
-                    style: tichUi(
-                      fontSize: 12,
-                      color: TichColors.neutralMuted,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                ..._dayEditors.entries.map((entry) {
-                  final editor = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: TichCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            TichStatusChip(status, tone: toneForStatus(status)),
+                            const SizedBox(width: 8),
+                            if (log['total_hours'] != null)
+                              Text(
+                                '${log['total_hours']} h total',
+                                style: tichUi(fontWeight: FontWeight.w600),
+                              ),
+                          ],
+                        ),
+                        if (_autosaveNote != null) ...[
+                          const SizedBox(height: 6),
                           Text(
-                            editor.dayLabel,
-                            style: tichUi(fontWeight: FontWeight.w700),
-                          ),
-                          Text(
-                            formatDate(entry.key),
+                            _autosaveNote!,
                             style: tichUi(
                               fontSize: 12,
                               color: TichColors.neutralMuted,
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: editor.timeIn,
-                                  enabled: editable && !_busy && !editor.timeInLocked,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Time in',
-                                    hintText: '08:00',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: TextField(
-                                  controller: editor.timeOut,
-                                  enabled: editable && !_busy && !editor.timeOutLocked,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Time out',
-                                    hintText: '17:00',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: editor.tasks,
-                            enabled: editable && !_busy,
-                            maxLines: 3,
-                            decoration: const InputDecoration(
-                              labelText: 'Tasks accomplished',
-                            ),
-                          ),
-                          if (departments.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Text(
-                              'Departments',
-                              style: tichUi(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              children: [
-                                for (final dept in departments)
-                                  FilterChip(
-                                    label: Text(
-                                      dept['code']?.toString() ??
-                                          dept['name']?.toString() ??
-                                          'Dept',
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                    selected: editor.deptIds
-                                        .contains(dept['id'] as int),
-                                    onSelected: editable && !_busy
-                                        ? (v) {
-                                            setState(() {
-                                              final id = dept['id'] as int;
-                                              if (v) {
-                                                editor.deptIds.add(id);
-                                              } else {
-                                                editor.deptIds.remove(id);
-                                              }
-                                            });
-                                            _onDayChanged();
-                                          }
-                                        : null,
-                                  ),
-                              ],
-                            ),
-                          ],
                         ],
+                        if ((log['hr_notes']?.toString() ?? '').isNotEmpty &&
+                            status == 'returned') ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            'HR: ${log['hr_notes']}',
+                            style: tichUi(
+                              fontSize: 13,
+                              color: TichColors.blueDark,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const TichSectionHeader('Daily entries'),
+                  if (editable) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'What you type saves by itself, a moment after you stop.',
+                      style: tichUi(
+                        fontSize: 12,
+                        color: TichColors.neutralMuted,
                       ),
                     ),
-                  );
-                }),
-                if (editable) ...[
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: _busy ? null : _saveDraft,
-                    child: _busy
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: AdaptiveProgress(),
-                          )
-                        : const Text('Save draft'),
-                  ),
-                  if (canSubmit) ...[
-                    const SizedBox(height: 8),
-                    AdaptiveFilledButton(
-                      onPressed: _busy ? null : () => _submit(log),
-                      child: const Text('Submit to HR'),
-                    ),
                   ],
-                ] else
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      log['manager_signed_at'] != null
-                          ? 'Locked after line-manager endorsement.'
-                          : 'This sheet is read-only.',
-                      style: tichUi(color: TichColors.neutralMuted),
+                  const SizedBox(height: 10),
+                  ..._dayEditors.entries.map((entry) {
+                    final editor = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: TichCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              editor.dayLabel,
+                              style: tichUi(fontWeight: FontWeight.w700),
+                            ),
+                            Text(
+                              formatDate(entry.key),
+                              style: tichUi(
+                                fontSize: 12,
+                                color: TichColors.neutralMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: editor.timeIn,
+                                    enabled: editable && !_busy && !editor.timeInLocked,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Time in',
+                                      hintText: '08:00',
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: TextField(
+                                    controller: editor.timeOut,
+                                    enabled: editable && !_busy && !editor.timeOutLocked,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Time out',
+                                      hintText: '17:00',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            TextField(
+                              controller: editor.tasks,
+                              enabled: editable && !_busy,
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                labelText: 'Tasks accomplished',
+                              ),
+                            ),
+                            if (departments.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                'Departments',
+                                style: tichUi(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: [
+                                  for (final dept in departments)
+                                    FilterChip(
+                                      label: Text(
+                                        dept['code']?.toString() ??
+                                            dept['name']?.toString() ??
+                                            'Dept',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                      selected: editor.deptIds
+                                          .contains(dept['id'] as int),
+                                      onSelected: editable && !_busy
+                                          ? (v) {
+                                              setState(() {
+                                                final id = dept['id'] as int;
+                                                if (v) {
+                                                  editor.deptIds.add(id);
+                                                } else {
+                                                  editor.deptIds.remove(id);
+                                                }
+                                              });
+                                              _onDayChanged();
+                                            }
+                                          : null,
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  if (editable) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: _busy ? null : _saveDraft,
+                      child: _busy
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: AdaptiveProgress(),
+                            )
+                          : const Text('Save draft'),
                     ),
-                  ),
-              ],
+                    if (canSubmit) ...[
+                      const SizedBox(height: 8),
+                      AdaptiveFilledButton(
+                        onPressed: _busy ? null : () => _submit(log),
+                        child: const Text('Submit to HR'),
+                      ),
+                    ],
+                  ] else
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        log['manager_signed_at'] != null
+                            ? 'Locked after line-manager endorsement.'
+                            : 'This sheet is read-only.',
+                        style: tichUi(color: TichColors.neutralMuted),
+                      ),
+                    ),
+                ],
+              ),
             );
           },
         ),
