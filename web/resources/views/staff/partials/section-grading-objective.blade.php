@@ -11,10 +11,13 @@
                     <div>
                         <h2 class="tich-h3">{{ $selected->name }}</h2>
                         <p class="tich-caption tich-mt-1">
+                            {{ $allocation->year_of_study ? 'Year '.$allocation->year_of_study.' · ' : '' }}{{ $allocation->period_label }} · {{ $allocation->unit?->unit_code }}
+                        </p>
+                        <p class="tich-caption tich-mt-1">
                             {{ $objectiveTerminal['question_types'][$selected->assessment_type] ?? $selected->assessment_type }}
                             · Max {{ number_format($selected->max_score, 0) }} marks
                             · {{ $selected->questions->count() }} questions
-                            · {{ $selected->submissions->where('student_submitted_at', '!=', null)->count() }} submissions
+                            · {{ $selected->submissions->where('student_submitted_at', '!=', null)->count() }}/{{ $objectiveTerminal['roster']->count() }} students submitted
                         </p>
                         @if ($selected->status === 'graded')
                             <p class="tich-text tich-mt-2" style="color:#059669;">
@@ -36,7 +39,7 @@
                                 @csrf
                                 <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
                                 <input type="hidden" name="objective_assessment_id" value="{{ $selected->id }}">
-                                <button type="submit" class="tich-btn tich-btn-primary" onclick="return confirm('Mark all submissions now? This will overwrite existing scores.')">Mark</button>
+                                <button type="submit" class="tich-btn tich-btn-primary" onclick="return confirm('Mark all submitted responses now? This will overwrite existing scores.')">Mark submissions</button>
                             </form>
                         @endif
                         <div class="tich-flex tich-flex--center tich-flex--wrap" style="gap:0.5rem; justify-content:flex-end; margin-top:0.75rem;">
@@ -44,7 +47,8 @@
                                class="tich-btn tich-btn-ghost">+ New objective paper</a>
                             <a href="{{ route('staff.grading.objective.print', ['assessment' => $selected]) }}"
                                target="_blank" rel="noopener"
-                               class="tich-btn tich-btn-secondary">Print paper</a>
+                               class="tich-btn tich-btn-secondary">Preview CAT</a>
+                            <a href="#objective-student-responses" class="tich-btn tich-btn-secondary">View students</a>
                             <a href="{{ route('staff.grading.objective.print', ['assessment' => $selected, 'copy' => 'marker']) }}"
                                target="_blank" rel="noopener"
                                class="tich-btn tich-btn-secondary tich-btn--danger">Marker's copy</a>
@@ -241,9 +245,9 @@
                 </form>
             </article>
 
-            <article class="tich-card">
+            <article class="tich-card" id="objective-student-responses">
                 <h3 class="tich-h3">Student responses</h3>
-                <p class="tich-caption tich-mt-1">Review and edit responses before marking. Changes save automatically.</p>
+                <p class="tich-caption tich-mt-1">Students registered on this unit are listed below with their sitting status. Review and edit responses before marking; changes save automatically.</p>
 
                 <form method="POST" action="{{ route('staff.grading.objective.responses') }}" class="tich-mt-4" data-autosave="grading-objective-responses">
                     @csrf
@@ -424,7 +428,7 @@
                     <input type="hidden" name="allocation" value="{{ $allocation->id }}">
                     <div class="tich-form-group" style="margin:0;">
                         <label class="tich-label">Existing assessment</label>
-                        <select name="objective_assessment" class="tich-input" onchange="this.form.submit()">
+                        <select name="objective_assessment" class="tich-input" data-tich-dropdown="skip" onchange="this.form.submit()">
                             <option value="new" @selected(! $selected)>Create new…</option>
                             @foreach ($objectiveTerminal['assessments'] as $assessment)
                                 <option value="{{ $assessment->id }}" @selected($selected?->id === $assessment->id)>

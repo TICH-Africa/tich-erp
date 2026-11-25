@@ -11,7 +11,7 @@
         <input type="hidden" name="section" value="grading">
         <div class="tich-form-group" style="margin:0;">
             <label class="tich-label">Unit</label>
-            <select name="allocation" class="tich-input" onchange="if (this.value) this.form.submit()">
+            <select name="allocation" class="tich-input" data-tich-dropdown="skip" onchange="if (this.value) this.form.submit()">
                 <option value="">Select a unit…</option>
                 @foreach ($markingAllocations->groupBy(fn ($row) => $row->year_of_study ? 'Year '.$row->year_of_study : 'Year not set') as $yearLabel => $yearAllocations)
                     <optgroup label="{{ $yearLabel }}">
@@ -293,6 +293,10 @@
                     tabs.querySelector('[data-panel="' + name + '"]').classList.add('is-active');
                 });
             });
+
+            var requestedTab = new URLSearchParams(window.location.search).get('grading_tab');
+            var requestedButton = requestedTab && tabs.querySelector('[data-tab="' + requestedTab + '"]');
+            if (requestedButton) requestedButton.click();
         });
     });
     </script>

@@ -465,6 +465,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', $asDraft
             ? 'Draft saved. Students cannot see this paper until you publish it.'
             : 'Objective assessment created. It marks itself when the availability window closes.');
@@ -574,6 +575,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocationId,
             'objective_assessment' => $assessmentId,
+            'grading_tab' => 'objective',
         ])->with('status', $message);
     }
 
@@ -611,6 +613,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', "Auto-graded {$count} submission(s). Scores synced to cumulative performance sheet.");
     }
 
@@ -699,6 +702,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', 'Submission graded successfully.');
     }
 
@@ -827,6 +831,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', 'Assessment availability updated.');
     }
 
@@ -888,6 +893,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', $message);
     }
 
@@ -921,6 +927,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', 'Answer key updated. You can now click Mark to grade all students.');
     }
 
