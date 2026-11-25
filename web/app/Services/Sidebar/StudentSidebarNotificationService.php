@@ -86,10 +86,11 @@ class StudentSidebarNotificationService
     /** @var list<string> Screen cache key templates; {id} is the student id. */
     public const MOBILE_CACHE_KEYS = [
         'student.mobile.dashboard.{id}.v1',
-        'student.mobile.academics.hub.{id}.v5',
+        'student.mobile.academics.hub.{id}.v6',
         'student.mobile.academics.units.{id}.v2',
         'student.mobile.academics.content.{id}.v2',
         'student.mobile.academics.assessments.{id}.v1',
+        'student.mobile.academics.exam_requests.{id}.v1',
         'student.mobile.timetable.{id}.v3',
         'student.mobile.finance.{id}.v2',
         'student.mobile.biodata.{id}.v1',

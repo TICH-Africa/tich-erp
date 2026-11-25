@@ -16,16 +16,6 @@
 <button type="button" class="tich-btn tich-btn-secondary tich-mt-4" data-add-question>+ Add another question</button>
 
 <script>
-function setQuestionSelectVisible(select, visible) {
-    var wrapper = select.tichDropdownWrapper;
-
-    if (wrapper) {
-        wrapper.style.display = visible ? '' : 'none';
-    } else {
-        select.style.display = visible ? '' : 'none';
-    }
-}
-
 function toggleQuestionOptions(select) {
     var card = select.closest('.tich-grading-question-card');
     var type = select.value;
@@ -38,19 +28,17 @@ function toggleQuestionOptions(select) {
     if (type === 'mcq') {
         optionsField.style.display = '';
         correctField.style.display = '';
-        setQuestionSelectVisible(correctSelect, true);
+        correctSelect.style.display = '';
         correctSelect.disabled = false;
-        correctSelect.tichDropdownWrapper?.classList.remove('is-disabled');
         correctText.style.display = 'none';
         correctText.disabled = true;
         updateCorrectAnswerOptions(card.querySelector('.question-options-input'), currentAnswer);
     } else if (type === 'true_false') {
         optionsField.style.display = 'none';
         correctField.style.display = '';
-        setQuestionSelectVisible(correctSelect, true);
+        correctSelect.style.display = '';
         correctText.style.display = 'none';
         correctSelect.disabled = false;
-        correctSelect.tichDropdownWrapper?.classList.remove('is-disabled');
         correctText.disabled = true;
         correctSelect.innerHTML = '<option value="">Select correct answer</option>' +
             '<option value="true">True</option>' +
@@ -60,9 +48,8 @@ function toggleQuestionOptions(select) {
     } else {
         optionsField.style.display = 'none';
         correctField.style.display = '';
-        setQuestionSelectVisible(correctSelect, false);
+        correctSelect.style.display = 'none';
         correctSelect.disabled = true;
-        correctSelect.tichDropdownWrapper?.classList.add('is-disabled');
         correctText.style.display = '';
         correctText.disabled = false;
     }
@@ -115,19 +102,6 @@ document.querySelector('[data-add-question]').addEventListener('click', function
     var cards = questionList.querySelectorAll('.tich-grading-question-card');
     var added = cards[cards.length - 1].cloneNode(true);
 
-    added.querySelectorAll('.tich-dropdown').forEach(function(wrapper) {
-        var select = wrapper.querySelector('select');
-
-        if (!select) {
-            return;
-        }
-
-        wrapper.parentNode.insertBefore(select, wrapper);
-        wrapper.remove();
-        select.classList.remove('tich-dropdown__native');
-        delete select.dataset.tichDropdownEnhanced;
-    });
-
     added.querySelectorAll('input').forEach(function(input) {
         input.value = input.type === 'number' ? '1' : '';
     });
@@ -146,9 +120,6 @@ document.querySelector('[data-add-question]').addEventListener('click', function
     added.querySelectorAll('.question-type-select').forEach(function(select) {
         toggleQuestionOptions(select);
     });
-    if (window.TichSelect) {
-        window.TichSelect.refresh();
-    }
     added.querySelector('input[type=text]').focus();
 });
 
