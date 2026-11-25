@@ -554,6 +554,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $assessment->unit_allocation_id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ]);
     }
 
@@ -597,7 +598,7 @@ class StaffPortalActionController extends Controller
             $request,
             $allocation->id,
             'Student responses saved.',
-            ['objective_assessment' => $assessment->id],
+            ['objective_assessment' => $assessment->id, 'grading_tab' => 'objective'],
         );
     }
 

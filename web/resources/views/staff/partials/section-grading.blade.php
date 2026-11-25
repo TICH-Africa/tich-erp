@@ -295,7 +295,10 @@
             });
 
             var requestedTab = new URLSearchParams(window.location.search).get('grading_tab');
-            var requestedButton = requestedTab && tabs.querySelector('[data-tab="' + requestedTab + '"]');
+            var requestedButton = null;
+            tabs.querySelectorAll('[data-tab]').forEach(function (button) {
+                if (button.getAttribute('data-tab') === requestedTab) requestedButton = button;
+            });
             if (requestedButton) requestedButton.click();
         });
     });

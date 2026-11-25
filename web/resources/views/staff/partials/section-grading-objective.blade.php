@@ -43,7 +43,7 @@
                             </form>
                         @endif
                         <div class="tich-flex tich-flex--center tich-flex--wrap" style="gap:0.5rem; justify-content:flex-end; margin-top:0.75rem;">
-                            <a href="{{ route('staff.dashboard', ['section' => 'grading', 'allocation' => $allocation->id, 'objective_assessment' => 'new']) }}"
+                            <a href="{{ route('staff.dashboard', ['section' => 'grading', 'allocation' => $allocation->id, 'objective_assessment' => 'new', 'grading_tab' => 'objective']) }}"
                                class="tich-btn tich-btn-ghost">+ New objective paper</a>
                             <a href="{{ route('staff.grading.objective.print', ['assessment' => $selected]) }}"
                                target="_blank" rel="noopener"
@@ -350,6 +350,7 @@
                         @csrf
                         <input type="hidden" name="allocation_id" value="{{ $allocation->id }}">
                         <input type="hidden" name="objective_assessment_id" value="{{ $selected->id }}">
+                        <input type="hidden" name="grading_tab" value="objective">
 
                         <div class="tich-form-group">
                             <label class="tich-label">Select student</label>
@@ -426,6 +427,7 @@
                 <form method="GET" action="{{ route('staff.dashboard') }}" class="tich-mt-4" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:end;">
                     <input type="hidden" name="section" value="grading">
                     <input type="hidden" name="allocation" value="{{ $allocation->id }}">
+                    <input type="hidden" name="grading_tab" value="objective">
                     <div class="tich-form-group" style="margin:0;">
                         <label class="tich-label">Existing assessment</label>
                         <select name="objective_assessment" class="tich-input" data-tich-dropdown="skip" onchange="this.form.submit()">
