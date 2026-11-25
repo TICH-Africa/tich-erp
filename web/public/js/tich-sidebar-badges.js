@@ -85,9 +85,20 @@
 
             const payload = await response.json();
             applyLabels(payload.labels || {});
+            applyFinanceSummary(payload.finance_summary);
         } catch {
             // Ignore network errors; websocket or next poll will retry.
         }
+    };
+
+    const applyFinanceSummary = (summary) => {
+        if (!summary || typeof summary !== 'object') {
+            return;
+        }
+
+        window.dispatchEvent(new CustomEvent('tich:student-finance-updated', {
+            detail: summary,
+        }));
     };
 
     if (config.pollUrl) {
@@ -120,6 +131,7 @@
     echo.private(broadcast.channel)
         .listen(broadcast.event || '.sidebar.counts.updated', (event) => {
             applyLabels(event.labels || {});
+            applyFinanceSummary(event.finance_summary);
         })
         .error(() => {
             poll();

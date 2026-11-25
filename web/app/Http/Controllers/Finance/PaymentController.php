@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\Finance\PaymentService;
 use App\Services\Finance\StudentAccountService;
+use App\Services\Sidebar\PortalSidebarBroadcastService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class PaymentController extends Controller
     public function __construct(
         protected PaymentService $payments,
         protected StudentAccountService $accounts,
+        protected PortalSidebarBroadcastService $sidebarBroadcast,
     ) {}
 
     public function index(Request $request): View
@@ -132,6 +134,10 @@ class PaymentController extends Controller
                 .$payment->payment_number.' instead.');
         }
 
+        if ($payment->student) {
+            $this->sidebarBroadcast->broadcastStudentFinance($payment->student);
+        }
+
         $message = 'Payment recorded: '.$payment->payment_number;
         $carried = round((float) $payment->amount - $owed, 2);
         if ($carried > 0) {
@@ -165,6 +171,10 @@ class PaymentController extends Controller
         $staffId = (int) ($request->user()->staff_id ?? \App\Models\Staff::query()->value('id'));
         $amended = $this->payments->amendPayment($payment, $validated, $staffId);
         $invoice = $amended->invoice;
+
+        if ($amended->student) {
+            $this->sidebarBroadcast->broadcastStudentFinance($amended->student);
+        }
 
         $message = 'Payment '.$amended->payment_number.' corrected to KES '.number_format((float) $amended->amount, 2).'.';
         if ($invoice) {

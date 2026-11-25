@@ -33,7 +33,7 @@
 <div class="tich-grid tich-grid--4 tich-dept-stats tich-mt-8">
     <article class="tich-card tich-stat">
         <p class="tich-caption">Outstanding balance</p>
-        <p class="tich-stat__value">KES {{ number_format((float) $finance['summary']['outstanding_balance'], 2) }}</p>
+        <p class="tich-stat__value" data-student-outstanding-balance>KES {{ number_format((float) $finance['summary']['outstanding_balance'], 2) }}</p>
         @if ($cover > 0)
             <p class="tich-caption" style="margin: .25rem 0 0;">Counting KES {{ number_format($cover, 2) }} in credits and approved waivers.</p>
         @endif
@@ -43,17 +43,17 @@
     </article>
     <article class="tich-card tich-stat">
         <p class="tich-caption">Total chargeable</p>
-        <p class="tich-stat__value">KES {{ number_format((float) $finance['summary']['total_chargeable'], 2) }}</p>
+        <p class="tich-stat__value" data-student-total-chargeable>KES {{ number_format((float) $finance['summary']['total_chargeable'], 2) }}</p>
         <p class="tich-caption" style="margin: .25rem 0 0;">Every bill on your account, this and earlier terms.</p>
     </article>
     <article class="tich-card tich-stat">
         <p class="tich-caption">Total paid</p>
-        <p class="tich-stat__value">KES {{ number_format((float) $finance['summary']['total_paid'], 2) }}</p>
+        <p class="tich-stat__value" data-student-total-paid>KES {{ number_format((float) $finance['summary']['total_paid'], 2) }}</p>
         <p class="tich-caption" style="margin: .25rem 0 0;">Cash the finance office has taken, including paybill.</p>
     </article>
     <article class="tich-card tich-stat">
         <p class="tich-caption">Fee clearance</p>
-        <p class="tich-stat__value" style="font-size: 1.125rem;">{{ ucfirst($finance['summary']['fee_clearance_status'] ?? 'pending') }}</p>
+        <p class="tich-stat__value" style="font-size: 1.125rem;" data-student-fee-clearance>{{ ucfirst($finance['summary']['fee_clearance_status'] ?? 'pending') }}</p>
     </article>
 </div>
 

@@ -53,6 +53,23 @@ class StudentFeeBalanceService
     }
 
     /**
+     * @return array{outstanding_balance: float, total_paid: float, total_chargeable: float, fee_clearance_status: string}
+     */
+    public function portalSummary(Student $student): array
+    {
+        $position = $this->position($student);
+
+        return [
+            'outstanding_balance' => (float) $position['outstanding'],
+            'total_paid' => (float) $position['paid'],
+            'total_chargeable' => (float) $position['billed'],
+            'fee_clearance_status' => $position['is_cleared']
+                ? 'cleared'
+                : ($student->fee_clearance_status ?? 'pending'),
+        ];
+    }
+
+    /**
      * The fee accounts table as the student's own ledger: each year carries the bills and receipts
      * linked to it, so a term whose cached balance was never recomputed still reads what it owes
      * now. A bill raised without a year goes on the newest row, keeping the table in step with the

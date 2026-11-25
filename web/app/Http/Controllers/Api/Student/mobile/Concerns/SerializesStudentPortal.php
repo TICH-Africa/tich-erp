@@ -109,11 +109,12 @@ trait SerializesStudentPortal
                     'unit_code' => $assessment->allocation?->unit?->unit_code,
                     'unit_name' => $assessment->allocation?->unit?->unit_name,
                     'question_count' => (int) ($assessment->questions_count ?? $assessment->questions?->count() ?? 0),
-                    'submission' => $submission ? [
+                    'submission' => $submission?->student_submitted_at ? [
                         'id' => $submission->id,
-                        'score' => $submission->score,
-                        'status' => $submission->status,
-                        'submitted_at' => optional($submission->submitted_at)?->toIso8601String(),
+                        'score' => $submission->score_obtained,
+                        'status' => $submission->student_submitted_at ? 'submitted' : 'in_progress',
+                        'started_at' => optional($submission->student_started_at)?->toIso8601String(),
+                        'submitted_at' => optional($submission->student_submitted_at)?->toIso8601String(),
                     ] : null,
                 ];
             })->values()->all(),

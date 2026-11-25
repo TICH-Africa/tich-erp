@@ -189,6 +189,14 @@ class StudentApi {
   Future<Map<String, dynamic>> assessment(int id) =>
       _client.get('/student/assessments/$id');
 
+  Future<Map<String, dynamic>> saveAssessmentProgress(
+    int id, {
+    required Map<String, String> responses,
+  }) => _client.post(
+    '/student/assessments/$id/progress',
+    body: {'responses': responses},
+  );
+
   Future<Map<String, dynamic>> submitAssessment(
     int id, {
     required Map<String, String> responses,

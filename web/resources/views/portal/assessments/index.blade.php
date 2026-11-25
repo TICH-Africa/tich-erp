@@ -39,6 +39,7 @@
                                 $isExpired = $window['until'] && now()->gt($window['until']);
                                 $isUpcoming = $window['from'] && now()->lt($window['from']);
                                 $hasSubmitted = $submission && $submission->student_submitted_at;
+                                $hasStarted = $submission && $submission->student_started_at;
                             @endphp
                             <tr>
                                 <td>
@@ -77,6 +78,8 @@
                                                 Awaiting marks
                                             @endif
                                         </div>
+                                    @elseif ($hasStarted && $isOpen)
+                                        <span class="tich-badge tich-badge--info">In progress · answers auto-saved</span>
                                     @elseif ($window['makeup'] && $isOpen)
                                         <span class="tich-badge tich-badge--info">Make-up sitting</span>
                                     @elseif ($window['makeup'])
@@ -95,7 +98,7 @@
                                     @if ($hasSubmitted)
                                         <a href="{{ route('portal.assessments.result', $assessment) }}" class="tich-btn tich-btn-secondary" style="font-size:0.875rem; padding:0.35rem 0.75rem;">View result</a>
                                     @elseif ($window['makeup'] && $isOpen)
-                                        <a href="{{ route('portal.assessments.take', $assessment) }}" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;" onclick="return confirm('You are about to start your make-up sitting of {{ $assessment->name }}. Click OK to start now.')">Sit make-up</a>
+                                        <a href="{{ route('portal.assessments.take', $assessment) }}" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;" @unless ($hasStarted) onclick="return confirm('You are about to start your make-up sitting of {{ $assessment->name }}. Click OK to start now.')" @endunless>{{ $hasStarted ? 'Continue make-up' : 'Sit make-up' }}</a>
                                     @elseif ($window['makeup'])
                                         <span class="tich-caption">Ask your lecturer to reopen it</span>
                                     @elseif ($assessment->status === 'graded')
@@ -103,7 +106,7 @@
                                     @elseif (! $isOpen)
                                         <span class="tich-caption">{{ $isUpcoming ? 'Not yet open' : 'Closed' }}</span>
                                     @else
-                                        <a href="{{ route('portal.assessments.take', $assessment) }}" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;" onclick="return confirm('You are about to start {{ $assessment->name }}. Once started, your timer will begin. Click OK to start now.')">Start assessment</a>
+                                        <a href="{{ route('portal.assessments.take', $assessment) }}" class="tich-btn tich-btn-primary" style="font-size:0.875rem; padding:0.35rem 0.75rem;" @unless ($hasStarted) onclick="return confirm('You are about to start {{ $assessment->name }}. Once started, your timer will begin. Click OK to start now.')" @endunless>{{ $hasStarted ? 'Continue assessment' : 'Start assessment' }}</a>
                                     @endif
                                 </td>
                             </tr>

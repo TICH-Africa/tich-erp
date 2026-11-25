@@ -9,7 +9,7 @@
     <div class="tich-form-group">
         <label class="tich-label">Question {{ $index + 1 }}</label>
         <button type="button" class="tich-link tich-grading-question-remove" data-remove-question>Remove</button>
-        <input type="text" name="questions[{{ $index }}][question_text]" class="tich-input" placeholder="Question text (leave blank to skip)" value="{{ $question?->question_text }}">
+        <textarea name="questions[{{ $index }}][question_text]" class="tich-input tich-textarea" rows="3" placeholder="Question text (leave blank to skip)">{{ $question?->question_text }}</textarea>
     </div>
     <div class="tich-grid tich-grid--3" style="gap:1rem;">
         <div class="tich-form-group">

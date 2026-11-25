@@ -6,12 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\ObjectiveAssessment;
 use App\Models\ObjectiveSubmission;
 use App\Models\Student;
+use App\Services\StudentObjectiveAssessmentProgressService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
 class StudentAssessmentController extends Controller
 {
+    public function __construct(
+        protected StudentObjectiveAssessmentProgressService $progress,
+    ) {}
+
     public function index(): View
     {
         $student = auth()->user()->student;
@@ -72,12 +78,7 @@ class StudentAssessmentController extends Controller
 
         abort_unless($assessment->isOpenFor($submission), 403, $this->closedMessage($assessment, $submission));
 
-        // The sitting needs a row of its own before it can carry the student's paper order.
-        $submission ??= ObjectiveSubmission::query()->create([
-            'objective_assessment_id' => $assessment->id,
-            'student_id' => $student->id,
-            'created_at' => now(),
-        ]);
+        $submission = $this->progress->startOrResume($assessment, $student);
 
         $assessment->drawShuffleSeed($submission);
         $questions = $assessment->questionsFor($submission);
@@ -89,11 +90,34 @@ class StudentAssessmentController extends Controller
             'questions' => $questions,
             'window' => $assessment->windowFor($submission),
             'timeLimit' => $assessment->time_limit_minutes ?: 30,
+            'remainingSeconds' => $this->progress->remainingSeconds($assessment, $submission),
+            'serverUpdatedAt' => $submission->updated_at?->getTimestampMs() ?? 0,
+            'studentId' => $student->id,
             'biodata' => [],
             'sidebarNavigation' => app(\App\Services\StudentPortalNavigationService::class)->sidebarNavigation($student),
             'section' => 'academics',
             'tab' => 'assessments',
             'portalTitle' => $assessment->name,
+        ]);
+    }
+
+    public function saveProgress(Request $request, ObjectiveAssessment $assessment): JsonResponse
+    {
+        $student = auth()->user()->student;
+        abort_if(! $student, 404);
+        $this->assertRegistered($student, $assessment);
+
+        $validated = $request->validate([
+            'responses' => ['required', 'array'],
+            'responses.*' => ['nullable', 'string'],
+        ]);
+
+        $submission = $this->progress->saveProgress($assessment, $student, $validated['responses']);
+
+        return response()->json([
+            'message' => 'Answers saved.',
+            'updated_at' => $submission->updated_at?->getTimestampMs() ?? 0,
+            'remaining_seconds' => $this->progress->remainingSeconds($assessment, $submission),
         ]);
     }
 
@@ -123,17 +147,12 @@ class StudentAssessmentController extends Controller
 
         // Nothing is marked at submission time. The paper is graded once the availability
         // window closes, so nobody can answer after the deadline and see the key.
-        if (! $submission) {
-            $submission = ObjectiveSubmission::query()->create([
-                'objective_assessment_id' => $assessment->id,
-                'student_id' => $student->id,
-            ]);
-        }
+        $submission = $this->progress->startOrResume($assessment, $student);
 
         $submission->update([
             'responses' => $validated['responses'],
             'student_submitted_at' => now(),
-            'time_taken_seconds' => $validated['time_taken_seconds'] ?? null,
+            'time_taken_seconds' => $this->progress->elapsedSeconds($submission),
             'updated_at' => now(),
         ]);
 

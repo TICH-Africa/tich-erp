@@ -52,7 +52,24 @@
         </div>
     @endif
 
-    <form method="POST" enctype="multipart/form-data" autocomplete="off" class="tich-mt-6" action="{{ $editing ? route('administration.applications.existing-student.update', $student) : route('administration.applications.existing-student.store') }}">
+    @if (! $editing)
+        <script>
+            (function () {
+                var prefix = 'tich.form-draft.v1:';
+                var path = window.location.pathname;
+                var stale = [];
+                try {
+                    for (var i = 0; i < window.localStorage.length; i++) {
+                        var key = window.localStorage.key(i);
+                        if (key && key.indexOf(prefix) === 0 && key.indexOf(path) !== -1) stale.push(key);
+                    }
+                    stale.forEach(function (key) { window.localStorage.removeItem(key); });
+                } catch (e) {}
+            })();
+        </script>
+    @endif
+
+    <form method="POST" enctype="multipart/form-data" autocomplete="off" class="tich-mt-6" @unless ($editing) data-no-autosave @endunless action="{{ $editing ? route('administration.applications.existing-student.update', $student) : route('administration.applications.existing-student.store') }}">
             @csrf
             <input type="hidden" name="form_student_id" value="{{ $student->id ?? '' }}">
             @if ($editing)

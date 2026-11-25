@@ -334,7 +334,7 @@ class MpesaC2bService
             ]);
         }
 
-        $this->sidebarBroadcast->broadcastStudent($student);
+        $this->sidebarBroadcast->broadcastStudentFinance($student);
     }
 
     /**

@@ -8,12 +8,18 @@ use App\Models\ObjectiveAssessment;
 use App\Models\ObjectiveSubmission;
 use App\Models\Student;
 use App\Services\StudentAcademicRecordService;
+use App\Services\StudentObjectiveAssessmentProgressService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AssessmentsController extends Controller
 {
     use ResolvesPortalStudent;
+
+    public function __construct(
+        protected StudentObjectiveAssessmentProgressService $progress,
+    ) {}
 
     public function show(Request $request, ObjectiveAssessment $assessment): JsonResponse
     {
@@ -33,15 +39,9 @@ class AssessmentsController extends Controller
 
         // The app reads the window it is given, so a make-up sitting shows as this student's dates.
         if ($canTake) {
-            $submission ??= ObjectiveSubmission::query()->create([
-                'objective_assessment_id' => $assessment->id,
-                'student_id' => $student->id,
-                'created_at' => now(),
-            ]);
-
+            $submission = $this->progress->startOrResume($assessment, $student);
             $assessment->drawShuffleSeed($submission);
         }
-
         $questions = $assessment->questionsFor($submission);
         $marked = $assessment->isMarkedFor($submission);
 
@@ -57,6 +57,7 @@ class AssessmentsController extends Controller
                 'is_makeup' => $window['makeup'],
                 'unit_code' => $assessment->allocation?->unit?->unit_code,
                 'unit_name' => $assessment->allocation?->unit?->unit_name,
+                'student_id' => $student->id,
                 'can_take' => $canTake,
                 'questions' => $questions->map(fn ($q) => [
                     'id' => $q->id,
@@ -69,6 +70,12 @@ class AssessmentsController extends Controller
             ],
             'submission' => $submission ? [
                 'id' => $submission->id,
+                'student_id' => $student->id,
+                'responses' => $submission->responses ?? [],
+                'student_started_at' => optional($submission->student_started_at)?->toIso8601String(),
+                'updated_at' => $submission->updated_at?->getTimestampMs() ?? 0,
+                'attempt_number' => (int) $submission->attempt_number,
+                'remaining_seconds' => $this->progress->remainingSeconds($assessment, $submission),
                 'score' => $marked ? $submission->score_obtained : null,
                 'percentage_score' => $marked ? $submission->percentage_score : null,
                 'correct_count' => $marked ? $submission->correct_count : null,
@@ -77,6 +84,31 @@ class AssessmentsController extends Controller
                 'can_review' => $marked && (bool) $assessment->show_results_immediately,
                 'submitted_at' => optional($submission->student_submitted_at)?->toIso8601String(),
             ] : null,
+        ]);
+    }
+
+    public function saveProgress(Request $request, ObjectiveAssessment $assessment): JsonResponse
+    {
+        $student = $this->portalStudent($request);
+        $submission = ObjectiveSubmission::query()
+            ->where('objective_assessment_id', $assessment->id)
+            ->where('student_id', $student->id)
+            ->first();
+
+        $this->assertRegistered($student, $assessment, $submission);
+
+        $validated = $request->validate([
+            'responses' => ['required', 'array'],
+            'responses.*' => ['nullable', 'string'],
+        ]);
+
+        $submission = $this->progress->saveProgress($assessment, $student, $validated['responses']);
+        Cache::forget('student.mobile.academics.assessments.'.$student->id.'.v1');
+
+        return response()->json([
+            'message' => 'Answers saved.',
+            'updated_at' => $submission->updated_at?->getTimestampMs() ?? 0,
+            'remaining_seconds' => $this->progress->remainingSeconds($assessment, $submission),
         ]);
     }
 
@@ -124,19 +156,15 @@ class AssessmentsController extends Controller
         ]);
 
         // Marking waits for the availability window to close, so the answer key stays safe.
-        if (! $submission) {
-            $submission = ObjectiveSubmission::query()->create([
-                'objective_assessment_id' => $assessment->id,
-                'student_id' => $student->id,
-            ]);
-        }
+        $submission = $this->progress->startOrResume($assessment, $student);
 
         $submission->update([
             'responses' => $validated['responses'],
             'student_submitted_at' => now(),
-            'time_taken_seconds' => $validated['time_taken_seconds'] ?? null,
+            'time_taken_seconds' => $this->progress->elapsedSeconds($submission),
             'updated_at' => now(),
         ]);
+        Cache::forget('student.mobile.academics.assessments.'.$student->id.'.v1');
 
         return response()->json([
             'message' => 'Submitted successfully on '.now()->format('d M Y \a\t H:i').'. Your paper is marked when the assessment closes.',

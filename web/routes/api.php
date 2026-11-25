@@ -231,6 +231,7 @@ Route::middleware(['auth:sanctum', 'mobile.verified', 'student.portal'])->prefix
     Route::post('/requests/exam-sitting', [\App\Http\Controllers\Api\Student\mobile\RequestsController::class, 'storeExamSitting']);
 
     Route::get('/assessments/{assessment}', [\App\Http\Controllers\Api\Student\mobile\AssessmentsController::class, 'show']);
+    Route::post('/assessments/{assessment}/progress', [\App\Http\Controllers\Api\Student\mobile\AssessmentsController::class, 'saveProgress']);
     Route::post('/assessments/{assessment}/submit', [\App\Http\Controllers\Api\Student\mobile\AssessmentsController::class, 'submit']);
 });
 
