@@ -560,20 +560,10 @@ class StaffPortalActionController extends Controller
     {
         abort_unless($staff, 403);
 
-        // A lecturer can teach the same unit in more than one period, so the row the form came from
-        // wins and the unit lookup only serves as the guard.
-        $allocation = UnitAllocation::query()
-            ->where('id', (int) $request->input('allocation_id'))
-            ->where('staff_id', $staff->id)
-            ->where('is_active', 1)
-            ->first()
-            ?? UnitAllocation::query()
-                ->where('staff_id', $staff->id)
-                ->where('unit_id', $assessment->unit_id)
-                ->where('is_active', 1)
-                ->firstOrFail();
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
 
-        abort_if($assessment->unit_allocation_id !== $allocation->id, 403);
+        abort_if((int) $assessment->unit_allocation_id !== (int) $allocation->id, 403);
+        abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
 
         return $allocation;
     }

@@ -23,33 +23,41 @@ function toggleQuestionOptions(select) {
     var correctField = card.querySelector('[data-correct-field]');
     var correctSelect = card.querySelector('.question-correct-select');
     var correctText = card.querySelector('.question-correct-text');
+    var currentAnswer = correctSelect.value || correctText.value;
 
     if (type === 'mcq') {
         optionsField.style.display = '';
         correctField.style.display = '';
         correctSelect.style.display = '';
+        correctSelect.disabled = false;
         correctText.style.display = 'none';
-        updateCorrectAnswerOptions(card.querySelector('.question-options-input'));
+        correctText.disabled = true;
+        updateCorrectAnswerOptions(card.querySelector('.question-options-input'), currentAnswer);
     } else if (type === 'true_false') {
         optionsField.style.display = 'none';
         correctField.style.display = '';
         correctSelect.style.display = '';
         correctText.style.display = 'none';
+        correctSelect.disabled = false;
+        correctText.disabled = true;
         correctSelect.innerHTML = '<option value="">Select correct answer</option>' +
             '<option value="true">True</option>' +
             '<option value="false">False</option>';
+        correctSelect.value = currentAnswer === 'true' || currentAnswer === 'false' ? currentAnswer : '';
     } else {
         optionsField.style.display = 'none';
         correctField.style.display = '';
         correctSelect.style.display = 'none';
+        correctSelect.disabled = true;
         correctText.style.display = '';
+        correctText.disabled = false;
     }
 }
 
-function updateCorrectAnswerOptions(input) {
+function updateCorrectAnswerOptions(input, selectedAnswer) {
     var card = input.closest('.tich-grading-question-card');
     var select = card.querySelector('.question-correct-select');
-    var current = select.value;
+    var current = selectedAnswer === undefined ? select.value : selectedAnswer;
     var raw = input.value || '';
     var options = raw.split('|').map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
 
@@ -65,7 +73,7 @@ function updateCorrectAnswerOptions(input) {
     });
 }
 
-document.querySelectorAll('.tich-grading-question-card select').forEach(function(select) {
+document.querySelectorAll('.tich-grading-question-card .question-type-select').forEach(function(select) {
     toggleQuestionOptions(select);
 });
 
@@ -107,7 +115,7 @@ document.querySelector('[data-add-question]').addEventListener('click', function
 
     questionList.appendChild(added);
     renumberQuestions();
-    added.querySelectorAll('select').forEach(function(select) {
+    added.querySelectorAll('.question-type-select').forEach(function(select) {
         toggleQuestionOptions(select);
     });
     added.querySelector('input[type=text]').focus();

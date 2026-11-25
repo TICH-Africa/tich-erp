@@ -14,7 +14,7 @@
     <div class="tich-grid tich-grid--3" style="gap:1rem;">
         <div class="tich-form-group">
             <label class="tich-label">Type</label>
-            <select name="questions[{{ $index }}][question_type]" class="tich-input" onchange="toggleQuestionOptions(this)">
+            <select name="questions[{{ $index }}][question_type]" class="tich-input question-type-select" onchange="toggleQuestionOptions(this)">
                 <option value="mcq" @selected($type === 'mcq')>Multiple choice</option>
                 <option value="true_false" @selected($type === 'true_false')>True / False</option>
                 <option value="essay" @selected($type === 'essay')>Essay / Long answer</option>
