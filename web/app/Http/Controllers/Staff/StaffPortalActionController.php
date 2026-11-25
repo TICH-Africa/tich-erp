@@ -465,6 +465,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', $asDraft
             ? 'Draft saved. Students cannot see this paper until you publish it.'
             : 'Objective assessment created. It marks itself when the availability window closes.');
@@ -553,6 +554,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $assessment->unit_allocation_id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ]);
     }
 
@@ -560,20 +562,10 @@ class StaffPortalActionController extends Controller
     {
         abort_unless($staff, 403);
 
-        // A lecturer can teach the same unit in more than one period, so the row the form came from
-        // wins and the unit lookup only serves as the guard.
-        $allocation = UnitAllocation::query()
-            ->where('id', (int) $request->input('allocation_id'))
-            ->where('staff_id', $staff->id)
-            ->where('is_active', 1)
-            ->first()
-            ?? UnitAllocation::query()
-                ->where('staff_id', $staff->id)
-                ->where('unit_id', $assessment->unit_id)
-                ->where('is_active', 1)
-                ->firstOrFail();
+        $allocation = UnitAllocation::query()->findOrFail($request->integer('allocation_id'));
 
-        abort_if($assessment->unit_allocation_id !== $allocation->id, 403);
+        abort_if((int) $assessment->unit_allocation_id !== (int) $allocation->id, 403);
+        abort_unless(app(StaffPortalDashboardService::class)->canMarkUnit($staff, $allocation), 403);
 
         return $allocation;
     }
@@ -584,6 +576,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocationId,
             'objective_assessment' => $assessmentId,
+            'grading_tab' => 'objective',
         ])->with('status', $message);
     }
 
@@ -605,7 +598,7 @@ class StaffPortalActionController extends Controller
             $request,
             $allocation->id,
             'Student responses saved.',
-            ['objective_assessment' => $assessment->id],
+            ['objective_assessment' => $assessment->id, 'grading_tab' => 'objective'],
         );
     }
 
@@ -621,6 +614,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', "Auto-graded {$count} submission(s). Scores synced to cumulative performance sheet.");
     }
 
@@ -709,6 +703,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', 'Submission graded successfully.');
     }
 
@@ -837,6 +832,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', 'Assessment availability updated.');
     }
 
@@ -898,6 +894,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', $message);
     }
 
@@ -931,6 +928,7 @@ class StaffPortalActionController extends Controller
             'section' => 'grading',
             'allocation' => $allocation->id,
             'objective_assessment' => $assessment->id,
+            'grading_tab' => 'objective',
         ])->with('status', 'Answer key updated. You can now click Mark to grade all students.');
     }
 

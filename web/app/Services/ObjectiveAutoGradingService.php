@@ -396,6 +396,7 @@ class ObjectiveAutoGradingService
             // beside the new one in the CAT grid.
             $submission->update([
                 'responses' => null,
+                'student_started_at' => null,
                 'student_submitted_at' => null,
                 'time_taken_seconds' => null,
                 'score_obtained' => null,

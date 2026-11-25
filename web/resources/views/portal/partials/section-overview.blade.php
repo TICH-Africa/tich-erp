@@ -11,11 +11,11 @@
 <div class="tich-grid tich-grid--4 tich-dept-stats tich-mt-8">
     <article class="tich-card tich-stat">
         <p class="tich-caption">Fee balance</p>
-        <p class="tich-stat__value">KES {{ number_format($stats['outstanding_balance'], 2) }}</p>
+        <p class="tich-stat__value" data-student-outstanding-balance>KES {{ number_format($stats['outstanding_balance'], 2) }}</p>
     </article>
     <article class="tich-card tich-stat">
         <p class="tich-caption">Fee clearance</p>
-        <p class="tich-stat__value" style="font-size: 1.125rem;">{{ $stats['fee_clearance'] }}</p>
+        <p class="tich-stat__value" style="font-size: 1.125rem;" data-student-fee-clearance>{{ $stats['fee_clearance'] }}</p>
     </article>
     <article class="tich-card tich-stat">
         <p class="tich-caption">Registered units</p>
@@ -56,8 +56,8 @@
         <article class="tich-card tich-portal-summary-card">
             <h3 class="tich-h3">Finance</h3>
             <p class="tich-text tich-mt-2">
-                Outstanding: KES {{ number_format($stats['outstanding_balance'], 2) }}<br>
-                Clearance: {{ $stats['fee_clearance'] }}
+                Outstanding: <span data-student-outstanding-balance>KES {{ number_format($stats['outstanding_balance'], 2) }}</span><br>
+                Clearance: <span data-student-fee-clearance>{{ $stats['fee_clearance'] }}</span>
             </p>
             @if ($stats['outstanding_balance'] > 0)
                 <p class="tich-text tich-mt-2">

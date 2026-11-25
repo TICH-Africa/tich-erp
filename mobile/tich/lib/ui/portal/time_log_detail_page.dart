@@ -508,8 +508,8 @@ class _TimeLogDetailPageState extends State<TimeLogDetailPage> {
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        log['manager_signed_at'] != null
-                            ? 'Locked after line-manager endorsement.'
+                        log['status'] == 'pending_hr' || log['status'] == 'approved'
+                            ? 'Locked - the whole week has been submitted.'
                             : 'This sheet is read-only.',
                         style: tichUi(color: TichColors.neutralMuted),
                       ),

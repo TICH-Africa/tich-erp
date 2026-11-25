@@ -11,7 +11,7 @@ use App\Models\Staff;
 use App\Models\Student;
 use App\Services\Finance\MpesaC2bService;
 use App\Services\Finance\PaymentService;
-use App\Services\Sidebar\StudentSidebarNotificationService;
+use App\Services\Sidebar\PortalSidebarBroadcastService;
 use App\Services\StudentPortalDashboardService;
 use App\Services\StudentRecordService;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +28,7 @@ class FinanceController extends Controller
         protected StudentRecordService $studentRecords,
         protected PaymentService $payments,
         protected MpesaC2bService $c2b,
+        protected PortalSidebarBroadcastService $sidebarBroadcast,
     ) {}
 
     public function show(Request $request): JsonResponse
@@ -70,14 +71,14 @@ class FinanceController extends Controller
             'payment_reference' => $validated['payment_reference'] ?? null,
         ], $staffId);
 
-        app(StudentSidebarNotificationService::class)->forget($student);
-
         if (! $payment->wasRecentlyCreated) {
             return response()->json([
                 'message' => $this->duplicateMessage($payment),
                 'recorded' => false,
             ], 422);
         }
+
+        $this->sidebarBroadcast->broadcastStudentFinance($student);
 
         return response()->json(['message' => 'Payment submitted successfully.']);
     }

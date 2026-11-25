@@ -1552,6 +1552,8 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             ->name('portal.assessments.index');
         Route::get('/assessments/{assessment}/take', [\App\Http\Controllers\Portal\StudentAssessmentController::class, 'take'])
             ->name('portal.assessments.take');
+        Route::post('/assessments/{assessment}/progress', [\App\Http\Controllers\Portal\StudentAssessmentController::class, 'saveProgress'])
+            ->name('portal.assessments.progress');
         Route::post('/assessments/{assessment}/submit', [\App\Http\Controllers\Portal\StudentAssessmentController::class, 'submit'])
             ->name('portal.assessments.submit');
         Route::get('/assessments/{assessment}/result', [\App\Http\Controllers\Portal\StudentAssessmentController::class, 'result'])

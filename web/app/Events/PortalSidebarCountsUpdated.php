@@ -15,11 +15,13 @@ class PortalSidebarCountsUpdated implements ShouldBroadcastNow
     /**
      * @param  array<string, int>  $counts
      * @param  array<string, string|null>  $labels
+     * @param  array<string, float|string>|null  $financeSummary
      */
     public function __construct(
         public string $channel,
         public array $counts,
         public array $labels,
+        public ?array $financeSummary = null,
     ) {}
 
     public function broadcastOn(): array
@@ -36,9 +38,15 @@ class PortalSidebarCountsUpdated implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        return [
+        $payload = [
             'counts' => $this->counts,
             'labels' => $this->labels,
         ];
+
+        if ($this->financeSummary !== null) {
+            $payload['finance_summary'] = $this->financeSummary;
+        }
+
+        return $payload;
     }
 }

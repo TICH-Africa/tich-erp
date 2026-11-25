@@ -415,6 +415,8 @@ trait SerializesStudentPortal
                 'score' => $submission->score_obtained,
                 'percentage_score' => $submission->percentage_score,
                 'marked' => $marked,
+                'status' => 'submitted',
+                'started_at' => optional($submission->student_started_at)?->toIso8601String(),
                 'submitted_at' => optional($submission->student_submitted_at)?->toIso8601String(),
             ] : null,
         ];

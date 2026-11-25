@@ -14917,6 +14917,43 @@ input[type="time"]::-moz-calendar-picker-indicator {
     background: color-mix(in srgb, var(--tich-border, #e5e7eb) 35%, transparent);
 }
 
+/* Weekly time log ? per-day department picker */
+.wtl-dept-pick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.wtl-dept-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    padding: 3px 8px;
+    border: 1px solid var(--tich-border, #e5e7eb);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    cursor: pointer;
+    background: color-mix(in srgb, var(--tich-surface, #ffffff) 70%, transparent);
+}
+.wtl-dept-option input[type="checkbox"] {
+    margin: 0;
+    accent-color: var(--tich-primary, #1e5aa8);
+}
+.wtl-dept-option:has(input:checked) {
+    border-color: var(--tich-primary, #1e5aa8);
+    background: color-mix(in srgb, var(--tich-primary, #1e5aa8) 12%, transparent);
+    font-weight: 600;
+}
+[data-theme="dark"] .wtl-dept-option {
+    border-color: #3a4149;
+    background: color-mix(in srgb, #2a2f36 70%, transparent);
+}
+[data-theme="dark"] .wtl-dept-option:has(input:checked) {
+    border-color: #6ea8fe;
+    background: color-mix(in srgb, #2b4d7c 55%, transparent);
+}
+
 /* Employee performance appraisal form */
 .tich-appraisal-form .uf-form-surface {
     overflow: hidden;

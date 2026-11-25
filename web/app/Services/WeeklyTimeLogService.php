@@ -487,7 +487,7 @@ class WeeklyTimeLogService
     public function saveDraft(StaffWeeklyTimeLog $log, Staff $staff, array $payload): StaffWeeklyTimeLog
     {
         if (! $log->isEditableByEmployee()) {
-            throw new \RuntimeException('This time sheet is locked and cannot be edited.');
+            throw new \RuntimeException('This time sheet is closed - the whole week has been submitted.');
         }
 
         return DB::transaction(function () use ($log, $staff, $payload) {
@@ -519,6 +519,12 @@ class WeeklyTimeLogService
                     ->values()
                     ->all();
 
+                // A day left without a pick belongs to the department it was opened
+                // for, so the sheet never prints an empty DEPT cell.
+                if ($deptIds === [] && $staff->department_id) {
+                    $deptIds = [(int) $staff->department_id];
+                }
+
                 $day->update([
                     'time_in' => $timeIn,
                     'time_out' => $timeOut,
@@ -547,8 +553,8 @@ class WeeklyTimeLogService
 
     public function submit(StaffWeeklyTimeLog $log, Staff $staff, bool $selfEndorse = false): StaffWeeklyTimeLog
     {
-        if ($log->manager_signed_at) {
-            throw new \RuntimeException('This time sheet is locked after line-manager endorsement.');
+        if (! $log->isEditableByEmployee()) {
+            throw new \RuntimeException('This time sheet is closed - the whole week has been submitted.');
         }
         if (! in_array($log->status, [
             StaffWeeklyTimeLog::STATUS_DRAFT,
@@ -570,7 +576,7 @@ class WeeklyTimeLogService
                 'hr_reviewed_by_staff_id' => null,
             ];
 
-            // Alone / highest-ranking in dept may digi-sign as HOD on submit (locks the form).
+            // Alone / highest-ranking in dept may digi-sign as HOD on submit.
             if ($this->canSelfEndorse($staff)) {
                 $attrs = array_merge($attrs, [
                     'manager_staff_id' => $staff->id,

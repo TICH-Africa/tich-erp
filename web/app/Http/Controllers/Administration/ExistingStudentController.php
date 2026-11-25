@@ -27,9 +27,8 @@ class ExistingStudentController extends Controller
 
     public function create(Request $request): View
     {
-        // "Add Existing Student" means an empty form. A retry Laravel kept from a refused save on
-        // another student must not walk in here as though it were the new record.
-        if ($request->old('form_student_id') !== '') {
+        // Keep flashed values only for the validation redirect back to this form.
+        if (! $request->session()->has('errors')) {
             $request->session()->forget('_old_input');
         }
 

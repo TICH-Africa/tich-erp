@@ -15,6 +15,7 @@ use App\Models\StudentProfileChangeRequest;
 use App\Models\StudentTranscriptRequest;
 use App\Models\SupplementaryExamRequest;
 use App\Models\User;
+use App\Services\Finance\StudentFeeBalanceService;
 use App\Services\Sidebar\Concerns\FormatsSidebarBadgeCounts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -85,10 +86,11 @@ class StudentSidebarNotificationService
     /** @var list<string> Screen cache key templates; {id} is the student id. */
     public const MOBILE_CACHE_KEYS = [
         'student.mobile.dashboard.{id}.v1',
-        'student.mobile.academics.hub.{id}.v5',
+        'student.mobile.academics.hub.{id}.v6',
         'student.mobile.academics.units.{id}.v2',
         'student.mobile.academics.content.{id}.v2',
         'student.mobile.academics.assessments.{id}.v2',
+        'student.mobile.academics.exam_requests.{id}.v1',
         'student.mobile.timetable.{id}.v3',
         'student.mobile.finance.{id}.v2',
         'student.mobile.biodata.{id}.v1',
@@ -222,7 +224,9 @@ class StudentSidebarNotificationService
             }
         }
 
-        $outstanding = (float) ($student->overall_balance ?? 0);
+        // The stored balance only moves when an account row is recalculated, so a payment Finance
+        // has just taken would leave this badge on for a minute after the money is in.
+        $outstanding = (float) app(StudentFeeBalanceService::class)->position($student)['outstanding'];
         $needsClearance = ($student->fee_clearance_status ?? 'pending') !== 'cleared';
         $finance = ($outstanding > 0 || $needsClearance) ? 1 : 0;
 
