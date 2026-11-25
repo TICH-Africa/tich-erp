@@ -15,6 +15,7 @@ abstract final class EmployeePrefetch {
   static const profileKey = 'portal.profile';
   static const notificationsKey = 'portal.notifications';
   static const timeLogsKey = 'portal.time_logs';
+  static const wfhKey = 'portal.wfh';
 
   static void dashboard(EmployeeApi api) {
     portalWarm(dashboardKey, () => api.dashboard());
@@ -79,6 +80,10 @@ abstract final class EmployeePrefetch {
     portalWarm(timeLogsKey, () => api.timeLogs());
   }
 
+  static void wfh(EmployeeApi api) {
+    portalWarm(wfhKey, () => api.wfh());
+  }
+
   static String timeLogKey(int id) =>
       portalDetailCacheKey('portal.time_log', id);
 
@@ -102,6 +107,7 @@ abstract final class EmployeePrefetch {
     appraisals(api);
     concerns(api);
     feedback(api);
+    wfh(api);
   }
 
   static void warmListForModule(EmployeeApi api, String moduleKey) {
@@ -131,6 +137,8 @@ abstract final class EmployeePrefetch {
         concerns(api);
       case 'feedback':
         feedback(api);
+      case 'wfh':
+        wfh(api);
       case 'notifications':
         notifications(api);
       default:

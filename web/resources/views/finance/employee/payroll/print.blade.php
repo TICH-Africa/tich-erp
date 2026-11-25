@@ -147,7 +147,7 @@
 
         <p class="tich-payslip__note">
             @if ($isWithholding)
-                Computer-generated payment statement for consultant or independent contractor fees at the configured withholding tax rate only.
+                Computer-generated payment statement for Consultancy/Independent contractor fees at the configured withholding tax rate only.
             @else
                 Computer-generated payslip per configured KRA PAYE bands and statutory rates.
             @endif

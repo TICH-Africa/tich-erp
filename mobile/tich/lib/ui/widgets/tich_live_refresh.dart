@@ -8,6 +8,7 @@ import '../../data/tich_power_policy.dart';
 import '../../data/tich_realtime.dart';
 import '../../data/tich_realtime_signals.dart';
 import '../../data/tich_screen_cache.dart';
+import 'tich_form_input_guard.dart';
 import 'tich_page_skeleton.dart';
 import 'tich_tab_active_scope.dart';
 import 'tich_widgets.dart';
@@ -202,7 +203,11 @@ void tichSilentReload<T>({
   required Future<T> Function() fetch,
   void Function(T data)? onData,
   String? persistKey,
+  bool respectTypingGuard = true,
 }) {
+  if (respectTypingGuard && tichTextInputHasFocus()) {
+    return;
+  }
   if (persistKey != null) {
     if (TichScreenCache.isKeyInFlight(persistKey)) return;
     if (TichColdStart.shouldBlockSilentReload(persistKey)) return;
@@ -225,7 +230,11 @@ Future<void> tichRefreshCached<T>({
   required Future<T> Function() fetch,
   required void Function(T data) onData,
   String? persistKey,
+  bool respectTypingGuard = true,
 }) async {
+  if (respectTypingGuard && tichTextInputHasFocus()) {
+    return;
+  }
   try {
     final data = await fetch();
     if (!mounted()) return;
@@ -312,6 +321,9 @@ class _TichLiveRefreshBinderState extends State<TichLiveRefreshBinder>
 
   void _maybeAutoRefresh() {
     if (!_shouldRun) return;
+    if (tichTextInputHasFocus()) {
+      return;
+    }
     if (TichColdStart.isEmptyDiskSession && !TichColdStart.isHomeSettled) {
       return;
     }

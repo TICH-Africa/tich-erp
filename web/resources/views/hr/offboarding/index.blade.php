@@ -5,6 +5,7 @@
 @section('hr-content')
     <x-page-toolbar title="Offboarding" meta="Employee separations and exit clearances">
         <x-slot:actions>
+            <a href="{{ route('hr.offboarding.questionnaires.templates.index') }}" class="tich-btn tich-btn-ghost">Questionnaires</a>
             <a href="{{ route('hr.offboarding.create') }}" class="tich-btn tich-btn-primary">+ New Offboarding</a>
         </x-slot:actions>
     </x-page-toolbar>

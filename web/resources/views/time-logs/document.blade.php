@@ -3,6 +3,20 @@
 @php
     $deptMap = $departments->keyBy('id');
     $staff = $log->staff;
+
+    // The departments actually worked in that week: each day's own pick, so a
+    // person who covers more than one department prints the ones they chose.
+    $pickedDeptNames = $log->days
+        ->filter(fn ($day) => $day->in_month && (! $day->work_date || ! $day->work_date->isWeekend()))
+        ->flatMap(fn ($day) => is_array($day->department_ids) ? $day->department_ids : [])
+        ->map(fn ($id) => $deptMap->get((int) $id)?->dept_name)
+        ->filter()
+        ->unique()
+        ->values();
+
+    $headerDept = $pickedDeptNames->isNotEmpty()
+        ? $pickedDeptNames->implode(', ')
+        : ($staff?->department?->dept_name ?: '________________');
 @endphp
 
 @section('document-content')
@@ -16,7 +30,7 @@
                 <th>EMPLOYEE NO.</th>
                 <td>{{ $staff?->employee_number ?: '____________' }}</td>
                 <th>DEPARTMENT</th>
-                <td>{{ $staff?->department?->dept_name ?: '________________' }}</td>
+                <td>{{ $headerDept }}</td>
             </tr>
             <tr>
                 <th>MONTH</th>
@@ -65,9 +79,11 @@
                 @continue(! $day->in_month)
                 @php
                     $labels = collect(is_array($day->department_ids) ? $day->department_ids : [])
-                        ->map(fn ($id) => $deptMap->get($id)?->dept_code ?? $deptMap->get($id)?->dept_name)
+                        ->map(fn ($id) => $deptMap->get((int) $id)?->dept_code ?? $deptMap->get((int) $id)?->dept_name)
                         ->filter()
                         ->implode(', ');
+                    // Nothing picked for the day: it stays with the department it was opened for.
+                    $labels = $labels !== '' ? $labels : ((string) ($staff?->department?->dept_code ?: $staff?->department?->dept_name));
                 @endphp
                 <tr>
                     <td>
@@ -96,7 +112,7 @@
 
     <section class="tich-doc-section">
         <p>
-            NOTE: To be filled on a daily basis. You may also complete every week at month end.
+            NOTE: To be filled on a daily basis. Submit each month through the week of the 20th.
             TOTAL HOURS is time in to time out less one hour for lunch. TOTAL UNITS is double those hours.
         </p>
     </section>

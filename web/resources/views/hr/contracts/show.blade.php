@@ -29,7 +29,7 @@
             <div class="tich-hr-profile-header__meta">
                 <span>{{ $contract->staff->fullName() ?? '-' }}</span>
                 <span>{{ $contract->department->dept_name ?? '-' }}</span>
-                <span class="tich-badge tich-badge--info">{{ ucfirst($contract->contract_type) }}</span>
+                <span class="tich-badge tich-badge--info">{{ \App\Support\EmploymentCategory::label($contract->contract_type) }}</span>
                 <span class="tich-badge tich-badge--{{ $contract->is_signed ? 'success' : 'warning' }}">
                     {{ $contract->is_signed ? 'Signed' : 'Unsigned' }}
                 </span>
@@ -49,7 +49,7 @@
                 <div class="tich-dl__row"><dt class="tich-dl__label">Staff</dt><dd class="tich-dl__value">{{ $contract->staff->fullName() ?? '-' }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Job title</dt><dd class="tich-dl__value">{{ $contract->job_title }}</dd></div>
                 <div class="tich-dl__row"><dt class="tich-dl__label">Department</dt><dd class="tich-dl__value">{{ $contract->department->dept_name ?? '-' }}</dd></div>
-                <div class="tich-dl__row"><dt class="tich-dl__label">Type</dt><dd class="tich-dl__value">{{ ucfirst($contract->contract_type) }}</dd></div>
+                <div class="tich-dl__row"><dt class="tich-dl__label">Type</dt><dd class="tich-dl__value">{{ \App\Support\EmploymentCategory::label($contract->contract_type) }}</dd></div>
                 <div class="tich-dl__row">
                     <dt class="tich-dl__label">Gross salary</dt>
                     <dd class="tich-dl__value">

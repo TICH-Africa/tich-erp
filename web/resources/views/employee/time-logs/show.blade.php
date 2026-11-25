@@ -26,13 +26,13 @@
 
     <p class="tich-caption tich-mt-4">
         Status: <x-status-badge :status="$log->status" />
-        @if ($log->manager_signed_at)
-            · Locked after line-manager endorsement
-        @elseif ($log->status === 'pending_hr' && $isOwner)
-            · Submitted to HR - you can still edit until your line manager endorses
+        @if ($isOwner && ! $log->isEditableByEmployee() && $log->isWeekFullyRecorded())
+            · Locked - the whole week has been submitted
+        @elseif ($isOwner && $log->isEditableByEmployee() && in_array($log->status, ['pending_hr', 'approved'], true))
+            · Submitted to HR - you can still add the days that had not arrived yet
         @endif
         @if ($canSelfEndorse && $canSubmit)
-            · On submit you will also self-endorse as HOD (locks the form)
+            · On submit you will also self-endorse as HOD
         @endif
     </p>
 
@@ -90,14 +90,14 @@
     @if ($canEndorse)
         <div class="tich-card tich-mt-6">
             <h2 class="tich-h3">Line manager / HOD endorsement</h2>
-            <p class="tich-caption tich-mt-1">Digital endorsement locks the form for the employee.</p>
+            <p class="tich-caption tich-mt-1">Digital endorsement signs the week off; the employee may still add days that have not arrived.</p>
             <form method="POST" action="{{ route('employee.time-logs.endorse', $log) }}" class="tich-form-stack tich-mt-4">
                 @csrf
                 <div class="tich-form-group">
                     <label class="tich-label" for="signature">Digital signature (full name)</label>
                     <input type="text" id="signature" name="signature" class="tich-input" required maxlength="300" value="{{ $staff->fullName() }}">
                 </div>
-                <button type="submit" class="tich-btn tich-btn-primary">Endorse &amp; lock</button>
+                <button type="submit" class="tich-btn tich-btn-primary">Endorse</button>
             </form>
         </div>
     @endif

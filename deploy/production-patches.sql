@@ -2871,5 +2871,70 @@ INSERT INTO `payroll_statutory_brackets` (`scheme`, `label`, `min_amount`, `max_
 SELECT 'ahl', 'All gross cash pay', 0.00, NULL, 'percent', 1.5000, NULL, NULL, 1, 1, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `payroll_statutory_brackets` WHERE `scheme` = 'ahl' LIMIT 1);
 
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- Offboarding exit questionnaires (migration 2026_11_23_120000)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `offboarding_questionnaire_templates` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `title` varchar(200) NOT NULL,
+    `description` text DEFAULT NULL,
+    `employment_categories` json NOT NULL,
+    `is_active` tinyint(1) NOT NULL DEFAULT 1,
+    `created_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `offboarding_questionnaire_templates_created_by_user_id_foreign` (`created_by_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `offboarding_questionnaire_questions` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `template_id` bigint(20) unsigned NOT NULL,
+    `question_text` varchar(1000) NOT NULL,
+    `input_type` varchar(32) NOT NULL DEFAULT 'textarea',
+    `options` json DEFAULT NULL,
+    `is_required` tinyint(1) NOT NULL DEFAULT 1,
+    `display_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `ob_q_questions_tpl_order_idx` (`template_id`,`display_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `offboarding_questionnaire_invitations` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `staff_id` bigint(20) unsigned NOT NULL,
+    `template_id` bigint(20) unsigned NOT NULL,
+    `staff_contract_id` bigint(20) unsigned DEFAULT NULL,
+    `status` varchar(32) NOT NULL DEFAULT 'pending',
+    `prefill_snapshot` json NOT NULL,
+    `sent_by_user_id` bigint(20) unsigned DEFAULT NULL,
+    `sent_at` timestamp NULL DEFAULT NULL,
+    `submitted_at` timestamp NULL DEFAULT NULL,
+    `hr_acknowledged_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `ob_q_inv_staff_status_idx` (`staff_id`,`status`),
+    KEY `ob_q_inv_status_sub_idx` (`status`,`submitted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `offboarding_questionnaire_answers` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `invitation_id` bigint(20) unsigned NOT NULL,
+    `question_id` bigint(20) unsigned NOT NULL,
+    `answer_text` text DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `offboarding_q_answer_unique` (`invitation_id`,`question_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 SET time_zone = '+03:00';

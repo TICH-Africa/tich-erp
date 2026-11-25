@@ -856,6 +856,12 @@ class RBACService
             return false;
         }
 
+        // Belonging to a department that runs Academics (etc.) is not enough; the user's role must
+        // include that module (e.g. Driver / procurement-only must not inherit academics.read).
+        if (! $this->userHasRoleForDepartmentModule($user, $moduleKey)) {
+            return false;
+        }
+
         $departmentIds = $this->getUserDepartmentIds($user);
 
         if ($departmentIds === []) {
@@ -872,6 +878,89 @@ class RBACService
         }
 
         return false;
+    }
+
+    /**
+     * Whether any of the user's roles grant access to tools for this department module key
+     * (matches tich-department-modules assignment keys such as procurement, academics, hr).
+     */
+    public function userHasRoleForDepartmentModule(User $user, string $departmentModuleKey): bool
+    {
+        if ($this->isPlatformAdministrator($user)) {
+            return true;
+        }
+
+        $departmentModuleKey = trim($departmentModuleKey);
+        if ($departmentModuleKey === '') {
+            return false;
+        }
+
+        $eligibleRbacModules = $this->rbacModulesForDepartmentModule($departmentModuleKey);
+        $catalog = app(RbacCatalogService::class);
+
+        foreach ($this->getUserRoles($user) as $role) {
+            $roleName = (string) ($role['role_name'] ?? '');
+            if ($roleName === '') {
+                continue;
+            }
+
+            $definition = $catalog->definitionForRole($roleName);
+            if ($definition) {
+                $roleModules = $definition['permission_modules'] ?? [];
+                if (array_intersect($eligibleRbacModules, $roleModules) !== []) {
+                    return true;
+                }
+            }
+
+            $recordModuleKey = (string) ($role['module_key'] ?? '');
+            if ($recordModuleKey !== '' && $recordModuleKey === $departmentModuleKey) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function rbacModulesForDepartmentModule(string $departmentModuleKey): array
+    {
+        $modules = [$departmentModuleKey];
+
+        foreach (config('tich-department-modules.dashboard_permission_modules', []) as $permissionKey => $deptKeys) {
+            if ($deptKeys === null) {
+                continue;
+            }
+
+            $keys = is_array($deptKeys) ? $deptKeys : [$deptKeys];
+            if (! in_array($departmentModuleKey, $keys, true)) {
+                continue;
+            }
+
+            $prefix = explode('.', (string) $permissionKey, 2)[0];
+            $modules[] = match ($prefix) {
+                'academics' => 'academics',
+                'admissions', 'students' => 'admin',
+                'finance' => 'finance',
+                'hr' => 'hr',
+                'qa' => 'qa',
+                'administration' => 'administration',
+                'procurement' => 'procurement',
+                'research' => 'research',
+                'ict', 'marketing' => 'ict',
+                'monitoring_evaluation' => 'monitoring_evaluation',
+                'dashboard' => 'core',
+                default => $prefix,
+            };
+        }
+
+        if ($departmentModuleKey === 'portal' || $departmentModuleKey === 'site_settings') {
+            $modules[] = 'portal';
+            $modules[] = 'site_settings';
+        }
+
+        return array_values(array_unique(array_filter($modules)));
     }
 
     /**

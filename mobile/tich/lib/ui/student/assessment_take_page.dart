@@ -29,6 +29,7 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
   late Future<Map<String, dynamic>> _future;
   Object? _dataCache;
   final Map<String, String> _responses = {};
+  final Map<String, TextEditingController> _textControllers = {};
   bool _busy = false;
   DateTime? _startedAt;
 
@@ -45,6 +46,24 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
       setFuture: (f) => _future = f,
       fetch: () => widget.api.assessment(widget.assessmentId),
     );
+  }
+
+  @override
+  void dispose() {
+    for (final c in _textControllers.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  TextEditingController _textControllerFor(String id) {
+    return _textControllers.putIfAbsent(id, () {
+      final controller = TextEditingController(text: _responses[id] ?? '');
+      controller.addListener(() {
+        _responses[id] = controller.text;
+      });
+      return controller;
+    });
   }
 
   Future<void> _reload() => studentCachedReload(
@@ -164,13 +183,15 @@ class _StudentAssessmentTakePageState extends State<StudentAssessmentTakePage> {
     }
 
     final isLong = type == 'essay' || type == 'long_answer';
+    final controller = _textControllerFor(id);
     return TextField(
+      key: ValueKey('assessment-answer-$id'),
+      controller: controller,
       enabled: !_busy,
       maxLines: isLong ? 6 : 1,
       decoration: InputDecoration(
         labelText: isLong ? 'Your answer' : 'Answer',
       ),
-      onChanged: (v) => _responses[id] = v,
     );
   }
 

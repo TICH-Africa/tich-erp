@@ -28,7 +28,7 @@
                             <div style="margin:0 0 20px;padding:14px 16px;background:#f5f6f6;border-left:3px solid #1669a6;font-family:Arial,sans-serif;font-size:13px;line-height:1.7;color:#494c50;">
                                 <p style="margin:0 0 6px;"><strong>Contract No.:</strong> {{ $contract->contract_number }}</p>
                                 <p style="margin:0 0 6px;"><strong>Job title:</strong> {{ $contract->job_title }}</p>
-                                <p style="margin:0 0 6px;"><strong>Type:</strong> {{ ucfirst(str_replace('_', ' ', $contract->contract_type)) }}</p>
+                                <p style="margin:0 0 6px;"><strong>Type:</strong> {{ \App\Support\EmploymentCategory::label($contract->contract_type) }}</p>
                                 <p style="margin:0 0 6px;"><strong>Start date:</strong> {{ $contract->start_date?->format('j F Y') ?? '-' }}</p>
                                 <p style="margin:0 0 6px;"><strong>End date:</strong> {{ $contract->end_date?->format('j F Y') ?? 'Ongoing' }}</p>
                                 <p style="margin:0;"><strong>Signed on:</strong> {{ $contract->signed_date?->format('j F Y') ?? now()->format('j F Y') }}</p>

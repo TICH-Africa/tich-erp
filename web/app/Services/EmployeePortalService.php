@@ -153,10 +153,7 @@ class EmployeePortalService
             'total_monthly' => (float) $staff->total_monthly_compensation,
             'salary_scale' => $staff->salary_scale,
             'payroll_scheme' => $staff->payrollSchemeLabel(),
-            'employment_category' => config(
-                'tich-payroll.employment_categories.'.$staff->employment_category,
-                ucfirst(str_replace('_', ' ', (string) $staff->employment_category))
-            ),
+            'employment_category' => \App\Support\EmploymentCategory::label($staff->employment_category),
             'uses_statutory_payroll' => $staff->requiresEmployeeStatutoryPayroll(),
             'allowances' => $allowances,
             'masked_account_number' => $this->maskAccountNumber($staff->bankAccount?->account_number),

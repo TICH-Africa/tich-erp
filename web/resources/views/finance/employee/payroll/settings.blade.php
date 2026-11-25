@@ -53,8 +53,8 @@
     @include('hr.payroll.partials.settings-overview')
 
     <div class="tich-card tich-mb-8">
-        <h2 class="tich-h3">Consultants &amp; independent contractors</h2>
-        <p class="tich-caption tich-mt-2">Staff on the withholding payroll scheme are deducted this rate only (no PAYE, NSSF, SHA/SHIF, or AHL). Assign the scheme on the staff profile or choose Consultant / Independent contractor as the employment category.</p>
+        <h2 class="tich-h3">Consultancy/Independent contractor</h2>
+        <p class="tich-caption tich-mt-2">Staff on the withholding payroll scheme are deducted this rate only (no PAYE, NSSF, SHA/SHIF, or AHL). Assign the scheme on the staff profile or choose Consultancy/Independent contractor as the employment category.</p>
         <div class="tich-grid tich-grid--3 tich-mt-4">
             <div>
                 <label for="withholding_tax_rate" class="tich-label">Withholding tax rate (%)</label>

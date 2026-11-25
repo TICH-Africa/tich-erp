@@ -13,6 +13,7 @@ class PublicLayoutComposer
     {
         $view->with([
             'headerMenu' => $this->navigationService->getHeaderMenu(),
+            'headerMoreMenu' => $this->navigationService->getHeaderMoreMenu(),
             'footerPrimaryMenu' => $this->navigationService->getFooterPrimaryMenu(),
             'footerQuickLinks' => $this->navigationService->getFooterQuickLinks(),
             'contactChannels' => $this->navigationService->getContactChannels(),

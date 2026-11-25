@@ -36,6 +36,7 @@ class HrSidebarNotificationService
         'leave.requests' => 'Leave requests',
         'documents' => 'Staff Documents',
         'offboarding' => 'Offboarding',
+        'offboarding.questionnaires' => 'Exit questionnaires',
         'contracts' => 'Contracts',
         'profile-changes' => 'Profile changes',
         'attendance' => 'Attendance reviews',
@@ -107,7 +108,8 @@ class HrSidebarNotificationService
             'leave.requests' => $leaveRequests,
             'leave' => $leaveRequests,
             'documents' => $this->pendingDocumentsCount(),
-            'offboarding' => $this->pendingOffboardingCount(),
+            'offboarding' => $this->pendingOffboardingCount() + $this->pendingOffboardingQuestionnaireCount(),
+            'offboarding.questionnaires' => $this->pendingOffboardingQuestionnaireCount(),
             'contracts' => $this->contractsNeedingAction(),
             'profile-changes' => $this->pendingProfileChangesCount(),
             'attendance' => $this->pendingAttendanceCount(),
@@ -197,6 +199,15 @@ class HrSidebarNotificationService
             ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
             ->where('status', 'pending')
             ->count();
+    }
+
+    private function pendingOffboardingQuestionnaireCount(): int
+    {
+        if (! Schema::hasTable('offboarding_questionnaire_invitations')) {
+            return 0;
+        }
+
+        return app(OffboardingQuestionnaireService::class)->pendingHrReviewCount();
     }
 
     private function pendingProfileChangesCount(): int

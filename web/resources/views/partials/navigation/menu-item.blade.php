@@ -25,6 +25,14 @@
         $isActive = request()->routeIs('programs.*');
     }
 
+    if (! $isActive && str_contains($href, '/e-fundi')) {
+        $isActive = request()->routeIs('e-fundi.*');
+    }
+
+    if (! $isActive && str_contains($href, '/mobile-app')) {
+        $isActive = request()->routeIs('mobile-app.*');
+    }
+
     // The parent stays lit while one of its own links is the page being read.
     $childActive = collect($children)->contains(function ($child): bool {
         $childHref = $child['url'] ?? '#';

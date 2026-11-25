@@ -537,7 +537,9 @@ class PayrollController extends Controller
         $isWithholding = ($breakdown['payroll_scheme'] ?? 'employee') === 'withholding';
 
         return [
-            'documentTitle' => $isWithholding ? 'Consultant Payment Statement' : 'Monthly Payslip',
+            'documentTitle' => $isWithholding
+                ? \App\Support\EmploymentCategory::WITHHOLDING_PAYMENT_STATEMENT_TITLE
+                : 'Monthly Payslip',
             'documentSubtitle' => ($breakdown['employee_name'] ?? 'Staff member').' · '.$payPeriod.($isWithholding ? ' · Withholding tax only' : ''),
             'documentRef' => $this->printDocuments->documentRef('PAY', $breakdown['employee_number'] ?? 'GENERAL'),
             'metaRows' => [],

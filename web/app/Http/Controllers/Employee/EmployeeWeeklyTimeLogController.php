@@ -24,15 +24,24 @@ class EmployeeWeeklyTimeLogController extends Controller
     {
         $staff = $this->staff($request);
         $current = $this->timeLogs->currentWeekMeta();
+        $hold = $this->timeLogs->portalComplianceHold($staff);
+
+        $year = $hold['year'] ?? $current['year'];
+        $month = $hold['month'] ?? $current['month'];
+        $week = $current['week']['week_number'] ?? 1;
+        if ($hold && $hold['incomplete_weeks'] !== []) {
+            $week = $hold['incomplete_weeks'][0]['week_number'];
+        }
 
         return view('employee.time-logs.index', [
             'portalTitle' => 'Weekly Time Sheet',
             'staff' => $staff,
             'logs' => $this->timeLogs->logsForStaff($staff),
-            'currentYear' => $current['year'],
-            'currentMonth' => $current['month'],
-            'currentWeek' => $current['week']['week_number'] ?? 1,
-            'weeks' => $this->timeLogs->weeksForMonth($current['year'], $current['month']),
+            'employeeTimeLogHold' => $hold ?? $request->attributes->get('employeeTimeLogHold'),
+            'currentYear' => $year,
+            'currentMonth' => $month,
+            'currentWeek' => $week,
+            'weeks' => $this->timeLogs->weeksForMonthForStaff($staff, (int) $year, (int) $month),
             'canSelfEndorse' => $this->timeLogs->canSelfEndorse($staff),
         ]);
     }
@@ -62,11 +71,12 @@ class EmployeeWeeklyTimeLogController extends Controller
 
     public function weeks(Request $request): \Illuminate\Http\JsonResponse
     {
+        $staff = $this->staff($request);
         $year = (int) $request->query('year', now()->year);
         $month = (int) $request->query('month', now()->month);
 
         return response()->json([
-            'weeks' => $this->timeLogs->weeksForMonth($year, $month),
+            'weeks' => $this->timeLogs->weeksForMonthForStaff($staff, $year, $month),
         ]);
     }
 
@@ -93,11 +103,7 @@ class EmployeeWeeklyTimeLogController extends Controller
             'canSelfEndorse' => (int) $timeLog->staff_id === (int) $staff->id && $this->timeLogs->canSelfEndorse($staff),
             'isOwner' => (int) $timeLog->staff_id === (int) $staff->id,
             'canSubmit' => (int) $timeLog->staff_id === (int) $staff->id
-                && ! $timeLog->manager_signed_at
-                && in_array($timeLog->status, [
-                    StaffWeeklyTimeLog::STATUS_DRAFT,
-                    StaffWeeklyTimeLog::STATUS_RETURNED,
-                ], true),
+                && $timeLog->canBeSubmittedByEmployee(),
         ]);
     }
 
@@ -189,7 +195,7 @@ class EmployeeWeeklyTimeLogController extends Controller
             return back()->withErrors(['time_log' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'Time sheet endorsed. The form is now locked for the employee.');
+        return back()->with('status', 'Time sheet endorsed.');
     }
 
     private function staff(Request $request): \App\Models\Staff

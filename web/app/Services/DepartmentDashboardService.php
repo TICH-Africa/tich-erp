@@ -71,7 +71,27 @@ class DepartmentDashboardService
             ->values()
             ->all();
 
-        return $query->whereIn('id', $mainIds)->get();
+        return $query->whereIn('id', $mainIds)->get()
+            ->filter(fn (Department $department) => $this->departmentVisibleOnMainDashboard($user, $department))
+            ->values();
+    }
+
+    /**
+     * Hide department cards when the user has no role-backed tools or child departments to open.
+     */
+    public function departmentVisibleOnMainDashboard(User $user, Department $department): bool
+    {
+        if ($this->employeeAssignment->isAwaitingDepartmentAssignment($user)) {
+            return false;
+        }
+
+        if ($department->children()->active()->exists()
+            && $department->dept_code !== 'FIN'
+            && $this->accessibleChildDepartments($user, $department)->isNotEmpty()) {
+            return true;
+        }
+
+        return $this->modulesForDepartment($user, $department) !== [];
     }
 
     public function userCanAccessDepartment(User $user, Department $department): bool
@@ -95,14 +115,34 @@ class DepartmentDashboardService
 
         foreach ($userDepartmentIds as $userDepartmentId) {
             if (in_array($userDepartmentId, $scopeIds, true)) {
-                return true;
+                return $this->userHasDepartmentModuleAccess($user, $department);
             }
 
             if (Department::resolveRootIdFromMap($userDepartmentId, $parentMap) === (int) $department->id) {
-                return true;
+                return $this->userHasDepartmentModuleAccess($user, $department);
             }
 
             if ($this->departmentIsAncestorOf((int) $userDepartmentId, (int) $department->id, $parentMap)) {
+                return $this->userHasDepartmentModuleAccess($user, $department);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * User's roles must align with at least one module assigned to this department (not only HR home dept).
+     */
+    private function userHasDepartmentModuleAccess(User $user, Department $department): bool
+    {
+        $assigned = app(DepartmentModuleService::class)->assignedModuleKeys($department);
+
+        if ($assigned === []) {
+            return $this->modulesForDepartment($user, $department) !== [];
+        }
+
+        foreach ($assigned as $moduleKey) {
+            if ($this->rbacService->userHasRoleForDepartmentModule($user, $moduleKey)) {
                 return true;
             }
         }
