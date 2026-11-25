@@ -39,6 +39,7 @@ class MpesaC2bService
         protected MpesaSettingsService $settings,
         protected PortalSidebarBroadcastService $sidebarBroadcast,
         protected ApplicationFeeService $applicationFees,
+        protected StudentFeeBalanceService $feeBalances,
     ) {}
 
     /**
@@ -337,25 +338,12 @@ class MpesaC2bService
     }
 
     /**
-     * Same cascade the portal finance summary uses, so the two never disagree.
+     * The same figure the student's finance cards show, measured on the bills and the booked
+     * money rather than on a cached account row, so the receipt never disagrees with the portal.
      */
     private function outstandingBalance(Student $student): float
     {
-        $accounts = SchemaProbe::hasTable('student_accounts')
-            ? (float) DB::table('student_accounts')->where('student_id', $student->id)->sum('outstanding_balance')
-            : 0.0;
-
-        if ($accounts > 0) {
-            return $accounts;
-        }
-
-        $invoices = (float) Invoice::query()->where('student_id', $student->id)->sum('balance');
-
-        if ($invoices > 0) {
-            return $invoices;
-        }
-
-        return (float) ($student->fresh()->overall_balance ?? 0);
+        return (float) $this->feeBalances->position($student)['outstanding'];
     }
 
     /**

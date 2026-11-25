@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Services\Finance\StudentFeeBalanceService;
 use App\Services\Finance\StudentStatementService;
 use App\Services\PrintDocumentService;
 use App\Services\StudentPortalService;
@@ -17,6 +18,7 @@ class PortalFeeStatementController extends Controller
         protected StudentPortalService $portalService,
         protected StudentStatementService $statements,
         protected PrintDocumentService $printDocuments,
+        protected StudentFeeBalanceService $feeBalances,
     ) {}
 
     public function print(Request $request): View
@@ -45,7 +47,7 @@ class PortalFeeStatementController extends Controller
     {
         $student = $this->authorizedStudent($request);
         $entries = $this->statements->buildStatement($student);
-        $outstanding = (float) ($student->overall_balance ?? 0);
+        $outstanding = (float) $this->feeBalances->position($student)['outstanding'];
 
         return [
             'statements' => [[

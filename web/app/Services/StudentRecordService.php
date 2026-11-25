@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Student;
+use App\Services\Finance\StudentFeeBalanceService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -125,7 +126,7 @@ class StudentRecordService
                 'campus' => $student->campus?->campus_name,
                 'date_of_admission' => $student->date_of_admission?->format('Y-m-d'),
                 'fee_clearance_status' => $student->fee_clearance_status,
-                'overall_balance' => $student->overall_balance,
+                'overall_balance' => app(StudentFeeBalanceService::class)->position($student)['outstanding'],
                 'portal_activated_at' => $student->portal_activated_at?->format('Y-m-d H:i'),
             ],
             'portal' => [
@@ -228,7 +229,7 @@ class StudentRecordService
                 'campus' => $student->campus?->campus_name,
                 'date_of_admission' => $student->date_of_admission?->format('Y-m-d'),
                 'fee_clearance_status' => $student->fee_clearance_status,
-                'overall_balance' => $student->overall_balance,
+                'overall_balance' => app(StudentFeeBalanceService::class)->position($student)['outstanding'],
                 'portal_activated_at' => $student->portal_activated_at?->format('Y-m-d H:i'),
             ],
             'portal' => [

@@ -23,7 +23,7 @@
                     <span class="tich-badge tich-badge--warning">{{ ucfirst($student->fee_clearance_status ?? 'Pending') }}</span>
                 @endif
             </p>
-            <p class="tich-caption tich-mt-2">Outstanding balance: {{ number_format((float) ($portalData['finance']['summary']['outstanding_balance'] ?? $student->overall_balance ?? 0), 2) }}</p>
+            <p class="tich-caption tich-mt-2">Outstanding balance: {{ number_format((float) ($portalData['finance']['summary']['outstanding_balance'] ?? 0), 2) }}</p>
         </article>
         <article class="tich-card">
             <h3 class="tich-h4">Attendance threshold</h3>

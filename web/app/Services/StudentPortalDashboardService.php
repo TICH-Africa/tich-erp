@@ -6,6 +6,7 @@ use App\Models\AcademicProgram;
 use App\Models\ProgramTimetableSession;
 use App\Models\Student;
 use App\Services\Finance\MpesaSettingsService;
+use App\Services\Finance\StudentFeeBalanceService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -16,6 +17,7 @@ class StudentPortalDashboardService
         protected TimetableSchedulingService $timetableScheduling,
         protected MpesaSettingsService $mpesaSettings,
         protected SiteSettingsService $siteSettings,
+        protected StudentFeeBalanceService $feeBalances,
     ) {}
 
     /**
@@ -89,8 +91,8 @@ class StudentPortalDashboardService
             'overview_stats' => [
                 'enrollment_status' => ucfirst($student->enrollment_status ?? 'unknown'),
                 'application_status' => ucwords(str_replace('_', ' ', (string) ($biodata['application']['status'] ?? ''))),
-                'fee_clearance' => ucfirst($student->fee_clearance_status ?? 'pending'),
-                'outstanding_balance' => (float) ($financeSummary['outstanding_balance'] ?? $student->overall_balance ?? 0),
+                'fee_clearance' => ucfirst($financeSummary['fee_clearance_status'] ?? 'pending'),
+                'outstanding_balance' => (float) ($financeSummary['outstanding_balance'] ?? 0),
                 'document_count' => (int) ($biodata['document_count'] ?? $biodata['documents']->count()),
                 'registered_unit_count' => (int) ($summaries['registered_units'] ?? 0),
                 'grade_count' => (int) ($summaries['grades'] ?? 0),
@@ -180,33 +182,18 @@ class StudentPortalDashboardService
     {
         $student->loadMissing('applicant');
 
-        $accountBalance = (float) DB::table('student_accounts')
-            ->where('student_id', $student->id)
-            ->sum('outstanding_balance');
-
-        $invoiceBalance = (float) DB::table('invoices')
-            ->where('student_id', $student->id)
-            ->sum('balance');
-
-        $studentBalance = (float) ($student->overall_balance ?? 0);
-
-        $isCleared = DB::table('student_accounts')
-            ->where('student_id', $student->id)
-            ->where('is_cleared', 1)
-            ->exists()
-            || ($student->fee_clearance_status === 'cleared');
-
-        $payableCount = (int) DB::table('invoices')
-            ->where('student_id', $student->id)
-            ->where('balance', '>', 0)
-            ->whereIn('status', ['issued', 'partial', 'overdue'])
-            ->count();
+        $position = $this->feeBalances->position($student);
+        $outstanding = (float) $position['outstanding'];
 
         return [
-            'outstanding_balance' => $accountBalance > 0 ? $accountBalance : ($invoiceBalance > 0 ? $invoiceBalance : $studentBalance),
-            'fee_clearance_status' => $student->fee_clearance_status ?? 'pending',
-            'is_cleared' => $isCleared,
-            'payable_invoice_count' => $payableCount,
+            'outstanding_balance' => $outstanding,
+            'total_paid' => (float) $position['paid'],
+            'total_chargeable' => (float) $position['billed'],
+            'excess_paid' => (float) $position['excess'],
+            'fee_clearance_status' => $outstanding <= 0 ? 'cleared' : ($student->fee_clearance_status ?? 'pending'),
+            'is_cleared' => $position['is_cleared']
+                || ($student->fee_clearance_status === 'cleared'),
+            'payable_invoice_count' => (int) $position['payable_invoice_count'],
         ];
     }
 
@@ -221,8 +208,8 @@ class StudentPortalDashboardService
         return [
             'enrollment_status' => ucfirst($student->enrollment_status ?? 'unknown'),
             'application_status' => ucwords(str_replace('_', ' ', (string) ($biodata['application']['status'] ?? ''))),
-            'fee_clearance' => ucfirst($student->fee_clearance_status ?? 'pending'),
-            'outstanding_balance' => (float) ($finance['summary']['outstanding_balance'] ?? $student->overall_balance ?? 0),
+            'fee_clearance' => ucfirst($finance['summary']['fee_clearance_status'] ?? 'pending'),
+            'outstanding_balance' => (float) ($finance['summary']['outstanding_balance'] ?? 0),
             'document_count' => $biodata['documents']->count(),
             'registered_unit_count' => $academics['registered_unit_count'],
             'grade_count' => $academics['grades']->count(),
@@ -237,8 +224,6 @@ class StudentPortalDashboardService
     {
         $student->loadMissing('applicant');
 
-        $rowLimit = $mobile ? 40 : 50;
-
         $accounts = DB::table('student_accounts as sa')
             ->join('academic_years as ay', 'ay.id', '=', 'sa.academic_year_id')
             ->where('sa.student_id', $student->id)
@@ -249,16 +234,16 @@ class StudentPortalDashboardService
             ])
             ->get();
 
+        // Every bill and receipt, not the newest few: capping the rows here is what made an older
+        // term's payment look like it had never arrived.
         $invoices = DB::table('invoices')
             ->where('student_id', $student->id)
             ->orderByDesc('issue_date')
-            ->limit($rowLimit)
             ->get();
 
         $payments = DB::table('payments')
             ->where('student_id', $student->id)
             ->orderByDesc('payment_date')
-            ->limit($rowLimit)
             ->get();
 
         $payableInvoices = $invoices->filter(function ($invoice) {
@@ -266,10 +251,9 @@ class StudentPortalDashboardService
                 && in_array($invoice->status, ['issued', 'partial', 'overdue'], true);
         })->values();
 
-        $currentAccount = $accounts->first();
-        $accountBalance = (float) $accounts->sum('outstanding_balance');
-        $invoiceBalance = (float) $invoices->sum('balance');
-        $studentBalance = (float) ($student->overall_balance ?? 0);
+        $position = $this->feeBalances->position($student);
+        $accounts = $this->feeBalances->withLiveBalances($student, $accounts);
+        $outstanding = (float) $position['outstanding'];
 
         return [
             'accounts' => $accounts,
@@ -277,21 +261,20 @@ class StudentPortalDashboardService
             'payments' => $payments,
             'payable_invoices' => $payableInvoices,
             'statement' => $this->buildFinanceStatement($invoices, $payments, $mobile ? 40 : null),
-            'credits' => $this->accountCredits($currentAccount),
+            'credits' => $this->accountCredits($accounts, (float) $position['waivers']),
             'paybill' => (string) ($this->mpesaSettings->shortcode() ?? ''),
             'business_name' => (string) ($this->siteSettings->documentBranding()['name'] ?? ''),
             'admission_number' => (string) ($student->registration_number ?? ''),
             'mpesa_enabled' => $this->mpesaSettings->isEnabled(),
             'summary' => [
-                'outstanding_balance' => $accountBalance > 0 ? $accountBalance : ($invoiceBalance > 0 ? $invoiceBalance : $studentBalance),
-                'total_paid' => (float) ($accounts->sum('total_paid') > 0
-                    ? $accounts->sum('total_paid')
-                    : $payments->sum('amount')),
-                'total_chargeable' => (float) $accounts->sum('total_chargeable'),
-                'fee_clearance_status' => $student->fee_clearance_status ?? 'pending',
-                'is_cleared' => $accounts->contains(fn ($account) => (bool) $account->is_cleared)
+                'outstanding_balance' => $outstanding,
+                'total_paid' => (float) $position['paid'],
+                'total_chargeable' => (float) $position['billed'],
+                'excess_paid' => (float) $position['excess'],
+                'fee_clearance_status' => $outstanding <= 0 ? 'cleared' : ($student->fee_clearance_status ?? 'pending'),
+                'is_cleared' => $position['is_cleared']
                     || ($student->fee_clearance_status === 'cleared'),
-                'payable_invoice_count' => $payableInvoices->count(),
+                'payable_invoice_count' => (int) $position['payable_invoice_count'],
             ],
         ];
     }
@@ -351,31 +334,24 @@ class StudentPortalDashboardService
     }
 
     /**
+     * @param  \Illuminate\Support\Collection<int, object>  $accounts
      * @return array<string, float>
      */
-    private function accountCredits(?object $account): array
+    private function accountCredits(Collection $accounts, float $waivers = 0.0): array
     {
-        if (! $account) {
-            return [
-                'scholarship' => 0.0,
-                'helb' => 0.0,
-                'sponsor' => 0.0,
-                'work_study' => 0.0,
-                'total' => 0.0,
-            ];
-        }
-
-        $scholarship = (float) ($account->scholarship_amount ?? 0);
-        $helb = (float) ($account->helb_amount ?? 0);
-        $sponsor = (float) ($account->sponsor_amount ?? 0);
-        $workStudy = (float) ($account->work_study_credit ?? 0);
+        $scholarship = (float) $accounts->sum(fn (object $account) => (float) ($account->scholarship_amount ?? 0));
+        $helb = (float) $accounts->sum(fn (object $account) => (float) ($account->helb_amount ?? 0));
+        $sponsor = (float) $accounts->sum(fn (object $account) => (float) ($account->sponsor_amount ?? 0));
+        $workStudy = (float) $accounts->sum(fn (object $account) => (float) ($account->work_study_credit ?? 0));
+        $waivers = round($waivers, 2);
 
         return [
             'scholarship' => $scholarship,
             'helb' => $helb,
             'sponsor' => $sponsor,
             'work_study' => $workStudy,
-            'total' => round($scholarship + $helb + $sponsor + $workStudy, 2),
+            'waivers' => $waivers,
+            'total' => round($scholarship + $helb + $sponsor + $workStudy + $waivers, 2),
         ];
     }
 

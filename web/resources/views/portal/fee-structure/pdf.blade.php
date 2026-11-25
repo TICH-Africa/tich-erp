@@ -160,19 +160,27 @@
         <tbody>
             <tr>
                 <td>Total charged to your account</td>
-                <td class="amount">KES {{ number_format((float) ($account?->total_chargeable ?? 0), 2) }}</td>
+                <td class="amount">KES {{ number_format((float) ($feePosition['billed'] ?? 0), 2) }}</td>
             </tr>
             <tr>
                 <td>Total payments received</td>
-                <td class="amount">KES {{ number_format((float) ($account?->total_paid ?? 0), 2) }}</td>
+                <td class="amount">KES {{ number_format((float) ($feePosition['paid'] ?? 0), 2) }}</td>
             </tr>
-            <tr>
-                <td>Excess kept for the next bill</td>
-                <td class="amount">KES {{ number_format((float) ($account?->credit_balance ?? 0), 2) }}</td>
-            </tr>
+            @if (($feePosition['credits'] ?? 0) > 0 || ($feePosition['waivers'] ?? 0) > 0)
+                <tr>
+                    <td>Credits and approved waivers</td>
+                    <td class="amount">KES {{ number_format((float) ($feePosition['credits'] ?? 0) + (float) ($feePosition['waivers'] ?? 0), 2) }}</td>
+                </tr>
+            @endif
+            @if (($feePosition['excess'] ?? 0) > 0)
+                <tr>
+                    <td>Excess kept for the next bill</td>
+                    <td class="amount">KES {{ number_format((float) ($feePosition['excess'] ?? 0), 2) }}</td>
+                </tr>
+            @endif
             <tr class="outstanding">
                 <td>Outstanding balance</td>
-                <td class="amount">KES {{ number_format((float) ($student->overall_balance ?? 0), 2) }}</td>
+                <td class="amount">KES {{ number_format((float) ($feePosition['outstanding'] ?? 0), 2) }}</td>
             </tr>
         </tbody>
     </table>

@@ -19,6 +19,7 @@ class StudentFeeStructureService
     public function __construct(
         protected PrintDocumentService $printDocuments,
         protected MpesaC2bService $c2b,
+        protected StudentFeeBalanceService $feeBalances,
     ) {}
 
     /**
@@ -33,6 +34,7 @@ class StudentFeeStructureService
             'student' => $student,
             'feeStructure' => $this->structureFor($student, $account),
             'account' => $account,
+            'feePosition' => $this->feeBalances->position($student),
             'openInvoices' => Invoice::query()
                 ->where('student_id', $student->id)
                 ->whereIn('status', ['issued', 'partial', 'overdue'])

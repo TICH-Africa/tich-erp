@@ -5,6 +5,8 @@
     $businessName = (string) ($finance['business_name'] ?? '');
     $admissionNumber = (string) ($finance['admission_number'] ?? '');
     $outstanding = (float) $finance['summary']['outstanding_balance'];
+    $excess = (float) ($finance['summary']['excess_paid'] ?? 0);
+    $cover = (float) ($finance['credits']['total'] ?? 0);
     // A student who owes money must always get the paybill instructions, even before an invoice row is posted.
     $canPay = $payableInvoices->isNotEmpty() || $outstanding > 0;
 @endphp
@@ -32,14 +34,22 @@
     <article class="tich-card tich-stat">
         <p class="tich-caption">Outstanding balance</p>
         <p class="tich-stat__value">KES {{ number_format((float) $finance['summary']['outstanding_balance'], 2) }}</p>
+        @if ($cover > 0)
+            <p class="tich-caption" style="margin: .25rem 0 0;">Counting KES {{ number_format($cover, 2) }} in credits and approved waivers.</p>
+        @endif
+        @if ($excess > 0)
+            <p class="tich-caption" style="margin: .25rem 0 0;">KES {{ number_format($excess, 2) }} paid above the bills stays on your account and comes off the next one.</p>
+        @endif
     </article>
     <article class="tich-card tich-stat">
         <p class="tich-caption">Total chargeable</p>
         <p class="tich-stat__value">KES {{ number_format((float) $finance['summary']['total_chargeable'], 2) }}</p>
+        <p class="tich-caption" style="margin: .25rem 0 0;">Every bill on your account, this and earlier terms.</p>
     </article>
     <article class="tich-card tich-stat">
         <p class="tich-caption">Total paid</p>
         <p class="tich-stat__value">KES {{ number_format((float) $finance['summary']['total_paid'], 2) }}</p>
+        <p class="tich-caption" style="margin: .25rem 0 0;">Cash the finance office has taken, including paybill.</p>
     </article>
     <article class="tich-card tich-stat">
         <p class="tich-caption">Fee clearance</p>
@@ -168,7 +178,7 @@
             <h2 class="tich-h2 tich-dept-panel__title">Credits &amp; waivers</h2>
         </div>
         <div class="tich-grid tich-grid--4 tich-mt-4" style="gap: 1rem;">
-            @foreach (['scholarship' => 'Scholarship', 'helb' => 'HELB', 'sponsor' => 'Sponsor', 'work_study' => 'Work-study'] as $key => $label)
+            @foreach (['scholarship' => 'Scholarship', 'helb' => 'HELB', 'sponsor' => 'Sponsor', 'work_study' => 'Work-study', 'waivers' => 'Approved waivers'] as $key => $label)
                 @if (($finance['credits'][$key] ?? 0) > 0)
                     <article class="tich-card tich-stat">
                         <p class="tich-caption">{{ $label }}</p>
