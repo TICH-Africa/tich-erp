@@ -100,7 +100,7 @@ class AcademicsSectionsController extends Controller
     {
         $student = $this->portalStudent($request);
         $payload = Cache::remember(
-            'student.mobile.academics.assessments.'.$student->id.'.v1',
+            'student.mobile.academics.assessments.'.$student->id.'.v2',
             20,
             fn () => $this->dashboard->academicsAssessmentsForMobile($student),
         );
@@ -108,24 +108,13 @@ class AcademicsSectionsController extends Controller
         $assessments = collect($payload['assessments'] ?? []);
         $submissions = collect($payload['my_submissions'] ?? []);
 
-        $items = $assessments->map(function ($assessment) use ($submissions) {
-            $submission = $submissions->get($assessment->id);
-
-            return [
-                'id' => $assessment->id,
-                'title' => $assessment->name ?? $assessment->title,
-                'status' => $assessment->status,
-                'unit_code' => $assessment->allocation?->unit?->unit_code,
-                'unit_name' => $assessment->allocation?->unit?->unit_name,
-                'question_count' => (int) ($assessment->questions_count ?? $assessment->questions?->count() ?? 0),
-                'submission' => $submission ? [
-                    'id' => $submission->id,
-                    'score' => $submission->score,
-                    'status' => $submission->status,
-                    'submitted_at' => optional($submission->submitted_at)?->toIso8601String(),
-                ] : null,
-            ];
-        })->values()->all();
+        $items = $assessments
+            ->map(fn ($assessment) => $this->serializeStudentAssessmentListItem(
+                $assessment,
+                $submissions->get($assessment->id),
+            ))
+            ->values()
+            ->all();
 
         return response()->json(['assessments' => $items]);
     }

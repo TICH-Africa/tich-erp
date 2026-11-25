@@ -7,7 +7,9 @@ use App\Models\ObjectiveAssessment;
 use App\Models\ObjectiveQuestion;
 use App\Models\ObjectiveSubmission;
 use App\Models\Staff;
+use App\Models\Student;
 use App\Models\UnitAllocation;
+use App\Services\Sidebar\StudentSidebarNotificationService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -436,6 +438,11 @@ class ObjectiveAutoGradingService
             $staff->user_id ?? Auth::id(),
         );
 
+        $student = Student::query()->find($studentId);
+        if ($student) {
+            app(StudentSidebarNotificationService::class)->forget($student);
+        }
+
         return $submission;
     }
 
@@ -451,6 +458,11 @@ class ObjectiveAutoGradingService
             ->where('objective_assessment_id', $assessment->id)
             ->where('student_id', $studentId)
             ->update(['open_from' => null, 'open_until' => null, 'updated_at' => now()]);
+
+        $student = Student::query()->find($studentId);
+        if ($student) {
+            app(StudentSidebarNotificationService::class)->forget($student);
+        }
 
         $this->auditService->log(
             'staff.grading.objective_makeup_closed',

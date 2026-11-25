@@ -262,9 +262,8 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                   ? a['submission'] as Map<String, dynamic>
                   : null;
                     final id = (a['id'] as num?)?.toInt();
-                    final canTake = sub == null &&
-                        (a['status']?.toString() == 'ready' ||
-                            a['status']?.toString() == 'open');
+                    final canTake = a['can_take'] == true;
+                    final isMakeup = a['is_makeup'] == true && canTake;
                     Future<void> openTake() async {
                       if (id == null) return;
                       final done = await openStudentAssessmentTake(
@@ -289,18 +288,21 @@ class _StudentAcademicsHubPageState extends State<StudentAcademicsHubPage> {
                             a['unit_code'],
                             '${a['question_count'] ?? 0} questions',
                             if (sub != null) 'Score: ${sub['score'] ?? '-'}',
-                            if (canTake) 'Tap to take',
+                            if (isMakeup) 'Make-up sitting — tap to start',
+                            if (canTake && !isMakeup) 'Tap to take',
                           ].where((e) => e != null && '$e'.isNotEmpty).join(' · '),
                         ),
                         trailing: canTake
                             ? FilledButton(
                                 onPressed: id == null ? null : () => openTake(),
-                                child: const Text('Take'),
+                                child: Text(isMakeup ? 'Sit make-up' : 'Take'),
                               )
                             : TichStatusChip(
                                 sub != null
                                     ? 'Submitted'
-                                    : (a['status']?.toString() ?? 'open'),
+                                    : (a['is_open'] == true
+                                        ? 'Available'
+                                        : (a['status']?.toString() ?? 'closed')),
                                 tone: sub != null
                                     ? TichChipTone.success
                                     : TichChipTone.info,

@@ -88,7 +88,7 @@ class StudentSidebarNotificationService
         'student.mobile.academics.hub.{id}.v5',
         'student.mobile.academics.units.{id}.v2',
         'student.mobile.academics.content.{id}.v2',
-        'student.mobile.academics.assessments.{id}.v1',
+        'student.mobile.academics.assessments.{id}.v2',
         'student.mobile.timetable.{id}.v3',
         'student.mobile.finance.{id}.v2',
         'student.mobile.biodata.{id}.v1',

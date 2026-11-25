@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Student\mobile\Concerns;
 
+use App\Models\ObjectiveAssessment;
+use App\Models\ObjectiveSubmission;
 use App\Models\Student;
 use App\Models\UnitContent;
 use App\Services\ProgramTimetableDocumentService;
@@ -102,20 +104,7 @@ trait SerializesStudentPortal
             'assessments' => collect($a['assessments'] ?? [])->map(function ($assessment) use ($a) {
                 $submission = ($a['my_submissions'] ?? collect())->get($assessment->id);
 
-                return [
-                    'id' => $assessment->id,
-                    'title' => $assessment->name ?? $assessment->title,
-                    'status' => $assessment->status,
-                    'unit_code' => $assessment->allocation?->unit?->unit_code,
-                    'unit_name' => $assessment->allocation?->unit?->unit_name,
-                    'question_count' => (int) ($assessment->questions_count ?? $assessment->questions?->count() ?? 0),
-                    'submission' => $submission ? [
-                        'id' => $submission->id,
-                        'score' => $submission->score,
-                        'status' => $submission->status,
-                        'submitted_at' => optional($submission->submitted_at)?->toIso8601String(),
-                    ] : null,
-                ];
+                return $this->serializeStudentAssessmentListItem($assessment, $submission);
             })->values()->all(),
             'exam_portal' => $this->serializeExamPortal($a['exam_portal'] ?? null),
             'transcript' => $portalData['transcript'] ?? ['available' => false, 'units_completed' => 0],
@@ -391,6 +380,43 @@ trait SerializesStudentPortal
             'mime_type' => $c->mime_type,
             'file_size' => $c->file_size,
             'external_url' => $c->external_url,
+        ];
+    }
+
+    /**
+     * Aligns with the student web portal list: make-up / retake windows can stay open after grading.
+     *
+     * @return array<string, mixed>
+     */
+    protected function serializeStudentAssessmentListItem(
+        ObjectiveAssessment $assessment,
+        ?ObjectiveSubmission $submission,
+    ): array {
+        $window = $assessment->windowFor($submission);
+        $hasSubmitted = $submission && $submission->student_submitted_at;
+        $isOpen = $assessment->isOpenFor($submission);
+        $canTake = $isOpen && ! $hasSubmitted;
+        $marked = $assessment->isMarkedFor($submission);
+
+        return [
+            'id' => $assessment->id,
+            'title' => $assessment->name ?? $assessment->title,
+            'status' => $assessment->status,
+            'unit_code' => $assessment->allocation?->unit?->unit_code,
+            'unit_name' => $assessment->allocation?->unit?->unit_name,
+            'question_count' => (int) ($assessment->questions_count ?? $assessment->questions?->count() ?? 0),
+            'is_makeup' => $window['makeup'],
+            'is_open' => $isOpen,
+            'can_take' => $canTake,
+            'available_from' => optional($window['from'])?->toIso8601String(),
+            'available_until' => optional($window['until'])?->toIso8601String(),
+            'submission' => $hasSubmitted ? [
+                'id' => $submission->id,
+                'score' => $submission->score_obtained,
+                'percentage_score' => $submission->percentage_score,
+                'marked' => $marked,
+                'submitted_at' => optional($submission->student_submitted_at)?->toIso8601String(),
+            ] : null,
         ];
     }
 }
