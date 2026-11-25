@@ -1378,6 +1378,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/attendance/{attendance}/reject', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'reject'])->name('hr.attendance.reject');
 
             Route::get('/time-logs', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'index'])->name('hr.time-logs.index');
+            Route::post('/time-logs/approve-reviewed', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'approveAllReviewed'])->name('hr.time-logs.approve-reviewed');
             Route::get('/time-logs/submissions', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'submissions'])->name('hr.time-logs.submissions');
             Route::get('/time-logs/{timeLog}', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'show'])->name('hr.time-logs.show');
             Route::get('/time-logs/{timeLog}/print', [\App\Http\Controllers\HR\WeeklyTimeLogReviewController::class, 'printDocument'])->name('hr.time-logs.print');

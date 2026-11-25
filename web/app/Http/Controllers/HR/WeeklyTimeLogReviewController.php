@@ -36,12 +36,16 @@ class WeeklyTimeLogReviewController extends Controller
             $filters['status'] = 'pending_hr';
         }
 
+        $hr = $this->hrStaff($request);
+
         return view('hr.time-logs.index', [
             'logs' => $this->timeLogs->hrIndex($filters),
             'filters' => $filters,
             'weeks' => ! empty($filters['year']) && ! empty($filters['month'])
                 ? $this->timeLogs->weeksForMonth((int) $filters['year'], (int) $filters['month'])
                 : [],
+            'previewedLogIds' => $this->timeLogs->hrPreviewedTimeLogIds($hr),
+            'bulkApproveCount' => $this->timeLogs->hrPreviewedPendingCount($hr),
         ]);
     }
 
@@ -72,8 +76,11 @@ class WeeklyTimeLogReviewController extends Controller
         ]);
     }
 
-    public function show(StaffWeeklyTimeLog $timeLog): View
+    public function show(Request $request, StaffWeeklyTimeLog $timeLog): View
     {
+        $hr = $this->hrStaff($request);
+        $this->timeLogs->recordHrPreviewedTimeLog($hr, $timeLog);
+
         $timeLog = $this->timeLogs->pruneWeekendDays(
             $timeLog->load(['days', 'staff.department', 'manager', 'hrReviewer'])
         );
@@ -84,8 +91,10 @@ class WeeklyTimeLogReviewController extends Controller
         ]);
     }
 
-    public function printDocument(StaffWeeklyTimeLog $timeLog): View
+    public function printDocument(Request $request, StaffWeeklyTimeLog $timeLog): View
     {
+        $this->timeLogs->recordHrPreviewedTimeLog($this->hrStaff($request), $timeLog);
+
         return $this->documents->page($timeLog, [
             'backUrl' => route('hr.time-logs.show', $timeLog),
             'pdfUrl' => route('hr.time-logs.pdf', $timeLog),
@@ -111,6 +120,35 @@ class WeeklyTimeLogReviewController extends Controller
         }
 
         return redirect()->route('hr.time-logs.index')->with('status', 'Time sheet approved.');
+    }
+
+    public function approveAllReviewed(Request $request): RedirectResponse
+    {
+        $hr = $this->hrStaff($request);
+        $data = $request->validate([
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $result = $this->timeLogs->hrApprovePreviewedBulk($hr, $data['notes'] ?? null);
+
+        if ($result['approved'] === 0) {
+            return redirect()
+                ->route('hr.time-logs.index')
+                ->withErrors([
+                    'time_log' => $result['pending_previewed'] === 0
+                        ? 'Open each time sheet you want to approve first (use Open or Print). Nothing is bulk-approved until you have reviewed it.'
+                        : 'No opened time sheets are waiting for HR approval.',
+                ]);
+        }
+
+        $message = 'Approved '.$result['approved'].' time sheet'.($result['approved'] === 1 ? '' : 's')
+            .' you had already opened for review.';
+        if ($result['skipped'] > 0) {
+            $message .= ' '.$result['skipped'].' opened sheet'.($result['skipped'] === 1 ? ' was' : 's were')
+                .' skipped (already actioned or no longer pending HR).';
+        }
+
+        return redirect()->route('hr.time-logs.index')->with('status', $message);
     }
 
     public function reject(Request $request, StaffWeeklyTimeLog $timeLog): RedirectResponse

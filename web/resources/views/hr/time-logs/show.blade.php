@@ -16,6 +16,9 @@
     @enderror
 
     <p class="tich-caption tich-mt-4">Status: <x-status-badge :status="$log->status" /></p>
+    @if ($log->status === 'pending_hr')
+        <p class="tich-caption tich-mt-2">You have reviewed this submission — it is eligible for <strong>Approve all reviewed</strong> on the HR queue.</p>
+    @endif
 
     @include('partials.weekly-time-log-form', ['log' => $log, 'departments' => $departments, 'editable' => false])
 

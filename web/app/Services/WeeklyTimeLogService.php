@@ -694,6 +694,95 @@ class WeeklyTimeLogService
         return $log->fresh(['days', 'staff']);
     }
 
+    public function recordHrPreviewedTimeLog(Staff $hr, StaffWeeklyTimeLog $log): void
+    {
+        $key = $this->hrPreviewedTimeLogsSessionKey($hr->id);
+        $viewed = session($key, []);
+
+        if (! is_array($viewed)) {
+            $viewed = [];
+        }
+
+        $viewed[(string) $log->id] = now()->toIso8601String();
+
+        if (count($viewed) > 250) {
+            arsort($viewed);
+            $viewed = array_slice($viewed, 0, 250, true);
+        }
+
+        session([$key => $viewed]);
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function hrPreviewedTimeLogIds(Staff $hr): array
+    {
+        $viewed = session($this->hrPreviewedTimeLogsSessionKey($hr->id), []);
+
+        if (! is_array($viewed) || $viewed === []) {
+            return [];
+        }
+
+        return array_values(array_unique(array_map('intval', array_keys($viewed))));
+    }
+
+    /**
+     * How many opened (previewed) sheets are still pending HR approval.
+     */
+    public function hrPreviewedPendingCount(Staff $hr): int
+    {
+        $ids = $this->hrPreviewedTimeLogIds($hr);
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        return StaffWeeklyTimeLog::query()
+            ->whereIn('id', $ids)
+            ->where('status', StaffWeeklyTimeLog::STATUS_PENDING_HR)
+            ->count();
+    }
+
+    /**
+     * Approve every pending HR sheet this reviewer has opened since sign-in.
+     *
+     * @return array{approved: int, skipped: int, pending_previewed: int}
+     */
+    public function hrApprovePreviewedBulk(Staff $hr, ?string $notes = null): array
+    {
+        $ids = $this->hrPreviewedTimeLogIds($hr);
+
+        if ($ids === []) {
+            return ['approved' => 0, 'skipped' => 0, 'pending_previewed' => 0];
+        }
+
+        $logs = StaffWeeklyTimeLog::query()
+            ->whereIn('id', $ids)
+            ->where('status', StaffWeeklyTimeLog::STATUS_PENDING_HR)
+            ->orderBy('id')
+            ->get();
+
+        $pendingPreviewed = $logs->count();
+        $approved = 0;
+
+        foreach ($logs as $log) {
+            $this->hrApprove($log, $hr, $notes);
+            $approved++;
+        }
+
+        return [
+            'approved' => $approved,
+            'skipped' => count($ids) - $pendingPreviewed,
+            'pending_previewed' => $pendingPreviewed,
+        ];
+    }
+
+    private function hrPreviewedTimeLogsSessionKey(int $hrStaffId): string
+    {
+        return 'hr.time_logs.previewed.'.$hrStaffId;
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      */

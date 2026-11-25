@@ -5,7 +5,24 @@
 @section('hr-content')
     <x-page-toolbar title="Time sheets" meta="Staff weekly time sheets submitted for HR review">
         <x-slot:actions>
-            <a href="{{ route('hr.time-logs.submissions') }}" class="tich-btn tich-btn-primary">View submissions per employee</a>
+            @if (($bulkApproveCount ?? 0) > 0)
+                <form
+                    method="POST"
+                    action="{{ route('hr.time-logs.approve-reviewed') }}"
+                    class="tich-inline-form"
+                    onsubmit="return confirm('Approve {{ $bulkApproveCount }} time sheet{{ $bulkApproveCount === 1 ? '' : 's' }} you have already opened for review? Sheets you have not opened will not be included.')"
+                >
+                    @csrf
+                    <button type="submit" class="tich-btn tich-btn-primary">
+                        Approve all reviewed ({{ $bulkApproveCount }})
+                    </button>
+                </form>
+            @else
+                <button type="button" class="tich-btn tich-btn-primary" disabled title="Open time sheets from the list first">
+                    Approve all reviewed (0)
+                </button>
+            @endif
+            <a href="{{ route('hr.time-logs.submissions') }}" class="tich-btn tich-btn-secondary">View submissions per employee</a>
             <a href="{{ route('hr.time-logs.index') }}" class="tich-btn tich-btn-ghost">Reset</a>
         </x-slot:actions>
         <x-slot:filters>
@@ -73,6 +90,17 @@
     @if (session('status'))
         <div class="tich-alert tich-alert--success">{{ session('status') }}</div>
     @endif
+    @error('time_log')
+        <div class="tich-alert tich-alert--error">{{ $message }}</div>
+    @enderror
+
+    <div class="tich-alert tich-alert--info tich-mt-4" role="note">
+        <strong>Bulk approval:</strong> Open each time sheet (or print view) before approving. <em>Approve all reviewed</em> only includes sheets you have already opened in this browser session and that are still pending HR.
+    </div>
+
+    @php
+        $previewedSet = array_flip($previewedLogIds ?? []);
+    @endphp
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">
@@ -85,11 +113,15 @@
                         <th>Submitted</th>
                         <th>Manager</th>
                         <th>Status</th>
+                        <th>Reviewed</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($logs as $item)
+                        @php
+                            $previewed = isset($previewedSet[$item->id]);
+                        @endphp
                         <tr>
                             <td>
                                 <strong>{{ $item->staff?->fullName() }}</strong>
@@ -109,10 +141,19 @@
                                 @endif
                             </td>
                             <td><x-status-badge :status="$item->status" /></td>
+                            <td class="tich-caption">
+                                @if ($previewed && $item->status === 'pending_hr')
+                                    <span class="tich-badge tich-badge--success" title="Eligible for bulk approve">Opened</span>
+                                @elseif ($previewed)
+                                    <span class="tich-caption">Opened</span>
+                                @else
+                                    <span class="tich-caption" title="Open this sheet before bulk approval">—</span>
+                                @endif
+                            </td>
                             <td><a href="{{ route('hr.time-logs.show', $item) }}" class="tich-btn tich-btn-primary" style="padding:0.35rem 0.6rem;font-size:0.85rem;">Open</a></td>
                         </tr>
                     @empty
-                        @include('partials.states.table-empty', ['colspan' => 7, 'title' => 'No time sheets match these filters', 'icon' => 'inbox'])
+                        @include('partials.states.table-empty', ['colspan' => 8, 'title' => 'No time sheets match these filters', 'icon' => 'inbox'])
                     @endforelse
                 </tbody>
             </table>
