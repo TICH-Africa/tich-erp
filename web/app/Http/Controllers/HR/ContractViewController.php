@@ -68,6 +68,17 @@ class ContractViewController extends Controller
         return \App\Support\EmploymentCategory::contractTypeFromEmploymentCategory($category);
     }
 
+    private function assertContractEditableBeforeSigning(StaffContract $contract): void
+    {
+        if ($contract->is_signed) {
+            abort(403, 'This contract is already signed. Signed contracts cannot be edited.');
+        }
+
+        if ($contract->renewal_status === 'terminated') {
+            abort(403, 'This contract is terminated and cannot be edited.');
+        }
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -124,6 +135,7 @@ class ContractViewController extends Controller
     public function edit(int $id): View
     {
         $contract = StaffContract::findOrFail($id);
+        $this->assertContractEditableBeforeSigning($contract);
         $staff = Staff::excludePlatformOperators()
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'surname', 'employee_number', 'job_title']);
@@ -141,6 +153,7 @@ class ContractViewController extends Controller
     public function update(Request $request, int $id)
     {
         $contract = StaffContract::findOrFail($id);
+        $this->assertContractEditableBeforeSigning($contract);
 
         $validated = $request->validate([
             'contract_type' => 'sometimes|string|in:permanent,contract,intern,visiting,casual,probation,consultancy,volunteer',
@@ -188,9 +201,13 @@ class ContractViewController extends Controller
             }
         }
 
-        app(\App\Services\ContractService::class)->updateContract($id, $validated, $request->user()->id);
+        try {
+            app(\App\Services\ContractService::class)->updateContract($id, $validated, $request->user()->id);
+        } catch (\InvalidArgumentException $e) {
+            return back()->withInput()->withErrors(['contract' => $e->getMessage()]);
+        }
 
-        return redirect()->route('hr.contracts.show', $contract)->with('success', 'Contract updated successfully.');
+        return redirect()->route('hr.contracts.show', $contract)->with('success', 'Contract updated. Review the details, then mark as signed when ready.');
     }
 
     public function renew(Request $request, int $id)

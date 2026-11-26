@@ -141,6 +141,16 @@ class ContractService
     {
         $contract = StaffContract::findOrFail($contractId);
 
+        if (! $contract->isEditableByHrBeforeSigning()) {
+            throw new \InvalidArgumentException(
+                $contract->is_signed
+                    ? 'This contract is already signed and can no longer be edited.'
+                    : 'This contract is terminated and cannot be edited.'
+            );
+        }
+
+        unset($data['is_signed'], $data['signed_date'], $data['witnessed_by']);
+
         $mergedType = $data['contract_type'] ?? $contract->contract_type;
         $data = $this->normalizeContractPayload(array_merge(['contract_type' => $mergedType], $data));
 

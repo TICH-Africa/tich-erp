@@ -65,8 +65,11 @@
                                     <span class="tich-badge tich-badge--warning">No</span>
                                 @endif
                             </td>
-                            <td>
+                            <td class="tich-table-actions">
                                 <a href="{{ route('hr.contracts.show', $contract) }}" class="tich-btn tich-btn-ghost">View</a>
+                                @if ($contract->isEditableByHrBeforeSigning())
+                                    <a href="{{ route('hr.contracts.edit', $contract) }}" class="tich-btn tich-btn-secondary tich-btn--sm">Edit</a>
+                                @endif
                             </td>
                         </tr>
                     @empty

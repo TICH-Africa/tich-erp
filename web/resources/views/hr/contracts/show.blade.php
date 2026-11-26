@@ -16,6 +16,9 @@
 
     <x-page-toolbar :title="$contract->contract_number" :meta="$contract->staff->fullName() ?? 'Staff contract'">
         <x-slot:actions>
+            @if ($contract->isEditableByHrBeforeSigning())
+                <a href="{{ route('hr.contracts.edit', $contract) }}" class="tich-btn tich-btn-primary">Review &amp; edit</a>
+            @endif
             <a href="{{ route('hr.contracts.index') }}" class="tich-btn tich-btn-ghost">All contracts</a>
             @if ($contract->staff)
                 <a href="{{ route('hr.staff.show', $contract->staff) }}" class="tich-btn tich-btn-secondary">View staff profile</a>
@@ -143,13 +146,24 @@
                 </form>
             @endif
 
-            @unless ($contract->is_signed)
+            @if ($contract->isEditableByHrBeforeSigning())
+                <div class="tich-mb-6" style="padding-bottom:1rem; border-bottom:1px solid var(--tich-neutral-border);">
+                    <p class="tich-text tich-mb-2">Review terms before signing — open the editor to correct job title, salary, dates, department, and probation.</p>
+                    <a href="{{ route('hr.contracts.edit', $contract) }}" class="tich-btn tich-btn-primary">Review &amp; edit contract</a>
+                </div>
+
                 <form method="POST" action="{{ route('hr.contracts.sign', $contract) }}">
                     @csrf
-                    <p class="tich-text tich-mb-2">Mark this contract as signed.</p>
-                    <button type="submit" class="tich-btn tich-btn-secondary">Mark as signed</button>
+                    <p class="tich-text tich-mb-2">When the terms are correct and the employee has signed, record it here.</p>
+                    <div class="tich-form-group tich-mb-3">
+                        <label for="witnessed_by" class="tich-label">Witnessed by (optional)</label>
+                        <input type="text" id="witnessed_by" name="witnessed_by" class="tich-input" maxlength="200" value="{{ old('witnessed_by', $contract->witnessed_by) }}" placeholder="Name of witness, if any">
+                    </div>
+                    <button type="submit" class="tich-btn tich-btn-secondary" onclick="return confirm('Mark this contract as signed?')">Mark as signed</button>
                 </form>
-            @endunless
+            @elseif (! $contract->is_signed)
+                <p class="tich-caption">This contract cannot be edited (terminated).</p>
+            @endif
         </section>
     </div>
 

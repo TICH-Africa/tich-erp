@@ -89,6 +89,11 @@ class StaffContract extends Model
         return $this->contract_type === 'volunteer';
     }
 
+    public function isEditableByHrBeforeSigning(): bool
+    {
+        return ! $this->is_signed && $this->renewal_status !== 'terminated';
+    }
+
     public function isExpired(): bool
     {
         if ($this->isPermanent() || ! $this->end_date) {

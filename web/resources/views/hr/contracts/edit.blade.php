@@ -3,7 +3,20 @@
 @section('title', 'Edit Contract')
 
 @section('hr-content')
-    <x-page-toolbar title="Edit Contract" />
+    <x-page-toolbar
+        title="Review &amp; edit contract"
+        :meta="($contract->contract_number ?? '') . ' · ' . ($contract->staff?->fullName() ?? 'Staff')"
+    >
+        <x-slot:actions>
+            <a href="{{ route('hr.contracts.show', $contract) }}" class="tich-btn tich-btn-ghost">Back to contract</a>
+        </x-slot:actions>
+    </x-page-toolbar>
+
+    <p class="tich-caption tich-mb-4">Update the terms below, save, then return to the contract page to <strong>Mark as signed</strong> when HR and the employee are done.</p>
+
+    @error('contract')
+        <div class="tich-alert tich-alert--danger tich-mb-4">{{ $message }}</div>
+    @enderror
 
     <article class="tich-card">
         <form method="POST" action="{{ route('hr.contracts.update', $contract) }}">
