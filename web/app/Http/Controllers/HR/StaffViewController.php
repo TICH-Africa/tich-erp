@@ -7,8 +7,10 @@ use App\Models\Department;
 use App\Models\PensionScheme;
 use App\Models\Staff;
 use App\Models\StaffBankAccount;
+use App\Models\StaffContract;
 use App\Models\StaffOnboarding;
 use App\Models\User;
+use App\Services\ContractService;
 use App\Services\AuditService;
 use App\Services\EmployeeProfileChangeService;
 use App\Services\StaffLifecycleService;
@@ -254,7 +256,7 @@ class StaffViewController extends Controller
         return redirect()->route('hr.staff.index')->with('success', 'Staff member created successfully.');
     }
 
-    public function show(int $id): View
+    public function show(Request $request, int $id): View
     {
         $staff = Staff::excludePlatformOperators()->with([
             'department',
@@ -275,11 +277,20 @@ class StaffViewController extends Controller
             'latestOnboarding',
         ])->findOrFail($id);
 
+        app(ContractService::class)->ensureSingleActiveContractForStaff(
+            (int) $staff->id,
+            (int) ($request->user()?->id ?? 0),
+        );
+
+        $staff->load('contracts');
+        $currentContractId = StaffContract::currentIdForStaff((int) $staff->id);
+
         $onboardingProgress = $this->staffLifecycle->assessOnboardingProgress($staff);
 
         return view('hr.staff.show', [
             'staff' => $staff,
             'onboardingProgress' => $onboardingProgress,
+            'currentContractId' => $currentContractId,
         ]);
     }
 

@@ -479,6 +479,41 @@ class ContractService
         return $rows;
     }
 
+    /** When legacy rows left two Active (pending) contracts, keep the newest and supersede the rest. */
+    public function ensureSingleActiveContractForStaff(int $staffId, int $actedBy = 0): int
+    {
+        $keeper = StaffContract::query()
+            ->where('staff_id', $staffId)
+            ->where(function ($query) {
+                $query->whereNull('renewal_status')
+                    ->orWhere('renewal_status', 'pending');
+            })
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $keeper) {
+            return 0;
+        }
+
+        $before = StaffContract::query()
+            ->where('staff_id', $staffId)
+            ->where('id', '!=', $keeper->id)
+            ->where(function ($query) {
+                $query->whereNull('renewal_status')
+                    ->orWhere('renewal_status', 'pending');
+            })
+            ->count();
+
+        if ($before === 0) {
+            return 0;
+        }
+
+        $this->supersedePriorActiveContracts($staffId, (int) $keeper->id, $actedBy);
+
+        return $before;
+    }
+
     /** Fix legacy data where multiple contracts were left on Active (pending). */
     public function reconcileDuplicateActiveContracts(int $actedBy = 0): int
     {

@@ -223,17 +223,13 @@
             <p class="tich-caption tich-mb-3">All contracts for this employee, including renewals. Each contract keeps its own unique code.</p>
             @forelse ($staff->contracts as $contract)
                 @php
-                    $renewalBadge = match ($contract->renewal_status) {
-                        'pending', null, '' => 'success',
-                        'renewed' => 'info',
-                        'terminated', 'expired' => 'danger',
-                        default => 'warning',
-                    };
+                    $renewalBadge = $contract->displayRenewalBadgeVariant($currentContractId ?? null);
+                    $renewalLabel = $contract->displayRenewalStatusLabel($currentContractId ?? null);
                 @endphp
                 <a href="{{ route('hr.contracts.show', $contract) }}" class="tich-list-item" style="display:block; padding:0.65rem 0; border-bottom:1px solid var(--tich-neutral-border); text-decoration:none;">
                     <strong>{{ $contract->contract_number }}</strong>
                     <span class="tich-badge tich-badge--info tich-ml-2">{{ \App\Support\EmploymentCategory::label($contract->contract_type) }}</span>
-                    <span class="tich-badge tich-badge--{{ $renewalBadge }} tich-ml-2">{{ $contract->renewalStatusLabel() }}</span>
+                    <span class="tich-badge tich-badge--{{ $renewalBadge }} tich-ml-2">{{ $renewalLabel }}</span>
                     <p class="tich-caption tich-mt-1">{{ $contract->start_date?->format('d M Y') }} → {{ $contract->end_date?->format('d M Y') ?? 'Ongoing' }}</p>
                 </a>
             @empty

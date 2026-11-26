@@ -181,6 +181,58 @@ class StaffContract extends Model
             ->all();
     }
 
+    public static function currentIdForStaff(int $staffId): ?int
+    {
+        $id = static::query()
+            ->where('staff_id', $staffId)
+            ->orderByRaw("CASE
+                WHEN renewal_status IS NULL OR renewal_status = 'pending' THEN 0
+                WHEN renewal_status = 'expired' THEN 1
+                WHEN renewal_status = 'terminated' THEN 2
+                WHEN renewal_status = 'renewed' THEN 3
+                ELSE 1
+            END")
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->value('id');
+
+        return $id ? (int) $id : null;
+    }
+
+    public function isCurrentForStaff(?int $currentContractId): bool
+    {
+        return $currentContractId !== null && (int) $this->id === $currentContractId;
+    }
+
+    /** Label for HR lists — only one row per employee should read Active. */
+    public function displayRenewalStatusLabel(?int $currentContractId): string
+    {
+        if ($this->isCurrentForStaff($currentContractId)) {
+            return 'Active';
+        }
+
+        if (in_array($this->renewal_status, [null, '', 'pending'], true)) {
+            return 'Superseded';
+        }
+
+        return $this->renewalStatusLabel();
+    }
+
+    /** @return 'success'|'info'|'danger'|'warning' */
+    public function displayRenewalBadgeVariant(?int $currentContractId): string
+    {
+        if ($this->isCurrentForStaff($currentContractId)) {
+            return 'success';
+        }
+
+        return match ($this->renewal_status) {
+            'renewed' => 'info',
+            'terminated', 'expired' => 'danger',
+            'pending', null, '' => 'info',
+            default => 'warning',
+        };
+    }
+
     public function renewalStatusLabel(): string
     {
         return match ($this->renewal_status) {
