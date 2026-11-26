@@ -7,8 +7,8 @@ use App\Models\Department;
 use App\Models\Staff;
 use App\Models\Student;
 use App\Models\User;
-use App\Support\SafelyBroadcasts;
 use App\Services\Finance\StudentFeeBalanceService;
+use App\Support\SafelyBroadcasts;
 
 class PortalSidebarBroadcastService
 {
@@ -77,15 +77,29 @@ class PortalSidebarBroadcastService
         $this->broadcastStudentCounts($student, $this->feeBalances->portalSummary($student));
     }
 
+    public function broadcastStudentAcademics(Student $student): void
+    {
+        $this->studentNotifications->forget($student);
+
+        if (! $student->user_id) {
+            return;
+        }
+
+        $this->broadcast("student.sidebar.{$student->user_id}", [], [], academicsUpdated: true);
+    }
+
     /**
      * @param  array<string, float|string>|null  $financeSummary
      */
-    private function broadcastStudentCounts(Student $student, ?array $financeSummary = null): void
-    {
+    private function broadcastStudentCounts(
+        Student $student,
+        ?array $financeSummary = null,
+        bool $academicsUpdated = false,
+    ): void {
         $counts = $this->studentNotifications->countsFor($student, true);
         $labels = $this->studentNotifications->formattedCounts($counts);
 
-        $this->broadcast("student.sidebar.{$student->user_id}", $counts, $labels, $financeSummary);
+        $this->broadcast("student.sidebar.{$student->user_id}", $counts, $labels, $financeSummary, $academicsUpdated);
     }
 
     public function broadcastAcademicsHub(Department $department): void
@@ -118,10 +132,15 @@ class PortalSidebarBroadcastService
      * @param  array<string, int>  $counts
      * @param  array<string, string|null>  $labels
      */
-    private function broadcast(string $channel, array $counts, array $labels, ?array $financeSummary = null): void
-    {
+    private function broadcast(
+        string $channel,
+        array $counts,
+        array $labels,
+        ?array $financeSummary = null,
+        bool $academicsUpdated = false,
+    ): void {
         $this->safelyBroadcast(
-            fn () => broadcast(new PortalSidebarCountsUpdated($channel, $counts, $labels, $financeSummary))
+            fn () => broadcast(new PortalSidebarCountsUpdated($channel, $counts, $labels, $financeSummary, $academicsUpdated))
         );
     }
 

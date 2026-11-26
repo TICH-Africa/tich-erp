@@ -448,7 +448,7 @@ class StaffPortalActionController extends Controller
             'questions.*.question_text' => ['nullable', 'string'],
             'questions.*.question_type' => ['nullable', 'string'],
             'questions.*.options' => ['nullable', 'string'],
-            'questions.*.correct_answer' => ['nullable', 'string'],
+            'questions.*.correct_answer' => ['nullable', 'string', 'max:500'],
             'questions.*.points' => ['nullable', 'numeric', 'min:0.01'],
         ]);
 
@@ -486,7 +486,7 @@ class StaffPortalActionController extends Controller
             'questions.*.question_text' => ['nullable', 'string'],
             'questions.*.question_type' => ['nullable', 'string'],
             'questions.*.options' => ['nullable', 'string'],
-            'questions.*.correct_answer' => ['nullable', 'string'],
+            'questions.*.correct_answer' => ['nullable', 'string', 'max:500'],
             'questions.*.points' => ['nullable', 'numeric', 'min:0.01'],
         ]);
 

@@ -107,11 +107,15 @@
                 <p class="tich-text">
                     Pick the teaching period, tick the units the students are due to do, then tick the students.
                     Each student keeps one registration per semester, so re-running this only adds what is missing.
-                    The list holds the students sitting the year of that period, read from their admission details,
+                    The student list follows the year of the selected period, using each student's current year and semester record,
                     and a cohort moves to the next semester by itself when that semester's dates start - anyone
                     owed a failed unit is held on their current semester instead.
                 </p>
             </div>
+
+            @if ($errors->has('students'))
+                <p class="tich-field-error tich-mt-2">{{ $errors->first('students') }}</p>
+            @endif
 
             @if ($deskPeriod && $desk['semesterId'])
                 <form method="GET" action="{{ route('departments.academics.programs.curriculum', $curriculumParams) }}" class="tich-flex-wrap tich-mt-4" style="gap:0.75rem; align-items:flex-end;">
@@ -128,6 +132,7 @@
                     ]) as $key => $value)
                         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                     @endforeach
+                    <input type="hidden" name="registration_period_selection" value="1">
 
                     <div class="tich-form-group" style="margin:0; min-width:14rem;">
                         <label for="registration_period" class="tich-label">Teaching period</label>

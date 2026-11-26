@@ -27,8 +27,12 @@ class ExistingStudentController extends Controller
 
     public function create(Request $request): View
     {
-        // Keep flashed values only for the validation redirect back to this form.
-        if (! $request->session()->has('errors')) {
+        $oldInput = $request->session()->get('_old_input', []);
+        $isCreateFormRetry = is_array($oldInput)
+            && array_key_exists('form_student_id', $oldInput)
+            && trim((string) $oldInput['form_student_id']) === '';
+
+        if (! $isCreateFormRetry) {
             $request->session()->forget('_old_input');
         }
 
@@ -66,8 +70,9 @@ class ExistingStudentController extends Controller
 
         $programs = AcademicProgram::where('status', 'active')->orderBy('program_name')->get();
         $cohorts = Student::where('is_active', 1)->distinct()->pluck('cohort_intake')->sortDesc()->values();
+        $canEditStudentRecords = $this->canEditStudentRecords();
 
-        return view('administration.applications.existing-student-index', compact('students', 'programs', 'cohorts'));
+        return view('administration.applications.existing-student-index', compact('students', 'programs', 'cohorts', 'canEditStudentRecords'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -216,8 +221,9 @@ class ExistingStudentController extends Controller
     {
         $academicRecords = $student->academicRecords()->with('program', 'semester')->get();
         $nextOfKin = $this->nextOfKinRows($student);
+        $canEditStudentRecords = $this->canEditStudentRecords();
 
-        return view('administration.applications.existing-student-show', compact('student', 'academicRecords', 'nextOfKin'));
+        return view('administration.applications.existing-student-show', compact('student', 'academicRecords', 'nextOfKin', 'canEditStudentRecords'));
     }
 
     public function edit(Request $request, Student $student): View
@@ -380,6 +386,13 @@ class ExistingStudentController extends Controller
         return redirect()
             ->route('administration.applications.existing-student.show', $student->id)
             ->with('success', "Student {$student->registration_number} updated successfully.");
+    }
+
+    private function canEditStudentRecords(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && $user->hasRole('Admissions Officer');
     }
 
     /**

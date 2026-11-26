@@ -130,8 +130,13 @@
 
     echo.private(broadcast.channel)
         .listen(broadcast.event || '.sidebar.counts.updated', (event) => {
-            applyLabels(event.labels || {});
+            if (event.labels && Object.keys(event.labels).length > 0) {
+                applyLabels(event.labels);
+            }
             applyFinanceSummary(event.finance_summary);
+            if (event.academics_updated) {
+                window.dispatchEvent(new CustomEvent('tich:student-academics-updated'));
+            }
         })
         .error(() => {
             poll();

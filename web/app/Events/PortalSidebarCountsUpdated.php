@@ -22,6 +22,7 @@ class PortalSidebarCountsUpdated implements ShouldBroadcastNow
         public array $counts,
         public array $labels,
         public ?array $financeSummary = null,
+        public bool $academicsUpdated = false,
     ) {}
 
     public function broadcastOn(): array
@@ -45,6 +46,10 @@ class PortalSidebarCountsUpdated implements ShouldBroadcastNow
 
         if ($this->financeSummary !== null) {
             $payload['finance_summary'] = $this->financeSummary;
+        }
+
+        if ($this->academicsUpdated) {
+            $payload['academics_updated'] = true;
         }
 
         return $payload;

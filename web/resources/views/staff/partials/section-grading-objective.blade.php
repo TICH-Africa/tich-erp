@@ -284,13 +284,15 @@
                                         <td class="tich-competency-grid__sticky">{{ $student->registration_number }}</td>
                                         <td class="tich-competency-grid__sticky">
                                             {{ trim($student->student_name) }}
-                                            @if ($hasSubmitted)
+                                            @if ($hasSubmitted && $selected->isMarkedFor($submission))
                                                 <br><span class="tich-caption">{{ number_format($submission->score_obtained, 1) }}/{{ number_format($selected->max_score, 0) }}</span>
                                             @endif
                                         </td>
                                         <td>
                                             @if ($hasSubmitted)
-                                                <span class="tich-badge tich-badge--success">Submitted</span>
+                                                <span class="tich-badge tich-badge--{{ $selected->isMarkedFor($submission) ? 'success' : 'warning' }}">
+                                                    {{ $selected->isMarkedFor($submission) ? 'Submitted' : 'Submitted · awaiting marks' }}
+                                                </span>
                                             @else
                                                 <span class="tich-badge tich-badge--warning">Pending</span>
                                             @endif
@@ -314,11 +316,9 @@
                                                         @endforeach
                                                     </select>
                                                 @else
-                                                    <input type="text"
+                                                    <textarea rows="2"
                                                            name="responses[{{ $student->student_id }}][{{ $question->id }}]"
-                                                           value="{{ $value }}"
-                                                           class="tich-competency-grid__input"
-                                                           placeholder="Answer">
+                                                           class="tich-competency-grid__input">{{ $value }}</textarea>
                                                 @endif
                                             </td>
                                         @endforeach
@@ -386,11 +386,11 @@
                                             <div class="tich-card tich-mt-4">
                                                 <p class="tich-h4">{{ $question->question_text }}</p>
                                                 <div class="tich-card__body" style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin-top: 0.5rem;">
-                                                    <p>{{ $answer ?: 'No answer provided' }}</p>
+                                                    <p style="white-space: pre-wrap;">{{ $answer ?: 'No answer provided' }}</p>
                                                 </div>
                                                 <div class="tich-form-group tich-mt-4">
                                                     <label class="tich-label">Mark (max {{ $question->points }})</label>
-                                                    <input type="number" name="marks[{{ $question->id }}]" class="tich-input" value="{{ $selectedSubmission->score_obtained ?? 0 }}" min="0" max="{{ $question->points }}" step="0.01" style="max-width: 8rem;">
+                                                    <input type="number" name="marks[{{ $question->id }}]" class="tich-input" value="{{ old('marks.'.$question->id) }}" min="0" max="{{ $question->points }}" step="0.01" style="max-width: 8rem;">
                                                 </div>
                                             </div>
                                         @endif

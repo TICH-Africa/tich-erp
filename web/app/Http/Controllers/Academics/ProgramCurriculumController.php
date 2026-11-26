@@ -39,6 +39,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -1699,6 +1700,22 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $period = $desk['periodOptions']->get($validated['registration_period']);
         abort_unless($period, 422, 'Choose the teaching period to register.');
 
+        $selectedStudentIds = collect($validated['students'])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+        $studentsForPeriod = $desk['students']
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (array_diff($selectedStudentIds, $studentsForPeriod) !== []) {
+            throw ValidationException::withMessages([
+                'students' => 'The selected student list does not match '.$period['label'].'. Reload the page and select students from that year.',
+            ]);
+        }
+
         // Registering a year the calendar has no term for yet opens that term rather than stopping.
         $semesterId = $desk['semesterId']
             ?? $this->examScheduleSync->resolveSemesterId($intake, (int) $validated['registration_period'], true);
@@ -1923,6 +1940,7 @@ class ProgramCurriculumController extends DepartmentAcademicsController
         $parts = array_filter([
             ($cleared['cat'] ?? 0) > 0 ? $cleared['cat'].' CAT '.str('entry')->plural((int) $cleared['cat']) : null,
             ($cleared['exam'] ?? 0) > 0 ? $cleared['exam'].' exam '.str('result')->plural((int) $cleared['exam']) : null,
+            ($cleared['requests'] ?? 0) > 0 ? $cleared['requests'].' exam '.str('request')->plural((int) $cleared['requests']) : null,
             ($cleared['grades'] ?? 0) > 0 ? $cleared['grades'].' grade '.str('record')->plural((int) $cleared['grades']) : null,
         ]);
 

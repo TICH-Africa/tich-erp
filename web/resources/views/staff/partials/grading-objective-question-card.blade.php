@@ -26,14 +26,14 @@
             <input type="text" name="questions[{{ $index }}][options]" class="tich-input question-options-input" placeholder="A|B|C" value="{{ $optionsValue }}" oninput="updateCorrectAnswerOptions(this)">
         </div>
         <div class="tich-form-group question-correct-field" data-correct-field>
-            <label class="tich-label">Correct answer</label>
+            <label class="tich-label">Correct answer / points</label>
             <select name="questions[{{ $index }}][correct_answer]" class="tich-input question-correct-select" data-tich-dropdown="skip" style="display:none;">
                 <option value="">Select correct answer</option>
                 @if ($answerValue !== '')
                     <option value="{{ $answerValue }}" selected>{{ $answerValue }}</option>
                 @endif
             </select>
-            <input type="text" name="questions[{{ $index }}][correct_answer]" class="tich-input question-correct-text" placeholder="A or true" value="{{ in_array($type, ['mcq', 'true_false'], true) ? '' : $answerValue }}" style="display:none;">
+            <textarea name="questions[{{ $index }}][correct_answer]" class="tich-input tich-textarea question-correct-text" rows="3" placeholder="Enter one correct point per line" style="display:none;">{{ in_array($type, ['mcq', 'true_false'], true) ? '' : $answerValue }}</textarea>
         </div>
     </div>
     <div class="tich-form-group">
