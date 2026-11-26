@@ -496,8 +496,10 @@ class ObjectiveAutoGradingService
 
         foreach ($questions as $question) {
             $answer = $responses[(string) $question->id] ?? $responses[$question->id] ?? null;
-            if ($this->answersMatch($question, $answer)) {
-                $earned += (float) $question->points;
+            $questionPoints = $this->pointsAwarded($question, $answer);
+            $earned += $questionPoints;
+
+            if ($questionPoints >= (float) $question->points) {
                 $correct++;
             }
         }
@@ -559,12 +561,36 @@ class ObjectiveAutoGradingService
 
     public function answersMatch(ObjectiveQuestion $question, mixed $given): bool
     {
+        return $this->pointsAwarded($question, $given) >= (float) $question->points;
+    }
+
+    public function pointsAwarded(ObjectiveQuestion $question, mixed $given): float
+    {
+        if ($given === null || $given === '') {
+            return 0.0;
+        }
+
+        if (in_array($question->question_type, ['short_answer', 'essay', 'long_answer'], true)) {
+            $expectedPoints = $this->answerPoints((string) $question->correct_answer);
+
+            if ($expectedPoints !== []) {
+                $givenPoints = $this->answerPoints((string) $given);
+                $matchedPoints = count(array_intersect($expectedPoints, $givenPoints));
+
+                return round((float) $question->points * ($matchedPoints / count($expectedPoints)), 2);
+            }
+        }
+
+        return $this->matchesExactly($question, $given)
+            ? (float) $question->points
+            : 0.0;
+    }
+
+    private function matchesExactly(ObjectiveQuestion $question, mixed $given): bool
+    {
         if ($given === null || $given === '') {
             return false;
         }
-
-        $expected = $this->normalizeAnswer($question->correct_answer, $question->question_type);
-        $actual = $this->normalizeAnswer((string) $given, $question->question_type);
 
         if ($question->question_type === 'matching') {
             $expectedMap = json_decode($question->correct_answer, true);
@@ -583,7 +609,38 @@ class ObjectiveAutoGradingService
             return count($expectedMap) === count($actualMap);
         }
 
+        $expected = $this->normalizeAnswer($question->correct_answer, $question->question_type);
+        $actual = $this->normalizeAnswer((string) $given, $question->question_type);
+
         return $expected === $actual;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function answerPoints(string $value): array
+    {
+        $lines = preg_split('/\R/u', $value) ?: [];
+        $points = [];
+
+        foreach ($lines as $line) {
+            $line = preg_replace('/^\s*(?:[-*•]|\d+[.)])\s*/u', '', $line) ?? $line;
+            $point = $this->normalizePoint($line);
+
+            if ($point !== '') {
+                $points[] = $point;
+            }
+        }
+
+        return array_values(array_unique($points));
+    }
+
+    private function normalizePoint(string $value): string
+    {
+        $value = strtolower(trim($value));
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return trim($value, " \t\n\r\0\x0B.,;:");
     }
 
     private function normalizeAnswer(string $value, string $type): string

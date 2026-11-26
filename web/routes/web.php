@@ -784,8 +784,12 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
         Route::get('/applications/existing-student/create', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'create'])->name('administration.applications.existing-student.create');
         Route::post('/applications/existing-student', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'store'])->name('administration.applications.existing-student.store');
         Route::get('/applications/existing-student/{student}', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'show'])->name('administration.applications.existing-student.show');
-        Route::get('/applications/existing-student/{student}/edit', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'edit'])->name('administration.applications.existing-student.edit');
-        Route::put('/applications/existing-student/{student}', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'update'])->name('administration.applications.existing-student.update');
+        Route::get('/applications/existing-student/{student}/edit', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'edit'])
+            ->middleware('role:Admissions Officer')
+            ->name('administration.applications.existing-student.edit');
+        Route::put('/applications/existing-student/{student}', [\App\Http\Controllers\Administration\ExistingStudentController::class, 'update'])
+            ->middleware('role:Admissions Officer')
+            ->name('administration.applications.existing-student.update');
 
         Route::get('/alumni', [\App\Http\Controllers\Administration\AlumniController::class, 'index'])->name('administration.alumni.index');
         Route::get('/alumni/register', [\App\Http\Controllers\Administration\AlumniController::class, 'create'])->name('administration.alumni.create');

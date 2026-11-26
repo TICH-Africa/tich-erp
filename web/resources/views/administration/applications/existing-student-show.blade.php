@@ -5,7 +5,9 @@
 @section('administration-content')
     <x-page-toolbar :title="$student->registration_number . ' - ' . ($student->fullName())" meta="Student profile and basic information">
         <x-slot:actions>
-            <a href="{{ route('administration.applications.existing-student.edit', $student) }}" class="tich-btn tich-btn-primary">Edit Student</a>
+            @if ($canEditStudentRecords)
+                <a href="{{ route('administration.applications.existing-student.edit', $student) }}" class="tich-btn tich-btn-primary">Edit Student</a>
+            @endif
             <a href="{{ route('administration.applications.existing-student.index') }}" class="tich-btn tich-btn-secondary">Back to Students</a>
         </x-slot:actions>
     </x-page-toolbar>

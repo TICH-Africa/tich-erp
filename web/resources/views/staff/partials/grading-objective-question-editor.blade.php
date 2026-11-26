@@ -3,7 +3,7 @@
     $slotCount = max(count($rows), $slots ?? 5) + 2;
 @endphp
 
-<p class="tich-caption tich-mt-4">Questions - separate MCQ options with <code>|</code> (e.g. <code>A|B|C</code>). For essay/long answer questions, leave options blank. <strong>Add as many questions as the paper has</strong> - use the button under the last one.</p>
+<p class="tich-caption tich-mt-4">Questions - separate MCQ options with <code>|</code> (e.g. <code>A|B|C</code>). For short and long answers, enter one correct point per line; students earn proportional marks for each exact point matched. Leave options blank for written answers. <strong>Add as many questions as the paper has</strong> - use the button under the last one.</p>
 <div class="tich-grading-questions" data-question-list>
     @for ($index = 0; $index < $slotCount; $index++)
         @include('staff.partials.grading-objective-question-card', [
@@ -104,6 +104,9 @@ document.querySelector('[data-add-question]').addEventListener('click', function
 
     added.querySelectorAll('input').forEach(function(input) {
         input.value = input.type === 'number' ? '1' : '';
+    });
+    added.querySelectorAll('textarea').forEach(function(textarea) {
+        textarea.value = '';
     });
     added.querySelectorAll('select').forEach(function(select) {
         select.value = select.options.length ? select.options[0].value : '';

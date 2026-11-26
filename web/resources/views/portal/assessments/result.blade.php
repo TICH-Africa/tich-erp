@@ -8,7 +8,7 @@
                     {{ $submission->percentage_score }}%
                 </span>
             @else
-                <span class="tich-badge tich-badge--warning">Awaiting marks</span>
+                <span class="tich-badge tich-badge--warning">Submitted · awaiting marks</span>
             @endif
         </x-slot:actions>
     </x-page-toolbar>
@@ -47,15 +47,18 @@
                     @foreach ($questions as $question)
                         @php
                             $studentAnswer = $submission->responses[$question->id] ?? $submission->responses[(string) $question->id] ?? null;
-                            $isCorrect = app(\App\Services\ObjectiveAutoGradingService::class)->answersMatch($question, $studentAnswer);
+                            $pointsAwarded = app(\App\Services\ObjectiveAutoGradingService::class)->pointsAwarded($question, $studentAnswer);
+                            $isCorrect = $pointsAwarded >= $question->points;
                         @endphp
                         <div class="tich-review-card tich-mb-4 {{ $isCorrect ? 'tich-review-card--correct' : 'tich-review-card--incorrect' }}">
                             <div class="tich-review-card__header">
                                 <span>Q{{ $loop->iteration }}: {{ $question->question_text }}</span>
-                                <span class="tich-badge tich-badge--{{ $isCorrect ? 'success' : 'danger' }}">{{ $isCorrect ? '+' . $question->points . ' pts' : '0 pts' }}</span>
+                                <span class="tich-badge tich-badge--{{ $pointsAwarded >= $question->points ? 'success' : ($pointsAwarded > 0 ? 'warning' : 'danger') }}">
+                                    {{ $pointsAwarded }} / {{ $question->points }} pts
+                                </span>
                             </div>
                             <div class="tich-review-card__body">
-                                <div>Your answer: <strong>{{ $studentAnswer ?? 'Not answered' }}</strong></div>
+                                <div>Your answer: <strong style="white-space: pre-wrap;">{{ $studentAnswer ?? 'Not answered' }}</strong></div>
                                 @if (! $isCorrect && $question->correct_answer)
                                     <div class="tich-caption tich-mt-1">Correct answer: <strong>{{ $question->correct_answer }}</strong></div>
                                 @endif
