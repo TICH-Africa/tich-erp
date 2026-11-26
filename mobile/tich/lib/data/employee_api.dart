@@ -5,10 +5,11 @@ class EmployeeApi {
 
   final ApiClient _client;
 
-  Future<Map<String, dynamic>> dashboard() => _client.get('/employee/dashboard');
+  Future<Map<String, dynamic>> dashboard({bool fresh = false}) =>
+      _client.get('/employee/dashboard', bypassDedupe: fresh);
 
-  Future<Map<String, dynamic>> notifications() =>
-      _client.get('/employee/notifications');
+  Future<Map<String, dynamic>> notifications({bool fresh = false}) =>
+      _client.get('/employee/notifications', bypassDedupe: fresh);
 
   Future<Map<String, dynamic>> markNotificationRead(int id) =>
       _client.post('/employee/notifications/$id/read');
@@ -18,7 +19,8 @@ class EmployeeApi {
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> body) =>
       _client.put('/employee/profile', body: body);
 
-  Future<Map<String, dynamic>> leave() => _client.get('/employee/leave');
+  Future<Map<String, dynamic>> leave({bool fresh = false}) =>
+      _client.get('/employee/leave', bypassDedupe: fresh);
 
   Future<Map<String, dynamic>> submitLeave(Map<String, dynamic> body) =>
       _client.post('/employee/leave', body: body);
@@ -87,7 +89,8 @@ class EmployeeApi {
         'read_confirmed': true,
       });
 
-  Future<Map<String, dynamic>> wfh() => _client.get('/employee/wfh');
+  Future<Map<String, dynamic>> wfh({bool fresh = false}) =>
+      _client.get('/employee/wfh', bypassDedupe: fresh);
 
   Future<Map<String, dynamic>> submitWfh({
     required String workDate,
@@ -122,8 +125,8 @@ class EmployeeApi {
   Future<Map<String, dynamic>> timeLogCompliance() =>
       _client.get('/employee/time-log-compliance');
 
-  Future<Map<String, dynamic>> timeLogs() =>
-      _client.get('/employee/time-logs');
+  Future<Map<String, dynamic>> timeLogs({bool fresh = false}) =>
+      _client.get('/employee/time-logs', bypassDedupe: fresh);
 
   Future<Map<String, dynamic>> timeLogWeeks({
     required int year,

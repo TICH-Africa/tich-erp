@@ -84,7 +84,7 @@ void procurementPrimeScreen({
   required Future<Map<String, dynamic>> Function() fetch,
   bool Function()? mounted,
   VoidCallback? scheduleLiveRefresh,
-  Duration liveRefreshDelayWhenCached = const Duration(seconds: 12),
+  Duration liveRefreshDelayWhenCached = const Duration(seconds: 6),
 }) {
   TichScreenCache.primeMapScreen(
     persistKey: persistKey,

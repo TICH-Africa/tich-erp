@@ -37,7 +37,10 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
   @override
   void initState() {
     super.initState();
-    ProcurementPortalNavSignals.onCountsChanged = refreshNavBadges;
+    ProcurementPortalNavSignals.onCountsChanged = () {
+      markNavBadgesStale();
+      refreshNavBadges();
+    };
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       TichNotificationRouter.instance.applyPending(context);
@@ -47,9 +50,7 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
 
   @override
   void dispose() {
-    if (ProcurementPortalNavSignals.onCountsChanged == refreshNavBadges) {
-      ProcurementPortalNavSignals.onCountsChanged = null;
-    }
+    ProcurementPortalNavSignals.onCountsChanged = null;
     super.dispose();
   }
 
@@ -152,11 +153,11 @@ class _ProcurementPortalShellState extends State<ProcurementPortalShell>
 
   @override
   Future<void> refreshNavBadges() {
-    scheduleNavBadgeFetch((_) async {
+    scheduleNavBadgeFetch((force) async {
       if (!mounted) return;
       final api = context.read<ProcurementApi>();
       try {
-        final data = await api.sidebarNotifications();
+        final data = await api.sidebarNotifications(fresh: force);
         if (!mounted) return;
         final counts = parseSidebarCounts(data['counts']);
         _scaffoldKey.currentState?.updateNavCounts(counts);

@@ -17,6 +17,9 @@ mixin ShellNavBadgeMixin<T extends StatefulWidget> on State<T>, WidgetsBindingOb
   bool _badgeFetchScheduled = false;
   bool _forceNextBadgeFetch = false;
   VoidCallback? _realtimeBadgeListener;
+  VoidCallback? _staleBadgeListener;
+  VoidCallback? _dataStaleHook;
+  VoidCallback? _previousDataStaleHandler;
 
   @override
   void initState() {
@@ -26,11 +29,21 @@ mixin ShellNavBadgeMixin<T extends StatefulWidget> on State<T>, WidgetsBindingOb
       _forceNextBadgeFetch = true;
       refreshNavBadges();
     };
+    _staleBadgeListener = () {
+      _forceNextBadgeFetch = true;
+      refreshNavBadges();
+    };
     final previous = TichRealtimeSignals.onSidebarCountsUpdated;
     TichRealtimeSignals.onSidebarCountsUpdated = () {
       previous?.call();
       _realtimeBadgeListener?.call();
     };
+    _previousDataStaleHandler = TichRealtimeSignals.onDataStale;
+    _dataStaleHook = () {
+      _previousDataStaleHandler?.call();
+      _staleBadgeListener?.call();
+    };
+    TichRealtimeSignals.onDataStale = _dataStaleHook;
     Future<void>.delayed(shellNavBadgeInitialDelay, () {
       if (!mounted) return;
       refreshNavBadges();
@@ -42,6 +55,9 @@ mixin ShellNavBadgeMixin<T extends StatefulWidget> on State<T>, WidgetsBindingOb
   @override
   void dispose() {
     _badgeTimer?.cancel();
+    if (TichRealtimeSignals.onDataStale == _dataStaleHook) {
+      TichRealtimeSignals.onDataStale = _previousDataStaleHandler;
+    }
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -49,6 +65,7 @@ mixin ShellNavBadgeMixin<T extends StatefulWidget> on State<T>, WidgetsBindingOb
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      markNavBadgesStale();
       refreshNavBadges();
     }
   }

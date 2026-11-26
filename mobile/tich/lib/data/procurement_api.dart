@@ -19,11 +19,11 @@ class ProcurementApi {
         if (status != null && status.isNotEmpty) 'status': status,
       };
 
-  Future<Map<String, dynamic>> dashboard() =>
-      _client.get('/procurement/dashboard');
+  Future<Map<String, dynamic>> dashboard({bool fresh = false}) =>
+      _client.get('/procurement/dashboard', bypassDedupe: fresh);
 
-  Future<Map<String, dynamic>> sidebarNotifications() =>
-      _client.get('/procurement/sidebar-notifications');
+  Future<Map<String, dynamic>> sidebarNotifications({bool fresh = false}) =>
+      _client.get('/procurement/sidebar-notifications', bypassDedupe: fresh);
 
   Future<Map<String, dynamic>> requisitions({
     String? search,

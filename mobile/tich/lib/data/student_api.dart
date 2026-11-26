@@ -6,7 +6,8 @@ class StudentApi {
 
   final ApiClient _client;
 
-  Future<Map<String, dynamic>> dashboard() => _client.get('/student/dashboard');
+  Future<Map<String, dynamic>> dashboard({bool fresh = false}) =>
+      _client.get('/student/dashboard', bypassDedupe: fresh);
 
   Future<Map<String, dynamic>> academics() => _client.get('/student/academics');
 
@@ -144,8 +145,8 @@ class StudentApi {
   Future<Map<String, dynamic>> notifications() =>
       _client.get('/student/notifications');
 
-  Future<Map<String, dynamic>> sidebarNotifications() =>
-      _client.get('/student/sidebar-notifications');
+  Future<Map<String, dynamic>> sidebarNotifications({bool fresh = false}) =>
+      _client.get('/student/sidebar-notifications', bypassDedupe: fresh);
 
   Future<Map<String, dynamic>> markNotificationRead(int id) =>
       _client.post('/student/notifications/$id/read');

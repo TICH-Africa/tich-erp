@@ -142,6 +142,12 @@ class ApiClient {
     _getDedupe.clear();
   }
 
+  /// After app resume or account switch — drop short-lived GET reuse so tabs refetch.
+  void bumpStaleAfterResume() {
+    _getDedupe.clear();
+    TichRealtimeSignals.notifyDataStale();
+  }
+
   void cacheToken(String? token) {
     _cachedToken = token;
   }
@@ -372,9 +378,8 @@ class ApiClient {
         return true;
       }
       // POST /employee/attendance/clock-in must drop cached GET /employee/attendance.
-      if (mutationPath.startsWith(getPath) &&
-          getPath.length > 1 &&
-          getPath != '/') {
+      if (mutationPath == getPath ||
+          mutationPath.startsWith('$getPath/')) {
         return true;
       }
       return key.contains(mutationPath);

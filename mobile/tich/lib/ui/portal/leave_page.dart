@@ -33,12 +33,14 @@ class _LeavePageState extends State<LeavePage> {
     );
   }
 
-  Future<void> _reload() => portalCachedReload(
+  Future<void> _reload({bool fresh = false}) => portalCachedReload(
         mounted: () => mounted,
         setState: setState,
         fetch: () => widget.api.leave(),
+        fetchFresh: () => widget.api.leave(fresh: true),
         onData: (data) => _dataCache = data,
         persistKey: 'portal.leave',
+        fresh: fresh,
       );
 
   void _liveRefresh() {
@@ -57,7 +59,7 @@ class _LeavePageState extends State<LeavePage> {
         builder: (_) => LeaveApplyPage(api: widget.api, leaveData: data),
       ),
     );
-    if (result == true) _reload();
+    if (result == true) _reload(fresh: true);
   }
 
   void _openApplyFromCache() {
@@ -207,7 +209,7 @@ class _LeavePageState extends State<LeavePage> {
                                               await widget.api.declineCoverage(
                                                 (c['id'] as num).toInt(),
                                               );
-                                              _reload();
+                                              _reload(fresh: true);
                                             } on ApiException catch (e) {
                                               if (!mounted) return;
                                               ScaffoldMessenger.of(context)
@@ -229,7 +231,7 @@ class _LeavePageState extends State<LeavePage> {
                                               await widget.api.acceptCoverage(
                                                 (c['id'] as num).toInt(),
                                               );
-                                              _reload();
+                                              _reload(fresh: true);
                                             } on ApiException catch (e) {
                                               if (!mounted) return;
                                               ScaffoldMessenger.of(context)
@@ -333,7 +335,7 @@ class _LeavePageState extends State<LeavePage> {
                                             await widget.api.cancelLeave(
                                               (r['id'] as num).toInt(),
                                             );
-                                            _reload();
+                                            _reload(fresh: true);
                                           } on ApiException catch (e) {
                                             if (!mounted) return;
                                             ScaffoldMessenger.of(context)

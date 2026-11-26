@@ -199,11 +199,11 @@ class _StudentPortalShellState extends State<StudentPortalShell>
 
   @override
   Future<void> refreshNavBadges() {
-    scheduleNavBadgeFetch((_) async {
+    scheduleNavBadgeFetch((force) async {
       if (!mounted) return;
       final api = context.read<StudentApi>();
       try {
-        final data = await api.sidebarNotifications();
+        final data = await api.sidebarNotifications(fresh: force);
         if (!mounted) return;
         final counts = parseSidebarCounts(data['counts']);
         _scaffoldKey.currentState?.updateNavCounts(counts);

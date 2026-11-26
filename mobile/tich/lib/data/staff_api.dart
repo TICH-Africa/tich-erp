@@ -7,7 +7,8 @@ class StaffApi {
 
   final ApiClient _client;
 
-  Future<Map<String, dynamic>> dashboard() => _client.get('/staff/dashboard');
+  Future<Map<String, dynamic>> dashboard({bool fresh = false}) =>
+      _client.get('/staff/dashboard', bypassDedupe: fresh);
 
   Future<Map<String, dynamic>> units() => _client.get('/staff/units');
 
@@ -16,7 +17,8 @@ class StaffApi {
   Future<List<int>> downloadTimetablePdf(int timetableId) =>
       _client.getBytes('/staff/timetable/$timetableId/pdf');
 
-  Future<Map<String, dynamic>> attendance() => _client.get('/staff/attendance');
+  Future<Map<String, dynamic>> attendance({bool fresh = false}) =>
+      _client.get('/staff/attendance', bypassDedupe: fresh);
 
   Future<Map<String, dynamic>> syncAttendance() =>
       _client.post('/staff/attendance/sync');
@@ -178,6 +180,6 @@ class StaffApi {
         fileName: fileName ?? _basename(filePath),
       );
 
-  Future<Map<String, dynamic>> notifications() =>
-      _client.get('/staff/notifications');
+  Future<Map<String, dynamic>> notifications({bool fresh = false}) =>
+      _client.get('/staff/notifications', bypassDedupe: fresh);
 }

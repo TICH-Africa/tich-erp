@@ -118,6 +118,12 @@ class _TichAppState extends State<TichApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       final auth = _authBloc.state;
       if (auth is AuthAuthenticated) {
+        if (TichRefreshThrottle.allow(
+          'app.resume_cache_bump',
+          const Duration(seconds: 8),
+        )) {
+          _apiClient.bumpStaleAfterResume();
+        }
         Future<void>.delayed(const Duration(seconds: 2), () {
           if (!mounted) return;
           if (_authBloc.state is! AuthAuthenticated) return;

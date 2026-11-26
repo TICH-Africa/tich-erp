@@ -159,11 +159,11 @@ class _StaffPortalShellState extends State<StaffPortalShell>
 
   @override
   Future<void> refreshNavBadges() {
-    scheduleNavBadgeFetch((_) async {
+    scheduleNavBadgeFetch((force) async {
       if (!mounted) return;
       final api = context.read<StaffApi>();
       try {
-        final data = await api.notifications();
+        final data = await api.notifications(fresh: force);
         if (!mounted) return;
         final counts = parseSidebarCounts(data['counts']);
         _scaffoldKey.currentState?.updateNavCounts(counts);

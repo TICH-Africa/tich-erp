@@ -38,13 +38,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
-  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
-      mounted: () => mounted,
-      setState: setState,
-      fetch: () => widget.api.notifications(),
-      onData: (data) => _dataCache = data,
-      persistKey: 'portal.notifications',
-    );
+  Future<void> _reload({bool fresh = false}) =>
+      tichRefreshCached<Map<String, dynamic>>(
+        mounted: () => mounted,
+        setState: setState,
+        fetch: () => widget.api.notifications(fresh: fresh),
+        onData: (data) => _dataCache = data,
+        persistKey: 'portal.notifications',
+      );
 
   void _liveRefresh() {
     tichSilentReload(
@@ -59,7 +60,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Future<void> _markRead(int id) async {
     try {
       await widget.api.markNotificationRead(id);
-      _reload();
+      await _reload(fresh: true);
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));

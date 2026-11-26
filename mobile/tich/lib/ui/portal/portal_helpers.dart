@@ -54,14 +54,16 @@ Future<void> portalCachedReload({
   required bool Function() mounted,
   required void Function(VoidCallback fn) setState,
   required Future<Map<String, dynamic>> Function() fetch,
+  Future<Map<String, dynamic>> Function()? fetchFresh,
   required void Function(Map<String, dynamic> data) onData,
   String? persistKey,
   bool respectTypingGuard = true,
+  bool fresh = false,
 }) =>
     tichRefreshCached<Map<String, dynamic>>(
       mounted: mounted,
       setState: setState,
-      fetch: fetch,
+      fetch: fresh ? (fetchFresh ?? fetch) : fetch,
       onData: onData,
       persistKey: persistKey,
       respectTypingGuard: respectTypingGuard,
@@ -74,7 +76,7 @@ void portalPrimeScreen({
   required Future<Map<String, dynamic>> Function() fetch,
   bool Function()? mounted,
   VoidCallback? scheduleLiveRefresh,
-  Duration liveRefreshDelayWhenCached = const Duration(seconds: 12),
+  Duration liveRefreshDelayWhenCached = const Duration(seconds: 6),
 }) {
   TichScreenCache.primeMapScreen(
     persistKey: persistKey,

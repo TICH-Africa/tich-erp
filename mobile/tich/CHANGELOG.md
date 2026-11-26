@@ -2,6 +2,16 @@
 
 All notable releases of the Flutter app (`com.tich.africa.tich`).
 
+## [Unreleased]
+
+### Sync & reliability (Android + iOS)
+
+- Fix HTTP GET cache invalidation after writes (clock-in, leave, notifications, etc.) so lists update immediately instead of waiting up to ~25s.
+- Clock-in/out: optimistic UI from server response, forced badge refresh, fresh attendance refetch.
+- App resume: clear short-lived GET cache and nudge visible screens to refresh (throttled).
+- Bottom-nav badges: refresh on data-stale signal, resume, and after mutations (employee, student, staff, procurement).
+- Slightly faster background refresh when a screen opens with cached data (12s → 6s delay before first silent poll).
+
 ## [1.0.2] — 2026-11-18
 
 **Build:** `1.0.2+3`

@@ -81,7 +81,7 @@ class EmployeeBadgeService extends ChangeNotifier {
     try {
       final results = await Future.wait([
         _api.attendance(fresh: force),
-        _api.notifications(),
+        _api.notifications(fresh: force),
       ]);
       final attendance = results[0];
       final notifications = results[1];
