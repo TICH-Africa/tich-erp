@@ -55,6 +55,11 @@ mixin ShellNavBadgeMixin<T extends StatefulWidget> on State<T>, WidgetsBindingOb
 
   Future<void> refreshNavBadges();
 
+  /// Next [refreshNavBadges] bypasses [TichPowerPolicy.navBadgeMinGap] (clock-in/out).
+  void markNavBadgesStale() {
+    _forceNextBadgeFetch = true;
+  }
+
   void scheduleNavBadgeFetch(Future<void> Function(bool force) fetch) {
     final force = _forceNextBadgeFetch;
     _forceNextBadgeFetch = false;

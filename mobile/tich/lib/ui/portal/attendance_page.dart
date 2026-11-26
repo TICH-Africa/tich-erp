@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../adaptive/adaptive.dart';
 import '../../data/api_client.dart';
 import '../../data/employee_api.dart';
+import '../../data/tich_screen_cache.dart';
 import '../../notifications/tich_notifications.dart';
 import '../../permissions/tich_permission_disclosures.dart';
 import '../../utils/tich_clock_in_messages.dart';
@@ -54,7 +57,7 @@ class _AttendancePageState extends State<AttendancePage> {
   void initState() {
     super.initState();
     portalPrimeScreen(
-      persistKey: 'portal.attendance',
+      persistKey: _cacheKey,
       setCache: (c) => _dataCache = c,
       setFuture: (f) => _future = f,
       fetch: _fetchAttendance,
@@ -101,12 +104,29 @@ class _AttendancePageState extends State<AttendancePage> {
     }).toList();
   }
 
-  Future<void> _reload() => tichRefreshCached<Map<String, dynamic>>(
+  static const _cacheKey = 'portal.attendance';
+
+  void _mergeTodayFromMutation(Map<String, dynamic> response) {
+    final today = response['today'];
+    if (today is! Map) return;
+    final base = _dataCache is Map<String, dynamic>
+        ? Map<String, dynamic>.from(_dataCache as Map<String, dynamic>)
+        : <String, dynamic>{};
+    base['today'] = Map<String, dynamic>.from(today);
+    final status = response['clock_in_status'];
+    if (status is Map) {
+      base['clock_in_status'] = Map<String, dynamic>.from(status);
+    }
+    TichScreenCache.write(_cacheKey, base);
+    if (mounted) setState(() => _dataCache = base);
+  }
+
+  Future<void> _reload({bool fresh = false}) => tichRefreshCached<Map<String, dynamic>>(
       mounted: () => mounted,
       setState: setState,
-      fetch: () => widget.api.attendance(),
+      fetch: () => widget.api.attendance(fresh: fresh),
       onData: (data) => _dataCache = data,
-      persistKey: 'portal.attendance',
+      persistKey: _cacheKey,
     );
 
   void _liveRefresh() {
@@ -115,7 +135,7 @@ class _AttendancePageState extends State<AttendancePage> {
       setState: setState,
       fetch: () => widget.api.attendance(),
       onData: (data) => _dataCache = data,
-      persistKey: 'portal.attendance',
+      persistKey: _cacheKey,
     );
   }
 
@@ -166,7 +186,8 @@ class _AttendancePageState extends State<AttendancePage> {
           payload['clock_in_campus_id'] = _selectedCampusId;
         }
       }
-      await widget.api.clockIn(payload);
+      final response = await widget.api.clockIn(payload);
+      _mergeTodayFromMutation(response);
       await TichNotifications.instance
           .scheduleClockInReminders(alreadyClockedIn: true);
       await TichNotifications.instance.scheduleClockOutReminders(
@@ -176,8 +197,8 @@ class _AttendancePageState extends State<AttendancePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Clocked in.')),
       );
-      _reload();
       EmployeePortalNavSignals.onAttendanceChanged?.call();
+      unawaited(_reload(fresh: true));
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -195,7 +216,8 @@ class _AttendancePageState extends State<AttendancePage> {
   Future<void> _clockOut() async {
     setState(() => _busy = true);
     try {
-      await widget.api.clockOut();
+      final response = await widget.api.clockOut();
+      _mergeTodayFromMutation(response);
       await TichNotifications.instance.scheduleClockOutReminders(
         needsClockOut: false,
       );
@@ -203,8 +225,8 @@ class _AttendancePageState extends State<AttendancePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Clocked out.')),
       );
-      _reload();
       EmployeePortalNavSignals.onAttendanceChanged?.call();
+      unawaited(_reload(fresh: true));
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -252,7 +274,7 @@ class _AttendancePageState extends State<AttendancePage> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _future,
         builder: (context, snap) {
-          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: 'portal.attendance');
+          final merged = tichMergeSnapshot(snap, _dataCache as dynamic, persistKey: _cacheKey);
           if (tichShowLoadingSpinner(snap, merged)) { return tichInstantWaitBody(onRefresh: () async => _reload()); }
           if (merged == null && snap.hasError) {
             return TichErrorRefresh(

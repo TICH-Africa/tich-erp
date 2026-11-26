@@ -149,6 +149,20 @@ abstract final class TichScreenCache {
     _schedulePersist();
   }
 
+  /// Drop one screen payload so the next open always refetches (after a mutation).
+  static void forget(String key) {
+    _store.remove(key);
+    _lru.remove(key);
+    _dirtyKeys.remove(key);
+    _inFlight.remove(key);
+    _diskIndex.remove(key);
+    final scope = _userScope;
+    if (scope.isNotEmpty) {
+      unawaited(TichScreenCacheStore.deleteEntry(scope, key));
+    }
+    _notifyKeyWaiters(key);
+  }
+
   static void _writeWithoutPersist(String key, Object value) {
     if (value is! Map<String, dynamic>) {
       _store[key] = value;

@@ -80,7 +80,7 @@ class EmployeeBadgeService extends ChangeNotifier {
   Future<void> _fetch() async {
     try {
       final results = await Future.wait([
-        _api.attendance(),
+        _api.attendance(fresh: force),
         _api.notifications(),
       ]);
       final attendance = results[0];

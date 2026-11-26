@@ -38,8 +38,8 @@ class EmployeeApi {
         if (notes != null) 'response_notes': notes,
       });
 
-  Future<Map<String, dynamic>> attendance() =>
-      _client.get('/employee/attendance');
+  Future<Map<String, dynamic>> attendance({bool fresh = false}) =>
+      _client.get('/employee/attendance', bypassDedupe: fresh);
 
   Future<Map<String, dynamic>> clockIn(Map<String, dynamic> body) =>
       _client.post('/employee/attendance/clock-in', body: body);

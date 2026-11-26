@@ -216,6 +216,7 @@ class ApiClient {
     String path, {
     Map<String, String>? query,
     Duration? timeout,
+    bool bypassDedupe = false,
   }) async {
     var uri = ApiConfig.uri(path);
     if (query != null && query.isNotEmpty) {
@@ -224,10 +225,11 @@ class ApiClient {
     final key = uri.toString();
     final now = DateTime.now();
     final existing = _getDedupe[key];
-    if (existing?.inFlight != null) {
+    if (existing?.inFlight != null && !bypassDedupe) {
       return existing!.inFlight!;
     }
-    if (existing?.body != null &&
+    if (!bypassDedupe &&
+        existing?.body != null &&
         existing!.completedAt != null &&
         now.difference(existing.completedAt!) < getDedupeTtl) {
       return Map<String, dynamic>.from(existing.body!);
@@ -363,12 +365,31 @@ class ApiClient {
   }
 
   void _invalidateGetCacheForMutation(String path) {
-    final normalized = Uri.parse(path).path;
-    _getDedupe.removeWhere((key, _) => key.contains(normalized));
+    final mutationPath = _apiPath(path);
+    _getDedupe.removeWhere((key, _) {
+      final getPath = _apiPath(key);
+      if (getPath == mutationPath) {
+        return true;
+      }
+      // POST /employee/attendance/clock-in must drop cached GET /employee/attendance.
+      if (mutationPath.startsWith(getPath) &&
+          getPath.length > 1 &&
+          getPath != '/') {
+        return true;
+      }
+      return key.contains(mutationPath);
+    });
     // Our own write is a staleness signal like a server push: screens still on
     // screen (the list behind a form, the drawer counts) refresh now instead of
     // waiting for the next poll, which matters while broadcasting is off.
     TichRealtimeSignals.notifyDataStale();
+  }
+
+  static String _apiPath(String pathOrUri) {
+    if (pathOrUri.contains('://')) {
+      return Uri.parse(pathOrUri).path;
+    }
+    return pathOrUri.startsWith('/') ? pathOrUri : '/$pathOrUri';
   }
 
   Map<String, dynamic> _decode(http.Response response) {

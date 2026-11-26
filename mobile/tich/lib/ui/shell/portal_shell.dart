@@ -64,7 +64,10 @@ class _PortalShellState extends State<PortalShell>
     super.initState();
     EmployeePortalNav.isEmployeeShellActive = true;
     EmployeePortalNav.onTabRequest = _applyPendingTab;
-    EmployeePortalNavSignals.onAttendanceChanged = refreshNavBadges;
+    EmployeePortalNavSignals.onAttendanceChanged = () {
+      markNavBadgesStale();
+      refreshNavBadges();
+    };
     EmployeePortalNavSignals.onStaffPhotoChanged = _loadStaffPhoto;
     EmployeePortalNavSignals.onTimeLogComplianceChanged =
         _recheckTimeLogCompliance;
@@ -93,9 +96,7 @@ class _PortalShellState extends State<PortalShell>
     if (EmployeePortalNav.onTabRequest == _applyPendingTab) {
       EmployeePortalNav.onTabRequest = null;
     }
-    if (EmployeePortalNavSignals.onAttendanceChanged == refreshNavBadges) {
-      EmployeePortalNavSignals.onAttendanceChanged = null;
-    }
+    EmployeePortalNavSignals.onAttendanceChanged = null;
     if (EmployeePortalNavSignals.onStaffPhotoChanged == _loadStaffPhoto) {
       EmployeePortalNavSignals.onStaffPhotoChanged = null;
     }
