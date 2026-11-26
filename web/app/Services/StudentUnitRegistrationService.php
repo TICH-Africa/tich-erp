@@ -438,11 +438,10 @@ class StudentUnitRegistrationService
             $state[$studentId] = ['sitting' => 0, 'owed' => []];
         }
 
-        // Only a registration that actually holds units counts as having sat a semester, so a
-        // student cleared off every unit on a semester can be moved onto it again.
+        // Keep a semester registration as progression history even after Academics removes
+        // every unit from it; otherwise the next cohort roll would assign those units again.
         $sat = DB::table('student_semester_registrations as ssr')
             ->join('semesters as s', 's.id', '=', 'ssr.semester_id')
-            ->join('registered_units as ru', 'ru.semester_registration_id', '=', 'ssr.id')
             ->whereIn('ssr.student_id', $studentIds)
             ->groupBy('ssr.student_id')
             ->get(['ssr.student_id', DB::raw('MAX(s.semester_number) as sitting')]);

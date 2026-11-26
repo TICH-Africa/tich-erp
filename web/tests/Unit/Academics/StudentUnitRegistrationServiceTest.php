@@ -364,6 +364,7 @@ class StudentUnitRegistrationServiceTest extends TestCase
 
         $this->assertDatabaseMissing('registered_units', ['unit_id' => 42]);
         $this->assertDatabaseMissing('exam_results', ['id' => 101]);
+        $this->assertSame(3, $this->service()->progressionState([17])[17]['sitting']);
 
         foreach (['supplementary_requests', 'special_exam_requests', 'remark_requests'] as $tableName) {
             $this->assertDatabaseCount($tableName, 0);
