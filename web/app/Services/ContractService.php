@@ -158,7 +158,7 @@ class ContractService
 
         $oldValues = $contract->only(array_keys($data));
 
-        DB::transaction(function () use ($contract, $data, $updatedBy) {
+        DB::transaction(function () use ($contract, $data, $updatedBy, $oldValues) {
             $contract->update($data);
 
             $this->auditService->log(
