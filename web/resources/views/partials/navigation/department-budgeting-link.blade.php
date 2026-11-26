@@ -20,8 +20,8 @@
 @if ($budgetRoute && \Illuminate\Support\Facades\Route::has($budgetRoute))
     @include('partials.navigation.sidebar-link', [
         'href' => route($budgetRoute),
-        'label' => $label ?? ($budgetModule === 'finance' ? 'Budget requests' : 'Budgeting'),
-        'icon' => $icon ?? 'wallet',
+        'label' => $budgetModule === 'finance' ? 'Budget requests' : 'Budgeting',
+        'icon' => 'wallet',
         'active' => $activePattern ? request()->routeIs($activePattern) : false,
         'badge' => $badge,
     ])

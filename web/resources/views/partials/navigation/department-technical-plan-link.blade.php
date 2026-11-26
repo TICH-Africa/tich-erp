@@ -10,9 +10,8 @@
 @if ($planRoute && \Illuminate\Support\Facades\Route::has($planRoute))
     @include('partials.navigation.sidebar-link', [
         'href' => route($planRoute),
-        'label' => $label ?? 'Technical plan',
-        'icon' => $icon ?? 'file-text',
+        'label' => 'Technical plan',
+        'icon' => 'file-text',
         'active' => $activePattern ? request()->routeIs($activePattern) : false,
-        'badge' => $badge ?? null,
     ])
 @endif

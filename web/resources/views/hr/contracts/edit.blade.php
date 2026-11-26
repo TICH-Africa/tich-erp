@@ -28,8 +28,8 @@
                     <label for="contract_type" class="tich-label">Contract Type *</label>
                     <select id="contract_type" name="contract_type" required class="tich-input">
                         <option value="">Select type</option>
-                        @foreach (config('tich-payroll.contract_types', []) as $value => $label)
-                            <option value="{{ $value }}" {{ old('contract_type', $contract->contract_type) == $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @foreach (config('tich-payroll.contract_types', []) as $value => $contractTypeLabel)
+                            <option value="{{ $value }}" {{ old('contract_type', $contract->contract_type) == $value ? 'selected' : '' }}>{{ $contractTypeLabel }}</option>
                         @endforeach
                     </select>
                 </div>

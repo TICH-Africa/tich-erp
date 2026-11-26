@@ -18,6 +18,7 @@ use App\View\Composers\ProcurementSidebarComposer;
 use App\View\Composers\PublicLayoutComposer;
 use App\View\Composers\QaAssignedTasksComposer;
 use App\View\Composers\QaSidebarComposer;
+use App\View\Composers\SidebarVariableSanitizer;
 use App\View\Composers\StaffSidebarComposer;
 use App\View\Composers\StudentSidebarComposer;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -26,12 +27,14 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
@@ -83,6 +86,22 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('allocation', function ($value) {
             return \App\Models\Administration\FundAllocation::query()->findOrFail($value);
         });
+
+        $moduleSidebarViews = collect(File::allFiles(resource_path('views')))
+            ->filter(fn (\SplFileInfo $file) => $file->getFilename() === 'sidebar.blade.php')
+            ->map(function (\SplFileInfo $file) {
+                $relative = Str::of($file->getPathname())
+                    ->after(resource_path('views').DIRECTORY_SEPARATOR)
+                    ->replace(['\\', '/'], '.')
+                    ->beforeLast('.blade.php');
+
+                return (string) $relative;
+            })
+            ->filter(fn (string $name) => str_ends_with($name, '.partials.sidebar'))
+            ->values()
+            ->all();
+
+        View::composer($moduleSidebarViews, SidebarVariableSanitizer::class);
 
         View::composer(['layouts.app', 'layouts.auth'], PublicLayoutComposer::class);
         View::composer(['emails.*', 'emails.finance.*'], EmailBrandComposer::class);

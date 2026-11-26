@@ -6,9 +6,8 @@
 @if ($signRoute && \Illuminate\Support\Facades\Route::has($signRoute))
     @include('partials.navigation.sidebar-link', [
         'href' => route($signRoute),
-        'label' => $label ?? 'Sign financial policy',
-        'icon' => $icon ?? 'shield',
+        'label' => 'Sign financial policy',
+        'icon' => 'shield',
         'active' => request()->routeIs($policyModule.'.finance-policy.sign*'),
-        'badge' => $badge ?? null,
     ])
 @endif

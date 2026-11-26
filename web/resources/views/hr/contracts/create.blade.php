@@ -52,8 +52,8 @@
                             <label for="contract_type">Contract Type <span class="uf-req">*</span></label>
                             <select id="contract_type" name="contract_type" required class="{{ $errors->has('contract_type') ? 'is-invalid' : '' }}">
                                 <option value="">Select type</option>
-                                @foreach (config('tich-payroll.contract_types', []) as $value => $label)
-                                    <option value="{{ $value }}" @selected(old('contract_type', $defaultContractType ?? '') == $value)>{{ $label }}</option>
+                                @foreach (config('tich-payroll.contract_types', []) as $value => $contractTypeLabel)
+                                    <option value="{{ $value }}" @selected(old('contract_type', $defaultContractType ?? '') == $value)>{{ $contractTypeLabel }}</option>
                                 @endforeach
                             </select>
                             @error('contract_type')
