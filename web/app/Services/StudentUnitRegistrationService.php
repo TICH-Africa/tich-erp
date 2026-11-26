@@ -888,7 +888,7 @@ class StudentUnitRegistrationService
             // semesters is one thing to remove, and showing it twice reads as a removal
             // that did not take.
             'registered' => $rows->groupBy(fn ($row) => (int) $row->unit_id)
-                ->map(function (Collection $held, int $unitId) use ($marks, $duePeriod) {
+                ->map(function (Collection $held, int $unitId) use ($marks, $duePeriod, $program) {
                     $entry = $marks[$unitId] ?? ['cat' => 0, 'exam' => 0, 'grade' => null, 'grades' => 0];
 
                     return [

@@ -212,6 +212,94 @@ class StudentUnitRegistrationServiceTest extends TestCase
         $this->assertSame(2, $selectedPeriod['studyYearFilter']);
     }
 
+    public function test_registered_units_show_their_full_year_and_semester_label(): void
+    {
+        Schema::create('units', function (Blueprint $table): void {
+            $table->id();
+            $table->string('unit_code');
+            $table->string('unit_name');
+        });
+        Schema::create('cat_scores', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('unit_id');
+        });
+        Schema::create('exam_results', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('unit_id');
+        });
+        Schema::create('grade_records', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('unit_id');
+            $table->string('grade_letter')->nullable();
+        });
+        Schema::create('curriculum_version_periods', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('curriculum_version_id');
+            $table->unsignedInteger('semester');
+            $table->unsignedBigInteger('block_id')->nullable();
+            $table->date('start_date')->nullable();
+        });
+
+        DB::table('semesters')->insert([
+            'id' => 4,
+            'semester_label' => 'Semester 4',
+            'semester_number' => 4,
+        ]);
+        DB::table('units')->insert([
+            'id' => 42,
+            'unit_code' => 'UNIT42',
+            'unit_name' => 'Test unit',
+        ]);
+        DB::table('student_semester_registrations')->insert([
+            'id' => 71,
+            'student_id' => 17,
+            'semester_id' => 4,
+            'unit_count' => 1,
+        ]);
+        DB::table('registered_units')->insert([
+            'id' => 91,
+            'semester_registration_id' => 71,
+            'unit_id' => 42,
+        ]);
+
+        $versions = \Mockery::mock(CurriculumVersionService::class);
+        $versions->shouldReceive('mappedUnits')->once()->andReturn(collect());
+        $schedule = \Mockery::mock(ExamScheduleSyncService::class);
+        $schedule->shouldReceive('resolveSemesterId')->once()->andReturn(104);
+        $service = new StudentUnitRegistrationService(
+            $versions,
+            $schedule,
+            \Mockery::mock(AuditService::class),
+            \Mockery::mock(PortalSidebarBroadcastService::class),
+        );
+        $student = new Student;
+        $student->forceFill([
+            'id' => 17,
+            'current_year' => 2,
+            'current_semester_id' => null,
+        ]);
+        $program = new AcademicProgram([
+            'curriculum_format' => 'trimester',
+            'semester_count' => 3,
+            'duration_months' => 36,
+            'is_tiered' => false,
+            'is_nursing_track' => false,
+        ]);
+        $intake = new CurriculumVersion([
+            'intake_year' => 2026,
+            'intake_month' => 1,
+        ]);
+        $intake->id = 19;
+
+        $corrections = $service->corrections($student, $program, $intake);
+
+        $this->assertSame('Year 2 · Semester 1', $corrections['registered']->first()['semesters'][0]);
+        $this->assertFalse($corrections['registered']->first()['outside_their_year']);
+    }
+
     public function test_removing_unit_clears_registrations_and_dependent_exam_requests(): void
     {
         Schema::create('students', function (Blueprint $table): void {
