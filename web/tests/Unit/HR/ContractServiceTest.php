@@ -107,6 +107,54 @@ class ContractServiceTest extends TestCase
         ]);
     }
 
+    public function test_create_second_contract_supersedes_first(): void
+    {
+        $staff = Staff::factory()->create([
+            'department_id' => $this->department->id,
+            'job_title' => 'Test Staff',
+            'date_of_birth' => '1990-01-01',
+            'gender' => 'Male',
+            'primary_email' => 'double@test.com',
+            'organisation_email' => 'double@tich.africa',
+            'phone_number' => '0711000000',
+            'employment_category' => 'contract',
+            'employment_start_date' => now()->toDateString(),
+            'gross_monthly_salary' => 50000,
+            'employment_status' => 'active',
+        ]);
+
+        $first = $this->service->createContract($staff->id, [
+            'contract_type' => 'contract',
+            'job_title' => 'Test Staff',
+            'department_id' => $this->department->id,
+            'gross_salary' => 50000,
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
+            'is_renewable' => 1,
+        ], 1);
+
+        $second = $this->service->createContract($staff->id, [
+            'contract_type' => 'contract',
+            'job_title' => 'Test Staff',
+            'department_id' => $this->department->id,
+            'gross_salary' => 52000,
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
+            'is_renewable' => 1,
+        ], 1);
+
+        $this->assertDatabaseHas('staff_contracts', [
+            'id' => $first->id,
+            'renewal_status' => 'renewed',
+            'new_contract_id' => $second->id,
+        ]);
+
+        $this->assertDatabaseHas('staff_contracts', [
+            'id' => $second->id,
+            'renewal_status' => 'pending',
+        ]);
+    }
+
     public function test_renew_contract_creates_new_contract(): void
     {
         $staff = Staff::factory()->create([

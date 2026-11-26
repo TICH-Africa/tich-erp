@@ -113,6 +113,8 @@ class ContractService
                 'probation_status' => $probationStatus,
             ]));
 
+            $this->supersedePriorActiveContracts($staffId, $contract->id, $createdBy);
+
             $this->auditService->log(
                 'staff.contract.created',
                 'staff_contracts',
@@ -222,6 +224,8 @@ class ContractService
                 'renewal_status' => 'renewed',
                 'new_contract_id' => $newContract->id,
             ]);
+
+            $this->supersedePriorActiveContracts((int) $contract->staff_id, $newContract->id, $renewedBy);
 
             $this->auditService->log(
                 'staff.contract.renewed',
@@ -408,6 +412,8 @@ class ContractService
                 'new_contract_id' => $permanent->id,
             ]);
 
+            $this->supersedePriorActiveContracts((int) $contract->staff_id, $permanent->id, $convertedBy);
+
             $contract->staff->update([
                 'employment_category' => 'permanent',
                 'is_on_probation' => 0,
@@ -433,6 +439,117 @@ class ContractService
         $this->syncToStaff($permanentContract);
 
         return $permanentContract;
+    }
+
+    /**
+     * @return list<array{staff_id: int, keep_id: int, keep_number: string, supersede_id: int, supersede_number: string}>
+     */
+    public function duplicateActiveContractRows(): array
+    {
+        $grouped = StaffContract::query()
+            ->with('staff:id')
+            ->where(function ($query) {
+                $query->whereNull('renewal_status')
+                    ->orWhere('renewal_status', 'pending');
+            })
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('staff_id');
+
+        $rows = [];
+
+        foreach ($grouped as $staffId => $contracts) {
+            if ($contracts->count() <= 1) {
+                continue;
+            }
+
+            $keep = $contracts->first();
+            foreach ($contracts->skip(1) as $old) {
+                $rows[] = [
+                    'staff_id' => (int) $staffId,
+                    'keep_id' => (int) $keep->id,
+                    'keep_number' => (string) $keep->contract_number,
+                    'supersede_id' => (int) $old->id,
+                    'supersede_number' => (string) $old->contract_number,
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    /** Fix legacy data where multiple contracts were left on Active (pending). */
+    public function reconcileDuplicateActiveContracts(int $actedBy = 0): int
+    {
+        $fixed = 0;
+
+        foreach ($this->duplicateActiveContractRows() as $row) {
+            $old = StaffContract::query()->find($row['supersede_id']);
+            if (! $old) {
+                continue;
+            }
+
+            $before = $old->only(['renewal_status', 'new_contract_id']);
+            $old->update([
+                'renewal_status' => 'renewed',
+                'new_contract_id' => $row['keep_id'],
+                'is_renewable' => 1,
+            ]);
+
+            if ($actedBy > 0) {
+                $this->auditService->log(
+                    'staff.contract.superseded',
+                    'staff_contracts',
+                    $old->id,
+                    $before,
+                    ['renewal_status' => 'renewed', 'new_contract_id' => $row['keep_id']],
+                    'Duplicate active contract reconciled',
+                    'success',
+                    $actedBy
+                );
+            }
+
+            $fixed++;
+        }
+
+        return $fixed;
+    }
+
+    /**
+     * Only one contract may stay "Active" (pending) per employee; older rows are linked to the successor.
+     */
+    private function supersedePriorActiveContracts(int $staffId, int $newContractId, int $actedBy): void
+    {
+        $prior = StaffContract::query()
+            ->where('staff_id', $staffId)
+            ->where('id', '!=', $newContractId)
+            ->where(function ($query) {
+                $query->whereNull('renewal_status')
+                    ->orWhere('renewal_status', 'pending');
+            })
+            ->get();
+
+        foreach ($prior as $old) {
+            $before = $old->only(['renewal_status', 'new_contract_id']);
+
+            $old->update([
+                'renewal_status' => 'renewed',
+                'new_contract_id' => $newContractId,
+                'is_renewable' => 1,
+            ]);
+
+            $this->auditService->log(
+                'staff.contract.superseded',
+                'staff_contracts',
+                $old->id,
+                $before,
+                ['renewal_status' => 'renewed', 'new_contract_id' => $newContractId],
+                'Prior contract superseded by a newer contract',
+                'success',
+                $actedBy
+            );
+        }
     }
 
     public function generateContractNumber(): string
