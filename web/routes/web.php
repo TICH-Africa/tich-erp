@@ -1373,6 +1373,7 @@ Route::middleware(['auth', 'mfa.setup', 'mfa', 'employee.profile.complete', 'emp
             Route::post('/offboarding/{offboarding}/complete-clearance', [\App\Http\Controllers\HR\OffboardingController::class, 'completeClearance'])->name('hr.offboarding.complete-clearance');
             Route::post('/offboarding/{offboarding}/items/{item}/complete', [\App\Http\Controllers\HR\OffboardingController::class, 'completeClearanceItem'])->name('hr.offboarding.complete-item');
             Route::get('/attendance', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'index'])->name('hr.attendance.index');
+            Route::post('/attendance/approve-all', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'approveAllPending'])->name('hr.attendance.approve-all');
             Route::get('/attendance/{attendance}', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'show'])->name('hr.attendance.show');
             Route::post('/attendance/{attendance}/approve', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'approve'])->name('hr.attendance.approve');
             Route::post('/attendance/{attendance}/reject', [\App\Http\Controllers\HR\AttendanceReviewController::class, 'reject'])->name('hr.attendance.reject');

@@ -7,6 +7,25 @@
         title="Staff attendance reviews"
         :meta="$pendingCount > 0 ? $pendingCount . ' clock-in(s) awaiting HR review' : 'All reviewed clock-ins'"
     >
+        <x-slot:actions>
+            @if (($bulkApproveCount ?? 0) > 0)
+                <form
+                    method="POST"
+                    action="{{ route('hr.attendance.approve-all') }}"
+                    class="tich-inline-form"
+                    onsubmit="return confirm('Approve all {{ $bulkApproveCount }} pending attendance record{{ $bulkApproveCount === 1 ? '' : 's' }}? This cannot be undone in one click.')"
+                >
+                    @csrf
+                    <button type="submit" class="tich-btn tich-btn-primary">
+                        Approve all ({{ $bulkApproveCount }})
+                    </button>
+                </form>
+            @else
+                <button type="button" class="tich-btn tich-btn-primary" disabled>
+                    Approve all (0)
+                </button>
+            @endif
+        </x-slot:actions>
         <x-slot:filters>
             <form method="GET" action="{{ route('hr.attendance.index') }}" class="tich-page-toolbar__filters-form">
                 <select name="period" class="tich-input tich-input--compact" onchange="toggleCustomDates(this.value)">
@@ -33,6 +52,13 @@
             </form>
         </x-slot:filters>
     </x-page-toolbar>
+
+    @if (session('success'))
+        <div class="tich-alert tich-alert--success tich-mt-4">{{ session('success') }}</div>
+    @endif
+    @error('form')
+        <div class="tich-alert tich-alert--danger tich-mt-4">{{ $message }}</div>
+    @enderror
 
     <div class="tich-card tich-table-panel">
         <div class="tich-table-wrap">

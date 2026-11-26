@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
-use App\Models\Staff;
 use App\Models\StaffAttendance;
+use App\Services\HrSidebarNotificationService;
 use App\Services\StaffPortalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Carbon\CarbonPeriod;
 
 class AttendanceReviewController extends Controller
 {
@@ -42,12 +41,15 @@ class AttendanceReviewController extends Controller
             ->whereNull('clock_out_time')
             ->count();
 
+        $bulkApproveCount = $this->pendingHrAttendanceQuery()->count();
+
         return view('hr.attendance.index', [
             'attendance' => $attendance,
             'period' => $period,
             'start' => $start,
             'end' => $end,
             'pendingCount' => $pendingCount,
+            'bulkApproveCount' => $bulkApproveCount,
         ]);
     }
 
@@ -76,7 +78,36 @@ class AttendanceReviewController extends Controller
             'hr_review_notes' => $validated['hr_notes'] ?? null,
         ]);
 
+        app(HrSidebarNotificationService::class)->broadcastCounts();
+
         return back()->with('success', 'Clock-in approved by HR.');
+    }
+
+    public function approveAllPending(Request $request): RedirectResponse
+    {
+        $reviewer = $this->staffPortal->staffForUser($request->user());
+        abort_unless($reviewer, 403);
+
+        $query = $this->pendingHrAttendanceQuery();
+        $count = (int) $query->count();
+
+        if ($count === 0) {
+            return redirect()
+                ->route('hr.attendance.index')
+                ->withErrors(['form' => 'No attendance records are awaiting HR approval.']);
+        }
+
+        $query->update([
+            'hr_review_status' => StaffAttendance::HR_STATUS_APPROVED,
+            'hr_reviewed_by_staff_id' => $reviewer->id,
+            'hr_reviewed_at' => now(),
+        ]);
+
+        app(HrSidebarNotificationService::class)->broadcastCounts();
+
+        return redirect()
+            ->route('hr.attendance.index')
+            ->with('success', 'Approved '.$count.' pending attendance record'.($count === 1 ? '' : 's').'.');
     }
 
     public function reject(Request $request, StaffAttendance $attendance): RedirectResponse
@@ -97,7 +128,19 @@ class AttendanceReviewController extends Controller
             'hr_review_notes' => $validated['hr_notes'] ?? null,
         ]);
 
+        app(HrSidebarNotificationService::class)->broadcastCounts();
+
         return back()->with('success', 'Clock-in rejected by HR.');
+    }
+
+    /**
+     * Every record still on HR pending — bulk approve does not require opening each row first.
+     */
+    private function pendingHrAttendanceQuery()
+    {
+        return StaffAttendance::query()
+            ->whereHas('staff', fn ($q) => $q->excludePlatformOperators())
+            ->where('hr_review_status', StaffAttendance::HR_STATUS_PENDING);
     }
 
     private function resolvePeriod(string $period, Request $request): array
