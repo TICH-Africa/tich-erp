@@ -134,12 +134,12 @@
                                             @if ($row['registrations'] > 1)
                                                 {{ $row['unit_code'] }} is on {{ $row['registrations'] }} of their registrations. This takes every one of them off
                                                 @if ($onRecord !== '')
-                                                    and deletes {{ $onRecord }} as well. It cannot be recovered.
+                                                    and deletes {{ $onRecord }} as well, together with any exam requests tied to those results. It cannot be recovered.
                                                 @else
                                                     , and they had nothing marked on it.
                                                 @endif
                                             @elseif ($onRecord !== '')
-                                                This takes the unit off and deletes {{ $onRecord }} as well. It cannot be recovered.
+                                                This takes the unit off and deletes {{ $onRecord }}, together with any exam requests tied to those results. It cannot be recovered.
                                             @else
                                                 Nothing has been marked on {{ $row['unit_code'] }} yet, so only the registration goes.
                                             @endif

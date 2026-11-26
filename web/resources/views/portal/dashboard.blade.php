@@ -31,5 +31,11 @@
                 });
             }
         });
+
+        window.addEventListener('tich:student-academics-updated', function () {
+            if (new URLSearchParams(window.location.search).get('section') === 'academics') {
+                window.location.reload();
+            }
+        });
     </script>
 @endsection
