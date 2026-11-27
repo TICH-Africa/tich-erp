@@ -36,6 +36,9 @@
 # General
 /docs/
 .DS_Store
+
+# Local Mermaid / Word doc generation (Puppeteer browser binaries)
+/chrome-headless-shell/
 *.log
 .idea/
 .vscode/
